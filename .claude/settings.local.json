@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('version:', d.get\\('version'\\)\\); print\\('description:', d.get\\('description',''\\)[:200]\\)\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\Siddhant.Baliga\\\\.gemini\\\\antigravity\\\\scratch\\\\ESV APP Ecosystem\\\\ecosystem-app\\\\src\\\\app\\\\login\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\Siddhant.Baliga\\\\.gemini\\\\antigravity\\\\scratch\\\\ESV APP Ecosystem\\\\ecosystem-app\\\\src\\\\app\\\\dashboard\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\Siddhant.Baliga\\\\.gemini\\\\antigravity\\\\scratch\\\\ESV APP Ecosystem\\\\ecosystem-app\\\\src\\\\app\\\\pipeline\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\Siddhant.Baliga\\\\.gemini\\\\antigravity\\\\scratch\\\\ESV APP Ecosystem\\\\ecosystem-app\\\\src\\\\app\\\\portal\")",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\Siddhant.Baliga\\\\.gemini\\\\antigravity\\\\scratch\\\\ESV APP Ecosystem\\\\ecosystem-app\\\\src\\\\app\\\\_components\")",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(ls \"C:\\\\Users\\\\Siddhant.Baliga\\\\.claude\\\\\" 2>&1)",
+      "Read(//c/Users/Siddhant.Baliga/**)",
+      "Bash(claude plugin *)",
+      "Bash(claude mcp *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\Siddhant.Baliga\\\\.claude.json\")",
+      "Bash(Select-String -Pattern \"supabase\" -Context 5)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\Siddhant.Baliga\\.claude\\projects\\c--Users-Siddhant-Baliga--gemini-antigravity-scratch-ESV-APP-Ecosystem\\memory"
+    ]
+  }
+}
