@@ -72,57 +72,8 @@
   margin-bottom: 2rem;
 }
 
-/* ─── Form ───────────────────────────────────────────────────────────── */
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 1.125rem;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4375rem;
-}
-
-.label {
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--color-text);
-}
-
-.input {
-  padding: 0.75rem 1rem;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  background-color: var(--color-bg);
-  color: var(--color-text);
-  font-size: 0.9375rem;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-  outline: none;
-  width: 100%;
-}
-
-.input::placeholder {
-  color: var(--color-muted);
-  opacity: 0.7;
-}
-
-.input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(116, 95, 253, 0.12);
-}
-
-.input:focus-visible {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(116, 95, 253, 0.12);
-}
-
 /* ─── Error message ──────────────────────────────────────────────────── */
 .error {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.5rem;
   padding: 0.75rem 1rem;
   background-color: rgba(192, 57, 43, 0.07);
   border: 1px solid rgba(192, 57, 43, 0.18);
@@ -130,39 +81,125 @@
   color: var(--color-destructive);
   font-size: 0.875rem;
   line-height: 1.5;
+  margin-bottom: 1.25rem;
 }
 
-/* ─── Submit button ──────────────────────────────────────────────────── */
-.button {
+/* ─── Google button ──────────────────────────────────────────────────── */
+.googleBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  width: 100%;
   padding: 0.8125rem 1.5rem;
+  background-color: #ffffff;
+  color: #3c4043;
+  border: 1.5px solid #dadce0;
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, background-color 0.15s ease;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+}
+
+.googleBtn:hover {
+  background-color: #f8f9fa;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+
+.googleBtn:active {
+  background-color: #f1f3f4;
+}
+
+/* ─── Divider ────────────────────────────────────────────────────────── */
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0 1.25rem;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+/* ─── Email/password form ────────────────────────────────────────────── */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.input {
+  width: 100%;
+  padding: 0.625rem 0.875rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-card);
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  border-color: var(--color-primary);
+}
+
+.input::placeholder {
+  color: var(--color-muted);
+}
+
+.formError {
+  font-size: 0.8125rem;
+  color: var(--color-destructive);
+  margin: 0;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
   background-color: var(--color-primary);
-  color: #ffffff;
+  color: #fff;
   border: none;
   border-radius: var(--radius-md);
   font-size: 0.9375rem;
   font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
-  transition: opacity 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
-  width: 100%;
-  margin-top: 0.375rem;
-  letter-spacing: -0.01em;
-  box-shadow: 0 2px 8px rgba(116, 95, 253, 0.25);
+  transition: opacity 0.15s ease;
+  margin-top: 0.25rem;
 }
 
-.button:hover:not(:disabled) {
+.submitBtn:hover {
   opacity: 0.9;
-  box-shadow: 0 4px 16px rgba(116, 95, 253, 0.35);
 }
 
-.button:active:not(:disabled) {
-  transform: scale(0.99);
-  box-shadow: 0 1px 4px rgba(116, 95, 253, 0.2);
-}
-
-.button:disabled {
-  opacity: 0.55;
+.submitBtn:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
 /* ─── Footer ─────────────────────────────────────────────────────────── */

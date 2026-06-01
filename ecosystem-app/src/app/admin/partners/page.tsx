@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { fetchAllPartners, fetchAllUsers } from '@/lib/partners'
+import { fetchPartnerUsers } from '@/lib/partners'
 import AppShell from '@/app/_components/AppShell'
 import PartnerTable from './_components/PartnerTable'
 
@@ -18,14 +18,11 @@ export default async function PartnersPage() {
   const role = userData?.role
   if (!role || !['founder', 'admin'].includes(role)) redirect('/dashboard')
 
-  const [partners, users] = await Promise.all([
-    fetchAllPartners(),
-    fetchAllUsers(),
-  ])
+  const partnerUsers = await fetchPartnerUsers()
 
   return (
     <AppShell user={userData ?? { name: user.email, role: 'admin', email: user.email }}>
-      <PartnerTable partners={partners} users={users} />
+      <PartnerTable partnerUsers={partnerUsers} />
     </AppShell>
   )
 }

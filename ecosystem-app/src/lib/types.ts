@@ -74,8 +74,9 @@ export type FranchisePartner = {
   contact_name: string
   contact_email: string
   agreement_type: string
-  fixed_fee: number
-  fee_split_pct: number
+  transaction_fee_split_pct: number
+  success_fee_split_pct: number
+  contract_link: string | null
 }
 
 export type UserRow = {
@@ -84,6 +85,24 @@ export type UserRow = {
   role: 'founder' | 'admin' | 'associate' | 'franchise_partner'
   name: string
   franchise_partner_id: string | null
+}
+
+export type ApprovedUser = {
+  email: string
+  name: string
+  role: 'founder' | 'admin' | 'associate' | 'franchise_partner'
+  added_at: string
+  userId: string | null
+  hasLoggedIn: boolean
+}
+
+export type PartnerUser = {
+  id: string
+  email: string
+  name: string
+  role: 'franchise_partner'
+  franchise_partner_id: string | null
+  franchise_partners: FranchisePartner | null
 }
 
 export type DealNote = {

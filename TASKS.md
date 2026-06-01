@@ -1,5 +1,5 @@
 # ESV Ecosystem — Build Tasks
-> Last updated: 2026-05-26. Phases 1–11, 13–14 complete.
+> Last updated: 2026-05-27. Phases 1–11, 13–14 complete. Audited against actual codebase.
 
 ---
 
@@ -136,6 +136,35 @@
 - [ ] Debounced client-side search against locally fetched data (no extra DB round trips on free tier)
 - [ ] Wiki search — filters `lib/wiki.ts` content by heading + body text, opens WikiPanel to matching section
 
+### Phase 19 — Smart Matching (DB-01 to DB-12)
+- [ ] **Entity tagging** — extend `investors` table with tag columns: sector[], stage_pref[], revenue_model[], thesis_keywords[], relationship_status (Warm/Lukewarm/Cold), past_co_investment bool
+- [ ] **Deal tagging** — add tag columns to `deals`: sector_tags[], stage_tags[], revenue_model[], thesis_keywords[]
+- [ ] **pgvector extension** — enable in Supabase; add `thesis_embedding vector(1536)` to investors; generate embeddings via Edge Function on create/update
+- [ ] **Match Edge Function** — fires on deal reaching 'Mandate Accepted'; weighted tag overlap scoring + Claude API final ranking; stores result as `cached_match_results JSONB` on deal record
+- [ ] **Match results UI** — 3-tab panel on Fund Outreach screen: Investors / Co-investors / Partnerships; shows match score, relationship status, contact; filter by sector/stage/relationship/geography
+- [ ] **One-click add to outreach** — from match results → adds to `fund_outreach` with status 'Pending'
+- [ ] **Entity history tab** — on investor record, show all deals outreached + status + outcome
+- [ ] **Bulk CSV import** — for investors entity type; field mapping + duplicate detection on name + email
+
+### Phase 20 — Microtools
+- [ ] **MT-1: Call Note Structurer** — 'Structure my notes' button on Notes tab; raw text input (50–10,000 chars) → Claude API (claude-sonnet-4-6) → 6-section structured output preview → save as timestamped note; option to keep/discard raw input
+- [ ] **MT-2: Pitch Deck Ingestion Engine** — 'Import from pitch deck' button on Memo tab; PDF upload (25MB max) → Claude API vision extraction → 10 fields mapped to memo sections; side-by-side review with per-field accept/edit/reject; 'Not found in deck' tag for missing sections; < 30s processing target
+- [ ] **MT-3: CCPS Deal Structure Calculator** — floating panel (pinnable, accessible from deal record + global shortcut); instruments: CCPS / SAFE / Convertible / Equity; real-time recalculation (< 100ms) of cap table, dilution %, exit waterfall at 3 exit values; save named scenarios to deal record; PDF export; side-by-side scenario comparison (up to 3)
+- [ ] **MT-4: In-App Messaging** — DM threads between internal users (Supabase Realtime); deal Comments tab (threaded, internal-only); @user mentions with in-app + email notification; @deal-name clickable references; unified unread inbox in nav; file attachments up to 10MB
+
+### Phase 21 — DPDP Compliance (India)
+- [ ] **Consent capture** — checkbox + plain-language notice on JotForm (DPDP-01); consent prompt on investor record creation (DPDP-02); immutable `consent_log` table (timestamp, principal ID, IP — no DELETE/UPDATE)
+- [ ] **Privacy notice** — accessible from login page, JotForm footer, and Settings > Privacy (DPDP-03)
+- [ ] **In-app policy pages** — Settings > Privacy > Privacy Policy (DPDP-04) and Data Handling Policy (DPDP-05); version-controlled, date-stamped
+- [ ] **Right to access form** — Settings > Privacy > Request My Data; logged with timestamp; 30-day SLA (DPDP-06)
+- [ ] **Right to correction form** — Settings > Privacy > Correct My Data; 14-day SLA (DPDP-07)
+- [ ] **Right to erasure form** — Settings > Privacy > Delete My Data; 30-day SLA; lawful-hold check (DPDP-08)
+- [ ] **Consent withdrawal** — triggers erasure workflow unless lawful retention basis exists (DPDP-09)
+- [ ] **Auto-deletion cron job** — monthly Supabase cron; identifies records past retention period; sends 48-hour notice; deletes + logs (DPDP-10)
+- [ ] **Breach notification workflow** — Admin-triggered from Admin Panel; generates plain-language notice to affected principals; 72-hour Board report template (DPDP-11)
+- [ ] **Grievance form** — Settings > Privacy > Submit Grievance; 90-day SLA tracked (DPDP-12)
+- [ ] **External privacy policy PDF** — linked from in-app and JotForm (DPDP-15)
+
 ---
 
 ## ⏸ Deferred to v2
@@ -148,6 +177,7 @@
 - Full WCAG 2.1 AA audit
 - Social media API integrations
 - WhatsApp/Twilio notifications
+- HR Tool microtool (MT-5) — travel reimbursements, expense claims, leave tracking, employee document vault
 
 ---
 

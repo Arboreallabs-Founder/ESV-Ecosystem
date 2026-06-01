@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { fetchAllUsers } from '@/lib/partners'
+import { fetchApprovedUsers } from '@/lib/partners'
 import AppShell from '@/app/_components/AppShell'
 import UsersTable from './_components/UsersTable'
 
@@ -15,13 +15,13 @@ export default async function AdminUsersPage() {
     .eq('id', user.id)
     .single()
 
-  if (userData?.role !== 'admin') redirect('/dashboard')
+  if (!userData || !['founder', 'admin'].includes(userData.role)) redirect('/dashboard')
 
-  const users = await fetchAllUsers()
+  const approvedUsers = await fetchApprovedUsers()
 
   return (
     <AppShell user={userData ?? { name: user.email, role: 'admin', email: user.email }}>
-      <UsersTable users={users} currentUserId={user.id} />
+      <UsersTable approvedUsers={approvedUsers} currentUserEmail={user.email ?? ''} />
     </AppShell>
   )
 }

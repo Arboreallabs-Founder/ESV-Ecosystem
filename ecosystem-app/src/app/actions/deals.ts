@@ -43,9 +43,7 @@ export async function createDeal(formData: FormData, force = false): Promise<{ d
     to_stage: 'New Lead',
     changed_by: user.id,
   })
-
-  revalidatePath('/pipeline')
-  revalidatePath('/dashboard')
+  // No revalidatePath — router.refresh() in KanbanBoard.handleModalClose handles the UI.
 }
 
 export async function moveDeal(dealId: string, toStage: DealStage, fromStage: DealStage) {
@@ -77,8 +75,7 @@ export async function addNote(dealId: string, content: string) {
     content,
     created_by: user.id,
   })
-
-  revalidatePath(`/pipeline/${dealId}`)
+  // No revalidatePath — router.refresh() in DealDetailClient handles the UI.
 }
 
 export async function submitPartnerDeal(formData: FormData, franchisePartnerId: string) {
@@ -107,6 +104,5 @@ export async function submitPartnerDeal(formData: FormData, franchisePartnerId: 
     to_stage: 'New Lead',
     changed_by: user.id,
   })
-
-  revalidatePath('/portal')
+  // No revalidatePath — router.refresh() in PortalClient handles the UI.
 }

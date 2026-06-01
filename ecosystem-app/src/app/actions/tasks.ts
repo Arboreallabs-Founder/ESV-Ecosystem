@@ -20,8 +20,7 @@ export async function createTask(formData: FormData) {
   })
 
   if (error) throw error
-  revalidatePath('/tasks')
-  revalidatePath('/dashboard')
+  // No revalidatePath — router.refresh() in TaskBoard handles the UI.
 }
 
 export async function updateTaskStatus(taskId: string, status: string) {

@@ -1,8 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-// Routes accessible without auth
-const PUBLIC_ROUTES = ['/login', '/privacy', '/terms']
+const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth']
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
@@ -28,35 +27,35 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
+  const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
   const isPublicRoute = PUBLIC_ROUTES.some((r) => pathname.startsWith(r))
 
-  // Unauthenticated → redirect to login
+  // Unauthenticated → login
   if (!user && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Authenticated user on login page → redirect to their section
-  if (user && (pathname === '/login' || pathname === '/')) {
-    const { data: userData } = await supabase
+  if (user && !isPublicRoute) {
+    const { data: publicUser } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single()
 
-    const role = userData?.role ?? 'associate'
-    const destination =
-      role === 'franchise_partner'
-        ? '/portal'
-        : role === 'associate'
-          ? '/pipeline'
-          : '/dashboard'
+    // Authenticated but not in approved_emails → sign out
+    if (!publicUser) {
+      return NextResponse.redirect(new URL('/auth/denied', request.url))
+    }
 
-    return NextResponse.redirect(new URL(destination, request.url))
+    // On login or root → redirect to role home
+    if (pathname === '/login' || pathname === '/') {
+      const destination =
+        publicUser.role === 'franchise_partner' ? '/portal'
+        : publicUser.role === 'associate' ? '/pipeline'
+        : '/dashboard'
+      return NextResponse.redirect(new URL(destination, request.url))
+    }
   }
 
   return response

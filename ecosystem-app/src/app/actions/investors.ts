@@ -19,7 +19,7 @@ export async function createInvestor(formData: FormData) {
   })
 
   if (error) throw error
-  revalidatePath('/investors')
+  // No revalidatePath — router.refresh() in InvestorTable handles the UI.
 }
 
 export async function addOutreach(dealId: string, investorId: string) {
@@ -36,7 +36,7 @@ export async function addOutreach(dealId: string, investorId: string) {
   }, { onConflict: 'deal_id,investor_id' })
 
   if (error) throw error
-  revalidatePath(`/pipeline/${dealId}`)
+  // No revalidatePath — router.refresh() in DealDetailClient handles the UI.
 }
 
 export async function updateOutreachStatus(outreachId: string, status: string, dealId: string) {
