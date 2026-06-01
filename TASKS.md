@@ -1,5 +1,5 @@
 # ESV Ecosystem — Build Tasks
-> Last updated: 2026-05-27. Phases 1–11, 13–14 complete. Audited against actual codebase.
+> Last updated: 2026-06-01. Phases 1–11, 13–14, 16 complete. Audited against actual codebase.
 
 ---
 
@@ -45,9 +45,11 @@
 - [x] Dashboard: Open Tasks stat card wired to live DB count
 
 ### Phase 13 — Admin Panel
-- [x] User management page (`/admin/users`) — all users with inline role change
-- [x] `updateUserRole` server action with caller role check
-- [x] Create Account button → calls `create-user` edge function (email, name, role, temp password)
+- [x] User management page (`/admin/users`) — approved users table with Active/Pending status badges
+- [x] Add Approved User modal — email, name, role, optional password (calls `create-user` edge function)
+- [x] Edit user modal — update name + role across `approved_emails` + `public.users`
+- [x] Revoke access — removes from allowlist, deletes `franchise_partners` record, deletes `public.users`, calls `delete-user` edge function
+- [x] `addApprovedUser` / `updateApprovedUser` / `revokeUser` server actions with founder/admin guard
 
 ### Phase 14 — Navigation & Shell
 - [x] SaaS-style sidebar with icons replacing top nav
@@ -68,13 +70,29 @@
 
 ### Auth & Accounts
 - [x] Password change modal in sidebar footer (`supabase.auth.updateUser`)
-- [x] Admin accounts created: sakshay@earlyseedventures.com + siddhant@earlyseedventures.com (role: admin, pw: `EarlyS33d!`)
-- [x] `create-user` Supabase Edge Function deployed
+- [x] `create-user` + `delete-user` Supabase Edge Functions deployed
+- [x] `users` table FK to `auth.users` changed to `ON DELETE CASCADE`
 
 ### Partner Fee Structure
-- [x] `fixed_fee` column added to `franchise_partners` (flat ₹ per closed deal)
-- [x] `partner_fixed_fee` column on `deals` (deal-level override)
-- [x] Add Partner form updated with Fixed Fee + Variable Split % fields
+- [x] `transaction_fee_split_pct` + `success_fee_split_pct` columns on `franchise_partners` (% splits, replacing old fixed_fee/fee_split_pct)
+- [x] `contract_link` column on `franchise_partners` (URL to partner contract document)
+- [x] Partners page (`/admin/partners`) — shows all approved partner users; Fill in Details / Edit modals
+- [x] Partner record auto-deleted when user is revoked from User Management
+
+### Phase 16 — Google Auth (pre-approved emails only)
+- [x] Google OAuth provider enabled in Supabase (Client ID + Secret configured)
+- [x] Google Cloud Console OAuth credentials with Supabase redirect URI
+- [x] "Continue with Google" button on login page (primary sign-in method)
+- [x] Email/password login as secondary option (for pre-approved users with passwords set)
+- [x] `approved_emails` table — `(email PK, name, role, added_by, added_at)`; RLS for founder/admin only
+- [x] `handle_new_user()` DB trigger — checks `approved_emails` on signup; creates `public.users` with correct name + role; blocks unapproved accounts
+- [x] `/auth/callback` route — exchanges OAuth code for session; redirects unapproved accounts to `/login?error=not_approved`
+- [x] `/auth/denied` route — server-side sign-out + redirect to login with error
+- [x] Middleware enforces approved-user check on all protected routes
+- [x] `fetchAllUsers` / `fetchPartnerUsers` / `fetchApprovedUsers` all cross-check `approved_emails` (orphaned `public.users` rows filtered out)
+
+### Code Quality
+- [x] Standardised `revalidatePath` removal — server actions called from modals do not call `revalidatePath`; components call `router.refresh()` after the action instead. Inline optimistic-update actions (`moveDeal`, `updateTaskStatus`, `updateOutreachStatus`) retain `revalidatePath`.
 
 ---
 
@@ -102,16 +120,6 @@
   - Maps JotForm fields → deal fields
   - Creates deal at stage 'JotForm Received'
   - Inserts stage history entry
-
-### Phase 16 — Google Auth (pre-approved emails only)
-- [ ] Enable Google OAuth provider in Supabase dashboard (Authentication → Providers → Google)
-- [ ] Add Google Client ID + Secret from Google Cloud Console to Supabase
-- [ ] Add "Continue with Google" button on login page (alongside email/password)
-- [ ] **Email allowlist** — on sign-in, check `public.approved_emails` table; if email not in list, sign out and show "Access denied" message
-  - Migration: create `approved_emails` table (email TEXT PRIMARY KEY, added_by TEXT, added_at TIMESTAMPTZ)
-  - Pre-populate with: `@earlyseedventures.com` domain entries + any @earlyseed.vc addresses
-  - Admin UI: manage approved emails list
-- [ ] Supabase hook or DB trigger to enforce allowlist on `auth.users` insert
 
 ### Phase 17 — Wiki Integration with App Components
 - [ ] Wire `<WikiButton sectionKey="..." />` into every page header:
@@ -184,5 +192,5 @@
 ## Infrastructure
 - Dev server: `http://localhost:3000`
 - Supabase project: `hsabrzwsetjeaqutjrjb` (ap-south-1)
-- Test logins: founder/admin/associate/partner @earlyseed.vc — all password `password123`
-- Admin logins: sakshay@earlyseedventures.com + siddhant@earlyseedventures.com — password `EarlyS33d!`
+- Sign-in: Google OAuth (primary) or email/password (secondary, requires password set in User Management)
+- Active accounts managed via User Management (`/admin/users`) → `approved_emails` table
