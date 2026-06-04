@@ -43,8 +43,8 @@ export default function ChangePasswordModal({ onClose }: { onClose: () => void }
   }
 
   return (
-    <div style={overlayStyle} onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div style={modalStyle}>
+    <div style={overlayStyle} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={modalStyle} onMouseDown={(e) => e.stopPropagation()}>
         <div style={{ fontSize: '1.125rem', fontWeight: 700, color: 'var(--color-text)', marginBottom: '1.5rem' }}>
           Change Password
         </div>

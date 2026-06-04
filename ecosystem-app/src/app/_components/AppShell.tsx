@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { WikiSidebarButton } from '@/app/_components/WikiPanel'
 import ChangePasswordModal from '@/app/_components/ChangePasswordModal'
+import { useTheme } from '@/app/_components/ThemeProvider'
 import styles from '@/app/app-shell.module.css'
 
 type UserRow = { name: string | null; role: string | null; email: string | null }
@@ -40,10 +41,16 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Icon d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />,
   },
   {
-    href: '/pipeline',
-    label: 'Pipeline',
+    href: '/pipelines',
+    label: 'Pipelines',
     roles: ['founder', 'admin', 'associate'],
-    icon: <Icon d="M9 4.5v15m6-15v15m-10.875 0h15.75c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H4.125C3.504 4.5 3 5.004 3 5.625v12.75c0 .621.504 1.125 1.125 1.125Z" />,
+    icon: <Icon d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h6v6h-6zM9 6h6M6 9v6M18 9v6" />,
+  },
+  {
+    href: '/forms',
+    label: 'Forms',
+    roles: ['founder', 'admin', 'associate'],
+    icon: <Icon d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />,
   },
   {
     href: '/tasks',
@@ -92,6 +99,7 @@ export default function AppShell({
   const router = useRouter()
   const pathname = usePathname()
   const [showPwModal, setShowPwModal] = useState(false)
+  const { theme, toggle: toggleTheme } = useTheme()
   const role = user.role ?? 'associate'
   const displayName = user.name ?? user.email ?? 'User'
   const initials = displayName.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
@@ -162,13 +170,23 @@ export default function AppShell({
               </div>
             </div>
           </div>
-          <button
-            className={styles.signOutBtn}
-            onClick={() => setShowPwModal(true)}
-            style={{ marginBottom: '0.375rem' }}
-          >
-            Change Password
-          </button>
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              className={styles.signOutBtn}
+              onClick={() => setShowPwModal(true)}
+              style={{ flex: 1 }}
+            >
+              Change Password
+            </button>
+            <button
+              className={styles.signOutBtn}
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              style={{ width: 36, padding: 0, flexShrink: 0, fontSize: '1rem' }}
+            >
+              {theme === 'dark' ? '☀' : '🌙'}
+            </button>
+          </div>
           <button className={styles.signOutBtn} onClick={handleSignOut}>Sign out</button>
         </div>
       </aside>

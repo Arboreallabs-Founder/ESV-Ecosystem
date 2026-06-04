@@ -1,0 +1,180 @@
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import type { FormNode, FormEdge } from '@/lib/types'
+
+async function requireAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
+  if (!data || !['founder', 'admin'].includes(data.role)) throw new Error('Forbidden')
+  return { supabase, userId: user.id }
+}
+
+async function requireAuth() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  return { supabase, userId: user.id }
+}
+
+export async function createForm(title: string, description: string, pipelineId: string | null) {
+  const { supabase, userId } = await requireAdmin()
+  const { data: form, error } = await supabase
+    .from('forms')
+    .insert({
+      title: title.trim(),
+      description: description.trim() || null,
+      pipeline_id: pipelineId || null,
+      created_by: userId,
+    })
+    .select('id')
+    .single()
+  if (error) throw error
+
+  // Seed with start + two end nodes (success + rejected)
+  await supabase
+    .from('form_nodes')
+    .insert({ form_id: form.id, type: 'start', position_x: 300, position_y: 50 })
+  await supabase
+    .from('form_nodes')
+    .insert({ form_id: form.id, type: 'end', subtype: 'success', position_x: 150, position_y: 500 })
+  await supabase
+    .from('form_nodes')
+    .insert({ form_id: form.id, type: 'end', subtype: 'rejected', position_x: 450, position_y: 500 })
+
+  return form.id
+}
+
+export async function updateFormMeta(formId: string, title: string, description: string, pipelineId: string | null) {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase
+    .from('forms')
+    .update({ title: title.trim(), description: description.trim() || null, pipeline_id: pipelineId || null })
+    .eq('id', formId)
+  if (error) throw error
+}
+
+export async function saveFormGraph(
+  formId: string,
+  nodes: Array<{
+    id: string
+    type: 'start' | 'end' | 'question'
+    subtype: 'success' | 'rejected' | null
+    position_x: number
+    position_y: number
+    question_text: string | null
+    answer_type: 'short_text' | 'long_text' | 'mcq' | null
+    options: Array<{ id: string; label: string; position: number }>
+  }>,
+  edges: Array<{
+    id: string
+    source_node_id: string
+    target_node_id: string
+    condition_value: string | null
+    condition_label: string | null
+  }>,
+) {
+  const { supabase } = await requireAdmin()
+
+  // Replace all nodes, edges, and options: delete edges and nodes (CASCADE deletes options)
+  await supabase.from('form_edges').delete().eq('form_id', formId)
+  await supabase.from('form_nodes').delete().eq('form_id', formId)
+
+  if (nodes.length > 0) {
+    const { error: nodeErr } = await supabase.from('form_nodes').insert(
+      nodes.map(n => ({
+        id: n.id,
+        form_id: formId,
+        type: n.type,
+        subtype: n.subtype ?? null,
+        position_x: n.position_x,
+        position_y: n.position_y,
+        question_text: n.question_text,
+        answer_type: n.answer_type,
+      }))
+    )
+    if (nodeErr) throw nodeErr
+
+    const allOptions = nodes.flatMap(n => n.options.map(o => ({ id: o.id, node_id: n.id, label: o.label, position: o.position })))
+    if (allOptions.length > 0) {
+      await supabase.from('form_node_options').insert(allOptions)
+    }
+  }
+
+  if (edges.length > 0) {
+    const { error: edgeErr } = await supabase.from('form_edges').insert(
+      edges.map(e => ({ id: e.id, form_id: formId, source_node_id: e.source_node_id, target_node_id: e.target_node_id, condition_value: e.condition_value, condition_label: e.condition_label }))
+    )
+    if (edgeErr) throw edgeErr
+  }
+}
+
+export async function publishForm(formId: string, published: boolean) {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase.from('forms').update({ published }).eq('id', formId)
+  if (error) throw error
+}
+
+export async function generateFormLink(formId: string, label: string) {
+  const { supabase, userId } = await requireAuth()
+  const { data, error } = await supabase
+    .from('form_links')
+    .insert({ form_id: formId, created_by: userId, label: label.trim() || null })
+    .select('id, token')
+    .single()
+  if (error) throw error
+  const { data: userRow } = await supabase.from('users').select('name').eq('id', userId).single()
+  return { token: data.token, id: data.id, creatorName: userRow?.name ?? null }
+}
+
+export async function deleteForm(formId: string) {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase.from('forms').delete().eq('id', formId)
+  if (error) throw error
+}
+
+export async function linkFormToPipeline(formId: string, pipelineId: string | null) {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase.from('forms').update({ pipeline_id: pipelineId }).eq('id', formId)
+  if (error) throw error
+}
+
+// Public submission — called from /f/[token] page (no auth required)
+export async function submitForm(
+  linkId: string,
+  formId: string,
+  pipelineId: string | null,
+  firstStageId: string | null,
+  answers: Array<{ node_id: string; answer_text: string }>,
+  submitterName: string,
+  submitterEmail: string,
+) {
+  const supabase = await createClient() // runs as anon role
+
+  if (!pipelineId) return // form not linked to a pipeline — nothing to record
+
+  const title = answers[0]?.answer_text?.slice(0, 120) || 'Form submission'
+
+  const { data: entry, error: entryErr } = await supabase
+    .from('pipeline_entries')
+    .insert({
+      pipeline_id: pipelineId,
+      form_id: formId,
+      form_link_id: linkId,
+      stage_id: firstStageId,
+      title,
+      submitter_name: submitterName || null,
+      submitter_email: submitterEmail || null,
+    })
+    .select('id')
+    .single()
+  if (entryErr) throw entryErr
+
+  if (answers.length > 0) {
+    await supabase.from('pipeline_entry_answers').insert(
+      answers.map(a => ({ entry_id: entry.id, node_id: a.node_id, answer_text: a.answer_text }))
+    )
+  }
+}

@@ -14,10 +14,23 @@
       "Bash(claude plugin *)",
       "Bash(claude mcp *)",
       "Bash(Get-Content \"C:\\\\Users\\\\Siddhant.Baliga\\\\.claude.json\")",
-      "Bash(Select-String -Pattern \"supabase\" -Context 5)"
+      "Bash(Select-String -Pattern \"supabase\" -Context 5)",
+      "Bash(git push *)",
+      "Bash(grep -Hm1 ^description: 'c:\\\\Users\\\\Siddhant.Baliga\\\\.gemini\\\\antigravity\\\\scratch\\\\ESV APP Ecosystem/.claude/skills/*/SKILL.md')",
+      "Bash(echo \"no skills found\")",
+      "Bash(npm run *)",
+      "mcp__supabase__apply_migration",
+      "Bash(npm install *)",
+      "Bash(node -e \"require\\('@xyflow/react'\\)\")",
+      "Bash(mkdir -p \"c:\\\\Users\\\\Siddhant.Baliga\\\\.gemini\\\\antigravity\\\\scratch\\\\ESV APP Ecosystem\\\\ecosystem-app\\\\src\\\\app\\\\pipelines\\\\_components\" && mkdir -p \"c:\\\\Users\\\\Siddhant.Baliga\\\\.gemini\\\\antigravity\\\\scratch\\\\ESV APP Ecosystem\\\\ecosystem-app\\\\src\\\\app\\\\pipelines\\\\[id]\")",
+      "Bash(mkdir -p \"c:\\\\Users\\\\Siddhant.Baliga\\\\.gemini\\\\antigravity\\\\scratch\\\\ESV APP Ecosystem\\\\ecosystem-app\\\\src\\\\app\\\\forms\\\\[id]\\\\builder\\\\_components\")",
+      "Bash(mkdir -p \"c:\\\\Users\\\\Siddhant.Baliga\\\\.gemini\\\\antigravity\\\\scratch\\\\ESV APP Ecosystem\\\\ecosystem-app\\\\src\\\\app\\\\f\\\\[token]\")",
+      "Bash(npx tsc *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3000/pipelines)"
     ],
     "additionalDirectories": [
-      "c:\\Users\\Siddhant.Baliga\\.claude\\projects\\c--Users-Siddhant-Baliga--gemini-antigravity-scratch-ESV-APP-Ecosystem\\memory"
+      "c:\\Users\\Siddhant.Baliga\\.claude\\projects\\c--Users-Siddhant-Baliga--gemini-antigravity-scratch-ESV-APP-Ecosystem\\memory",
+      "c:\\Users\\Siddhant.Baliga\\.gemini\\antigravity\\scratch\\ESV APP Ecosystem\\ecosystem-app\\src\\app\\pipelines"
     ]
   }
 }

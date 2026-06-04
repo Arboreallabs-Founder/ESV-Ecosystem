@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { fetchAllTasks } from '@/lib/tasks'
-import { fetchAllDeals } from '@/lib/deals'
 import { fetchAllUsers } from '@/lib/partners'
 import AppShell from '@/app/_components/AppShell'
 import TaskBoard from './_components/TaskBoard'
@@ -19,9 +18,8 @@ export default async function TasksPage() {
 
   if (userData?.role === 'franchise_partner') redirect('/portal')
 
-  const [tasks, deals, users] = await Promise.all([
+  const [tasks, users] = await Promise.all([
     fetchAllTasks(),
-    fetchAllDeals(),
     fetchAllUsers(),
   ])
 
@@ -29,7 +27,6 @@ export default async function TasksPage() {
     <AppShell user={userData ?? { name: user.email, role: 'associate', email: user.email }}>
       <TaskBoard
         tasks={tasks}
-        deals={deals}
         users={users}
         currentUserId={user.id}
         userRole={userData?.role ?? 'associate'}

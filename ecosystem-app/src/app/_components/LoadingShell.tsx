@@ -14,7 +14,7 @@ export default function LoadingShell({ children }: { children?: React.ReactNode 
       </div>
 
       {/* Main content */}
-      <div style={{ flex: 1, padding: '2rem 2.25rem', minWidth: 0 }}>
+      <div style={{ flex: 1, padding: '2.5rem 2.5rem', minWidth: 0 }}>
         <div className="skeleton" style={{ width: 200, height: 28, marginBottom: '0.5rem' }} />
         <div className="skeleton" style={{ width: 300, height: 14, marginBottom: '2rem' }} />
         {children}

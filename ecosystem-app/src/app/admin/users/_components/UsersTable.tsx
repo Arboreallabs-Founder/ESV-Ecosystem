@@ -138,11 +138,11 @@ export default function UsersTable({
         </button>
       </div>
 
+      {users.length === 0 ? (
+        <div className={styles.empty}>No approved users yet. Add one to get started.</div>
+      ) : (
       <div className={styles.tableWrap}>
-        {users.length === 0 ? (
-          <div className={styles.empty}>No approved users yet. Add one to get started.</div>
-        ) : (
-          <table className={styles.table}>
+        <table className={styles.table}>
             <thead>
               <tr>
                 <th>Name</th>
@@ -224,13 +224,13 @@ export default function UsersTable({
               ))}
             </tbody>
           </table>
-        )}
       </div>
+      )}
 
       {/* Add modal */}
       {showAdd && (
-        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && setShowAdd(false)}>
-          <div className={styles.modal}>
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setShowAdd(false)}>
+          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
             <div className={styles.modalTitle}>Add Approved User</div>
             <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginTop: '-1rem', marginBottom: '1.5rem', lineHeight: 1.5 }}>
               This person will be able to sign in with their Google account once added.
@@ -275,8 +275,8 @@ export default function UsersTable({
 
       {/* Edit modal */}
       {editTarget && (
-        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && setEditTarget(null)}>
-          <div className={styles.modal}>
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setEditTarget(null)}>
+          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
             <div className={styles.modalTitle}>Edit User</div>
             <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginTop: '-1rem', marginBottom: '1.5rem' }}>
               {editTarget.email}
@@ -309,8 +309,8 @@ export default function UsersTable({
 
       {/* Revoke modal */}
       {revokeTarget && (
-        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && setRevokeTarget(null)}>
-          <div className={styles.modal}>
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setRevokeTarget(null)}>
+          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
             <div className={styles.modalTitle}>Revoke Access</div>
             <p style={{ fontSize: '0.9375rem', color: 'var(--color-text)', marginBottom: '0.5rem' }}>
               Remove <strong>{revokeTarget.name || revokeTarget.email}</strong> from the approved list?

@@ -1,9 +1,9 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
-import { fetchDashboardStats } from '@/lib/deals'
 import { fetchOpenTaskCount } from '@/lib/tasks'
 import AppShell from '@/app/_components/AppShell'
+import styles from './dashboard.module.css'
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString('en-IN', {
@@ -11,12 +11,39 @@ function formatDateTime(iso: string) {
   })
 }
 
-const STAT_CARDS = [
-  { key: 'activeDeals', label: 'Active Deals', desc: 'Not yet closed' },
-  { key: 'inMandate', label: 'In Mandate', desc: 'Mandate accepted' },
-  { key: 'closedTotal', label: 'Total Closed', desc: 'Success + dead' },
-  { key: 'openTasks', label: 'Open Tasks', desc: 'To Do + In Progress' },
-]
+async function fetchDashboardData() {
+  const supabase = await createClient()
+  const [
+    { count: pipelineCount },
+    { count: entryCount },
+    { count: formCount },
+    { data: recentEntries },
+  ] = await Promise.all([
+    supabase.from('pipelines').select('*', { count: 'exact', head: true }),
+    supabase.from('pipeline_entries').select('*', { count: 'exact', head: true }),
+    supabase.from('forms').select('*', { count: 'exact', head: true }),
+    supabase
+      .from('pipeline_entries')
+      .select('id, title, submitter_name, submitter_email, submitted_at, form:forms(title), pipeline:pipelines(name)')
+      .order('submitted_at', { ascending: false })
+      .limit(8),
+  ])
+
+  return {
+    pipelineCount: pipelineCount ?? 0,
+    entryCount: entryCount ?? 0,
+    formCount: formCount ?? 0,
+    recentEntries: (recentEntries ?? []) as unknown as Array<{
+      id: string
+      title: string | null
+      submitter_name: string | null
+      submitter_email: string | null
+      submitted_at: string
+      form: { title: string } | null
+      pipeline: { name: string } | null
+    }>,
+  }
+}
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -30,145 +57,81 @@ export default async function DashboardPage() {
     .single()
 
   const role = userData?.role
-  if (role === 'associate') redirect('/pipeline')
+  if (role === 'associate') redirect('/pipelines')
   if (role === 'franchise_partner') redirect('/portal')
 
-  const [stats, openTasks] = await Promise.all([
-    fetchDashboardStats(),
-    fetchOpenTaskCount(),
-  ])
+  const [data, openTasks] = await Promise.all([fetchDashboardData(), fetchOpenTaskCount()])
 
-  const statValues: Record<string, number> = {
-    activeDeals: stats.activeDeals,
-    inMandate: stats.inMandate,
-    closedTotal: stats.closedTotal,
-    openTasks,
-  }
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  const firstName = userData?.name?.split(' ')[0] ?? ''
+
+  const stats = [
+    { label: 'Pipelines',   value: data.pipelineCount, desc: 'Active pipelines',     href: '/pipelines' },
+    { label: 'Submissions', value: data.entryCount,    desc: 'Total entries received', href: '/pipelines' },
+    { label: 'Forms',       value: data.formCount,     desc: 'Forms created',         href: '/forms' },
+    { label: 'Open Tasks',  value: openTasks,          desc: 'To Do + In Progress',   href: '/tasks' },
+  ]
+
+  const quickLinks = [
+    { href: '/pipelines', label: 'Pipelines', action: 'View all →' },
+    { href: '/forms',     label: 'Forms',     action: 'Build a form →' },
+    { href: '/tasks',     label: 'Tasks',     action: `${openTasks} open →` },
+  ]
 
   return (
     <AppShell user={userData ?? { name: user.email, role: 'founder', email: user.email }}>
-      <h1 style={{ fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.02em', marginBottom: '0.25rem' }}>
-        Good morning{userData?.name ? `, ${userData.name.split(' ')[0]}` : ''}.
-      </h1>
-      <p style={{ color: 'var(--color-muted)', marginBottom: '2rem', fontSize: '0.9rem' }}>
-        Here&apos;s what&apos;s happening across the pipeline today.
-      </p>
+      <h1 className={styles.greeting}>{greeting}{firstName ? `, ${firstName}` : ''}.</h1>
+      <p className={styles.greetingSub}>Here&apos;s an overview of your pipelines and submissions.</p>
 
-      {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-        {STAT_CARDS.map(({ key, label, desc }) => (
-          <div
-            key={key}
-            style={{
-              background: 'var(--color-card)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '1.25rem 1.5rem',
-              boxShadow: 'var(--shadow-card)',
-            }}
-          >
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)', fontWeight: 600, marginBottom: '0.375rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              {label}
-            </div>
-            <div style={{ fontSize: '2.25rem', fontWeight: 700, color: 'var(--color-text)', letterSpacing: '-0.03em', lineHeight: 1 }}>
-              {statValues[key]}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginTop: '0.375rem' }}>{desc}</div>
-          </div>
+      <div className={styles.statsGrid}>
+        {stats.map(({ label, value, desc, href }) => (
+          <Link key={label} href={href} className={styles.statCard}>
+            <div className={styles.statLabel}>{label}</div>
+            <div className={styles.statValue}>{value}</div>
+            <div className={styles.statDesc}>{desc}</div>
+          </Link>
         ))}
-
-        {/* Quick links */}
-        <Link
-          href="/pipeline"
-          style={{
-            background: 'rgba(116,95,253,0.08)',
-            border: '1.5px solid rgba(116,95,253,0.25)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '1.25rem 1.5rem',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            textDecoration: 'none',
-            transition: 'background 0.15s',
-          }}
-        >
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.375rem' }}>
-            Pipeline
-          </div>
-          <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-primary)' }}>View All Deals →</div>
-        </Link>
-        <Link
-          href="/tasks"
-          style={{
-            background: 'rgba(116,95,253,0.05)',
-            border: '1.5px solid rgba(116,95,253,0.15)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '1.25rem 1.5rem',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            textDecoration: 'none',
-            transition: 'background 0.15s',
-          }}
-        >
-          <div style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.375rem' }}>
-            Tasks
-          </div>
-          <div style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-primary)' }}>{openTasks} open →</div>
-        </Link>
       </div>
 
-      {/* Recent activity */}
-      <div
-        style={{
-          background: 'var(--color-card)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-lg)',
-          overflow: 'hidden',
-          boxShadow: 'var(--shadow-card)',
-        }}
-      >
-        <div style={{ padding: '1rem 1.5rem', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--color-text)' }}>Recent Activity</span>
-          <Link href="/pipeline" style={{ fontSize: '0.8125rem', color: 'var(--color-primary)', fontWeight: 500 }}>View pipeline →</Link>
+      <div className={styles.quickGrid}>
+        {quickLinks.map(({ href, label, action }) => (
+          <Link key={href} href={href} className={styles.quickCard}>
+            <div className={styles.quickLabel}>{label}</div>
+            <div className={styles.quickAction}>{action}</div>
+          </Link>
+        ))}
+      </div>
+
+      <div className={styles.activityCard}>
+        <div className={styles.activityHeader}>
+          <span className={styles.activityTitle}>Recent Submissions</span>
+          <Link href="/pipelines" className={styles.activityLink}>View pipelines →</Link>
         </div>
 
-        {stats.recentActivity.length === 0 ? (
-          <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--color-muted)', fontSize: '0.9rem' }}>
-            No activity yet. Create your first deal in the pipeline.
+        {data.recentEntries.length === 0 ? (
+          <div className={styles.activityEmpty}>
+            No submissions yet.{' '}
+            <Link href="/forms" style={{ color: 'var(--color-primary)', fontWeight: 500 }}>Create a form</Link>
+            {' '}and share it to start receiving entries.
           </div>
         ) : (
-          <div>
-            {stats.recentActivity.map((entry, i) => (
-              <div
-                key={entry.id}
-                style={{
-                  padding: '0.875rem 1.5rem',
-                  borderBottom: i < stats.recentActivity.length - 1 ? '1px solid var(--color-border)' : 'none',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '0.875rem',
-                }}
-              >
-                <div style={{
-                  width: 8, height: 8, borderRadius: '50%',
-                  background: 'var(--color-primary)', opacity: 0.6,
-                  marginTop: '0.4rem', flexShrink: 0,
-                }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--color-text)', fontWeight: 500 }}>
-                    <strong>{entry.deal?.company_name ?? 'Unknown deal'}</strong>
-                    {entry.from_stage
-                      ? ` moved to ${entry.to_stage}`
-                      : ` added at ${entry.to_stage}`}
-                  </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginTop: '0.2rem' }}>
-                    {entry.changer?.name ?? 'Unknown'} · {formatDateTime(entry.changed_at)}
-                  </div>
+          data.recentEntries.map((entry) => (
+            <div key={entry.id} className={styles.activityRow}>
+              <div className={styles.activityDot} />
+              <div>
+                <div className={styles.activityText}>
+                  <strong>{entry.title || 'Untitled submission'}</strong>
+                  {entry.pipeline && <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}> → {entry.pipeline.name}</span>}
+                </div>
+                <div className={styles.activityMeta}>
+                  {entry.submitter_name || entry.submitter_email || 'Anonymous'}
+                  {entry.form ? ` · via ${entry.form.title}` : ''}
+                  {' · '}{formatDateTime(entry.submitted_at)}
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))
         )}
       </div>
     </AppShell>

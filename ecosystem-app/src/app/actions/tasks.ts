@@ -12,7 +12,6 @@ export async function createTask(formData: FormData) {
     title: formData.get('title') as string,
     description: (formData.get('description') as string) || null,
     assignee_id: (formData.get('assignee_id') as string) || user.id,
-    deal_id: (formData.get('deal_id') as string) || null,
     due_date: (formData.get('due_date') as string) || null,
     priority: (formData.get('priority') as string) || 'Medium',
     status: 'To Do',

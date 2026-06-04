@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createTask, updateTaskStatus } from '@/app/actions/tasks'
-import type { Task, Deal, UserRow } from '@/lib/types'
+import type { Task, UserRow } from '@/lib/types'
 import styles from '../tasks.module.css'
 
 const STATUSES = ['To Do', 'In Progress', 'Done'] as const
@@ -24,13 +24,11 @@ function formatDue(dateStr: string) {
 
 export default function TaskBoard({
   tasks: initialTasks,
-  deals,
   users,
   currentUserId,
   userRole,
 }: {
   tasks: Task[]
-  deals: Deal[]
   users: UserRow[]
   currentUserId: string
   userRole: string
@@ -49,9 +47,7 @@ export default function TaskBoard({
 
   function handleStatusChange(taskId: string, newStatus: string) {
     setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t))
-    startTransition(async () => {
-      await updateTaskStatus(taskId, newStatus)
-    })
+    startTransition(async () => { await updateTaskStatus(taskId, newStatus) })
   }
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -104,9 +100,6 @@ export default function TaskBoard({
                         {task.assignee?.name && (
                           <span className={styles.metaTag}>{task.assignee.name}</span>
                         )}
-                        {task.deal?.company_name && (
-                          <span className={styles.metaTag}>{task.deal.company_name}</span>
-                        )}
                         {due && (
                           <span className={`${styles.metaTag} ${due.isOverdue ? styles.dueDateOverdue : styles.dueDate}`}>
                             {due.isOverdue ? '⚠ ' : ''}{due.label}
@@ -131,8 +124,8 @@ export default function TaskBoard({
       </div>
 
       {showModal && (
-        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
-          <div className={styles.modal}>
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setShowModal(false)}>
+          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
             <div className={styles.modalTitle}>New Task</div>
             <form onSubmit={handleSubmit}>
               <div className={`${styles.field} ${styles.fieldFull}`}>
@@ -150,8 +143,7 @@ export default function TaskBoard({
                     <option value="">Unassigned</option>
                     {users.map((u) => (
                       <option key={u.id} value={u.id}>
-                        {u.name || u.email}
-                        {u.id === currentUserId ? ' (me)' : ''}
+                        {u.name || u.email}{u.id === currentUserId ? ' (me)' : ''}
                       </option>
                     ))}
                   </select>
@@ -162,15 +154,6 @@ export default function TaskBoard({
                     <option value="Low">Low</option>
                     <option value="Medium">Medium</option>
                     <option value="High">High</option>
-                  </select>
-                </div>
-                <div className={styles.field}>
-                  <label className={styles.label}>Linked Deal</label>
-                  <select className={styles.select} name="deal_id">
-                    <option value="">None</option>
-                    {deals.map((d) => (
-                      <option key={d.id} value={d.id}>{d.company_name}</option>
-                    ))}
                   </select>
                 </div>
                 <div className={styles.field}>

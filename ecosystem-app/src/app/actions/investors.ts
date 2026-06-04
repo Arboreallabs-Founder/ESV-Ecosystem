@@ -1,6 +1,5 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 
 export async function createInvestor(formData: FormData) {
@@ -20,35 +19,4 @@ export async function createInvestor(formData: FormData) {
 
   if (error) throw error
   // No revalidatePath — router.refresh() in InvestorTable handles the UI.
-}
-
-export async function addOutreach(dealId: string, investorId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  const { error } = await supabase.from('fund_outreach').upsert({
-    deal_id: dealId,
-    investor_id: investorId,
-    status: 'Sent',
-    updated_by: user.id,
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'deal_id,investor_id' })
-
-  if (error) throw error
-  // No revalidatePath — router.refresh() in DealDetailClient handles the UI.
-}
-
-export async function updateOutreachStatus(outreachId: string, status: string, dealId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-
-  await supabase.from('fund_outreach').update({
-    status,
-    updated_by: user.id,
-    updated_at: new Date().toISOString(),
-  }).eq('id', outreachId)
-
-  revalidatePath(`/pipeline/${dealId}`)
 }

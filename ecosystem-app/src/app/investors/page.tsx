@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { fetchAllInvestors } from '@/lib/investors'
-import { fetchAllDeals } from '@/lib/deals'
 import AppShell from '@/app/_components/AppShell'
 import InvestorTable from './_components/InvestorTable'
 
@@ -18,16 +17,12 @@ export default async function InvestorsPage() {
 
   if (userData?.role === 'franchise_partner') redirect('/portal')
 
-  const [investors, deals] = await Promise.all([
-    fetchAllInvestors(),
-    fetchAllDeals(),
-  ])
+  const investors = await fetchAllInvestors()
 
   return (
     <AppShell user={userData ?? { name: user.email, role: 'associate', email: user.email }}>
       <InvestorTable
         investors={investors}
-        deals={deals}
         userRole={userData?.role ?? 'associate'}
       />
     </AppShell>

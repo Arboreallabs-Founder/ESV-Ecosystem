@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth']
+const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth', '/f/']
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
@@ -11,51 +11,43 @@ export async function proxy(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
+        getAll() { return request.cookies.getAll() },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          )
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
+          cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
         },
       },
     }
   )
 
-  const { data: { user } } = await supabase.auth.getUser()
+  // getSession() reads the cookie without a network round-trip (~1ms).
+  // Page-level code calls getUser() for authoritative validation.
+  const { data: { session } } = await supabase.auth.getSession()
   const pathname = request.nextUrl.pathname
   const isPublicRoute = PUBLIC_ROUTES.some((r) => pathname.startsWith(r))
 
-  // Unauthenticated → login
-  if (!user && !isPublicRoute) {
+  if (!session && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  if (user && !isPublicRoute) {
-    const { data: publicUser } = await supabase
+  // For root and login redirects, do a lightweight role lookup only when necessary.
+  if (session && (pathname === '/login' || pathname === '/')) {
+    const { data: userRow } = await supabase
       .from('users')
       .select('role')
-      .eq('id', user.id)
+      .eq('id', session.user.id)
       .single()
 
-    // Authenticated but not in approved_emails → sign out
-    if (!publicUser) {
+    if (!userRow) {
       return NextResponse.redirect(new URL('/auth/denied', request.url))
     }
 
-    // On login or root → redirect to role home
-    if (pathname === '/login' || pathname === '/') {
-      const destination =
-        publicUser.role === 'franchise_partner' ? '/portal'
-        : publicUser.role === 'associate' ? '/pipeline'
-        : '/dashboard'
-      return NextResponse.redirect(new URL(destination, request.url))
-    }
+    const destination =
+      userRow.role === 'franchise_partner' ? '/portal'
+      : userRow.role === 'associate' ? '/pipelines'
+      : '/dashboard'
+    return NextResponse.redirect(new URL(destination, request.url))
   }
 
   return response

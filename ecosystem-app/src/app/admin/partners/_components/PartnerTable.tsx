@@ -62,13 +62,13 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
         </div>
       )}
 
+      {partnerUsers.length === 0 ? (
+        <div className={styles.empty}>
+          No partners yet. Create a user with the Partner role in User Management, then fill in their details here.
+        </div>
+      ) : (
       <div className={styles.tableWrap}>
-        {partnerUsers.length === 0 ? (
-          <div className={styles.empty}>
-            No partners with complete details yet. Create a user with the Partner role in User Management, then fill in their details here.
-          </div>
-        ) : (
-          <table className={styles.table}>
+        <table className={styles.table}>
             <thead>
               <tr>
                 <th>Name</th>
@@ -141,12 +141,12 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
               })}
             </tbody>
           </table>
-        )}
       </div>
+      )}
 
       {editTarget && (
-        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && setEditTarget(null)}>
-          <div className={styles.modal}>
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setEditTarget(null)}>
+          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
             <div className={styles.modalTitle}>
               {editTarget.franchise_partners ? 'Edit Partner Details' : 'Fill in Partner Details'}
             </div>

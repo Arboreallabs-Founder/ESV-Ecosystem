@@ -3,7 +3,7 @@
 import { useState, useTransition, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { createInvestor } from '@/app/actions/investors'
-import type { Investor, Deal } from '@/lib/types'
+import type { Investor } from '@/lib/types'
 import styles from '../investors.module.css'
 
 function formatCheque(min: number | null, max: number | null) {
@@ -16,11 +16,9 @@ function formatCheque(min: number | null, max: number | null) {
 
 export default function InvestorTable({
   investors: initialInvestors,
-  deals,
   userRole,
 }: {
   investors: Investor[]
-  deals: Deal[]
   userRole: string
 }) {
   const router = useRouter()
@@ -77,13 +75,13 @@ export default function InvestorTable({
         </div>
       </div>
 
+      {filtered.length === 0 ? (
+        <div className={styles.empty}>
+          {investors.length === 0 ? 'No investors yet. Add the first fund.' : 'No results match your search.'}
+        </div>
+      ) : (
       <div className={styles.tableWrap}>
-        {filtered.length === 0 ? (
-          <div className={styles.empty}>
-            {investors.length === 0 ? 'No investors yet. Add the first fund.' : 'No results match your search.'}
-          </div>
-        ) : (
-          <table className={styles.table}>
+        <table className={styles.table}>
             <thead>
               <tr>
                 <th>Fund</th>
@@ -111,12 +109,12 @@ export default function InvestorTable({
               ))}
             </tbody>
           </table>
-        )}
       </div>
+      )}
 
       {showModal && (
-        <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
-          <div className={styles.modal}>
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setShowModal(false)}>
+          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
             <div className={styles.modalTitle}>Add Investor</div>
             <form onSubmit={handleSubmit}>
               <div className={styles.grid2}>
