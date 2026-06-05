@@ -121,7 +121,12 @@ export async function getEntryAnswers(entryId: string) {
     .from('pipeline_entry_answers')
     .select('id, node_id, answer_text, node:form_nodes(question_text, answer_type)')
     .eq('entry_id', entryId)
-  return (data ?? []) as Array<{
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    node_id: row.node_id,
+    answer_text: row.answer_text ?? null,
+    node: Array.isArray(row.node) ? (row.node[0] ?? null) : (row.node ?? null),
+  })) as Array<{
     id: string
     node_id: string
     answer_text: string | null
