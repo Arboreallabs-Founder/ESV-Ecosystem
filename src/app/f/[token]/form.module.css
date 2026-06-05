@@ -1,0 +1,323 @@
+/* ── Public form — full ESV branding ──────────────────────────────── */
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background-color: #F7ECE2; /* Crema */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Subtle background texture */
+.page::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(213,174,143,0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 80%, rgba(206,170,253,0.1) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: 0 8px 40px rgba(44,44,58,0.1), 0 2px 8px rgba(44,44,58,0.05);
+  padding: 3rem 2.5rem;
+  width: 100%;
+  max-width: 560px;
+  position: relative;
+  z-index: 1;
+}
+
+/* ESV brand accent line */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #745FFD, #CEAAFD);
+  border-radius: 20px 20px 0 0;
+}
+
+/* ── Form header ───────────────────────────────────────────────────── */
+.formHeader {
+  margin-bottom: 2.5rem;
+}
+
+.brandLine {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.brandDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #745FFD;
+}
+
+.brandName {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #A39B95;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.formTitle {
+  font-family: var(--font-serif);
+  font-size: 1.875rem;
+  font-weight: 400;
+  color: #2C2C3A;
+  line-height: 1.2;
+  margin-bottom: 0.625rem;
+}
+
+.formDesc {
+  font-size: 0.9375rem;
+  color: #A39B95;
+  line-height: 1.6;
+}
+
+/* ── Progress ──────────────────────────────────────────────────────── */
+.progressWrap {
+  height: 3px;
+  background: #F4F4F4;
+  border-radius: 2px;
+  margin-bottom: 2.5rem;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: #745FFD;
+  border-radius: 2px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Question ──────────────────────────────────────────────────────── */
+.questionText {
+  font-family: var(--font-serif);
+  font-size: 1.3125rem;
+  font-weight: 400;
+  color: #2C2C3A;
+  line-height: 1.45;
+  margin-bottom: 1.625rem;
+}
+
+/* ── Inputs ────────────────────────────────────────────────────────── */
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #A39B95;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.input {
+  padding: 0.8125rem 1rem;
+  border: 2px solid #D3C1A9;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #2C2C3A;
+  background: #FAFAFA;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.input:focus {
+  border-color: #745FFD;
+  box-shadow: 0 0 0 3px rgba(116,95,253,0.1);
+  background: #fff;
+}
+
+.textarea {
+  padding: 0.8125rem 1rem;
+  border: 2px solid #D3C1A9;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #2C2C3A;
+  background: #FAFAFA;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  line-height: 1.6;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.textarea:focus {
+  border-color: #745FFD;
+  box-shadow: 0 0 0 3px rgba(116,95,253,0.1);
+  background: #fff;
+}
+
+/* ── MCQ options ───────────────────────────────────────────────────── */
+.mcqOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-bottom: 2rem;
+}
+
+.mcqOption {
+  padding: 0.875rem 1.125rem;
+  border: 2px solid #D3C1A9;
+  border-radius: 10px;
+  background: #FAFAFA;
+  color: #2C2C3A;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  font-weight: 400;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.mcqOption:hover {
+  border-color: #745FFD;
+  background: rgba(116,95,253,0.03);
+  transform: translateX(2px);
+}
+
+.mcqOption::before {
+  content: '';
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #D3C1A9;
+  flex-shrink: 0;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.mcqOptionSelected {
+  border-color: #745FFD;
+  background: rgba(116,95,253,0.06);
+  color: #745FFD;
+  font-weight: 500;
+}
+.mcqOptionSelected::before {
+  border-color: #745FFD;
+  background: #745FFD;
+  box-shadow: inset 0 0 0 3px #fff;
+}
+
+/* ── Actions ───────────────────────────────────────────────────────── */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1.75rem;
+}
+
+.nextBtn {
+  padding: 0.8125rem 2rem;
+  background: #745FFD;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  letter-spacing: 0.01em;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.nextBtn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+.nextBtn:active:not(:disabled) { transform: translateY(0); }
+.nextBtn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ── Error ─────────────────────────────────────────────────────────── */
+.errorMsg {
+  font-size: 0.8125rem;
+  color: #C0392B;
+  margin-bottom: 1rem;
+  padding: 0.625rem 0.875rem;
+  background: rgba(192,57,43,0.06);
+  border-radius: 6px;
+  border-left: 3px solid #C0392B;
+}
+
+/* ── Success state ─────────────────────────────────────────────────── */
+.successIcon {
+  width: 64px;
+  height: 64px;
+  background: rgba(46,125,50,0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 1.75rem;
+  color: #2E7D32;
+}
+
+.title {
+  font-family: var(--font-serif);
+  font-size: 1.875rem;
+  font-weight: 400;
+  color: #2C2C3A;
+  text-align: center;
+  margin-bottom: 0.625rem;
+  line-height: 1.2;
+}
+
+.sub {
+  color: #A39B95;
+  text-align: center;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+}
+
+/* ── Not eligible state ────────────────────────────────────────────── */
+.rejectedIcon {
+  width: 64px;
+  height: 64px;
+  background: rgba(217,119,6,0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.5rem;
+  font-size: 1.75rem;
+  color: #d97706;
+}
+
+.rejectedMsg {
+  color: #A39B95;
+  text-align: center;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  margin-top: 0.75rem;
+}
+
+/* ── Footer branding ───────────────────────────────────────────────── */
+.footerBrand {
+  margin-top: 2rem;
+  text-align: center;
+  font-size: 0.6875rem;
+  color: #A39B95;
+  letter-spacing: 0.04em;
+  z-index: 1;
+  position: relative;
+}
