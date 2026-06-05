@@ -22,7 +22,7 @@ export default async function RootPage() {
   if (role === 'franchise_partner') {
     redirect('/portal')
   } else if (role === 'associate') {
-    redirect('/pipeline')
+    redirect('/pipelines')
   } else {
     redirect('/dashboard')
   }
