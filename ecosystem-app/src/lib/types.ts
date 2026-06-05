@@ -77,6 +77,7 @@ export type PipelineStage = {
   name: string
   color: string
   position: number
+  stage_type: 'lead' | 'accepted' | 'rejected' | 'custom'
 }
 
 export type FormNodeOption = {
@@ -142,14 +143,14 @@ export type PipelineEntry = {
   form_id: string | null
   form_link_id: string | null
   stage_id: string | null
-  assigned_to: string | null
+  rejection_reason: string | null
   title: string | null
   submitter_name: string | null
   submitter_email: string | null
   submitted_at: string
   form?: { title: string } | null
   link_creator?: { name: string } | null
-  assignee?: { name: string } | null
+  assignees?: Array<{ user_id: string; name: string }>
 }
 
 export type PipelineEntryAnswer = {

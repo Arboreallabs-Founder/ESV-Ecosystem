@@ -110,6 +110,30 @@
   overflow: hidden;
 }
 
+.columnMandatory {
+  border: 1.5px solid var(--color-border);
+}
+
+.columnTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.mandatoryBadge {
+  font-size: 0.5625rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 9999px;
+  flex-shrink: 0;
+}
+.mandatoryBadge_lead { background: rgba(116,95,253,0.12); color: var(--color-primary); }
+.mandatoryBadge_accepted { background: rgba(22,163,74,0.12); color: #16a34a; }
+.mandatoryBadge_rejected { background: rgba(220,38,38,0.1); color: #dc2626; }
+
 .columnHeader {
   padding: 0.875rem 1rem 0.75rem;
   border-top: 3px solid transparent;
@@ -218,11 +242,20 @@
   line-height: 1.4;
 }
 
-.entryAssignee {
-  font-size: 0.6875rem;
+.entryAssignees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.3125rem;
+}
+
+.entryAssigneeChip {
+  font-size: 0.625rem;
+  font-weight: 700;
+  background: rgba(116,95,253,0.1);
   color: var(--color-primary);
-  margin-top: 0.25rem;
-  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.125rem 0.4375rem;
 }
 
 .entryDate {
@@ -474,6 +507,93 @@
 }
 .formsUnlinkBtn:hover { border-color: var(--color-destructive); color: var(--color-destructive); }
 .formsUnlinkBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Assignee multi-select ─────────────────────────────────────────── */
+.assigneeChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  align-items: center;
+}
+
+.assigneeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  background: rgba(116,95,253,0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(116,95,253,0.2);
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.assigneeChipRemove {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.6;
+  transition: opacity 0.12s;
+}
+.assigneeChipRemove:hover { opacity: 1; }
+
+.assigneeAdd {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  background: none;
+  border: 1.5px dashed var(--color-border);
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  cursor: pointer;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.12s, color 0.12s;
+}
+.assigneeAdd:focus, .assigneeAdd:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+/* ── Rejection ─────────────────────────────────────────────────────── */
+.rejectConfirmBtn {
+  padding: 0.5625rem 1.375rem;
+  background: #dc2626;
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.rejectConfirmBtn:hover { opacity: 0.88; }
+
+.rejectionReasonBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background: rgba(220,38,38,0.06);
+  border: 1px solid rgba(220,38,38,0.2);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.rejectionReasonLabel {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #dc2626;
+}
+
+.rejectionReasonText {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  line-height: 1.5;
+}
 
 /* ── Entry detail modal extras ─────────────────────────────────────── */
 .entryModal {

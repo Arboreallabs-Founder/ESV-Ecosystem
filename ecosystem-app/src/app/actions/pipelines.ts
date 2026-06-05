@@ -29,14 +29,12 @@ export async function createPipeline(name: string, description: string) {
     .select('id')
     .single()
   if (error) throw error
-  // Seed with a default stage
-  await supabase.from('pipeline_stages').insert({
-    pipeline_id: data.id,
-    name: 'New',
-    color: '#745FFD',
-    position: 0,
-  })
-  // No revalidatePath — router.refresh() in component
+  // Seed mandatory stages: Lead (first), Accepted and Rejected (ends)
+  await supabase.from('pipeline_stages').insert([
+    { pipeline_id: data.id, name: 'Lead', color: '#745FFD', position: -1, stage_type: 'lead' },
+    { pipeline_id: data.id, name: 'Accepted', color: '#16a34a', position: 998, stage_type: 'accepted' },
+    { pipeline_id: data.id, name: 'Rejected', color: '#dc2626', position: 999, stage_type: 'rejected' },
+  ])
   return data.id
 }
 
@@ -98,9 +96,21 @@ export async function deleteEntry(entryId: string) {
   if (error) throw error
 }
 
-export async function assignEntry(entryId: string, userId: string | null) {
+export async function addAssignee(entryId: string, userId: string) {
   const { supabase } = await requireAdmin()
-  await supabase.from('pipeline_entries').update({ assigned_to: userId }).eq('id', entryId)
+  await supabase.from('pipeline_entry_assignees').insert({ entry_id: entryId, user_id: userId })
+}
+
+export async function removeAssignee(entryId: string, userId: string) {
+  const { supabase } = await requireAdmin()
+  await supabase.from('pipeline_entry_assignees').delete().eq('entry_id', entryId).eq('user_id', userId)
+}
+
+export async function rejectEntry(entryId: string, stageId: string, reason: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  await supabase.from('pipeline_entries').update({ stage_id: stageId, rejection_reason: reason.trim() || null }).eq('id', entryId)
 }
 
 export async function getEntryAnswers(entryId: string) {

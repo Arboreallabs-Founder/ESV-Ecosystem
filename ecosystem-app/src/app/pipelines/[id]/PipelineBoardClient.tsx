@@ -3,12 +3,16 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { addStage, updateStage, deleteStage, moveEntry, deleteEntry, assignEntry, getEntryAnswers } from '@/app/actions/pipelines'
+import { addStage, updateStage, deleteStage, moveEntry, deleteEntry, addAssignee, removeAssignee, rejectEntry, getEntryAnswers } from '@/app/actions/pipelines'
 import { linkFormToPipeline } from '@/app/actions/forms'
 import type { Pipeline, PipelineStage, PipelineEntry } from '@/lib/types'
 import styles from './board.module.css'
 
 const STAGE_COLORS = ['#745FFD', '#16a34a', '#d97706', '#dc2626', '#0ea5e9', '#8b5cf6', '#ec4899', '#14b8a6']
+
+const STAGE_TYPE_LABELS: Record<string, string> = {
+  lead: 'Lead', accepted: 'Accepted', rejected: 'Rejected',
+}
 
 type AnswerItem = {
   id: string
@@ -38,23 +42,6 @@ export default function PipelineBoardClient({
   const [forms, setForms] = useState(initialForms)
   const [, startTransition] = useTransition()
 
-  // Forms modal
-  const [showFormsModal, setShowFormsModal] = useState(false)
-  const [formsLinkPending, startFormsTransition] = useTransition()
-
-  const linkedForms = forms.filter((f) => f.pipeline_id === pipeline.id)
-  const unlinkableForms = forms.filter((f) => f.pipeline_id !== null && f.pipeline_id !== pipeline.id)
-
-  function handleLinkForm(formId: string) {
-    setForms((prev) => prev.map((f) => f.id === formId ? { ...f, pipeline_id: pipeline.id } : f))
-    startFormsTransition(async () => { await linkFormToPipeline(formId, pipeline.id) })
-  }
-
-  function handleUnlinkForm(formId: string) {
-    setForms((prev) => prev.map((f) => f.id === formId ? { ...f, pipeline_id: null } : f))
-    startFormsTransition(async () => { await linkFormToPipeline(formId, null) })
-  }
-
   // Stage modal
   const [showStageModal, setShowStageModal] = useState(false)
   const [editStage, setEditStage] = useState<PipelineStage | null>(null)
@@ -68,12 +55,33 @@ export default function PipelineBoardClient({
   const [selectedAnswers, setSelectedAnswers] = useState<AnswerItem[]>([])
   const [answersLoading, setAnswersLoading] = useState(false)
 
+  // Rejection modal
+  const [rejectionPending, setRejectionPending] = useState<{ entryId: string; stageId: string } | null>(null)
+  const [rejectionReason, setRejectionReason] = useState('')
+
+  // Forms modal
+  const [showFormsModal, setShowFormsModal] = useState(false)
+  const [formsLinkPending, startFormsTransition] = useTransition()
+
   // Drag and drop
   const [dragEntryId, setDragEntryId] = useState<string | null>(null)
   const [dragOverStageId, setDragOverStageId] = useState<string | 'unsorted' | null>(null)
 
+  const linkedForms = forms.filter((f) => f.pipeline_id === pipeline.id)
+  const unlinkableForms = forms.filter((f) => f.pipeline_id !== null && f.pipeline_id !== pipeline.id)
+
+  // Sort stages: lead first, then custom by position, then accepted, then rejected
+  const sortedStages = [...pipeline.stages].sort((a, b) => {
+    const order = { lead: -100, custom: 0, accepted: 100, rejected: 101 }
+    const aOrder = (order[a.stage_type] ?? 0) + a.position
+    const bOrder = (order[b.stage_type] ?? 0) + b.position
+    return aOrder - bOrder
+  })
+
+  const rejectedStageIds = new Set(pipeline.stages.filter((s) => s.stage_type === 'rejected').map((s) => s.id))
+
   function openAddStage() {
-    setEditStage(null); setStageName(''); setStageColor(STAGE_COLORS[pipeline.stages.length % STAGE_COLORS.length]); setStageError(''); setShowStageModal(true)
+    setEditStage(null); setStageName(''); setStageColor(STAGE_COLORS[pipeline.stages.filter(s => s.stage_type === 'custom').length % STAGE_COLORS.length]); setStageError(''); setShowStageModal(true)
   }
   function openEditStage(s: PipelineStage) {
     setEditStage(s); setStageName(s.name); setStageColor(s.color); setStageError(''); setShowStageModal(true)
@@ -89,7 +97,7 @@ export default function PipelineBoardClient({
           await updateStage(editStage.id, stageName, stageColor)
           setPipeline((p) => ({ ...p, stages: p.stages.map((s) => s.id === editStage.id ? { ...s, name: stageName.trim(), color: stageColor } : s) }))
         } else {
-          await addStage(pipeline.id, stageName, stageColor, pipeline.stages.length)
+          await addStage(pipeline.id, stageName, stageColor, pipeline.stages.filter(s => s.stage_type === 'custom').length)
           router.refresh()
         }
         setShowStageModal(false)
@@ -98,17 +106,40 @@ export default function PipelineBoardClient({
   }
 
   function handleDeleteStage(s: PipelineStage) {
-    if (!confirm(`Delete stage "${s.name}"? Entries will become unsorted.`)) return
+    const activeCount = entries.filter((e) => e.stage_id === s.id).length
+    if (activeCount > 0) {
+      alert(`Cannot delete "${s.name}" — it has ${activeCount} active deal${activeCount !== 1 ? 's' : ''} in it. Move them to another stage first.`)
+      return
+    }
+    if (!confirm(`Delete stage "${s.name}"?`)) return
     startStageTransition(async () => {
       await deleteStage(s.id)
       setPipeline((p) => ({ ...p, stages: p.stages.filter((st) => st.id !== s.id) }))
-      setEntries((prev) => prev.map((e) => e.stage_id === s.id ? { ...e, stage_id: null } : e))
     })
   }
 
-  function handleMoveEntry(entryId: string, newStageId: string | null) {
+  function commitMoveEntry(entryId: string, newStageId: string | null) {
     setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, stage_id: newStageId } : e))
     startTransition(async () => { await moveEntry(entryId, newStageId) })
+  }
+
+  function handleMoveEntry(entryId: string, newStageId: string | null) {
+    if (newStageId && rejectedStageIds.has(newStageId)) {
+      setRejectionPending({ entryId, stageId: newStageId })
+      setRejectionReason('')
+      return
+    }
+    commitMoveEntry(entryId, newStageId)
+  }
+
+  function handleConfirmRejection() {
+    if (!rejectionPending) return
+    const { entryId, stageId } = rejectionPending
+    setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, stage_id: stageId, rejection_reason: rejectionReason.trim() || null } : e))
+    if (selectedEntry?.id === entryId) setSelectedEntry((prev) => prev ? { ...prev, stage_id: stageId, rejection_reason: rejectionReason.trim() || null } : null)
+    startTransition(async () => { await rejectEntry(entryId, stageId, rejectionReason) })
+    setRejectionPending(null)
+    setRejectionReason('')
   }
 
   function handleDeleteEntry(entryId: string) {
@@ -130,21 +161,36 @@ export default function PipelineBoardClient({
     }
   }
 
-  function handleAssign(entryId: string, userId: string) {
-    const assignedTo = userId || null
-    const assignee = assignedTo ? (teamMembers.find((m) => m.id === assignedTo) ?? null) : null
-    setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, assigned_to: assignedTo, assignee } : e))
-    setSelectedEntry((prev) => prev ? { ...prev, assigned_to: assignedTo, assignee } : null)
-    startTransition(async () => { await assignEntry(entryId, assignedTo) })
+  function handleAddAssignee(entryId: string, userId: string) {
+    const member = teamMembers.find((m) => m.id === userId)
+    if (!member) return
+    setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, assignees: [...(e.assignees ?? []), { user_id: userId, name: member.name }] } : e))
+    setSelectedEntry((prev) => prev ? { ...prev, assignees: [...(prev.assignees ?? []), { user_id: userId, name: member.name }] } : null)
+    startTransition(async () => { await addAssignee(entryId, userId) })
   }
 
-  // Drag and drop handlers
+  function handleRemoveAssignee(entryId: string, userId: string) {
+    setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, assignees: (e.assignees ?? []).filter((a) => a.user_id !== userId) } : e))
+    setSelectedEntry((prev) => prev ? { ...prev, assignees: (prev.assignees ?? []).filter((a) => a.user_id !== userId) } : null)
+    startTransition(async () => { await removeAssignee(entryId, userId) })
+  }
+
+  // Drag and drop
   function handleDragStart(entryId: string) { setDragEntryId(entryId) }
   function handleDragEnd() { setDragEntryId(null); setDragOverStageId(null) }
   function handleDragOver(e: React.DragEvent, stageKey: string) { e.preventDefault(); setDragOverStageId(stageKey) }
   function handleDrop(stageId: string | null) {
     if (dragEntryId) handleMoveEntry(dragEntryId, stageId)
     setDragEntryId(null); setDragOverStageId(null)
+  }
+
+  function handleLinkForm(formId: string) {
+    setForms((prev) => prev.map((f) => f.id === formId ? { ...f, pipeline_id: pipeline.id } : f))
+    startFormsTransition(async () => { await linkFormToPipeline(formId, pipeline.id) })
+  }
+  function handleUnlinkForm(formId: string) {
+    setForms((prev) => prev.map((f) => f.id === formId ? { ...f, pipeline_id: null } : f))
+    startFormsTransition(async () => { await linkFormToPipeline(formId, null) })
   }
 
   const unsorted = entries.filter((e) => !e.stage_id || !pipeline.stages.find((s) => s.id === e.stage_id))
@@ -170,16 +216,24 @@ export default function PipelineBoardClient({
       </div>
 
       <div className={styles.board}>
-        {pipeline.stages.map((stage) => {
+        {sortedStages.map((stage) => {
           const stageEntries = entries.filter((e) => e.stage_id === stage.id)
           const isDragOver = dragOverStageId === stage.id
+          const isMandatory = stage.stage_type !== 'custom'
           return (
-            <div key={stage.id} className={styles.column}>
+            <div key={stage.id} className={`${styles.column} ${isMandatory ? styles.columnMandatory : ''}`}>
               <div className={styles.columnHeader} style={{ borderTopColor: stage.color }}>
-                <div className={styles.columnTitle}>{stage.name}</div>
+                <div className={styles.columnTitleRow}>
+                  <div className={styles.columnTitle}>{stage.name}</div>
+                  {isMandatory && (
+                    <span className={`${styles.mandatoryBadge} ${styles[`mandatoryBadge_${stage.stage_type}`]}`}>
+                      {STAGE_TYPE_LABELS[stage.stage_type]}
+                    </span>
+                  )}
+                </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span className={styles.columnCount}>{stageEntries.length}</span>
-                  {canManage && (
+                  {canManage && !isMandatory && (
                     <button className={styles.stageMenuBtn} onClick={() => openEditStage(stage)} title="Edit stage">⚙</button>
                   )}
                 </div>
@@ -222,20 +276,13 @@ export default function PipelineBoardClient({
               onDragLeave={() => setDragOverStageId(null)}
             >
               {unsorted.map((entry) => (
-                <EntryCard
-                  key={entry.id}
-                  entry={entry}
-                  isDragging={dragEntryId === entry.id}
-                  onDragStart={() => handleDragStart(entry.id)}
-                  onDragEnd={handleDragEnd}
-                  onClick={() => handleOpenEntry(entry)}
-                />
+                <EntryCard key={entry.id} entry={entry} isDragging={dragEntryId === entry.id} onDragStart={() => handleDragStart(entry.id)} onDragEnd={handleDragEnd} onClick={() => handleOpenEntry(entry)} />
               ))}
             </div>
           </div>
         )}
 
-        {pipeline.stages.length === 0 && entries.length === 0 && (
+        {pipeline.stages.filter(s => s.stage_type === 'custom').length === 0 && entries.length === 0 && (
           <div className={styles.emptyBoard}>
             <div>Add stages to this pipeline, then link a form to start collecting submissions.</div>
             {canManage && <button className={styles.addStageBtn} style={{ marginTop: '1rem' }} onClick={openAddStage}>+ Add First Stage</button>}
@@ -243,71 +290,29 @@ export default function PipelineBoardClient({
         )}
       </div>
 
-      {/* Forms modal */}
-      {showFormsModal && (
-        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setShowFormsModal(false)}>
+      {/* Rejection reason modal */}
+      {rejectionPending && (
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setRejectionPending(null)}>
           <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
-            <div className={styles.modalTitle}>Linked Forms</div>
-
-            {/* Currently linked */}
-            <div className={styles.label} style={{ marginBottom: '0.5rem' }}>Sending submissions here</div>
-            {linkedForms.length === 0 ? (
-              <p className={styles.formsEmpty}>No forms linked yet — link one below.</p>
-            ) : (
-              <div className={styles.formsList}>
-                {linkedForms.map((f) => (
-                  <div key={f.id} className={styles.formsRow}>
-                    <div className={styles.formsRowInfo}>
-                      <span className={styles.formsRowTitle}>{f.title}</span>
-                      <span className={`${styles.formsBadgeInline} ${f.published ? styles.formsBadgePublished : styles.formsBadgeDraft}`}>
-                        {f.published ? 'Published' : 'Draft'}
-                      </span>
-                    </div>
-                    <button className={styles.formsUnlinkBtn} onClick={() => handleUnlinkForm(f.id)} disabled={formsLinkPending}>
-                      Unlink
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Available to link */}
-            {forms.filter((f) => f.pipeline_id === null).length > 0 && (
-              <>
-                <div className={styles.label} style={{ marginTop: '1.25rem', marginBottom: '0.5rem' }}>Link a form</div>
-                <div className={styles.formsList}>
-                  {forms.filter((f) => f.pipeline_id === null).map((f) => (
-                    <div key={f.id} className={styles.formsRow}>
-                      <div className={styles.formsRowInfo}>
-                        <span className={styles.formsRowTitle}>{f.title}</span>
-                        <span className={`${styles.formsBadgeInline} ${f.published ? styles.formsBadgePublished : styles.formsBadgeDraft}`}>
-                          {f.published ? 'Published' : 'Draft'}
-                        </span>
-                      </div>
-                      <button className={styles.formsLinkBtn} onClick={() => handleLinkForm(f.id)} disabled={formsLinkPending}>
-                        Link
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
-            {unlinkableForms.length > 0 && (
-              <>
-                <div className={styles.label} style={{ marginTop: '1.25rem', marginBottom: '0.5rem', opacity: 0.6 }}>Linked to another pipeline</div>
-                <div className={styles.formsList}>
-                  {unlinkableForms.map((f) => (
-                    <div key={f.id} className={styles.formsRow} style={{ opacity: 0.5 }}>
-                      <span className={styles.formsRowTitle}>{f.title}</span>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
-
+            <div className={styles.modalTitle}>Reason for Rejection</div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-muted)', marginTop: '-1rem', marginBottom: '1.25rem', lineHeight: 1.55 }}>
+              Provide a reason — this will be stored with the submission.
+            </p>
+            <div className={styles.field}>
+              <label className={styles.label}>Reason <span style={{ fontWeight: 400 }}>(optional)</span></label>
+              <textarea
+                className={styles.input}
+                style={{ resize: 'vertical', minHeight: 80, fontFamily: 'inherit', lineHeight: 1.5 }}
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                placeholder="e.g. Stage too early, outside our thesis, valuation mismatch…"
+                autoFocus
+                rows={3}
+              />
+            </div>
             <div className={styles.modalActions}>
-              <button className={styles.submitBtn} onClick={() => setShowFormsModal(false)}>Done</button>
+              <button className={styles.cancelBtn} onClick={() => setRejectionPending(null)}>Cancel</button>
+              <button className={styles.rejectConfirmBtn} onClick={handleConfirmRejection}>Confirm Rejection</button>
             </div>
           </div>
         </div>
@@ -360,24 +365,51 @@ export default function PipelineBoardClient({
               )}
             </div>
 
-            {/* Assign to */}
+            {/* Rejection reason (if rejected) */}
+            {selectedEntry.rejection_reason && (
+              <div className={styles.rejectionReasonBox}>
+                <span className={styles.rejectionReasonLabel}>Rejection reason</span>
+                <span className={styles.rejectionReasonText}>{selectedEntry.rejection_reason}</span>
+              </div>
+            )}
+
+            {/* Multi-assignees */}
             {canManage && (
               <div className={styles.field}>
                 <label className={styles.label}>Assigned To</label>
-                <select
-                  className={styles.select}
-                  value={selectedEntry.assigned_to ?? ''}
-                  onChange={(e) => handleAssign(selectedEntry.id, e.target.value)}
-                >
-                  <option value="">Unassigned</option>
-                  {teamMembers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
+                <div className={styles.assigneeChips}>
+                  {(selectedEntry.assignees ?? []).map((a) => (
+                    <span key={a.user_id} className={styles.assigneeChip}>
+                      {a.name}
+                      <button className={styles.assigneeChipRemove} onClick={() => handleRemoveAssignee(selectedEntry.id, a.user_id)} title="Remove">×</button>
+                    </span>
+                  ))}
+                  {(() => {
+                    const assignedIds = new Set((selectedEntry.assignees ?? []).map((a) => a.user_id))
+                    const available = teamMembers.filter((m) => !assignedIds.has(m.id))
+                    if (available.length === 0) return null
+                    return (
+                      <select
+                        className={styles.assigneeAdd}
+                        value=""
+                        onChange={(e) => { if (e.target.value) handleAddAssignee(selectedEntry.id, e.target.value) }}
+                      >
+                        <option value="">+ Add person</option>
+                        {available.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
+                    )
+                  })()}
+                </div>
               </div>
             )}
-            {!canManage && selectedEntry.assignee && (
+            {!canManage && (selectedEntry.assignees ?? []).length > 0 && (
               <div className={styles.field}>
                 <label className={styles.label}>Assigned To</label>
-                <div className={styles.assigneeDisplay}>{selectedEntry.assignee.name}</div>
+                <div className={styles.assigneeChips}>
+                  {(selectedEntry.assignees ?? []).map((a) => (
+                    <span key={a.user_id} className={styles.assigneeChip} style={{ cursor: 'default' }}>{a.name}</span>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -388,16 +420,22 @@ export default function PipelineBoardClient({
                 className={styles.select}
                 value={selectedEntry.stage_id ?? ''}
                 onChange={(e) => {
-                  handleMoveEntry(selectedEntry.id, e.target.value || null)
-                  setSelectedEntry((prev) => prev ? { ...prev, stage_id: e.target.value || null } : null)
+                  const newStageId = e.target.value || null
+                  if (newStageId && rejectedStageIds.has(newStageId)) {
+                    setRejectionPending({ entryId: selectedEntry.id, stageId: newStageId })
+                    setRejectionReason('')
+                  } else {
+                    commitMoveEntry(selectedEntry.id, newStageId)
+                    setSelectedEntry((prev) => prev ? { ...prev, stage_id: newStageId } : null)
+                  }
                 }}
               >
                 <option value="">Unsorted</option>
-                {pipeline.stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                {sortedStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
 
-            {/* Form Q&A */}
+            {/* Q&A */}
             <div className={styles.answersSection}>
               <div className={styles.label}>Responses</div>
               {answersLoading ? (
@@ -423,6 +461,62 @@ export default function PipelineBoardClient({
           </div>
         </div>
       )}
+
+      {/* Forms modal */}
+      {showFormsModal && (
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setShowFormsModal(false)}>
+          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+            <div className={styles.modalTitle}>Linked Forms</div>
+            <div className={styles.label} style={{ marginBottom: '0.5rem' }}>Sending submissions here</div>
+            {linkedForms.length === 0 ? (
+              <p className={styles.formsEmpty}>No forms linked yet.</p>
+            ) : (
+              <div className={styles.formsList}>
+                {linkedForms.map((f) => (
+                  <div key={f.id} className={styles.formsRow}>
+                    <div className={styles.formsRowInfo}>
+                      <span className={styles.formsRowTitle}>{f.title}</span>
+                      <span className={`${styles.formsBadgeInline} ${f.published ? styles.formsBadgePublished : styles.formsBadgeDraft}`}>{f.published ? 'Published' : 'Draft'}</span>
+                    </div>
+                    <button className={styles.formsUnlinkBtn} onClick={() => handleUnlinkForm(f.id)} disabled={formsLinkPending}>Unlink</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {forms.filter((f) => f.pipeline_id === null).length > 0 && (
+              <>
+                <div className={styles.label} style={{ marginTop: '1.25rem', marginBottom: '0.5rem' }}>Link a form</div>
+                <div className={styles.formsList}>
+                  {forms.filter((f) => f.pipeline_id === null).map((f) => (
+                    <div key={f.id} className={styles.formsRow}>
+                      <div className={styles.formsRowInfo}>
+                        <span className={styles.formsRowTitle}>{f.title}</span>
+                        <span className={`${styles.formsBadgeInline} ${f.published ? styles.formsBadgePublished : styles.formsBadgeDraft}`}>{f.published ? 'Published' : 'Draft'}</span>
+                      </div>
+                      <button className={styles.formsLinkBtn} onClick={() => handleLinkForm(f.id)} disabled={formsLinkPending}>Link</button>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            {unlinkableForms.length > 0 && (
+              <>
+                <div className={styles.label} style={{ marginTop: '1.25rem', marginBottom: '0.5rem', opacity: 0.6 }}>Linked to another pipeline</div>
+                <div className={styles.formsList}>
+                  {unlinkableForms.map((f) => (
+                    <div key={f.id} className={styles.formsRow} style={{ opacity: 0.5 }}>
+                      <span className={styles.formsRowTitle}>{f.title}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+            <div className={styles.modalActions}>
+              <button className={styles.submitBtn} onClick={() => setShowFormsModal(false)}>Done</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -444,7 +538,13 @@ function EntryCard({ entry, isDragging, onDragStart, onDragEnd, onClick }: {
     >
       <div className={styles.entryTitle}>{entry.title || 'Untitled submission'}</div>
       {entry.submitter_name && <div className={styles.entryMeta}>{entry.submitter_name}</div>}
-      {entry.assignee && <div className={styles.entryAssignee}>→ {entry.assignee.name}</div>}
+      {(entry.assignees ?? []).length > 0 && (
+        <div className={styles.entryAssignees}>
+          {(entry.assignees ?? []).map((a) => (
+            <span key={a.user_id} className={styles.entryAssigneeChip}>{a.name.split(' ')[0]}</span>
+          ))}
+        </div>
+      )}
       <div className={styles.entryDate}>{new Date(entry.submitted_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</div>
     </div>
   )
