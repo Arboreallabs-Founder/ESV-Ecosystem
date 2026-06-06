@@ -1,5 +1,5 @@
 # ESV Ecosystem — Build Tasks
-> Last updated: 2026-06-04. Phases 1–11, 13–14, 16, 22 complete. Audited against actual codebase.
+> Last updated: 2026-06-06. Phases 1–11, 13–14, 16, 22 complete. Deployed to Vercel.
 
 ---
 
@@ -19,9 +19,10 @@ Startup fills out the public form — branching logic routes them through questi
 If they reach a "Submitted" end node  → submitter info collected → entry created in pipeline
 If they reach a "Not Eligible" end node → rejection screen shown, nothing recorded
          ↓
-Entry appears in the pipeline Kanban board
-Admin/Founder assigns it to a team member, moves it through stages via drag & drop
+Entry appears in the pipeline Kanban board (Lead → custom stages → Accepted / Rejected)
+Admin/Founder assigns it to one or more team members, moves through stages via drag & drop
          ↓
+Moving to Rejected triggers a reason-for-rejection prompt (stored on entry)
 Clicking the entry shows all Q&A responses + which user's link was used
 ```
 
@@ -30,10 +31,12 @@ Clicking the entry shows all Q&A responses + which user's link was used
 - Two end conditions enforced on every form: `Submitted` (green) and `Not Eligible` (amber)
 - MCQ questions create one output handle per option — each option must be wired to exactly one next node
 - Forms cannot be saved if any output handle is unconnected (open flow validation)
-- Each handle enforces exactly one outgoing edge — contradictory logic (one option → multiple destinations) is impossible
+- Each handle enforces exactly one outgoing edge — contradictory logic is impossible
 - Links are personalised — every link records who generated it; pipeline entries show "via [Name]'s link"
 - Partners and associates can generate links; only admins/founders can build/edit forms
 - Multiple forms can feed one pipeline simultaneously
+- Every pipeline has three mandatory stages: **Lead** (entry point), **Accepted** and **Rejected** (end states)
+- Multiple team members (non-partners) can be assigned to the same deal
 
 ---
 
@@ -68,7 +71,7 @@ Clicking the entry shows all Q&A responses + which user's link was used
 ### Phase 10 — Franchise Partner Management
 - [x] Partners page (`/admin/partners`) — table, Add Partner modal
 - [x] Link partner record to portal user account
-- [x] Franchise partner DB record created and linked for partner@earlyseed.vc
+- [x] Franchise partner DB record created and linked
 
 ### Phase 11 — Task Management
 - [x] Tasks DB migration (tasks table with priority/status enums)
@@ -82,7 +85,7 @@ Clicking the entry shows all Q&A responses + which user's link was used
 - [x] User management page (`/admin/users`) — approved users table with Active/Pending status badges
 - [x] Add Approved User modal — email, name, role, optional password (calls `create-user` edge function)
 - [x] Edit user modal — update name + role across `approved_emails` + `public.users`
-- [x] Revoke access — removes from allowlist, deletes `franchise_partners` record, deletes `public.users`, calls `delete-user` edge function
+- [x] Revoke access — removes from allowlist, deletes `franchise_partners` record, deletes auth user
 - [x] `addApprovedUser` / `updateApprovedUser` / `revokeUser` server actions with founder/admin guard
 
 ### Phase 14 — Navigation & Shell
@@ -94,93 +97,77 @@ Clicking the entry shows all Q&A responses + which user's link was used
 
 ### Caching & Performance
 - [x] React `cache()` on all lib data-fetching functions (request-level deduplication)
-- [x] Loading skeleton files for all 6 routes (sidebar + content placeholder)
+- [x] Loading skeleton files for all routes (sidebar + content placeholder)
 
-### Wiki System (partial)
-- [x] `src/lib/wiki.ts` — static content for 7 sections (Dashboard, Pipeline, Tasks, Investors, Partners, Admin, Portal)
+### Wiki System
+- [x] `src/lib/wiki.ts` — static content for 7 sections
 - [x] `WikiPanel` slide-in drawer component
 - [x] `/wiki` full reference page
 - [x] "Help & Wiki" + "Full Wiki" links in sidebar
 
 ### Auth & Accounts
-- [x] Password change modal in sidebar footer (`supabase.auth.updateUser`)
+- [x] Password change modal in sidebar footer
 - [x] `create-user` + `delete-user` Supabase Edge Functions deployed
 - [x] `users` table FK to `auth.users` changed to `ON DELETE CASCADE`
 
 ### Partner Fee Structure
-- [x] `transaction_fee_split_pct` + `success_fee_split_pct` columns on `franchise_partners`
-- [x] `contract_link` column on `franchise_partners` (URL to partner contract document)
-- [x] Partners page (`/admin/partners`) — shows all approved partner users; Fill in Details / Edit modals
-- [x] Partner record auto-deleted when user is revoked from User Management
+- [x] `transaction_fee_split_pct` + `success_fee_split_pct` + `contract_link` on `franchise_partners`
+- [x] Partners page — Fill in Details / Edit modals
+- [x] Partner record auto-deleted when user is revoked
 
 ### Phase 16 — Google Auth (pre-approved emails only)
-- [x] Google OAuth provider enabled in Supabase (Client ID + Secret configured)
-- [x] "Continue with Google" button on login page (primary sign-in method)
-- [x] Email/password login as secondary option
-- [x] `approved_emails` table — `(email PK, name, role, added_by, added_at)`; RLS for founder/admin only
-- [x] `handle_new_user()` DB trigger — checks `approved_emails`; blocks unapproved accounts
-- [x] `/auth/callback` + `/auth/denied` routes
-- [x] Middleware enforces approved-user check on all protected routes
-- [x] `fetchAllUsers` / `fetchPartnerUsers` / `fetchApprovedUsers` cross-check `approved_emails`
+- [x] Google OAuth + email/password login
+- [x] `approved_emails` table with RLS; `handle_new_user()` trigger blocks unapproved accounts
+- [x] `/auth/callback` + `/auth/denied` routes; middleware on all protected routes
 
-### Phase 22 — Form Builder & Intake Pipeline (new flow replacing JotForm)
+### Phase 22 — Form Builder & Intake Pipeline
 
 #### DB Schema
-- [x] `forms` table — `id, title, description, pipeline_id, created_by, published`
-- [x] `form_nodes` table — `id, form_id, type (start/end/question), subtype (success/rejected), position_x, position_y, question_text, answer_type (short_text/long_text/mcq)`
-- [x] `form_node_options` table — MCQ options with position ordering
-- [x] `form_edges` table — `source_node_id, target_node_id, condition_value (MCQ option id), condition_label`
-- [x] `form_links` table — `form_id, created_by, token (uuid), label`; tracks who generated each link
-- [x] `pipeline_entries` table — `pipeline_id, form_id, form_link_id, stage_id, assigned_to, title, submitter_name, submitter_email`
-- [x] `pipeline_entry_answers` table — `entry_id, node_id, answer_text`
-- [x] `get_form_for_submission` RPC — returns full form graph (nodes + edges + options + subtypes) for public renderer; works without pipeline
+- [x] `forms`, `form_nodes`, `form_node_options`, `form_edges`, `form_links` tables
+- [x] `pipeline_entries` + `pipeline_entry_answers` tables
+- [x] `pipeline_entry_assignees` junction table (multi-assign, replaces single `assigned_to`)
+- [x] `pipeline_stages.stage_type` enum: `lead | accepted | rejected | custom`
+- [x] `pipeline_entries.rejection_reason` column
+- [x] `get_form_for_submission` RPC — full form graph with subtypes; works without pipeline
 
 #### Form Builder (`/forms/[id]/builder`)
 - [x] React Flow canvas — full-screen, fit-view, delete key support
-- [x] Three node types: `StartNode` (green circle), `QuestionNode` (card), `EndNode` (circle, two variants)
-- [x] Two end node variants enforced: **Submitted** (green ✓) and **Not Eligible** (amber ✕)
-- [x] MCQ question nodes render one output handle per option; non-MCQ has single output handle
-- [x] Properties panel (right sidebar) — edit question text with bold/italic markdown, answer type, MCQ options
-- [x] "+ Question", "+ Submitted", "+ Not Eligible" buttons in top bar
-- [x] **Graph validation on Save** — blocks save with error banner if:
-  - Missing a Submitted or Not Eligible end node
-  - Start node unconnected
-  - Any question output handle unconnected
-  - Any MCQ option unconnected
-  - Any handle has more than one outgoing edge (contradictory logic)
-- [x] **One-edge-per-handle enforcement** — drawing a new edge from a handle that already has one replaces the old edge; contradictory routing is impossible
-- [x] Published / Draft toggle
-- [x] **Form settings modal** (⚙ button) — edit title, description, pipeline link without leaving builder
-- [x] Generate link modal — shareable URL with optional label
-- [x] Save persists full graph (nodes + edges + MCQ options + subtypes) to DB
+- [x] Three node types: StartNode, QuestionNode (short/long/MCQ), EndNode (Submitted / Not Eligible)
+- [x] Properties panel — question text with bold/italic markdown, answer type, MCQ options
+- [x] Graph validation on Save: missing end types, open handles, duplicate edges all blocked
+- [x] One-edge-per-handle: drawing a new edge from a connected handle replaces the old one
+- [x] Published/Draft toggle; Form settings modal (⚙); Generate Link modal
 
 #### Forms List (`/forms`)
-- [x] Card grid showing all forms — title, published/draft badge, pipeline link
-- [x] **"N links issued"** badge on each card — click to see who generated links, when, and with what label
-- [x] **"+ Get Link" button** on every published form card — available to all authenticated users (partners, associates, admins, founders)
-- [x] New Form modal — title, description, pipeline selector; auto-seeds Start + Submitted + Not Eligible nodes
-- [x] Only admins/founders see "Edit / Build" and "+ New Form"
+- [x] "N links issued" badge per form — click to see who generated each link + label + date
+- [x] "+ Get Link" button for all authenticated users (partners, associates, admins, founders)
+- [x] Only admins/founders see Edit / Build and New Form
 
 #### Public Form Renderer (`/f/[token]`)
-- [x] Flow-based rendering — follows graph edges from Start through questions to an end node
-- [x] MCQ answers route to the correct next node based on `condition_value` (option id) on edges
-- [x] Progress bar based on question count
-- [x] Reaching **Submitted** end node → submitter name/email step → form data recorded in pipeline as entry
-- [x] Reaching **Not Eligible** end node → rejection screen shown; no pipeline entry created
-- [x] Form unavailable if not published (RPC returns null)
+- [x] Flow-based rendering with MCQ conditional branching
+- [x] Submitted end → collects submitter info → pipeline entry created
+- [x] Not Eligible end → rejection screen; nothing recorded
 
 #### Pipeline Board (`/pipelines/[id]`)
-- [x] **Drag and drop** — entry cards are draggable between stage columns; drop zone highlights with dashed purple border
-- [x] **Entry detail modal** — async loads all Q&A responses (question + answer pairs); shows "via [Name]'s link" chip
-- [x] **Assign to team member** — dropdown of all non-partner users; updates optimistically; assignee name shown on card
-- [x] **Forms modal** (top bar "Forms" button) — link/unlink forms to pipeline directly from board; shows published/draft badge; forms linked to other pipelines shown greyed out
-- [x] Multiple forms can be linked to the same pipeline simultaneously
-- [x] `assigned_to` column added to `pipeline_entries` (FK → users, ON DELETE SET NULL)
+- [x] **Mandatory stages**: Lead (first, purple), Accepted (end, green), Rejected (end, red) — cannot be deleted or renamed; seeded on new and existing pipelines
+- [x] **Stage delete guard**: stages with active entries cannot be deleted
+- [x] **Drag and drop** between columns; drop zone highlights
+- [x] **Multi-assignee**: add/remove multiple team members per entry (franchise_partners excluded); chips UI; names shown on card
+- [x] **Rejection reason modal**: moving to Rejected prompts for reason (optional); stored and shown in entry detail
+- [x] **Entry detail modal**: Q&A responses, link creator chip, rejection reason box, multi-assignee management
+- [x] **Forms modal**: link/unlink forms to pipeline from board
+
+### Deployment & Infrastructure
+- [x] Repo restructured: Next.js app moved from `ecosystem-app/` to repo root for zero-config Vercel deployment
+- [x] `ecosystem-app/` added to `.gitignore`; excluded from TypeScript compilation
+- [x] Supabase Edge Function (`supabase/functions/`) excluded from Next.js TypeScript checker
+- [x] Vercel environment variables configured: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- [x] Root redirect fixed: associates now go to `/pipelines` (was `/pipeline`, deleted route)
 
 ### Code Quality & Bug Fixes
-- [x] **Modal auto-close fix** — all 14+ modals across the app changed from `onClick` → `onMouseDown` + `stopPropagation` on inner modal; prevents accidental close when mouse drifts outside while clicking
-- [x] **Form link fix** — `get_form_for_submission` RPC no longer returns null for forms without a pipeline; standalone forms work
-- [x] **Assign dropdown fix** — filter was `.neq('role', 'partner')` but enum value is `franchise_partner`; corrected
+- [x] All 14+ modals: `onClick` → `onMouseDown` + `stopPropagation` — fixes accidental close on mouse drag
+- [x] `get_form_for_submission` RPC: no longer returns null for forms without a pipeline
+- [x] Assign dropdown: `.neq('role','partner')` → `.neq('role','franchise_partner')` (correct enum value)
 - [x] Standardised `revalidatePath` removal — server actions use `router.refresh()` in components
 
 ---
@@ -188,80 +175,72 @@ Clicking the entry shows all Q&A responses + which user's link was used
 ## 🔴 REMAINING
 
 ### Phase 8 — Deal Record (remaining)
-- [ ] **Founder contact on Deal Detail** — display founder_name/founder_email in info grid; editable inline for founder/admin/associate
-- [ ] **Assignee field** — selector on Deal Detail; display on deal card; stored in deals.assignee_id
+- [ ] **Founder contact on Deal Detail** — display founder_name/founder_email in info grid; editable inline
 - [ ] **Success fee form** — `success_fee_pct` + `split_pct` fields on deal detail, visible to founder/admin only
 - [ ] **Success fee prompt on Close** — modal when stage → 'Closed Success' if fee fields are empty
-- [ ] **Document upload** — Supabase Storage bucket `deal-documents`; upload on Documents tab; max 25MB; PDF/XLSX/PPTX/DOCX/JPG/PNG
+- [ ] **Document upload** — Supabase Storage bucket `deal-documents`; upload on Documents tab; max 25MB
 
 ### Phase 11 — Tasks (remaining)
-- [ ] **Tasks tab on Deal Detail** — show tasks linked to that specific deal; allow creating new tasks pre-linked to the deal
+- [ ] **Tasks tab on Deal Detail** — show tasks linked to that specific deal; create tasks pre-linked to deal
 
 ### Phase 12 — Memo Module *(most complex remaining feature)*
 - [ ] Memo tab on Deal Detail (visible when stage ≥ 'Mandate Accepted')
-- [ ] Full memo editor at `/pipeline/[dealId]/memo` — 9 sections, auto-save, status selector (Draft/In Review/Final)
-- [ ] PDF export (`/api/memos/[memoId]/export`)
-- [ ] DOCX export
+- [ ] Full memo editor at `/pipeline/[dealId]/memo` — 9 sections, auto-save, Draft/In Review/Final status
+- [ ] PDF + DOCX export
 
-### Phase 15 — JotForm Webhook *(may be superseded by Phase 22)*
-- [ ] Evaluate whether in-app form builder fully replaces JotForm for all intake use cases
-- [ ] If still needed: `src/app/api/webhooks/jotform/route.ts` — POST handler; maps JotForm fields → pipeline entry
+### Phase 15 — JotForm Webhook *(likely superseded by Phase 22)*
+- [ ] Evaluate if in-app form builder fully replaces JotForm; if not, build webhook handler
 
 ### Phase 17 — Wiki Integration with App Components
 - [ ] Wire `<WikiButton sectionKey="..." />` into every page header
-- [ ] Add wiki content for Forms, Form Builder, Intake Pipeline flow
-- [ ] Add inline tooltip hints on form builder nodes and fields
+- [ ] Add wiki content for Forms, Form Builder, Intake Pipeline, Pipeline Board
 
 ### Phase 18 — Global Search Bar
-- [ ] **Command palette** (`Cmd+K` / `Ctrl+K`) — search deals, investors, tasks, wiki
+- [ ] Command palette (`Cmd+K` / `Ctrl+K`) — search deals, investors, tasks, wiki
 - [ ] Keyboard navigation, grouped results, debounced client-side search
 
-### Phase 19 — Smart Matching (DB-01 to DB-12)
-- [ ] Entity tagging on investors + deals (sector, stage, thesis keywords)
-- [ ] pgvector embeddings on investor thesis
-- [ ] Match Edge Function — fires on deal reaching 'Mandate Accepted'; Claude API ranking
-- [ ] Match results UI — 3-tab panel on Fund Outreach screen
-- [ ] One-click add to outreach from match results
-- [ ] Bulk CSV import for investors
+### Phase 19 — Smart Matching
+- [ ] Entity tagging on investors + deals; pgvector embeddings; Match Edge Function (Claude API)
+- [ ] Match results UI on Fund Outreach screen; bulk CSV import for investors
 
 ### Phase 20 — Microtools
-- [ ] **MT-1: Call Note Structurer** — Claude API → structured 6-section note from raw text
-- [ ] **MT-2: Pitch Deck Ingestion Engine** — PDF upload → Claude vision → memo section mapping
-- [ ] **MT-3: CCPS Deal Structure Calculator** — cap table, dilution %, exit waterfall; save scenarios to deal
-- [ ] **MT-4: In-App Messaging** — DM threads, deal Comments tab, @mentions, Supabase Realtime
+- [ ] **MT-1**: Call Note Structurer — Claude API → structured note from raw text
+- [ ] **MT-2**: Pitch Deck Ingestion — PDF → Claude vision → memo section mapping
+- [ ] **MT-3**: CCPS Deal Structure Calculator — cap table, dilution %, exit waterfall
+- [ ] **MT-4**: In-App Messaging — DM threads, deal Comments, @mentions, Supabase Realtime
 
 ### Phase 21 — DPDP Compliance (India)
-- [ ] Consent capture on intake forms and investor record creation
-- [ ] Privacy notice, in-app policy pages, right to access/correction/erasure forms
+- [ ] Consent capture, privacy notices, right to access/correction/erasure forms
 - [ ] Immutable `consent_log` table; auto-deletion cron; breach notification workflow
 
 ### Phase 22 — Form Builder (remaining polish)
-- [ ] **Email notification on submission** — send email to assigned team member when a new entry lands in their pipeline stage
-- [ ] **Form analytics** — per-form stats: total views, submissions, drop-off rate per question, not-eligible rate
-- [ ] **Submission review mode** — bulk view of all entries for a form with filter by end condition (submitted vs not eligible)
-- [ ] **Re-submission prevention** — optionally block the same email from submitting the same form twice
+- [ ] **Email notification on submission** — notify assigned team member when entry arrives
+- [ ] **Form analytics** — views, submissions, drop-off rate per question, not-eligible rate
+- [ ] **Submission review mode** — bulk view of all entries for a form
+- [ ] **Re-submission prevention** — block same email from submitting the same form twice
 - [ ] **Form duplication** — clone an existing form as a starting point
 
 ---
 
 ## ⏸ Deferred to v2
 
-- Marketing & Content Ops module (FR-22, FR-23, FR-24)
-- AI-assisted memo drafting (FR-34)
+- Marketing & Content Ops module
+- AI-assisted memo drafting
 - Portfolio monitoring dashboard
 - LP-facing reporting portal
 - Mobile hamburger menu
 - Full WCAG 2.1 AA audit
 - Social media API integrations
 - WhatsApp/Twilio notifications
-- HR Tool microtool (MT-5) — travel reimbursements, expense claims, leave tracking, employee document vault
+- HR Tool microtool (MT-5)
 
 ---
 
 ## Infrastructure
-- Dev server: `http://localhost:3000`
-- Supabase project: `hsabrzwsetjeaqutjrjb` (ap-south-1)
-- Sign-in: Google OAuth (primary) or email/password (secondary, requires password set in User Management)
-- Active accounts managed via User Management (`/admin/users`) → `approved_emails` table
-- Forms route: `/forms` (list) → `/forms/[id]/builder` (canvas editor) → `/f/[token]` (public renderer)
-- Pipelines route: `/pipelines` (list) → `/pipelines/[id]` (Kanban board with drag & drop)
+- **Repo**: `https://github.com/Arboreallabs-Founder/ESV-Ecosystem` (public)
+- **Dev server**: `http://localhost:3000` (run from repo root)
+- **Vercel**: deployed from repo root; env vars set in Vercel dashboard
+- **Supabase**: `hsabrzwsetjeaqutjrjb` (ap-south-1)
+- **Sign-in**: Google OAuth (primary) or email/password (secondary)
+- **Active accounts**: managed via `/admin/users` → `approved_emails` table
+- **Routes**: `/forms` → `/forms/[id]/builder` → `/f/[token]` (public) | `/pipelines` → `/pipelines/[id]`
