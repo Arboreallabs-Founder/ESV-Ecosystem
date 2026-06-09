@@ -139,6 +139,72 @@ export async function linkFormToPipeline(formId: string, pipelineId: string | nu
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('forms').update({ pipeline_id: pipelineId }).eq('id', formId)
   if (error) throw error
+
+  if (!pipelineId) return
+
+  // Find the lead stage of the target pipeline
+  const { data: leadStage } = await supabase
+    .from('pipeline_stages')
+    .select('id')
+    .eq('pipeline_id', pipelineId)
+    .eq('stage_type', 'lead')
+    .single()
+
+  if (!leadStage) return
+
+  // Find all existing entries for this form from other pipelines
+  const { data: existingEntries } = await supabase
+    .from('pipeline_entries')
+    .select('id, title, submitter_name, submitter_email, form_link_id')
+    .eq('form_id', formId)
+    .neq('pipeline_id', pipelineId)
+
+  if (!existingEntries || existingEntries.length === 0) return
+
+  // Exclude form_link_ids already present in the target pipeline
+  const { data: alreadyLinked } = await supabase
+    .from('pipeline_entries')
+    .select('form_link_id')
+    .eq('pipeline_id', pipelineId)
+    .eq('form_id', formId)
+
+  const linkedTokens = new Set((alreadyLinked ?? []).map((e: any) => e.form_link_id))
+  const toImport = existingEntries.filter((e: any) => !linkedTokens.has(e.form_link_id))
+
+  if (toImport.length === 0) return
+
+  // Create entries in the lead stage
+  const { data: newEntries } = await supabase
+    .from('pipeline_entries')
+    .insert(
+      toImport.map((e: any) => ({
+        pipeline_id: pipelineId,
+        form_id: formId,
+        form_link_id: e.form_link_id,
+        stage_id: leadStage.id,
+        title: e.title,
+        submitter_name: e.submitter_name,
+        submitter_email: e.submitter_email,
+      }))
+    )
+    .select('id, form_link_id')
+
+  if (!newEntries || newEntries.length === 0) return
+
+  // Copy answers for each new entry
+  for (const newEntry of newEntries) {
+    const source = toImport.find((e: any) => e.form_link_id === newEntry.form_link_id)
+    if (!source) continue
+    const { data: answers } = await supabase
+      .from('pipeline_entry_answers')
+      .select('node_id, answer_text')
+      .eq('entry_id', source.id)
+    if (answers && answers.length > 0) {
+      await supabase.from('pipeline_entry_answers').insert(
+        answers.map((a: any) => ({ entry_id: newEntry.id, node_id: a.node_id, answer_text: a.answer_text }))
+      )
+    }
+  }
 }
 
 // Public submission — called from /f/[token] page (no auth required)

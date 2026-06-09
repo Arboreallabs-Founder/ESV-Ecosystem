@@ -261,3 +261,62 @@
 }
 .submitBtn:disabled { opacity: 0.55; cursor: not-allowed; }
 .submitBtn:not(:disabled):hover { opacity: 0.88; }
+
+/* Delete / danger variant */
+.deleteBtn {
+  padding: 0.5625rem 1.375rem;
+  background: var(--color-destructive, #dc2626);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.deleteBtn:disabled { opacity: 0.45; cursor: not-allowed; }
+.deleteBtn:not(:disabled):hover { opacity: 0.88; }
+
+.dangerBox {
+  background: rgba(220, 38, 38, 0.07);
+  border: 1.5px solid rgba(220, 38, 38, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 0.875rem 1rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  line-height: 1.55;
+}
+
+.dangerBox strong { color: #dc2626; }
+
+/* Card wrapper so we can have a delete button alongside the link */
+.cardWrapper {
+  position: relative;
+}
+
+.cardDeleteBtn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 2;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid transparent;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+  font-size: 0.875rem;
+}
+.cardWrapper:hover .cardDeleteBtn { opacity: 1; }
+.cardDeleteBtn:hover {
+  background: rgba(220,38,38,0.1);
+  color: #dc2626;
+  border-color: rgba(220,38,38,0.25);
+}
