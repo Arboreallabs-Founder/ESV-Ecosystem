@@ -1,19 +1,60 @@
 # Earlyseed Ventures (ESV) Ecosystem App Context
 
 ## Project Overview
-Ecosystem is the unified deal pipeline and CRM platform for Earlyseed Ventures, covering the full IB workflow. It replaces Google Sheets, WhatsApp, and Docs. 
+Ecosystem is the unified deal pipeline and CRM platform for Earlyseed Ventures, covering the full IB workflow. It replaces Google Sheets, WhatsApp, and Docs.
 
-## Current Status (May 2026)
-- **Initialized:** Next.js (App Router) project created in `ecosystem-app`.
-- **Database:** Supabase Cloud Project (`hsabrzwsetjeaqutjrjb`) created via MCP. Initial schema (Deals, Partners, Notes, Investors, History) applied to the cloud DB.
-- **Currently Doing:** Building the Authentication UI. Due to strict Supabase free-tier rate limits (3 sign-ups/hr), we are wiring the login screen first so we can manually register a test user, bypass email confirmation via SQL, and then implement the Row-Level Security (RLS) policies.
-- **Next Up:** RLS Policies, Kanban Pipeline View, Deal Details.
+## Current Status (June 2026)
+- **Live:** Deployed to Vercel at `https://ecosystem-liart.vercel.app`
+- **Repo:** `https://github.com/Arboreallabs-Founder/ESV-Ecosystem` (main branch)
+- **Database:** Supabase Cloud Project (`hsabrzwsetjeaqutjrjb`, ap-south-1)
+- **Auth:** Google OAuth (primary) + email/password (secondary). Pre-approved emails only via `approved_emails` table.
+- **Phases complete:** 1–11, 13–14, 16, 22 + follow-on safety features
+
+## What's Built
+The app is a fully functional internal tool covering:
+- **Auth** — Google OAuth + email/password; role-gated routes; `/auth/callback` + `/auth/denied`
+- **Pipeline (legacy)** — 11-stage Kanban + table view for the old deal flow (`/pipeline`)
+- **Intake Pipeline (Phase 22)** — Visual form builder (`/forms/[id]/builder`) → shareable links → public form renderer (`/f/[token]`) → Kanban pipeline board (`/pipelines/[id]`)
+- **Investors** — Fund database with outreach tracking per deal
+- **Tasks** — Kanban task board linked to deals and assignees
+- **Admin** — User management, role assignment, account creation/revocation
+- **Partner Portal** — Franchise partner deal submission and tracking
+- **Wiki** — In-app reference documentation
 
 ## Tech Stack
-- **Frontend Framework:** Next.js (React) App Router
-- **Styling:** Vanilla CSS (Tailwind config removed as per strict system instructions; all styling must use standard CSS).
-- **Backend & Auth:** Supabase Cloud
-- **Components:** Custom built; no external dense UI libraries.
+- **Frontend:** Next.js 16 App Router (React 19), TypeScript
+- **Styling:** Vanilla CSS with CSS variables (no Tailwind — removed). All styles in `*.module.css` files.
+- **Backend & Auth:** Supabase Cloud (Postgres + Auth + Edge Functions)
+- **Deployment:** Vercel (root of repo, Next.js preset)
+- **Components:** Custom built; no external dense UI libraries. `@xyflow/react` for form builder canvas only.
+
+## Project Structure
+```
+/src
+  /app
+    /actions          — Server actions (pipelines.ts, forms.ts, admin.ts, etc.)
+    /admin            — User management + partners pages
+    /auth             — /callback and /denied routes
+    /dashboard        — Dashboard page
+    /forms            — Forms list + [id]/builder
+    /f                — Public form renderer (/f/[token])
+    /investors        — Investor database
+    /login            — Login page
+    /pipelines        — Pipeline list + [id] board
+    /portal           — Franchise partner portal
+    /tasks            — Task board
+    /wiki             — Full wiki page
+    layout.tsx        — Root layout with app shell
+  /lib
+    /supabase         — server.ts + client.ts Supabase client helpers
+    types.ts          — Shared TypeScript types
+    wiki.ts           — Wiki content (WIKI record)
+```
+
+## Database (Supabase `hsabrzwsetjeaqutjrjb`)
+Key tables: `users`, `approved_emails`, `pipelines`, `pipeline_stages`, `pipeline_entries`, `pipeline_entry_answers`, `pipeline_entry_assignees`, `forms`, `form_nodes`, `form_node_options`, `form_edges`, `form_links`, `deals`, `investors`, `fund_outreach`, `tasks`, `franchise_partners`, `deal_notes`, `deal_documents`, `deal_stage_history`
+
+RLS is enforced via `get_user_role()` SECURITY DEFINER function. All writes go through server actions that call `requireAdmin()` or `requireInternal()`.
 
 ## Design & Brand Guidelines
 The app must feel premium, using rich aesthetics and smooth interactions.
@@ -34,3 +75,11 @@ The app must feel premium, using rich aesthetics and smooth interactions.
 - ESV brand palette strictly followed.
 - Both light and dark mode supported (implemented via CSS variables).
 - Role-aware UI (Founder, Admin, Associate, Franchise Partner).
+- All modals use `onMouseDown` (not `onClick`) to prevent accidental close on drag.
+
+## Key Conventions
+- Server actions live in `/src/app/actions/` and are the only place DB writes happen.
+- `requireAdmin()` / `requireInternal()` guards are at the top of every mutating action.
+- No `revalidatePath` in actions — components call `router.refresh()` after mutations.
+- CSS variables are defined in `src/app/globals.css`. Always use them, never hardcode colours.
+- `@xyflow/react` is used only in the form builder — do not introduce it elsewhere.
