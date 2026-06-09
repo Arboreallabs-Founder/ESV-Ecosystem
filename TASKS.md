@@ -1,5 +1,5 @@
 # ESV Ecosystem — Build Tasks
-> Last updated: 2026-06-06. Phases 1–11, 13–14, 16, 22 complete. Deployed to Vercel.
+> Last updated: 2026-06-09. Phases 1–11, 13–14, 16, 22 complete. Deployed to Vercel.
 
 ---
 
@@ -156,6 +156,10 @@ Clicking the entry shows all Q&A responses + which user's link was used
 - [x] **Rejection reason modal**: moving to Rejected prompts for reason (optional); stored and shown in entry detail
 - [x] **Entry detail modal**: Q&A responses, link creator chip, rejection reason box, multi-assignee management
 - [x] **Forms modal**: link/unlink forms to pipeline from board
+
+### Pipeline & Form Safety (Phase 22 follow-on)
+- [x] **Delete pipeline confirmation** — admin must type the exact pipeline name to confirm; modal shows deal count warning; delete button locked until name matches
+- [x] **Form → pipeline backfill** — linking a form with existing submissions to a new pipeline automatically imports all prior entries into the lead stage (answers copied, duplicates skipped by `form_link_id`)
 
 ### Deployment & Infrastructure
 - [x] Repo restructured: Next.js app moved from `ecosystem-app/` to repo root for zero-config Vercel deployment

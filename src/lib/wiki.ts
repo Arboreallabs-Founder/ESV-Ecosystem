@@ -90,6 +90,46 @@ export const WIKI: Record<string, WikiSection> = {
     ],
   },
 
+  forms: {
+    title: 'Forms',
+    summary: 'Build and manage intake forms that feed directly into pipelines. Forms are visual branching flows — each question can route founders down different paths.',
+    items: [
+      { heading: 'Creating a Form', body: 'Click "+ New Form". Give it a title, optional description, and optionally link it to a pipeline at creation. Only admins and founders can create or edit forms.' },
+      { heading: 'Linking to a Pipeline', body: 'A form must be linked to a pipeline before submissions create entries. Link or change the pipeline from the form settings (⚙ button in the builder). Linking a form that already has submissions will automatically backfill all existing entries into the new pipeline\'s Lead stage.' },
+      { heading: 'Generating Links', body: 'Any team member (including associates and partners) can generate a personalised shareable link. Click "+ Get Link" on any published form. Each link records the creator\'s name so entries show "via [Name]\'s link" in the pipeline.' },
+      { heading: 'Published vs Draft', body: 'A form must be Published before public links work. Toggle this from the builder toolbar. Draft forms return an error page if anyone visits their link.' },
+      { heading: 'Submission outcomes', body: 'If a founder reaches a "Submitted" end node, their contact info is collected and a pipeline entry is created in the Lead stage. If they reach a "Not Eligible" end node, a rejection screen is shown and nothing is recorded.' },
+    ],
+  },
+
+  formBuilder: {
+    title: 'Form Builder',
+    summary: 'A visual canvas for building branching intake flows. Each form is a directed graph of question nodes with conditional routing.',
+    items: [
+      { heading: 'Node types', body: 'Start (entry point, one per form), Question (short text / long text / MCQ), End — either Submitted (green) or Not Eligible (amber). Every form must have exactly one of each end type.' },
+      { heading: 'MCQ branching', body: 'Each MCQ option creates its own output handle. Wire each option to the next question or to an end node. Every handle must be connected before you can save.' },
+      { heading: 'Properties panel', body: 'Click any node to open its properties on the right. Set question text (supports **bold** and *italic* markdown), answer type, and MCQ options. Options can be reordered.' },
+      { heading: 'Saving & validation', body: 'The Save button runs a full graph check: missing end types, unconnected handles, and duplicate edges are all blocked with a specific error message. The form is only saved if it is fully valid.' },
+      { heading: 'Keyboard shortcuts', body: 'Delete or Backspace removes selected nodes/edges. Scroll to zoom. Drag the canvas to pan. Use Fit View (bottom-left controls) to reset the view.' },
+    ],
+  },
+
+  pipelines: {
+    title: 'Pipelines',
+    summary: 'Kanban boards that track form submissions from first lead through to accepted or rejected. Each pipeline has its own stages and deal cards.',
+    items: [
+      { heading: 'Mandatory stages', body: 'Every pipeline has three locked stages: Lead (entry point, purple), Accepted (end state, green), and Rejected (end state, red). These cannot be renamed or deleted.' },
+      { heading: 'Custom stages', body: 'Add stages between Lead and the end states via the "+ Add Stage" button in the board header. Each stage has a custom name and colour. Custom stages with active deals cannot be deleted.' },
+      { heading: 'Deleting a stage', body: 'If a custom stage has no active deals, deleting it moves any remaining entries to Unsorted. If the stage has active entries, the delete is blocked — move the deals first.' },
+      { heading: 'Deleting a pipeline', body: 'Deleting a pipeline permanently destroys all its stages and every deal inside it. You must type the exact pipeline name to confirm. This cannot be undone.' },
+      { heading: 'Deal cards', body: 'Each card shows the company name, submitter, assignees, and the link creator chip. Drag cards between columns to move stages. Click a card to open the full entry detail.' },
+      { heading: 'Entry detail', body: 'The entry panel shows all Q&A answers from the form submission, which link was used ("via [Name]\'s link"), assigned team members (add/remove), and the rejection reason if applicable.' },
+      { heading: 'Rejection flow', body: 'Moving a deal to the Rejected column triggers a prompt for a reason (optional). The reason is stored on the entry and shown in the detail panel.' },
+      { heading: 'Assigning team members', body: 'Open the entry detail and use the assignee picker to add or remove team members. Franchise partners are excluded from assignment. Multiple people can own the same deal.' },
+      { heading: 'Linking forms', body: 'Use the "Forms" button in the board header to link or unlink intake forms. Multiple forms can feed the same pipeline. Submissions from all linked forms appear in the Lead column.' },
+    ],
+  },
+
   portal: {
     title: 'Franchise Partner Portal',
     summary: 'The view for external franchise partners. Submit deals and track their progress.',
