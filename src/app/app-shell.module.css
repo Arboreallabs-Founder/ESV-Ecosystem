@@ -128,6 +128,8 @@
   opacity: 1;
   pointer-events: auto;
   transform: translateX(0);
+  /* no delay on show */
+  transition: opacity 0.1s ease 0s, transform 0.1s ease 0s;
 }
 
 .navGroupBtn {
@@ -178,8 +180,19 @@
   z-index: 200;
   opacity: 0;
   pointer-events: none;
-  transform: translateX(-6px);
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: translateX(-4px);
+  /* delay on hide so mouse can travel from sidebar to flyout */
+  transition: opacity 0.12s ease 0.18s, transform 0.12s ease 0.18s;
+}
+
+/* invisible bridge fills the gap between sidebar edge and flyout */
+.navFlyout::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -14px;
+  width: 14px;
+  height: 100%;
 }
 
 .navFlyoutLabel {
