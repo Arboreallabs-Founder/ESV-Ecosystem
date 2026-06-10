@@ -160,3 +160,42 @@ export type PipelineEntryAnswer = {
   answer_text: string | null
   node?: Pick<FormNode, 'question_text' | 'answer_type'>
 }
+
+// ── Active Deals ──────────────────────────────────────────────────────────────
+
+export type DealCategoryField = {
+  id: string
+  category_id: string
+  label: string
+  field_type: 'text' | 'numeric' | 'percentage' | 'url'
+  required: boolean
+  position: number
+}
+
+export type DealCategory = {
+  id: string
+  name: string
+  description: string | null
+  color: string
+  created_at: string
+  fields: DealCategoryField[]
+}
+
+export type ActiveDealCategoryData = {
+  category: DealCategory
+  field_values: Array<{ field_id: string; value: string | null }>
+}
+
+export type ActiveDeal = {
+  id: string
+  pipeline_entry_id: string
+  created_at: string
+  entry: {
+    title: string | null
+    submitter_name: string | null
+    submitter_email: string | null
+    submitted_at: string
+    pipeline_id: string
+  }
+  categories: ActiveDealCategoryData[]
+}

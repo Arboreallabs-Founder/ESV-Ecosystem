@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { addStage, updateStage, deleteStage, moveEntry, deleteEntry, addAssignee, removeAssignee, rejectEntry, getEntryAnswers } from '@/app/actions/pipelines'
 import { linkFormToPipeline } from '@/app/actions/forms'
-import type { Pipeline, PipelineStage, PipelineEntry } from '@/lib/types'
+import { getCategories, acceptDeal } from '@/app/actions/active-deals'
+import type { Pipeline, PipelineStage, PipelineEntry, DealCategory } from '@/lib/types'
 import styles from './board.module.css'
 
 const STAGE_COLORS = ['#745FFD', '#16a34a', '#d97706', '#dc2626', '#0ea5e9', '#8b5cf6', '#ec4899', '#14b8a6']
@@ -59,6 +60,15 @@ export default function PipelineBoardClient({
   const [rejectionPending, setRejectionPending] = useState<{ entryId: string; stageId: string } | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
 
+  // Acceptance modal
+  const [acceptancePending, setAcceptancePending] = useState<{ entryId: string; stageId: string } | null>(null)
+  const [acceptCategories, setAcceptCategories] = useState<DealCategory[]>([])
+  const [acceptCategoriesLoaded, setAcceptCategoriesLoaded] = useState(false)
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([])
+  const [acceptFieldValues, setAcceptFieldValues] = useState<Record<string, Record<string, string>>>({})
+  const [acceptError, setAcceptError] = useState('')
+  const [isAccepting, startAcceptTransition] = useTransition()
+
   // Forms modal
   const [showFormsModal, setShowFormsModal] = useState(false)
   const [formsLinkPending, startFormsTransition] = useTransition()
@@ -79,6 +89,7 @@ export default function PipelineBoardClient({
   })
 
   const rejectedStageIds = new Set(pipeline.stages.filter((s) => s.stage_type === 'rejected').map((s) => s.id))
+  const acceptedStageIds = new Set(pipeline.stages.filter((s) => s.stage_type === 'accepted').map((s) => s.id))
 
   function openAddStage() {
     setEditStage(null); setStageName(''); setStageColor(STAGE_COLORS[pipeline.stages.filter(s => s.stage_type === 'custom').length % STAGE_COLORS.length]); setStageError(''); setShowStageModal(true)
@@ -129,7 +140,48 @@ export default function PipelineBoardClient({
       setRejectionReason('')
       return
     }
+    if (newStageId && acceptedStageIds.has(newStageId)) {
+      setAcceptancePending({ entryId, stageId: newStageId })
+      setSelectedCategoryIds([])
+      setAcceptFieldValues({})
+      setAcceptError('')
+      if (!acceptCategoriesLoaded) {
+        getCategories().then((cats) => { setAcceptCategories(cats); setAcceptCategoriesLoaded(true) })
+      }
+      return
+    }
     commitMoveEntry(entryId, newStageId)
+  }
+
+  function handleConfirmAcceptance() {
+    if (!acceptancePending) return
+    const { entryId, stageId } = acceptancePending
+
+    // Validate required fields
+    for (const catId of selectedCategoryIds) {
+      const cat = acceptCategories.find((c) => c.id === catId)
+      if (!cat) continue
+      for (const field of cat.fields.filter((f) => f.required)) {
+        const val = acceptFieldValues[catId]?.[field.id] ?? ''
+        if (!val.trim()) {
+          setAcceptError(`"${field.label}" is required for category "${cat.name}".`)
+          return
+        }
+      }
+    }
+    setAcceptError('')
+
+    const selections = selectedCategoryIds.map((catId) => ({
+      categoryId: catId,
+      fieldValues: acceptFieldValues[catId] ?? {},
+    }))
+
+    // Optimistic update
+    setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, stage_id: stageId } : e))
+    if (selectedEntry?.id === entryId) setSelectedEntry((prev) => prev ? { ...prev, stage_id: stageId } : null)
+
+    startAcceptTransition(async () => { await acceptDeal(entryId, stageId, selections) })
+    setAcceptancePending(null)
   }
 
   function handleConfirmRejection() {
@@ -317,6 +369,95 @@ export default function PipelineBoardClient({
           </div>
         </div>
       )}
+
+      {/* Acceptance modal */}
+      {acceptancePending && (() => {
+        const entry = entries.find((e) => e.id === acceptancePending.entryId)
+        return (
+          <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && !isAccepting && setAcceptancePending(null)}>
+            <div className={`${styles.modal} ${styles.acceptModal}`} onMouseDown={(e) => e.stopPropagation()}>
+              <div className={styles.modalTitle}>Accept Deal</div>
+              <p style={{ fontSize: '0.875rem', color: 'var(--color-muted)', marginTop: '-1rem', marginBottom: '1.25rem', lineHeight: 1.55 }}>
+                Moving <strong style={{ color: 'var(--color-text)' }}>{entry?.title ?? 'this deal'}</strong> to Active Deals.
+                Select the categories it belongs to and fill in any data fields.
+              </p>
+
+              {acceptCategoriesLoaded && acceptCategories.length === 0 && (
+                <p style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '0.75rem 1rem', marginBottom: '1.25rem', lineHeight: 1.5 }}>
+                  No categories set up yet. You can still accept this deal — an admin can create categories under Admin → Categories.
+                </p>
+              )}
+
+              {acceptCategories.length > 0 && (
+                <div className={styles.field}>
+                  <label className={styles.label}>Categories <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(select all that apply)</span></label>
+                  <div className={styles.categoryCheckList}>
+                    {acceptCategories.map((cat) => (
+                      <label key={cat.id} className={styles.categoryCheckRow}>
+                        <input
+                          type="checkbox"
+                          checked={selectedCategoryIds.includes(cat.id)}
+                          onChange={(e) => {
+                            setSelectedCategoryIds((prev) =>
+                              e.target.checked ? [...prev, cat.id] : prev.filter((id) => id !== cat.id)
+                            )
+                          }}
+                        />
+                        <span className={styles.catCheckDot} style={{ background: cat.color }} />
+                        <span>{cat.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Fields for each selected category */}
+              {selectedCategoryIds.map((catId) => {
+                const cat = acceptCategories.find((c) => c.id === catId)
+                if (!cat || cat.fields.length === 0) return null
+                return (
+                  <div key={catId} className={styles.acceptFieldGroup}>
+                    <div className={styles.acceptFieldGroupLabel} style={{ color: cat.color }}>
+                      {cat.name}
+                    </div>
+                    {cat.fields.map((field) => (
+                      <div key={field.id} className={styles.field} style={{ marginBottom: '0.75rem' }}>
+                        <label className={styles.label}>
+                          {field.label}
+                          {field.required && <span style={{ color: 'var(--color-primary)' }}> *</span>}
+                          <span style={{ fontWeight: 400, marginLeft: '0.375rem', textTransform: 'none', letterSpacing: 0, fontSize: '0.7rem', color: 'var(--color-muted)' }}>
+                            {field.field_type === 'percentage' ? '%' : field.field_type === 'numeric' ? 'number' : field.field_type === 'url' ? 'https://…' : ''}
+                          </span>
+                        </label>
+                        <input
+                          className={styles.input}
+                          type={field.field_type === 'numeric' || field.field_type === 'percentage' ? 'number' : field.field_type === 'url' ? 'url' : 'text'}
+                          value={acceptFieldValues[catId]?.[field.id] ?? ''}
+                          onChange={(e) => setAcceptFieldValues((prev) => ({
+                            ...prev,
+                            [catId]: { ...(prev[catId] ?? {}), [field.id]: e.target.value },
+                          }))}
+                          placeholder={field.field_type === 'url' ? 'https://' : field.field_type === 'percentage' ? '0–100' : ''}
+                          required={field.required}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+
+              {acceptError && <p className={styles.errorMsg}>{acceptError}</p>}
+
+              <div className={styles.modalActions}>
+                <button className={styles.cancelBtn} onClick={() => setAcceptancePending(null)} disabled={isAccepting}>Cancel</button>
+                <button className={styles.acceptConfirmBtn} onClick={handleConfirmAcceptance} disabled={isAccepting}>
+                  {isAccepting ? 'Accepting…' : 'Accept Deal →'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Stage modal */}
       {showStageModal && (

@@ -1,0 +1,143 @@
+'use server'
+
+import { createClient } from '@/lib/supabase/server'
+import type { DealCategory } from '@/lib/types'
+
+async function requireAdmin() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
+  if (!data || !['founder', 'admin'].includes(data.role)) throw new Error('Forbidden')
+  return { supabase, userId: user.id }
+}
+
+async function requireInternal() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
+  if (!data || !['founder', 'admin', 'associate'].includes(data.role)) throw new Error('Forbidden')
+  return { supabase }
+}
+
+// ── Categories ────────────────────────────────────────────────────────────────
+
+export async function getCategories(): Promise<DealCategory[]> {
+  const { supabase } = await requireInternal()
+  const { data } = await supabase
+    .from('deal_categories')
+    .select('*, fields:deal_category_fields(*)')
+    .order('created_at', { ascending: true })
+  if (!data) return []
+  return data.map((c: any) => ({
+    ...c,
+    fields: (c.fields ?? []).sort((a: any, b: any) => a.position - b.position),
+  }))
+}
+
+export async function createCategory(name: string, description: string, color: string) {
+  const { supabase, userId } = await requireAdmin()
+  const { data, error } = await supabase
+    .from('deal_categories')
+    .insert({ name: name.trim(), description: description.trim() || null, color, created_by: userId })
+    .select('id')
+    .single()
+  if (error) throw error
+  return data.id as string
+}
+
+export async function updateCategory(id: string, name: string, description: string, color: string) {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase
+    .from('deal_categories')
+    .update({ name: name.trim(), description: description.trim() || null, color })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function deleteCategory(id: string) {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase.from('deal_categories').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ── Category Fields ───────────────────────────────────────────────────────────
+
+export async function addCategoryField(
+  categoryId: string,
+  label: string,
+  fieldType: 'text' | 'numeric' | 'percentage' | 'url',
+  required: boolean,
+  position: number,
+) {
+  const { supabase } = await requireAdmin()
+  const { data, error } = await supabase
+    .from('deal_category_fields')
+    .insert({ category_id: categoryId, label: label.trim(), field_type: fieldType, required, position })
+    .select('id')
+    .single()
+  if (error) throw error
+  return data.id as string
+}
+
+export async function updateCategoryField(
+  fieldId: string,
+  label: string,
+  fieldType: 'text' | 'numeric' | 'percentage' | 'url',
+  required: boolean,
+) {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase
+    .from('deal_category_fields')
+    .update({ label: label.trim(), field_type: fieldType, required })
+    .eq('id', fieldId)
+  if (error) throw error
+}
+
+export async function deleteCategoryField(fieldId: string) {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase.from('deal_category_fields').delete().eq('id', fieldId)
+  if (error) throw error
+}
+
+// ── Accept Deal ───────────────────────────────────────────────────────────────
+
+export async function acceptDeal(
+  entryId: string,
+  stageId: string,
+  selections: Array<{
+    categoryId: string
+    fieldValues: Record<string, string> // fieldId → value
+  }>,
+) {
+  const { supabase } = await requireAdmin()
+
+  // Move entry to accepted stage
+  await supabase.from('pipeline_entries').update({ stage_id: stageId }).eq('id', entryId)
+
+  // Create active deal record
+  const { data: activeDeal, error: dealErr } = await supabase
+    .from('active_deals')
+    .insert({ pipeline_entry_id: entryId })
+    .select('id')
+    .single()
+  if (dealErr) throw dealErr
+
+  if (selections.length === 0) return
+
+  // Link categories
+  await supabase.from('active_deal_categories').insert(
+    selections.map((s) => ({ active_deal_id: activeDeal.id, category_id: s.categoryId }))
+  )
+
+  // Insert field values (flatten all selections)
+  const allValues = selections.flatMap((s) =>
+    Object.entries(s.fieldValues)
+      .filter(([, v]) => v.trim() !== '')
+      .map(([fieldId, value]) => ({ active_deal_id: activeDeal.id, field_id: fieldId, value: value.trim() }))
+  )
+  if (allValues.length > 0) {
+    await supabase.from('active_deal_field_values').insert(allValues)
+  }
+}
