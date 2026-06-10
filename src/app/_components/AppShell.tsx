@@ -126,6 +126,27 @@ export default function AppShell({
   const displayName = user.name ?? user.email ?? 'User'
   const initials = displayName.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
+  const [flyoutTop, setFlyoutTop] = useState<number | null>(null)
+  const hideTimer = useState<ReturnType<typeof setTimeout> | null>(null)
+
+  function handleGroupEnter(e: React.MouseEvent<HTMLDivElement>) {
+    if (hideTimer[0]) clearTimeout(hideTimer[0])
+    const rect = e.currentTarget.getBoundingClientRect()
+    setFlyoutTop(rect.top)
+  }
+
+  function handleGroupLeave() {
+    hideTimer[1](setTimeout(() => setFlyoutTop(null), 180))
+  }
+
+  function handleFlyoutEnter() {
+    if (hideTimer[0]) clearTimeout(hideTimer[0])
+  }
+
+  function handleFlyoutLeave() {
+    hideTimer[1](setTimeout(() => setFlyoutTop(null), 80))
+  }
+
   async function handleSignOut() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -159,7 +180,7 @@ export default function AppShell({
               if (visibleChildren.length === 0) return null
               const isGroupActive = entry.children.some((c) => pathname === c.href || pathname.startsWith(c.href))
               return (
-                <div key={entry.label} className={styles.navGroupWrapper}>
+                <div key={entry.label} className={styles.navGroupWrapper} onMouseEnter={handleGroupEnter} onMouseLeave={handleGroupLeave}>
                   <div className={`${styles.navGroupBtn} ${isGroupActive ? styles.navGroupBtnActive : ''}`}>
                     <span className={styles.navIcon}>{entry.icon}</span>
                     {entry.label}
@@ -170,22 +191,29 @@ export default function AppShell({
                       <path d="m9 18 6-6-6-6" />
                     </svg>
                   </div>
-                  <div className={styles.navFlyout}>
-                    <div className={styles.navFlyoutLabel}>{entry.label}</div>
-                    {visibleChildren.map((child) => {
-                      const isActive = pathname === child.href || pathname.startsWith(child.href)
-                      return (
-                        <Link
-                          key={child.href}
-                          href={child.href}
-                          className={`${styles.navSubItem} ${isActive ? styles.navSubItemActive : ''}`}
-                        >
-                          <span className={styles.navIcon}>{child.icon}</span>
-                          {child.label}
-                        </Link>
-                      )
-                    })}
-                  </div>
+                  {flyoutTop !== null && (
+                    <div
+                      className={styles.navFlyout}
+                      style={{ top: flyoutTop }}
+                      onMouseEnter={handleFlyoutEnter}
+                      onMouseLeave={handleFlyoutLeave}
+                    >
+                      <div className={styles.navFlyoutLabel}>{entry.label}</div>
+                      {visibleChildren.map((child) => {
+                        const isActive = pathname === child.href || pathname.startsWith(child.href)
+                        return (
+                          <Link
+                            key={child.href}
+                            href={child.href}
+                            className={`${styles.navSubItem} ${isActive ? styles.navSubItemActive : ''}`}
+                          >
+                            <span className={styles.navIcon}>{child.icon}</span>
+                            {child.label}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )
             }

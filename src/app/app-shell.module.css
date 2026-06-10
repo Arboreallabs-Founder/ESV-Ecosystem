@@ -124,13 +124,6 @@
   position: relative;
 }
 
-.navGroupWrapper:hover .navFlyout {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateX(0);
-  /* no delay on show */
-  transition: opacity 0.1s ease 0s, transform 0.1s ease 0s;
-}
 
 .navGroupBtn {
   display: flex;
@@ -166,11 +159,10 @@
   opacity: 0.45;
 }
 
-/* Flyout panel */
+/* Flyout panel — shown/hidden via JS (flyoutTop state) */
 .navFlyout {
   position: fixed;
-  left: 232px;
-  top: auto;
+  left: 240px;
   min-width: 180px;
   background: var(--color-card);
   border: 1px solid var(--color-border);
@@ -178,14 +170,9 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   padding: 0.5rem;
   z-index: 200;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateX(-4px);
-  /* delay on hide so mouse can travel from sidebar to flyout */
-  transition: opacity 0.12s ease 0.18s, transform 0.12s ease 0.18s;
 }
 
-/* invisible bridge fills the gap between sidebar edge and flyout */
+/* invisible bridge so mouse can travel from sidebar to flyout */
 .navFlyout::before {
   content: '';
   position: absolute;
