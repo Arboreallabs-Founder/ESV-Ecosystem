@@ -119,6 +119,83 @@
   opacity: 1;
 }
 
+/* Nav group (collapsible) */
+.navGroupBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.navGroupBtn:hover {
+  background: rgba(116, 95, 253, 0.07);
+  color: var(--color-text);
+}
+
+.navGroupBtnActive {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.navGroupChevron {
+  margin-left: auto;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+  opacity: 0.5;
+}
+
+.navGroupChevronOpen {
+  transform: rotate(90deg);
+}
+
+.navSubList {
+  overflow: hidden;
+  max-height: 0;
+  transition: max-height 0.2s ease;
+}
+
+.navSubListOpen {
+  max-height: 200px;
+}
+
+.navSubItem {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.4rem 0.75rem 0.4rem 2rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-muted);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.navSubItem:hover {
+  background: rgba(116, 95, 253, 0.07);
+  color: var(--color-text);
+}
+
+.navSubItemActive {
+  color: var(--color-primary) !important;
+  background: rgba(116, 95, 253, 0.1) !important;
+  font-weight: 600;
+}
+
 /* Footer */
 .sidebarFooter {
   padding: 0.875rem 1rem;

@@ -32,8 +32,10 @@ function Icon({ d, d2 }: { d: string; d2?: string }) {
 }
 
 type NavItem = { href: string; label: string; roles: string[]; icon: React.ReactNode }
+type NavGroup = { group: true; label: string; roles: string[]; icon: React.ReactNode; children: NavItem[] }
+type NavEntry = NavItem | NavGroup
 
-const NAV_ITEMS: NavItem[] = [
+const NAV_ITEMS: NavEntry[] = [
   {
     href: '/dashboard',
     label: 'Dashboard',
@@ -53,10 +55,24 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Icon d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />,
   },
   {
-    href: '/active-deals',
+    group: true,
     label: 'Active Deals',
     roles: ['founder', 'admin', 'associate'],
-    icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" d2="M3 3h18M3 9h18" />,
+    icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
+    children: [
+      {
+        href: '/active-deals',
+        label: 'Deals',
+        roles: ['founder', 'admin', 'associate'],
+        icon: <Icon d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />,
+      },
+      {
+        href: '/admin/categories',
+        label: 'Categories',
+        roles: ['founder', 'admin'],
+        icon: <Icon d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L9.568 3Z" d2="M6 6h.008v.008H6V6Z" />,
+      },
+    ],
   },
   {
     href: '/tasks',
@@ -75,12 +91,6 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Partners',
     roles: ['founder', 'admin'],
     icon: <Icon d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />,
-  },
-  {
-    href: '/admin/categories',
-    label: 'Categories',
-    roles: ['founder', 'admin'],
-    icon: <Icon d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L9.568 3Z" d2="M6 6h.008v.008H6V6Z" />,
   },
   {
     href: '/admin/users',
@@ -116,6 +126,9 @@ export default function AppShell({
   const displayName = user.name ?? user.email ?? 'User'
   const initials = displayName.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
+  const activeDealsGroupActive = pathname.startsWith('/active-deals') || pathname.startsWith('/admin/categories')
+  const [activeDealsOpen, setActiveDealsOpen] = useState(activeDealsGroupActive)
+
   async function handleSignOut() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -143,18 +156,55 @@ export default function AppShell({
 
         {/* Nav links */}
         <nav className={styles.sidebarNav}>
-          {visibleNav.map((item) => {
+          {visibleNav.map((entry) => {
+            if ('group' in entry) {
+              const visibleChildren = entry.children.filter((c) => c.roles.includes(role))
+              if (visibleChildren.length === 0) return null
+              const isGroupActive = entry.children.some((c) => pathname === c.href || pathname.startsWith(c.href))
+              return (
+                <div key={entry.label}>
+                  <button
+                    className={`${styles.navGroupBtn} ${isGroupActive ? styles.navGroupBtnActive : ''}`}
+                    onClick={() => setActiveDealsOpen((o) => !o)}
+                  >
+                    <span className={styles.navIcon}>{entry.icon}</span>
+                    {entry.label}
+                    <svg
+                      className={`${styles.navGroupChevron} ${activeDealsOpen ? styles.navGroupChevronOpen : ''}`}
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    >
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </button>
+                  <div className={`${styles.navSubList} ${activeDealsOpen ? styles.navSubListOpen : ''}`}>
+                    {visibleChildren.map((child) => {
+                      const isActive = pathname === child.href || pathname.startsWith(child.href)
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={`${styles.navSubItem} ${isActive ? styles.navSubItemActive : ''}`}
+                        >
+                          <span className={styles.navIcon}>{child.icon}</span>
+                          {child.label}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            }
             const isActive =
-              pathname === item.href ||
-              (item.href !== '/dashboard' && item.href !== '/portal' && pathname.startsWith(item.href))
+              pathname === entry.href ||
+              (entry.href !== '/dashboard' && entry.href !== '/portal' && pathname.startsWith(entry.href))
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={entry.href}
+                href={entry.href}
                 className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
               >
-                <span className={styles.navIcon}>{item.icon}</span>
-                {item.label}
+                <span className={styles.navIcon}>{entry.icon}</span>
+                {entry.label}
               </Link>
             )
           })}
