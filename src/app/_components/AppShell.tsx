@@ -126,9 +126,6 @@ export default function AppShell({
   const displayName = user.name ?? user.email ?? 'User'
   const initials = displayName.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
-  const activeDealsGroupActive = pathname.startsWith('/active-deals') || pathname.startsWith('/admin/categories')
-  const [activeDealsOpen, setActiveDealsOpen] = useState(activeDealsGroupActive)
-
   async function handleSignOut() {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -162,21 +159,19 @@ export default function AppShell({
               if (visibleChildren.length === 0) return null
               const isGroupActive = entry.children.some((c) => pathname === c.href || pathname.startsWith(c.href))
               return (
-                <div key={entry.label}>
-                  <button
-                    className={`${styles.navGroupBtn} ${isGroupActive ? styles.navGroupBtnActive : ''}`}
-                    onClick={() => setActiveDealsOpen((o) => !o)}
-                  >
+                <div key={entry.label} className={styles.navGroupWrapper}>
+                  <div className={`${styles.navGroupBtn} ${isGroupActive ? styles.navGroupBtnActive : ''}`}>
                     <span className={styles.navIcon}>{entry.icon}</span>
                     {entry.label}
                     <svg
-                      className={`${styles.navGroupChevron} ${activeDealsOpen ? styles.navGroupChevronOpen : ''}`}
+                      className={styles.navGroupChevron}
                       viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                     >
                       <path d="m9 18 6-6-6-6" />
                     </svg>
-                  </button>
-                  <div className={`${styles.navSubList} ${activeDealsOpen ? styles.navSubListOpen : ''}`}>
+                  </div>
+                  <div className={styles.navFlyout}>
+                    <div className={styles.navFlyoutLabel}>{entry.label}</div>
                     {visibleChildren.map((child) => {
                       const isActive = pathname === child.href || pathname.startsWith(child.href)
                       return (
