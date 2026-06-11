@@ -28,25 +28,31 @@ export const fetchActiveDeals = cache(async (): Promise<ActiveDeal[]> => {
         category:deal_categories(
           id, name, description, color, created_at,
           fields:deal_category_fields(*)
-        ),
-        field_values:active_deal_field_values(field_id, value)
-      )
+        )
+      ),
+      field_values:active_deal_field_values(field_id, value)
     `)
     .order('created_at', { ascending: false })
 
   if (!data) return []
 
-  return data.map((row: any) => ({
-    id: row.id,
-    pipeline_entry_id: row.pipeline_entry_id,
-    created_at: row.created_at,
-    entry: Array.isArray(row.entry) ? row.entry[0] : row.entry,
-    categories: (row.categories ?? []).map((c: any) => ({
-      category: {
-        ...c.category,
-        fields: (c.category?.fields ?? []).sort((a: any, b: any) => a.position - b.position),
-      },
-      field_values: c.field_values ?? [],
-    })),
-  }))
+  return data.map((row: any) => {
+    const allFieldValues: Array<{ field_id: string; value: string | null }> = row.field_values ?? []
+    return {
+      id: row.id,
+      pipeline_entry_id: row.pipeline_entry_id,
+      created_at: row.created_at,
+      entry: Array.isArray(row.entry) ? row.entry[0] : row.entry,
+      categories: (row.categories ?? []).map((c: any) => {
+        const catFieldIds = new Set((c.category?.fields ?? []).map((f: any) => f.id))
+        return {
+          category: {
+            ...c.category,
+            fields: (c.category?.fields ?? []).sort((a: any, b: any) => a.position - b.position),
+          },
+          field_values: allFieldValues.filter((fv) => catFieldIds.has(fv.field_id)),
+        }
+      }),
+    }
+  })
 })

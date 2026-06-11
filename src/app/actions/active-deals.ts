@@ -111,7 +111,7 @@ export async function acceptDeal(
     fieldValues: Record<string, string> // fieldId → value
   }>,
 ) {
-  const { supabase } = await requireAdmin()
+  const { supabase } = await requireInternal()
 
   // Move entry to accepted stage
   await supabase.from('pipeline_entries').update({ stage_id: stageId }).eq('id', entryId)
