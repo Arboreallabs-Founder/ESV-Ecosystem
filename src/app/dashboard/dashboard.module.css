@@ -158,7 +158,6 @@
   height: 7px;
   border-radius: 50%;
   background: var(--color-primary);
-  opacity: 0.5;
   margin-top: 0.4rem;
   flex-shrink: 0;
 }

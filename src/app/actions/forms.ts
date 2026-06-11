@@ -135,6 +135,12 @@ export async function deleteForm(formId: string) {
   if (error) throw error
 }
 
+export async function deleteFormLink(linkId: string) {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase.from('form_links').delete().eq('id', linkId)
+  if (error) throw error
+}
+
 export async function linkFormToPipeline(formId: string, pipelineId: string | null) {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('forms').update({ pipeline_id: pipelineId }).eq('id', formId)

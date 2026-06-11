@@ -24,8 +24,8 @@ async function fetchDashboardData() {
     supabase.from('forms').select('*', { count: 'exact', head: true }),
     supabase
       .from('pipeline_entries')
-      .select('id, title, submitter_name, submitter_email, submitted_at, form:forms(title), pipeline:pipelines(name)')
-      .order('submitted_at', { ascending: false })
+      .select('id, title, submitter_name, submitter_email, submitted_at, updated_at, form:forms(title), pipeline:pipelines(name), stage:pipeline_stages(name, stage_type)')
+      .order('updated_at', { ascending: false })
       .limit(8),
   ])
 
@@ -39,8 +39,10 @@ async function fetchDashboardData() {
       submitter_name: string | null
       submitter_email: string | null
       submitted_at: string
+      updated_at: string
       form: { title: string } | null
       pipeline: { name: string } | null
+      stage: { name: string; stage_type: string } | null
     }>,
   }
 }
@@ -105,7 +107,7 @@ export default async function DashboardPage() {
 
       <div className={styles.activityCard}>
         <div className={styles.activityHeader}>
-          <span className={styles.activityTitle}>Recent Submissions</span>
+          <span className={styles.activityTitle}>Recent Activity</span>
           <Link href="/pipelines" className={styles.activityLink}>View pipelines →</Link>
         </div>
 
@@ -116,22 +118,41 @@ export default async function DashboardPage() {
             {' '}and share it to start receiving entries.
           </div>
         ) : (
-          data.recentEntries.map((entry) => (
-            <div key={entry.id} className={styles.activityRow}>
-              <div className={styles.activityDot} />
-              <div>
-                <div className={styles.activityText}>
-                  <strong>{entry.title || 'Untitled submission'}</strong>
-                  {entry.pipeline && <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}> → {entry.pipeline.name}</span>}
-                </div>
-                <div className={styles.activityMeta}>
-                  {entry.submitter_name || entry.submitter_email || 'Anonymous'}
-                  {entry.form ? ` · via ${entry.form.title}` : ''}
-                  {' · '}{formatDateTime(entry.submitted_at)}
+          data.recentEntries.map((entry) => {
+            const wasMoved = entry.updated_at && entry.updated_at !== entry.submitted_at &&
+              new Date(entry.updated_at).getTime() - new Date(entry.submitted_at).getTime() > 5000
+            const stageType = entry.stage?.stage_type
+            const stageDotColor = stageType === 'accepted' ? '#16a34a' : stageType === 'rejected' ? '#dc2626' : 'var(--color-primary)'
+            return (
+              <div key={entry.id} className={styles.activityRow}>
+                <div className={styles.activityDot} style={{ background: stageDotColor }} />
+                <div>
+                  <div className={styles.activityText}>
+                    <strong>{entry.title || 'Untitled submission'}</strong>
+                    {entry.pipeline && <span style={{ color: 'var(--color-muted)', fontWeight: 400 }}> · {entry.pipeline.name}</span>}
+                    {entry.stage && (
+                      <span style={{
+                        marginLeft: '0.5rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 600,
+                        padding: '0.1rem 0.4rem',
+                        borderRadius: 4,
+                        background: stageDotColor + '1a',
+                        color: stageDotColor,
+                      }}>
+                        {entry.stage.name}
+                      </span>
+                    )}
+                  </div>
+                  <div className={styles.activityMeta}>
+                    {entry.submitter_name || entry.submitter_email || 'Anonymous'}
+                    {entry.form ? ` · via ${entry.form.title}` : ''}
+                    {' · '}{wasMoved ? `moved ${formatDateTime(entry.updated_at)}` : `submitted ${formatDateTime(entry.submitted_at)}`}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
     </AppShell>

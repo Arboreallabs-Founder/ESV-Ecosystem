@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createForm, deleteForm, generateFormLink } from '@/app/actions/forms'
+import { createForm, deleteForm, generateFormLink, deleteFormLink } from '@/app/actions/forms'
 import type { Form, Pipeline, FormLinkSummary } from '@/lib/types'
 import styles from '../forms.module.css'
 
@@ -25,6 +25,21 @@ export default function FormList({ forms: initial, pipelines, canManage }: { for
 
   // View issued links modal
   const [viewLinksForm, setViewLinksForm] = useState<Form | null>(null)
+  const [deletingLinkId, setDeletingLinkId] = useState<string | null>(null)
+
+  function handleDeleteLink(linkId: string) {
+    setDeletingLinkId(linkId)
+    startTransition(async () => {
+      try {
+        await deleteFormLink(linkId)
+        setForms((prev) => prev.map((f) => ({
+          ...f,
+          links: (f.links ?? []).filter((l) => l.id !== linkId),
+        })))
+        setViewLinksForm((prev) => prev ? { ...prev, links: (prev.links ?? []).filter((l) => l.id !== linkId) } : null)
+      } catch (err) { alert(String(err)) } finally { setDeletingLinkId(null) }
+    })
+  }
 
   function openLinkModal(formId: string) {
     setLinkFormId(formId); setLinkLabel(''); setGeneratedLink(null)
@@ -129,6 +144,16 @@ export default function FormList({ forms: initial, pipelines, canManage }: { for
                       <span>{new Date(l.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                     </div>
                   </div>
+                  {canManage && (
+                    <button
+                      className={styles.deleteIconBtn}
+                      onClick={() => handleDeleteLink(l.id)}
+                      disabled={deletingLinkId === l.id}
+                      title="Delete this link"
+                    >
+                      {deletingLinkId === l.id ? '…' : '✕'}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
