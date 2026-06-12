@@ -23,7 +23,7 @@ export const fetchActiveDeals = cache(async (): Promise<ActiveDeal[]> => {
       id,
       pipeline_entry_id,
       created_at,
-      entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id),
+      entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name))),
       categories:active_deal_categories(
         category:deal_categories(
           id, name, description, color, created_at,
@@ -42,7 +42,11 @@ export const fetchActiveDeals = cache(async (): Promise<ActiveDeal[]> => {
       id: row.id,
       pipeline_entry_id: row.pipeline_entry_id,
       created_at: row.created_at,
-      entry: Array.isArray(row.entry) ? row.entry[0] : row.entry,
+      entry: (() => {
+        const e = Array.isArray(row.entry) ? row.entry[0] : row.entry
+        if (!e) return e
+        return { ...e, assignees: (e.assignees ?? []).map((a: any) => ({ user_id: a.user_id, name: a.user?.name ?? 'Unknown' })) }
+      })(),
       categories: (row.categories ?? []).map((c: any) => {
         const catFieldIds = new Set((c.category?.fields ?? []).map((f: any) => f.id))
         return {

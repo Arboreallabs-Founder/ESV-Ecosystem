@@ -60,6 +60,9 @@ export default function PipelineBoardClient({
   const [rejectionPending, setRejectionPending] = useState<{ entryId: string; stageId: string } | null>(null)
   const [rejectionReason, setRejectionReason] = useState('')
 
+  // Assignee gate
+  const [assigneeGateEntry, setAssigneeGateEntry] = useState<string | null>(null)
+
   // Acceptance modal
   const [acceptancePending, setAcceptancePending] = useState<{ entryId: string; stageId: string } | null>(null)
   const [acceptCategories, setAcceptCategories] = useState<DealCategory[]>([])
@@ -135,6 +138,15 @@ export default function PipelineBoardClient({
   }
 
   function handleMoveEntry(entryId: string, newStageId: string | null) {
+    // Block stage moves if no assignee
+    if (newStageId) {
+      const entry = entries.find((e) => e.id === entryId)
+      if (entry && (entry.assignees?.length ?? 0) === 0) {
+        setAssigneeGateEntry(entryId)
+        setTimeout(() => setAssigneeGateEntry(null), 2500)
+        return
+      }
+    }
     if (newStageId && rejectedStageIds.has(newStageId)) {
       setRejectionPending({ entryId, stageId: newStageId })
       setRejectionReason('')
@@ -156,6 +168,12 @@ export default function PipelineBoardClient({
   function handleConfirmAcceptance() {
     if (!acceptancePending) return
     const { entryId, stageId } = acceptancePending
+
+    // Require at least 1 category if categories exist
+    if (acceptCategoriesLoaded && acceptCategories.length > 0 && selectedCategoryIds.length === 0) {
+      setAcceptError('Please select at least one category.')
+      return
+    }
 
     // Validate required fields
     for (const catId of selectedCategoryIds) {
@@ -307,6 +325,7 @@ export default function PipelineBoardClient({
                       onDragStart={() => handleDragStart(entry.id)}
                       onDragEnd={handleDragEnd}
                       onClick={() => handleOpenEntry(entry)}
+                      showAssigneeError={assigneeGateEntry === entry.id}
                     />
                   ))
                 )}
@@ -328,7 +347,7 @@ export default function PipelineBoardClient({
               onDragLeave={() => setDragOverStageId(null)}
             >
               {unsorted.map((entry) => (
-                <EntryCard key={entry.id} entry={entry} isDragging={dragEntryId === entry.id} onDragStart={() => handleDragStart(entry.id)} onDragEnd={handleDragEnd} onClick={() => handleOpenEntry(entry)} />
+                <EntryCard key={entry.id} entry={entry} isDragging={dragEntryId === entry.id} onDragStart={() => handleDragStart(entry.id)} onDragEnd={handleDragEnd} onClick={() => handleOpenEntry(entry)} showAssigneeError={assigneeGateEntry === entry.id} />
               ))}
             </div>
           </div>
@@ -502,7 +521,10 @@ export default function PipelineBoardClient({
               {selectedEntry.submitter_email && <span className={styles.metaChip}>{selectedEntry.submitter_email}</span>}
               <span className={styles.metaChip}>{new Date(selectedEntry.submitted_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
               {selectedEntry.link_creator?.name && (
-                <span className={styles.metaChipAccent}>via {selectedEntry.link_creator.name}'s link</span>
+                <span className={styles.metaChipAccent}>
+                  via {selectedEntry.link_creator.name}&apos;s link
+                  {selectedEntry.form_link_label ? ` · "${selectedEntry.form_link_label}"` : ''}
+                </span>
               )}
             </div>
 
@@ -562,11 +584,8 @@ export default function PipelineBoardClient({
                 value={selectedEntry.stage_id ?? ''}
                 onChange={(e) => {
                   const newStageId = e.target.value || null
-                  if (newStageId && rejectedStageIds.has(newStageId)) {
-                    setRejectionPending({ entryId: selectedEntry.id, stageId: newStageId })
-                    setRejectionReason('')
-                  } else {
-                    commitMoveEntry(selectedEntry.id, newStageId)
+                  handleMoveEntry(selectedEntry.id, newStageId)
+                  if (newStageId && !rejectedStageIds.has(newStageId) && !acceptedStageIds.has(newStageId)) {
                     setSelectedEntry((prev) => prev ? { ...prev, stage_id: newStageId } : null)
                   }
                 }}
@@ -662,16 +681,17 @@ export default function PipelineBoardClient({
   )
 }
 
-function EntryCard({ entry, isDragging, onDragStart, onDragEnd, onClick }: {
+function EntryCard({ entry, isDragging, onDragStart, onDragEnd, onClick, showAssigneeError }: {
   entry: PipelineEntry
   isDragging: boolean
   onDragStart: () => void
   onDragEnd: () => void
   onClick: () => void
+  showAssigneeError: boolean
 }) {
   return (
     <div
-      className={`${styles.entryCard} ${isDragging ? styles.entryCardDragging : ''}`}
+      className={`${styles.entryCard} ${isDragging ? styles.entryCardDragging : ''} ${showAssigneeError ? styles.entryCardError : ''}`}
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -679,6 +699,8 @@ function EntryCard({ entry, isDragging, onDragStart, onDragEnd, onClick }: {
     >
       <div className={styles.entryTitle}>{entry.title || 'Untitled submission'}</div>
       {entry.submitter_name && <div className={styles.entryMeta}>{entry.submitter_name}</div>}
+      {entry.form_link_label && <div className={styles.entryLinkLabel}>{entry.form_link_label}</div>}
+      {showAssigneeError && <div className={styles.assigneeGateMsg}>Assign someone first</div>}
       {(entry.assignees ?? []).length > 0 && (
         <div className={styles.entryAssignees}>
           {(entry.assignees ?? []).map((a) => (

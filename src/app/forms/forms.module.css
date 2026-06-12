@@ -192,6 +192,20 @@
   border-radius: 4px;
   padding: 0.0625rem 0.375rem;
   font-weight: 500;
+  margin-left: 0.375rem;
+}
+
+.linksRowUrl {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.125rem;
+}
+
+.linkUrlText {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  font-family: monospace;
 }
 
 .cardActions {

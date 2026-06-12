@@ -129,6 +129,23 @@ export async function generateFormLink(formId: string, label: string) {
   return { token: data.token, id: data.id, creatorName: userRow?.name ?? null }
 }
 
+export async function getPartnerFormLinks() {
+  const { supabase, userId } = await requireAuth()
+  const { data } = await supabase
+    .from('form_links')
+    .select('id, token, label, created_at, form:forms(id, title, pipeline:pipelines(name))')
+    .eq('created_by', userId)
+    .order('created_at', { ascending: false })
+  return (data ?? []).map((l: any) => ({
+    id: l.id as string,
+    token: l.token as string,
+    label: l.label as string | null,
+    created_at: l.created_at as string,
+    form: l.form ? { id: l.form.id, title: l.form.title } : null,
+    pipeline: l.form?.pipeline ?? null,
+  }))
+}
+
 export async function deleteForm(formId: string) {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('forms').delete().eq('id', formId)

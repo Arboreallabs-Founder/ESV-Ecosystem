@@ -84,10 +84,34 @@ export async function deleteStage(stageId: string) {
 }
 
 export async function moveEntry(entryId: string, stageId: string | null) {
-  await requireInternal()
   const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { data: current } = await supabase.from('pipeline_entries').select('stage_id').eq('id', entryId).single()
   await supabase.from('pipeline_entries').update({ stage_id: stageId }).eq('id', entryId)
-  // Optimistic update in component handles UI
+  await supabase.from('pipeline_entry_stage_history').insert({
+    entry_id: entryId,
+    from_stage_id: current?.stage_id ?? null,
+    to_stage_id: stageId,
+    moved_by: user.id,
+  })
+}
+
+export async function getEntryStageHistory(entryId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+  const { data } = await supabase
+    .from('pipeline_entry_stage_history')
+    .select('id, from_stage_id, to_stage_id, moved_by, moved_at, from_stage:pipeline_stages!from_stage_id(name), to_stage:pipeline_stages!to_stage_id(name)')
+    .eq('entry_id', entryId)
+    .order('moved_at', { ascending: true })
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    from_stage: row.from_stage ? { name: Array.isArray(row.from_stage) ? row.from_stage[0]?.name : row.from_stage.name } : null,
+    to_stage: row.to_stage ? { name: Array.isArray(row.to_stage) ? row.to_stage[0]?.name : row.to_stage.name } : null,
+    moved_at: row.moved_at,
+  }))
 }
 
 export async function deleteEntry(entryId: string) {

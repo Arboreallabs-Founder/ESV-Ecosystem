@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import type { ActiveDeal, DealCategory } from '@/lib/types'
+import ActiveDealDetail from './ActiveDealDetail'
 import styles from '../active-deals.module.css'
 
 const FIELD_UNIT: Record<string, string> = { percentage: '%', numeric: '', text: '', url: '' }
@@ -23,6 +24,7 @@ function formatDate(iso: string) {
 
 export default function ActiveDealsList({ deals, categories }: { deals: ActiveDeal[]; categories: DealCategory[] }) {
   const [activeFilter, setActiveFilter] = useState<string>('all')
+  const [selectedDeal, setSelectedDeal] = useState<ActiveDeal | null>(null)
 
   const uncategorised = deals.filter((d) => d.categories.length === 0)
   const categorised = categories.filter((cat) => deals.some((d) => d.categories.some((c) => c.category.id === cat.id)))
@@ -35,6 +37,9 @@ export default function ActiveDealsList({ deals, categories }: { deals: ActiveDe
 
   return (
     <div className={styles.page}>
+      {selectedDeal && (
+        <ActiveDealDetail deal={selectedDeal} onClose={() => setSelectedDeal(null)} />
+      )}
       <div className={styles.header}>
         <div>
           <div className={styles.pageTitle}>Active Deals</div>
@@ -80,7 +85,7 @@ export default function ActiveDealsList({ deals, categories }: { deals: ActiveDe
       ) : (
         <div className={styles.grid}>
           {filtered.map((deal) => (
-            <div key={deal.id} className={styles.card}>
+            <div key={deal.id} className={styles.card} onClick={() => setSelectedDeal(deal)} style={{ cursor: 'pointer' }}>
               <div className={styles.cardTop}>
                 <div className={styles.dealTitle}>{deal.entry?.title ?? 'Untitled'}</div>
                 <div className={styles.dealMeta}>

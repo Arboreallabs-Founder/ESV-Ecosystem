@@ -6,7 +6,7 @@ export const fetchForms = cache(async (): Promise<Form[]> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('forms')
-    .select('*, pipeline:pipelines(name), links:form_links(id, label, created_at, creator:users!created_by(name))')
+    .select('*, pipeline:pipelines(name), links:form_links(id, token, label, created_at, creator:users!created_by(name))')
     .order('created_at', { ascending: false })
   return (data ?? []).map((f: any) => ({
     ...f,

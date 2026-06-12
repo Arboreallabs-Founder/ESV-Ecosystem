@@ -135,27 +135,36 @@ export default function FormList({ forms: initial, pipelines, canManage }: { for
               {viewLinksForm.title} · {viewLinksForm.links?.length ?? 0} link{(viewLinksForm.links?.length ?? 0) !== 1 ? 's' : ''}
             </p>
             <div className={styles.linksList}>
-              {(viewLinksForm.links ?? []).map((l) => (
-                <div key={l.id} className={styles.linksRow}>
-                  <div className={styles.linksRowLeft}>
-                    <div className={styles.linksRowWho}>{l.creator?.name ?? 'Unknown'}</div>
-                    <div className={styles.linksRowMeta}>
-                      {l.label && <span className={styles.linksRowLabel}>{l.label}</span>}
-                      <span>{new Date(l.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              {(viewLinksForm.links ?? []).map((l) => {
+                const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/f/${l.token}`
+                return (
+                  <div key={l.id} className={styles.linksRow}>
+                    <div className={styles.linksRowLeft}>
+                      <div className={styles.linksRowWho}>
+                        {l.creator?.name ?? 'Unknown'}
+                        {l.label && <span className={styles.linksRowLabel}>{l.label}</span>}
+                      </div>
+                      <div className={styles.linksRowMeta}>
+                        <span>{new Date(l.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                      </div>
+                      <div className={styles.linksRowUrl}>
+                        <code className={styles.linkUrlText}>/f/{l.token.slice(0, 12)}…</code>
+                        <button className={styles.copyBtn} onClick={() => navigator.clipboard.writeText(url)} title="Copy link">Copy</button>
+                      </div>
                     </div>
+                    {canManage && (
+                      <button
+                        className={styles.deleteIconBtn}
+                        onClick={() => handleDeleteLink(l.id)}
+                        disabled={deletingLinkId === l.id}
+                        title="Delete this link"
+                      >
+                        {deletingLinkId === l.id ? '…' : '✕'}
+                      </button>
+                    )}
                   </div>
-                  {canManage && (
-                    <button
-                      className={styles.deleteIconBtn}
-                      onClick={() => handleDeleteLink(l.id)}
-                      disabled={deletingLinkId === l.id}
-                      title="Delete this link"
-                    >
-                      {deletingLinkId === l.id ? '…' : '✕'}
-                    </button>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
             <div className={styles.modalActions}>
               <button className={styles.submitBtn} onClick={() => setViewLinksForm(null)}>Close</button>

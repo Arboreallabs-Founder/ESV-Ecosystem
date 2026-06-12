@@ -110,9 +110,28 @@ export type FormEdge = {
 
 export type FormLinkSummary = {
   id: string
+  token: string
   label: string | null
   created_at: string
   creator: { name: string } | null
+}
+
+export type PartnerFormLink = {
+  id: string
+  token: string
+  label: string | null
+  created_at: string
+  form: { id: string; title: string } | null
+  pipeline: { name: string } | null
+}
+
+export type PipelineEntryStageHistory = {
+  id: string
+  entry_id: string
+  from_stage: { name: string } | null
+  to_stage: { name: string } | null
+  moved_by: string | null
+  moved_at: string
 }
 
 export type Form = {
@@ -150,6 +169,7 @@ export type PipelineEntry = {
   submitted_at: string
   form?: { title: string } | null
   link_creator?: { name: string } | null
+  form_link_label?: string | null
   assignees?: Array<{ user_id: string; name: string }>
 }
 
@@ -196,6 +216,7 @@ export type ActiveDeal = {
     submitter_email: string | null
     submitted_at: string
     pipeline_id: string
+    assignees?: Array<{ user_id: string; name: string }>
   }
   categories: ActiveDealCategoryData[]
 }

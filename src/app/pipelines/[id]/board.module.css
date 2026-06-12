@@ -221,6 +221,35 @@
   cursor: grabbing;
 }
 
+.entryCardError {
+  border-color: #dc2626 !important;
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.assigneeGateMsg {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #dc2626;
+  margin-top: 0.125rem;
+}
+
+.entryLinkLabel {
+  font-size: 0.6875rem;
+  color: var(--color-primary);
+  background: rgba(116,95,253,0.08);
+  border-radius: 4px;
+  padding: 0.0625rem 0.375rem;
+  display: inline-block;
+  margin-top: 0.125rem;
+  font-weight: 500;
+}
+
 .columnBodyDragOver {
   background: rgba(116,95,253,0.05);
   border-radius: var(--radius-sm);
