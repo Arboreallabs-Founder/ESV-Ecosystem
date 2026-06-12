@@ -1,14 +1,12 @@
 'use client'
 
-import { useState, lazy, Suspense } from 'react'
+import { useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { WikiSidebarButton } from '@/app/_components/WikiPanel'
 import { useTheme } from '@/app/_components/ThemeProvider'
 import styles from '@/app/app-shell.module.css'
-
-const ActiveDealsOverlay = lazy(() => import('@/app/active-deals/_components/ActiveDealsOverlay'))
 
 type UserRow = { name: string | null; role: string | null; email: string | null }
 
@@ -62,7 +60,7 @@ const NAV_ITEMS: NavEntry[] = [
     icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
     children: [
       {
-        href: '#active-deals',
+        href: '/active-deals',
         label: 'Deals',
         roles: ['founder', 'admin', 'associate'],
         icon: <Icon d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />,
@@ -121,7 +119,6 @@ export default function AppShell({
 }) {
   const router = useRouter()
   const pathname = usePathname()
-  const [showActiveDeals, setShowActiveDeals] = useState(false)
   const { theme, toggle: toggleTheme } = useTheme()
   const role = user.role ?? 'associate'
   const displayName = user.name ?? user.email ?? 'User'
@@ -201,19 +198,6 @@ export default function AppShell({
                     >
                       <div className={styles.navFlyoutLabel}>{entry.label}</div>
                       {visibleChildren.map((child) => {
-                        if (child.href === '#active-deals') {
-                          return (
-                            <button
-                              key="active-deals"
-                              className={`${styles.navSubItem} ${showActiveDeals ? styles.navSubItemActive : ''}`}
-                              onClick={() => { setShowActiveDeals(true); setFlyoutTop(null) }}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' }}
-                            >
-                              <span className={styles.navIcon}>{child.icon}</span>
-                              {child.label}
-                            </button>
-                          )
-                        }
                         const isActive = pathname === child.href || pathname.startsWith(child.href)
                         return (
                           <Link
@@ -285,12 +269,6 @@ export default function AppShell({
           <button className={styles.signOutBtn} onClick={handleSignOut}>Sign out</button>
         </div>
       </aside>
-
-      {showActiveDeals && (
-        <Suspense fallback={null}>
-          <ActiveDealsOverlay onClose={() => setShowActiveDeals(false)} />
-        </Suspense>
-      )}
 
       <main className={fullWidth ? styles.mainFull : styles.main}>
         {children}
