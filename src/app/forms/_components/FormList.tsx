@@ -54,7 +54,7 @@ export default function FormList({ forms: initial, pipelines, canManage }: { for
         // Optimistically add the new link to the form's link list
         setForms((prev) => prev.map((f) => f.id === linkFormId ? {
           ...f,
-          links: [{ id: result.id, label: linkLabel.trim() || null, created_at: new Date().toISOString(), creator: result.creatorName ? { name: result.creatorName } : null }, ...(f.links ?? [])]
+          links: [{ id: result.id, token: result.token, label: linkLabel.trim() || null, created_at: new Date().toISOString(), creator: result.creatorName ? { name: result.creatorName } : null }, ...(f.links ?? [])]
         } : f))
       } catch (err) { alert(String(err)) }
     })
