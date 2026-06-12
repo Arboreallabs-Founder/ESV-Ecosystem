@@ -101,6 +101,43 @@ export async function deleteCategoryField(fieldId: string) {
   if (error) throw error
 }
 
+// ── Active Deals List (for client-side overlay) ───────────────────────────────
+
+export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types').ActiveDeal[]; categories: import('@/lib/types').DealCategory[] }> {
+  const { supabase } = await requireInternal()
+  const [dealsRes, catsRes] = await Promise.all([
+    supabase.from('active_deals').select(`
+      id, pipeline_entry_id, created_at,
+      entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name))),
+      categories:active_deal_categories(category:deal_categories(id, name, description, color, created_at, fields:deal_category_fields(*))),
+      field_values:active_deal_field_values(field_id, value)
+    `).order('created_at', { ascending: false }),
+    supabase.from('deal_categories').select('*, fields:deal_category_fields(*)').order('created_at', { ascending: true }),
+  ])
+  const deals = (dealsRes.data ?? []).map((row: any) => {
+    const allFieldValues = row.field_values ?? []
+    return {
+      id: row.id,
+      pipeline_entry_id: row.pipeline_entry_id,
+      created_at: row.created_at,
+      entry: (() => {
+        const e = Array.isArray(row.entry) ? row.entry[0] : row.entry
+        if (!e) return e
+        return { ...e, assignees: (e.assignees ?? []).map((a: any) => ({ user_id: a.user_id, name: a.user?.name ?? 'Unknown' })) }
+      })(),
+      categories: (row.categories ?? []).map((c: any) => {
+        const catFieldIds = new Set((c.category?.fields ?? []).map((f: any) => f.id))
+        return {
+          category: { ...c.category, fields: (c.category?.fields ?? []).sort((a: any, b: any) => a.position - b.position) },
+          field_values: allFieldValues.filter((fv: any) => catFieldIds.has(fv.field_id)),
+        }
+      }),
+    }
+  })
+  const categories = (catsRes.data ?? []).map((c: any) => ({ ...c, fields: (c.fields ?? []).sort((a: any, b: any) => a.position - b.position) }))
+  return { deals, categories }
+}
+
 // ── Accept Deal ───────────────────────────────────────────────────────────────
 
 export async function acceptDeal(

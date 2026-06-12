@@ -38,8 +38,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
             var stored = localStorage.getItem('esv-theme');
-            var system = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-            document.documentElement.setAttribute('data-theme', stored || system);
+            document.documentElement.setAttribute('data-theme', stored || 'light');
           })();
         `}} />
       </head>

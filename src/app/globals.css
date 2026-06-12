@@ -46,26 +46,6 @@
   --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
-/* System preference fallback — only when no explicit choice has been saved */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]):not([data-theme="dark"]) {
-    --color-bg:            #1A1A2E;
-    --color-card:          #22223A;
-    --color-card-raised:   #2A2A44;
-    --color-text:          #F0EDE8;
-    --color-muted:         #A39B95;
-    --color-border:        #3A3A5C;
-    --color-primary:       #745FFD;
-    --color-primary-light: #CEAAFD;
-    --color-accent:        #D5AE8F;
-    --color-warning:       #CB8C7C;
-    --color-destructive:   #E74C3C;
-    --color-success:       #66BB6A;
-
-    --shadow-card:     0 2px 12px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
-    --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
-  }
-}
 
 /* ─── Base Reset ─────────────────────────────────────────────────────── */
 *, *::before, *::after {
