@@ -1,23 +1,15 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireRole } from '@/lib/guards'
 import type { DealCategory } from '@/lib/types'
 
 async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
-  if (!data || !['founder', 'admin'].includes(data.role)) throw new Error('Forbidden')
-  return { supabase, userId: user.id }
+  const { supabase, userId } = await requireRole(['founder', 'admin'])
+  return { supabase, userId }
 }
 
 async function requireInternal() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
-  if (!data || !['founder', 'admin', 'associate'].includes(data.role)) throw new Error('Forbidden')
+  const { supabase } = await requireRole(['founder', 'admin', 'associate'])
   return { supabase }
 }
 

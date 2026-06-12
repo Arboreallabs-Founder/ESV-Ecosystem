@@ -1,11 +1,9 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/guards'
 
 export async function upsertPartnerDetails(userId: string, formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
+  const { supabase } = await requireAuth()
 
   const { data: partner, error: insertError } = await supabase
     .from('franchise_partners')
@@ -33,9 +31,7 @@ export async function upsertPartnerDetails(userId: string, formData: FormData) {
 }
 
 export async function updatePartnerDetails(partnerId: string, formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
+  const { supabase } = await requireAuth()
 
   const { error } = await supabase
     .from('franchise_partners')

@@ -1,24 +1,16 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { requireRole, requireAuth } from '@/lib/guards'
 
 async function requireInternal() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
-  if (!data || !['founder', 'admin', 'associate'].includes(data.role)) throw new Error('Forbidden')
+  const { supabase } = await requireRole(['founder', 'admin', 'associate'])
   return supabase
 }
 
 async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
-  if (!data || !['founder', 'admin'].includes(data.role)) throw new Error('Forbidden')
-  return { supabase, userId: user.id }
+  const { supabase, userId } = await requireRole(['founder', 'admin'])
+  return { supabase, userId }
 }
 
 export async function createPipeline(name: string, description: string) {
@@ -84,23 +76,19 @@ export async function deleteStage(stageId: string) {
 }
 
 export async function moveEntry(entryId: string, stageId: string | null) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
+  const { supabase, userId } = await requireAuth()
   const { data: current } = await supabase.from('pipeline_entries').select('stage_id').eq('id', entryId).single()
   await supabase.from('pipeline_entries').update({ stage_id: stageId }).eq('id', entryId)
   await supabase.from('pipeline_entry_stage_history').insert({
     entry_id: entryId,
     from_stage_id: current?.stage_id ?? null,
     to_stage_id: stageId,
-    moved_by: user.id,
+    moved_by: userId,
   })
 }
 
 export async function getEntryStageHistory(entryId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
+  const { supabase } = await requireAuth()
   const { data } = await supabase
     .from('pipeline_entry_stage_history')
     .select('id, from_stage_id, to_stage_id, moved_by, moved_at, from_stage:pipeline_stages!from_stage_id(name), to_stage:pipeline_stages!to_stage_id(name)')
@@ -131,16 +119,12 @@ export async function removeAssignee(entryId: string, userId: string) {
 }
 
 export async function rejectEntry(entryId: string, stageId: string, reason: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
+  const { supabase } = await requireAuth()
   await supabase.from('pipeline_entries').update({ stage_id: stageId, rejection_reason: reason.trim() || null }).eq('id', entryId)
 }
 
 export async function getEntryAnswers(entryId: string) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
+  const { supabase } = await requireAuth()
   const { data } = await supabase
     .from('pipeline_entry_answers')
     .select('id, node_id, answer_text, node:form_nodes(question_text, answer_type)')

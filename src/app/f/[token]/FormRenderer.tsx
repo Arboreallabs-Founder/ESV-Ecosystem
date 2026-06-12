@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { submitForm } from '@/app/actions/forms'
-import { renderFormattedText } from '@/app/forms/[id]/builder/utils'
+import { renderFormattedText } from '@/app/(app)/forms/[id]/builder/utils'
 import styles from './form.module.css'
 
 type FormNode = {

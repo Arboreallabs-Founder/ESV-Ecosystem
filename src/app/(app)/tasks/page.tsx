@@ -5,11 +5,9 @@ import { fetchAllUsers } from '@/lib/partners'
 import TaskBoard from './_components/TaskBoard'
 
 export default async function TasksPage() {
-  const user = await getUser()
+  const [user, tasks, users] = await Promise.all([getUser(), fetchAllTasks(), fetchAllUsers()])
   if (!user) redirect('/login')
   if (user.role === 'franchise_partner') redirect('/portal')
-
-  const [tasks, users] = await Promise.all([fetchAllTasks(), fetchAllUsers()])
 
   return (
     <TaskBoard

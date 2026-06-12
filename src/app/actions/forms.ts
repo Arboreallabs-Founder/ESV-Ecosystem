@@ -1,22 +1,12 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { requireRole, requireAuth } from '@/lib/guards'
 import type { FormNode, FormEdge } from '@/lib/types'
 
 async function requireAdmin() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  const { data } = await supabase.from('users').select('role').eq('id', user.id).single()
-  if (!data || !['founder', 'admin'].includes(data.role)) throw new Error('Forbidden')
-  return { supabase, userId: user.id }
-}
-
-async function requireAuth() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
-  return { supabase, userId: user.id }
+  const { supabase, userId } = await requireRole(['founder', 'admin'])
+  return { supabase, userId }
 }
 
 export async function createForm(title: string, description: string, pipelineId: string | null) {

@@ -5,14 +5,13 @@ import PortalClient from './PortalClient'
 import { getPartnerFormLinks } from '@/app/actions/forms'
 
 export default async function PortalPage() {
-  const user = await getUser()
-  if (!user) redirect('/login')
-
   const supabase = await createClient()
-  const [{ data: publishedForms }, partnerLinks] = await Promise.all([
+  const [user, { data: publishedForms }, partnerLinks] = await Promise.all([
+    getUser(),
     supabase.from('forms').select('id, title, pipeline:pipelines(name)').eq('published', true),
     getPartnerFormLinks(),
   ])
+  if (!user) redirect('/login')
 
   return (
     <PortalClient

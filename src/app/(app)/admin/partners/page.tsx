@@ -4,10 +4,8 @@ import { fetchPartnerUsers } from '@/lib/partners'
 import PartnerTable from './_components/PartnerTable'
 
 export default async function PartnersPage() {
-  const user = await getUser()
+  const [user, partnerUsers] = await Promise.all([getUser(), fetchPartnerUsers()])
   if (!user || !['founder', 'admin'].includes(user.role)) redirect('/dashboard')
-
-  const partnerUsers = await fetchPartnerUsers()
 
   return <PartnerTable partnerUsers={partnerUsers} />
 }

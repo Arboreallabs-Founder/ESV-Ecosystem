@@ -1,11 +1,9 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { requireAuth } from '@/lib/guards'
 
 export async function createInvestor(formData: FormData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('Unauthorized')
+  const { supabase } = await requireAuth()
 
   const { error } = await supabase.from('investors').insert({
     fund_name: formData.get('fund_name') as string,

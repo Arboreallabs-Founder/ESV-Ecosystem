@@ -48,12 +48,16 @@ async function fetchDashboardData() {
 }
 
 export default async function DashboardPage() {
-  const user = await getUser()
+  // Data queries run under RLS, so they can start in parallel with the user
+  // lookup instead of waiting for the role check.
+  const [user, data, openTasks] = await Promise.all([
+    getUser(),
+    fetchDashboardData(),
+    fetchOpenTaskCount(),
+  ])
   if (!user) redirect('/login')
   if (user.role === 'associate') redirect('/pipelines')
   if (user.role === 'franchise_partner') redirect('/portal')
-
-  const [data, openTasks] = await Promise.all([fetchDashboardData(), fetchOpenTaskCount()])
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
