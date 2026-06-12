@@ -1,27 +1,13 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getUser } from '@/lib/user'
 
 export default async function RootPage() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getUser()
+  if (!user) redirect('/login')
 
-  if (!user) {
-    redirect('/login')
-  }
-
-  const { data: userData } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  const role = userData?.role ?? 'associate'
-
-  if (role === 'franchise_partner') {
+  if (user.role === 'franchise_partner') {
     redirect('/portal')
-  } else if (role === 'associate') {
+  } else if (user.role === 'associate') {
     redirect('/pipelines')
   } else {
     redirect('/dashboard')

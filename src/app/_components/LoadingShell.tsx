@@ -1,4 +1,14 @@
-export default function LoadingShell({ children }: { children?: React.ReactNode }) {
+export default function LoadingShell({ children, contentOnly }: { children?: React.ReactNode; contentOnly?: boolean }) {
+  if (contentOnly) {
+    return (
+      <div style={{ padding: '2.5rem' }}>
+        <div className="skeleton" style={{ width: 200, height: 28, marginBottom: '0.5rem' }} />
+        <div className="skeleton" style={{ width: 300, height: 14, marginBottom: '2rem' }} />
+        {children}
+      </div>
+    )
+  }
+
   return (
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--color-bg)' }}>
       {/* Sidebar skeleton */}
