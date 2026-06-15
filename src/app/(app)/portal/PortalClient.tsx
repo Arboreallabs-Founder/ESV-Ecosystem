@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { generateFormLink } from '@/app/actions/forms'
 import type { PartnerFormLink } from '@/lib/types'
+import PortalInvestorReferModal from './_components/PortalInvestorReferModal'
 import styles from './portal.module.css'
 
 type PublishedForm = { id: string; title: string; pipeline: { name: string } | null }
@@ -24,6 +25,8 @@ export default function PortalClient({
   const [generatedUrl, setGeneratedUrl] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
   const [copied, setCopied] = useState<string | null>(null)
+  const [showReferModal, setShowReferModal] = useState(false)
+  const [referConfirmed, setReferConfirmed] = useState(false)
 
   function copy(url: string, id: string) {
     navigator.clipboard.writeText(url)
@@ -137,7 +140,30 @@ export default function PortalClient({
               </div>
             )}
           </div>
+          {/* Refer an Investor */}
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>Refer an Investor</div>
+            <p className={styles.emptyNote} style={{ marginBottom: '0.875rem' }}>
+              Know an investor who might be a fit? Share their details and our team will follow up.
+            </p>
+            {referConfirmed ? (
+              <div className={styles.confirmBox}>
+                Referral submitted — our team will review and reach out. Thank you!
+              </div>
+            ) : (
+              <button className={styles.generateBtn} onClick={() => setShowReferModal(true)}>
+                + Refer an Investor
+              </button>
+            )}
+          </div>
         </>
+      )}
+
+      {showReferModal && (
+        <PortalInvestorReferModal
+          onClose={() => setShowReferModal(false)}
+          onSuccess={() => { setShowReferModal(false); setReferConfirmed(true) }}
+        />
       )}
     </>
   )

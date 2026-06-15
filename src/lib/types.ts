@@ -11,15 +11,50 @@ export type Task = {
   assignee?: { name: string } | null
 }
 
+export type ServiceType = 'vc_fund' | 'angel_fund' | 'family_office' | 'angel_investor'
+
+export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
+  vc_fund: 'VC Fund',
+  angel_fund: 'Angel Fund',
+  family_office: 'Family Office',
+  angel_investor: 'Angel Investor',
+}
+
+export const LINKEDIN_STATUS_OPTIONS = [
+  'Connected', '1st', '2nd', '3rd', 'Pending', 'Not Connected',
+] as const
+export type LinkedInStatus = typeof LINKEDIN_STATUS_OPTIONS[number]
+
+export type InvestorContact = {
+  id: string
+  investor_id: string
+  name: string
+  role: string | null
+  linkedin_url: string | null
+  linkedin_status: LinkedInStatus | null
+  phone: string | null
+  email: string | null
+  sort_order: number
+  created_at: string
+}
+
 export type Investor = {
   id: string
-  fund_name: string
-  contact_name: string
-  contact_email: string
-  thesis: string | null
-  stage_pref: string | null
-  cheque_size_min: number | null
-  cheque_size_max: number | null
+  name: string
+  country: string | null
+  website: string | null
+  sectors: string[]
+  service_type: ServiceType
+  esv_poc_id: string | null
+  ticket_size_min: number | null
+  ticket_size_max: number | null
+  stage: string | null
+  referred_by_partner_id: string | null
+  created_by: string | null
+  created_at: string
+  esv_poc?: { name: string } | null
+  referred_by_partner?: { name: string } | null
+  contacts?: InvestorContact[]
 }
 
 export type FranchisePartner = {

@@ -217,3 +217,184 @@
   line-height: 1.65;
   box-shadow: var(--shadow-card);
 }
+
+/* ── Investor referral ─────────────────────────────────────────── */
+.confirmBox {
+  padding: 0.875rem 1.125rem;
+  background: rgba(116, 95, 253, 0.07);
+  border: 1.5px solid rgba(116, 95, 253, 0.3);
+  border-radius: var(--radius-sm);
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 400;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+.referModal {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: 2rem 2.25rem;
+  width: 100%;
+  max-width: 680px;
+  max-height: 92vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-elevated);
+  border: 1px solid var(--color-border);
+  animation: referPopIn 0.18s ease;
+}
+
+@keyframes referPopIn {
+  from { transform: scale(0.96) translateY(8px); opacity: 0; }
+  to { transform: scale(1) translateY(0); opacity: 1; }
+}
+
+.referModalTitle {
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  font-weight: 400;
+  color: var(--color-text);
+  margin-bottom: 1.75rem;
+}
+
+.referRow {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0;
+}
+.referRow > .referField { flex: 1; }
+
+.referField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-bottom: 1rem;
+}
+
+.referLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.referInput {
+  padding: 0.625rem 0.9375rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+.referInput:focus { border-color: var(--color-primary); }
+
+.referSelect {
+  padding: 0.625rem 0.9375rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-family: inherit;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23A39B95' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.25rem;
+  transition: border-color 0.15s;
+}
+.referSelect:focus { border-color: var(--color-primary); }
+
+.referContactsSection {
+  margin-top: 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+  margin-bottom: 0.5rem;
+}
+
+.referContactsTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.referAddContactBtn {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: none;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  cursor: pointer;
+  padding: 0.25rem 0.75rem;
+  transition: border-color 0.15s, color 0.15s;
+}
+.referAddContactBtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+.referContactRow {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr 1.5fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.625rem;
+}
+
+.referRemoveBtn {
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 1.125rem;
+  line-height: 1;
+  padding: 0.375rem;
+  transition: color 0.12s;
+}
+.referRemoveBtn:hover { color: #dc2626; }
+
+.referModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.625rem;
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.cancelBtn {
+  padding: 0.5625rem 1.125rem;
+  background: none;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.cancelBtn:hover { border-color: var(--color-text); color: var(--color-text); }
