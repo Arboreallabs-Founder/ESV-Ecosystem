@@ -32,12 +32,19 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- 2. Seed Siddhant's approved_emails entry (NULL org_id = platform-level super_admin)
+-- 2. Seed platform super_admin (NULL org_id = above all tenants)
 INSERT INTO public.approved_emails (email, name, role, org_id)
-VALUES ('sakshay@earlyseedventures.com', 'Siddhant', 'super_admin', NULL)
+VALUES ('baligasiddhant@gmail.com', 'Siddhant', 'super_admin', NULL)
 ON CONFLICT (email) DO UPDATE SET role = 'super_admin', org_id = NULL;
 
--- 3. Update the existing users row to super_admin with NULL org_id
-UPDATE public.users
-SET role = 'super_admin', org_id = NULL
+-- Seed sakshay as a regular ESV org founder
+INSERT INTO public.approved_emails (email, name, role, org_id)
+VALUES ('sakshay@earlyseedventures.com', 'Siddhant', 'founder', '00000000-0000-0000-0000-000000000001')
+ON CONFLICT (email) DO UPDATE SET role = 'founder', org_id = '00000000-0000-0000-0000-000000000001';
+
+-- 3. Update existing users rows if they exist
+UPDATE public.users SET role = 'super_admin', org_id = NULL
+WHERE email = 'baligasiddhant@gmail.com';
+
+UPDATE public.users SET role = 'founder', org_id = '00000000-0000-0000-0000-000000000001'
 WHERE email = 'sakshay@earlyseedventures.com';
