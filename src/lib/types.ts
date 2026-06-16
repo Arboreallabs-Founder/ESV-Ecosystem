@@ -192,16 +192,6 @@ export type Form = {
   links?: FormLinkSummary[]
 }
 
-export type FormLink = {
-  id: string
-  form_id: string
-  created_by: string
-  token: string
-  label: string | null
-  created_at: string
-  creator?: { name: string } | null
-}
-
 export type PipelineEntry = {
   id: string
   pipeline_id: string
@@ -217,14 +207,6 @@ export type PipelineEntry = {
   link_creator?: { name: string } | null
   form_link_label?: string | null
   assignees?: Array<{ user_id: string; name: string }>
-}
-
-export type PipelineEntryAnswer = {
-  id: string
-  entry_id: string
-  node_id: string
-  answer_text: string | null
-  node?: Pick<FormNode, 'question_text' | 'answer_type'>
 }
 
 // ── Active Deals ──────────────────────────────────────────────────────────────
@@ -263,6 +245,7 @@ export type ActiveDeal = {
     submitted_at: string
     pipeline_id: string
     assignees?: Array<{ user_id: string; name: string }>
+    sourced_via_partner?: { id: string; name: string } | null
   }
   categories: ActiveDealCategoryData[]
 }

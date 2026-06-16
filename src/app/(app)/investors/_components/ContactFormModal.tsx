@@ -2,7 +2,6 @@
 
 import { useState, useTransition } from 'react'
 import { addContact, updateContact } from '@/app/actions/investors'
-import { LINKEDIN_STATUS_OPTIONS } from '@/lib/types'
 import type { InvestorContact } from '@/lib/types'
 import styles from '../investors.module.css'
 
@@ -20,7 +19,6 @@ export default function ContactFormModal({ investorId, initial, mode, onClose, o
     name: initial?.name ?? '',
     role: initial?.role ?? '',
     linkedin_url: initial?.linkedin_url ?? '',
-    linkedin_status: initial?.linkedin_status ?? '',
     phone: initial?.phone ?? '',
     email: initial?.email ?? '',
   })
@@ -31,14 +29,14 @@ export default function ContactFormModal({ investorId, initial, mode, onClose, o
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.name.trim()) return
+    if (!form.name.trim() || !form.email.trim()) return
     const draft = {
       name: form.name.trim(),
       role: form.role.trim() || null,
       linkedin_url: form.linkedin_url.trim() || null,
-      linkedin_status: form.linkedin_status || null,
+      linkedin_status: null,
       phone: form.phone.trim() || null,
-      email: form.email.trim() || null,
+      email: form.email.trim(),
       sort_order: initial?.sort_order ?? 0,
     }
     startTransition(async () => {
@@ -67,32 +65,23 @@ export default function ContactFormModal({ investorId, initial, mode, onClose, o
               <input className={styles.input} value={form.role} onChange={(e) => set('role', e.target.value)} placeholder="Partner, MD, etc." />
             </div>
             <div className={styles.field}>
-              <label className={styles.label}>LinkedIn Status</label>
-              <select className={styles.select} value={form.linkedin_status} onChange={(e) => set('linkedin_status', e.target.value)}>
-                <option value="">—</option>
-                {LINKEDIN_STATUS_OPTIONS.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
-                ))}
-              </select>
+              <label className={styles.label}>Email *</label>
+              <input className={styles.input} type="email" value={form.email} onChange={(e) => set('email', e.target.value)} required />
             </div>
           </div>
           <div className={styles.formRow}>
             <div className={styles.field}>
-              <label className={styles.label}>Email</label>
-              <input className={styles.input} type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
+              <label className={styles.label}>LinkedIn URL</label>
+              <input className={styles.input} type="url" value={form.linkedin_url} onChange={(e) => set('linkedin_url', e.target.value)} placeholder="https://linkedin.com/in/…" />
             </div>
             <div className={styles.field}>
               <label className={styles.label}>Phone</label>
-              <input className={styles.input} type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
+              <input className={styles.input} type="tel" value={form.phone} onChange={(e) => set('phone', e.target.value)} placeholder="+91 98765 43210" />
             </div>
-          </div>
-          <div className={styles.field}>
-            <label className={styles.label}>LinkedIn URL</label>
-            <input className={styles.input} type="url" value={form.linkedin_url} onChange={(e) => set('linkedin_url', e.target.value)} placeholder="https://linkedin.com/in/…" />
           </div>
           <div className={styles.modalActions}>
             <button type="button" className={styles.cancelBtn} onClick={onClose}>Cancel</button>
-            <button type="submit" className={styles.submitBtn} disabled={isPending || !form.name.trim()}>
+            <button type="submit" className={styles.submitBtn} disabled={isPending || !form.name.trim() || !form.email.trim()}>
               {isPending ? 'Saving…' : mode === 'create' ? 'Add Contact' : 'Save Changes'}
             </button>
           </div>

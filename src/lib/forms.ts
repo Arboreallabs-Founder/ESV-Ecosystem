@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { Form, FormNode, FormEdge, FormLink } from './types'
+import type { Form, FormNode, FormEdge } from './types'
 
 export const fetchForms = cache(async (): Promise<Form[]> => {
   const supabase = await createClient()
@@ -41,14 +41,4 @@ export const fetchFormForBuilder = cache(async (id: string): Promise<{
     nodes: (nodes ?? []).map((n) => ({ ...n, options: optionsByNode[n.id] ?? [] })),
     edges: edges ?? [],
   }
-})
-
-export const fetchFormLinks = cache(async (formId: string): Promise<FormLink[]> => {
-  const supabase = await createClient()
-  const { data } = await supabase
-    .from('form_links')
-    .select('*, creator:users(name)')
-    .eq('form_id', formId)
-    .order('created_at', { ascending: false })
-  return (data ?? []).map((l: any) => ({ ...l, creator: l.creator ?? null }))
 })

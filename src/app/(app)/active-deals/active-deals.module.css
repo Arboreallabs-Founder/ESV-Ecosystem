@@ -129,6 +129,21 @@
 .dealEmail { color: var(--color-muted); }
 .dealDate { color: var(--color-muted); }
 
+/* Partner attribution chip */
+.partnerChip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 9999px;
+  background: rgba(213, 174, 143, 0.15);
+  color: #8B6245;
+  border: 1px solid rgba(213, 174, 143, 0.4);
+  letter-spacing: 0.01em;
+  margin-top: 0.25rem;
+}
+
 /* Category chips */
 .categoryChips {
   display: flex;

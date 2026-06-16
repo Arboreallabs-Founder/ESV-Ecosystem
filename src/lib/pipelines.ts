@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { Pipeline, PipelineEntry, PipelineEntryAnswer } from './types'
+import type { Pipeline, PipelineEntry } from './types'
 
 export const fetchPipelines = cache(async (): Promise<Pipeline[]> => {
   const supabase = await createClient()
@@ -43,19 +43,4 @@ export const fetchPipelineEntries = cache(async (pipelineId: string): Promise<Pi
     form_link_label: e.form_link?.label ?? null,
     assignees: (e.assignees ?? []).map((a: any) => ({ user_id: a.user_id, name: a.user?.name ?? 'Unknown' })),
   }))
-})
-
-export const fetchEntryWithAnswers = cache(async (entryId: string): Promise<{ entry: PipelineEntry; answers: PipelineEntryAnswer[] } | null> => {
-  const supabase = await createClient()
-  const [{ data: entry }, { data: answers }] = await Promise.all([
-    supabase.from('pipeline_entries').select('*, form:forms(title)').eq('id', entryId).single(),
-    supabase.from('pipeline_entry_answers')
-      .select('*, node:form_nodes(question_text, answer_type)')
-      .eq('entry_id', entryId),
-  ])
-  if (!entry) return null
-  return {
-    entry: { ...entry, form: entry.form ?? null, link_creator: null },
-    answers: answers ?? [],
-  }
 })

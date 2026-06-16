@@ -22,6 +22,6 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
   const forms = (allForms ?? []) as Array<{ id: string; title: string; published: boolean; pipeline_id: string | null }>
 
   return (
-    <PipelineBoardClient pipeline={pipeline} entries={entries} canManage={canManage} teamMembers={teamMembers} forms={forms} />
+    <PipelineBoardClient pipeline={pipeline} entries={entries} canManage={canManage} teamMembers={teamMembers} forms={forms} currentUserId={user?.id} />
   )
 }

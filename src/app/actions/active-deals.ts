@@ -9,8 +9,8 @@ async function requireAdmin() {
 }
 
 async function requireInternal() {
-  const { supabase } = await requireRole(['founder', 'admin', 'associate'])
-  return { supabase }
+  const { supabase, userId, role } = await requireRole(['founder', 'admin', 'associate'])
+  return { supabase, userId, role }
 }
 
 // ── Categories ────────────────────────────────────────────────────────────────
@@ -140,7 +140,16 @@ export async function acceptDeal(
     fieldValues: Record<string, string> // fieldId → value
   }>,
 ) {
-  const { supabase } = await requireInternal()
+  const { supabase, userId, role } = await requireInternal()
+  if (role === 'associate') {
+    const { data } = await supabase
+      .from('pipeline_entry_assignees')
+      .select('user_id')
+      .eq('entry_id', entryId)
+      .eq('user_id', userId)
+      .maybeSingle()
+    if (!data) throw new Error('Associates can only accept entries assigned to them.')
+  }
 
   // Move entry to accepted stage
   await supabase.from('pipeline_entries').update({ stage_id: stageId }).eq('id', entryId)

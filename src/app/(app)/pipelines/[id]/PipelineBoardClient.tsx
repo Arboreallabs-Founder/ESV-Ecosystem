@@ -30,12 +30,14 @@ export default function PipelineBoardClient({
   canManage,
   teamMembers,
   forms: initialForms,
+  currentUserId,
 }: {
   pipeline: Pipeline
   entries: PipelineEntry[]
   canManage: boolean
   teamMembers: Array<{ id: string; name: string }>
   forms: FormItem[]
+  currentUserId?: string
 }) {
   const router = useRouter()
   const [pipeline, setPipeline] = useState(initial)
@@ -79,6 +81,13 @@ export default function PipelineBoardClient({
   // Drag and drop
   const [dragEntryId, setDragEntryId] = useState<string | null>(null)
   const [dragOverStageId, setDragOverStageId] = useState<string | 'unsorted' | null>(null)
+
+  // Associates can only drag/move entries they're personally assigned to
+  const canMoveEntry = (entry: PipelineEntry) => {
+    if (canManage) return true
+    if (!currentUserId) return false
+    return (entry.assignees ?? []).some((a) => a.user_id === currentUserId)
+  }
 
   const linkedForms = forms.filter((f) => f.pipeline_id === pipeline.id)
   const unlinkableForms = forms.filter((f) => f.pipeline_id !== null && f.pipeline_id !== pipeline.id)
@@ -322,6 +331,7 @@ export default function PipelineBoardClient({
                       key={entry.id}
                       entry={entry}
                       isDragging={dragEntryId === entry.id}
+                      canDrag={canMoveEntry(entry)}
                       onDragStart={() => handleDragStart(entry.id)}
                       onDragEnd={handleDragEnd}
                       onClick={() => handleOpenEntry(entry)}
@@ -347,7 +357,7 @@ export default function PipelineBoardClient({
               onDragLeave={() => setDragOverStageId(null)}
             >
               {unsorted.map((entry) => (
-                <EntryCard key={entry.id} entry={entry} isDragging={dragEntryId === entry.id} onDragStart={() => handleDragStart(entry.id)} onDragEnd={handleDragEnd} onClick={() => handleOpenEntry(entry)} showAssigneeError={assigneeGateEntry === entry.id} />
+                <EntryCard key={entry.id} entry={entry} isDragging={dragEntryId === entry.id} canDrag={canMoveEntry(entry)} onDragStart={() => handleDragStart(entry.id)} onDragEnd={handleDragEnd} onClick={() => handleOpenEntry(entry)} showAssigneeError={assigneeGateEntry === entry.id} />
               ))}
             </div>
           </div>
@@ -579,20 +589,26 @@ export default function PipelineBoardClient({
             {/* Stage */}
             <div className={styles.field}>
               <label className={styles.label}>Stage</label>
-              <select
-                className={styles.select}
-                value={selectedEntry.stage_id ?? ''}
-                onChange={(e) => {
-                  const newStageId = e.target.value || null
-                  handleMoveEntry(selectedEntry.id, newStageId)
-                  if (newStageId && !rejectedStageIds.has(newStageId) && !acceptedStageIds.has(newStageId)) {
-                    setSelectedEntry((prev) => prev ? { ...prev, stage_id: newStageId } : null)
-                  }
-                }}
-              >
-                <option value="">Unsorted</option>
-                {sortedStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              {canMoveEntry(selectedEntry) ? (
+                <select
+                  className={styles.select}
+                  value={selectedEntry.stage_id ?? ''}
+                  onChange={(e) => {
+                    const newStageId = e.target.value || null
+                    handleMoveEntry(selectedEntry.id, newStageId)
+                    if (newStageId && !rejectedStageIds.has(newStageId) && !acceptedStageIds.has(newStageId)) {
+                      setSelectedEntry((prev) => prev ? { ...prev, stage_id: newStageId } : null)
+                    }
+                  }}
+                >
+                  <option value="">Unsorted</option>
+                  {sortedStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              ) : (
+                <div className={styles.input} style={{ color: 'var(--color-muted)', cursor: 'default', userSelect: 'none' }}>
+                  {sortedStages.find((s) => s.id === selectedEntry.stage_id)?.name ?? 'Unsorted'}
+                </div>
+              )}
             </div>
 
             {/* Q&A */}
@@ -681,9 +697,10 @@ export default function PipelineBoardClient({
   )
 }
 
-function EntryCard({ entry, isDragging, onDragStart, onDragEnd, onClick, showAssigneeError }: {
+function EntryCard({ entry, isDragging, canDrag, onDragStart, onDragEnd, onClick, showAssigneeError }: {
   entry: PipelineEntry
   isDragging: boolean
+  canDrag: boolean
   onDragStart: () => void
   onDragEnd: () => void
   onClick: () => void
@@ -692,9 +709,9 @@ function EntryCard({ entry, isDragging, onDragStart, onDragEnd, onClick, showAss
   return (
     <div
       className={`${styles.entryCard} ${isDragging ? styles.entryCardDragging : ''} ${showAssigneeError ? styles.entryCardError : ''}`}
-      draggable
-      onDragStart={onDragStart}
-      onDragEnd={onDragEnd}
+      draggable={canDrag}
+      onDragStart={canDrag ? onDragStart : undefined}
+      onDragEnd={canDrag ? onDragEnd : undefined}
       onClick={onClick}
     >
       <div className={styles.entryTitle}>{entry.title || 'Untitled submission'}</div>

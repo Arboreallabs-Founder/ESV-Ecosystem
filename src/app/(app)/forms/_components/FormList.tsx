@@ -114,7 +114,7 @@ export default function FormList({ forms: initial, pipelines, canManage }: { for
               )}
               <div className={styles.cardActions}>
                 {canManage && <Link href={`/forms/${f.id}/builder`} className={styles.editBtn}>Edit / Build</Link>}
-                {f.published && (
+                {f.published && canManage && (
                   <button className={styles.getLinkBtn} onClick={() => openLinkModal(f.id)}>+ Get Link</button>
                 )}
                 {canManage && (

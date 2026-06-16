@@ -61,6 +61,9 @@ export default function ActiveDealDetail({ deal, onClose }: { deal: ActiveDeal; 
               <span>Submitted {formatDate(deal.entry?.submitted_at ?? deal.created_at)}</span>
               <span>Accepted {formatDate(deal.created_at)}</span>
             </div>
+            {deal.entry?.sourced_via_partner && (
+              <span className={styles.partnerChip}>via {deal.entry.sourced_via_partner.name}</span>
+            )}
           </div>
           <button className={styles.detailClose} onClick={onClose}>✕</button>
         </div>

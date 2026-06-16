@@ -23,7 +23,7 @@ export const fetchActiveDeals = cache(async (): Promise<ActiveDeal[]> => {
       id,
       pipeline_entry_id,
       created_at,
-      entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name))),
+      entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
       categories:active_deal_categories(
         category:deal_categories(
           id, name, description, color, created_at,
@@ -45,7 +45,14 @@ export const fetchActiveDeals = cache(async (): Promise<ActiveDeal[]> => {
       entry: (() => {
         const e = Array.isArray(row.entry) ? row.entry[0] : row.entry
         if (!e) return e
-        return { ...e, assignees: (e.assignees ?? []).map((a: any) => ({ user_id: a.user_id, name: a.user?.name ?? 'Unknown' })) }
+        const formLink = Array.isArray(e.form_link) ? e.form_link[0] : e.form_link
+        const creator = Array.isArray(formLink?.creator) ? formLink?.creator[0] : formLink?.creator
+        const fp = Array.isArray(creator?.franchise_partner) ? creator?.franchise_partner[0] : creator?.franchise_partner
+        return {
+          ...e,
+          assignees: (e.assignees ?? []).map((a: any) => ({ user_id: a.user_id, name: a.user?.name ?? 'Unknown' })),
+          sourced_via_partner: fp ? { id: fp.id, name: fp.name } : null,
+        }
       })(),
       categories: (row.categories ?? []).map((c: any) => {
         const catFieldIds = new Set((c.category?.fields ?? []).map((f: any) => f.id))

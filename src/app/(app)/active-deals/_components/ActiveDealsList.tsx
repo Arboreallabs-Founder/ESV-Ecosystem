@@ -93,6 +93,9 @@ export default function ActiveDealsList({ deals, categories }: { deals: ActiveDe
                   {deal.entry?.submitter_email && <span className={styles.dealEmail}>{deal.entry.submitter_email}</span>}
                   <span className={styles.dealDate}>Accepted {formatDate(deal.created_at)}</span>
                 </div>
+                {deal.entry?.sourced_via_partner && (
+                  <span className={styles.partnerChip}>via {deal.entry.sourced_via_partner.name}</span>
+                )}
               </div>
 
               {/* Category chips */}

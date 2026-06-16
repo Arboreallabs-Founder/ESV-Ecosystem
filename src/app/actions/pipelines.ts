@@ -75,8 +75,21 @@ export async function deleteStage(stageId: string) {
   // No revalidatePath — router.refresh() in component
 }
 
+async function assertAssignedIfAssociate(supabase: Awaited<ReturnType<typeof requireAuth>>['supabase'], entryId: string, userId: string) {
+  const { data: userRow } = await supabase.from('users').select('role').eq('id', userId).single()
+  if (userRow?.role !== 'associate') return
+  const { data } = await supabase
+    .from('pipeline_entry_assignees')
+    .select('user_id')
+    .eq('entry_id', entryId)
+    .eq('user_id', userId)
+    .maybeSingle()
+  if (!data) throw new Error('Associates can only move entries assigned to them.')
+}
+
 export async function moveEntry(entryId: string, stageId: string | null) {
   const { supabase, userId } = await requireAuth()
+  await assertAssignedIfAssociate(supabase, entryId, userId)
   const { data: current } = await supabase.from('pipeline_entries').select('stage_id').eq('id', entryId).single()
   await supabase.from('pipeline_entries').update({ stage_id: stageId }).eq('id', entryId)
   await supabase.from('pipeline_entry_stage_history').insert({
@@ -119,7 +132,8 @@ export async function removeAssignee(entryId: string, userId: string) {
 }
 
 export async function rejectEntry(entryId: string, stageId: string, reason: string) {
-  const { supabase } = await requireAuth()
+  const { supabase, userId } = await requireAuth()
+  await assertAssignedIfAssociate(supabase, entryId, userId)
   await supabase.from('pipeline_entries').update({ stage_id: stageId, rejection_reason: reason.trim() || null }).eq('id', entryId)
 }
 

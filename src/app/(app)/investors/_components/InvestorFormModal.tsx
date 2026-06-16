@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createInvestor, updateInvestor } from '@/app/actions/investors'
-import { SERVICE_TYPE_LABELS, LINKEDIN_STATUS_OPTIONS } from '@/lib/types'
+import { SERVICE_TYPE_LABELS } from '@/lib/types'
 import type { Investor, ServiceType } from '@/lib/types'
 import SectorTagInput from './SectorTagInput'
 import styles from '../investors.module.css'
@@ -13,7 +13,6 @@ type ContactDraft = {
   name: string
   role: string
   linkedin_url: string
-  linkedin_status: string
   phone: string
   email: string
 }
@@ -29,7 +28,7 @@ type Props = {
 }
 
 function blankContact(): ContactDraft {
-  return { key: crypto.randomUUID(), name: '', role: '', linkedin_url: '', linkedin_status: '', phone: '', email: '' }
+  return { key: crypto.randomUUID(), name: '', role: '', linkedin_url: '', phone: '', email: '' }
 }
 
 export default function InvestorFormModal({
@@ -69,7 +68,7 @@ export default function InvestorFormModal({
         name: c.name.trim(),
         role: c.role.trim() || null,
         linkedin_url: c.linkedin_url.trim() || null,
-        linkedin_status: c.linkedin_status || null,
+        linkedin_status: null,
         phone: c.phone.trim() || null,
         email: c.email.trim() || null,
         sort_order: i,
@@ -209,13 +208,10 @@ export default function InvestorFormModal({
                     onChange={(e) => setContact(c.key, 'name', e.target.value)} />
                   <input className={styles.input} placeholder="Role" value={c.role}
                     onChange={(e) => setContact(c.key, 'role', e.target.value)} />
-                  <select className={styles.select} value={c.linkedin_status}
-                    onChange={(e) => setContact(c.key, 'linkedin_status', e.target.value)}>
-                    <option value="">LinkedIn</option>
-                    {LINKEDIN_STATUS_OPTIONS.map((o) => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                  <input className={styles.input} placeholder="Email" type="email" value={c.email}
+                  <input className={styles.input} placeholder="Email *" type="email" value={c.email}
                     onChange={(e) => setContact(c.key, 'email', e.target.value)} />
+                  <input className={styles.input} placeholder="LinkedIn URL" type="url" value={c.linkedin_url}
+                    onChange={(e) => setContact(c.key, 'linkedin_url', e.target.value)} />
                   <input className={styles.input} placeholder="Phone" value={c.phone}
                     onChange={(e) => setContact(c.key, 'phone', e.target.value)} />
                   <button type="button" className={styles.contactDraftRemove}

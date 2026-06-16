@@ -20,14 +20,6 @@ function formatTicket(min: number | null, max: number | null): string {
   return `Up to ${fmt(max!)}`
 }
 
-const LINKEDIN_STATUS_COLOR: Record<string, string> = {
-  Connected: '#16a34a',
-  '1st': '#2563eb',
-  '2nd': '#7c3aed',
-  '3rd': '#d97706',
-  Pending: '#64748b',
-  'Not Connected': '#dc2626',
-}
 
 const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
   vc_fund: 'var(--color-primary)',
@@ -189,15 +181,6 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
                       <div className={styles.contactName}>{c.name}</div>
                       {c.role && <div className={styles.contactRole}>{c.role}</div>}
                       <div className={styles.contactMeta}>
-                        {c.linkedin_status && (
-                          <span className={styles.linkedinStatusChip}
-                            style={{
-                              background: (LINKEDIN_STATUS_COLOR[c.linkedin_status] ?? '#64748b') + '1a',
-                              color: LINKEDIN_STATUS_COLOR[c.linkedin_status] ?? '#64748b',
-                            }}>
-                            {c.linkedin_status}
-                          </span>
-                        )}
                         {c.email && <a href={`mailto:${c.email}`} className={styles.detailLink}>{c.email}</a>}
                         {c.phone && <span className={styles.contactPhone}>{c.phone}</span>}
                         {c.linkedin_url && (
