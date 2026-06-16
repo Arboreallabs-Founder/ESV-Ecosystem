@@ -10,7 +10,6 @@ export type OrgUser = {
   name: string
   email: string
   role: UserRole
-  created_at: string | null
 }
 
 export type OrgApprovedEmail = {
@@ -65,7 +64,7 @@ export async function listOrgUsers(orgId: string): Promise<OrgUser[]> {
   const { supabase } = await requireSuperAdmin()
   const { data, error } = await supabase
     .from('users')
-    .select('id, name, email, role, created_at')
+    .select('id, name, email, role')
     .eq('org_id', orgId)
     .order('name', { ascending: true })
   if (error) throw error
