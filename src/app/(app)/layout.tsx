@@ -8,7 +8,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) redirect('/login')
 
   const store = await cookies()
-  const demoMode = store.get('demo_mode')?.value === '1'
+  const demoMode = store.get('demo_mode')?.value === '1' && user.email === 'demo@aalabs-demo.com'
   const demoPersona = store.get('demo_persona')?.value ?? 'founder'
 
   return (
