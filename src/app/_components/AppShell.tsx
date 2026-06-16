@@ -113,6 +113,7 @@ const DEMO_PERSONAS = [
   { value: 'founder', label: 'Founder' },
   { value: 'admin', label: 'Admin' },
   { value: 'associate', label: 'Associate' },
+  { value: 'franchise_partner', label: 'Partner' },
 ]
 
 export default function AppShell({
@@ -167,7 +168,13 @@ export default function AppShell({
   function handlePersonaSwitch(persona: string) {
     startPersonaTransition(async () => {
       await switchDemoPersona(persona)
-      router.refresh()
+      if (persona === 'franchise_partner') {
+        router.push('/portal')
+      } else if (demoPersona === 'franchise_partner') {
+        router.push('/dashboard')
+      } else {
+        router.refresh()
+      }
     })
   }
 
