@@ -202,6 +202,112 @@
   cursor: not-allowed;
 }
 
+/* ─── Demo section ───────────────────────────────────────────────────── */
+.demoSection {
+  margin-top: 1.5rem;
+}
+
+.demoDivider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  margin-bottom: 0.875rem;
+}
+.demoDivider::before, .demoDivider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background-color: var(--color-border);
+}
+
+.demoBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  color: var(--color-primary);
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  opacity: 0.85;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+.demoBtn:hover {
+  opacity: 1;
+  background: rgba(116, 95, 253, 0.06);
+}
+
+.pinModal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1.25rem 1rem;
+  background: rgba(116, 95, 253, 0.04);
+  border: 1.5px solid rgba(116, 95, 253, 0.2);
+  border-radius: var(--radius-md);
+}
+
+.pinLabel {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.pinInput {
+  width: 140px;
+  padding: 0.75rem 1rem;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-size: 1.75rem;
+  font-family: monospace;
+  font-weight: 700;
+  letter-spacing: 0.5em;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s ease;
+  box-sizing: border-box;
+}
+.pinInput:focus { border-color: var(--color-primary); }
+.pinInput::placeholder { color: var(--color-border); letter-spacing: 0.3em; }
+
+.pinError {
+  font-size: 0.8125rem;
+  color: var(--color-destructive);
+  margin: 0;
+}
+
+.pinActions {
+  display: flex;
+  gap: 0.625rem;
+  width: 100%;
+}
+.pinActions .submitBtn { flex: 1; margin-top: 0; }
+
+.pinCancelBtn {
+  padding: 0.75rem 1rem;
+  background: none;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-muted);
+  font-size: 0.875rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.pinCancelBtn:hover { border-color: var(--color-text); color: var(--color-text); }
+
 /* ─── Footer ─────────────────────────────────────────────────────────── */
 .footer {
   margin-top: 1.75rem;

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { WikiSidebarButton } from '@/app/_components/WikiPanel'
 import { useTheme } from '@/app/_components/ThemeProvider'
+import { switchDemoPersona, exitDemoMode } from '@/app/actions/demo'
 import styles from '@/app/app-shell.module.css'
 
 type UserRow = { name: string | null; role: string | null; email: string | null }
@@ -108,19 +109,30 @@ const NAV_ITEMS: NavEntry[] = [
   },
 ]
 
+const DEMO_PERSONAS = [
+  { value: 'founder', label: 'Founder' },
+  { value: 'admin', label: 'Admin' },
+  { value: 'associate', label: 'Associate' },
+]
+
 export default function AppShell({
   user,
   children,
   fullWidth = false,
+  demoMode = false,
+  demoPersona = 'founder',
 }: {
   user: UserRow
   children: React.ReactNode
   fullWidth?: boolean
+  demoMode?: boolean
+  demoPersona?: string
 }) {
   const router = useRouter()
   const pathname = usePathname()
   const { theme, toggle: toggleTheme } = useTheme()
-  const role = user.role ?? 'associate'
+  const [isPersonaSwitching, startPersonaTransition] = useTransition()
+  const role = demoMode ? demoPersona : (user.role ?? 'associate')
   const displayName = user.name ?? user.email ?? 'User'
   const initials = displayName.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
@@ -152,11 +164,31 @@ export default function AppShell({
     router.refresh()
   }
 
+  function handlePersonaSwitch(persona: string) {
+    startPersonaTransition(async () => {
+      await switchDemoPersona(persona)
+      router.refresh()
+    })
+  }
+
+  async function handleExitDemo() {
+    await exitDemoMode()
+    router.push('/login')
+  }
+
   const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(role))
 
   return (
     <div className={styles.shell}>
       <aside className={styles.sidebar}>
+        {/* Demo mode banner */}
+        {demoMode && (
+          <div className={styles.demoBanner}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+            Demo Mode
+          </div>
+        )}
+
         {/* Logo / workspace */}
         <div className={styles.sidebarTop}>
           <div className={styles.workspace}>
@@ -167,7 +199,7 @@ export default function AppShell({
             </div>
             <span className={styles.logoText}>Ecosystem</span>
           </div>
-          <div className={styles.workspaceSub}>Earlyseed Ventures</div>
+          <div className={styles.workspaceSub}>{demoMode ? 'AA Labs — Demo' : 'Earlyseed Ventures'}</div>
         </div>
 
         {/* Nav links */}
@@ -241,6 +273,28 @@ export default function AppShell({
             </Link>
           </div>
         </nav>
+
+        {/* Demo persona switcher */}
+        {demoMode && (
+          <div className={styles.personaSwitcher}>
+            <div className={styles.personaLabel}>Viewing as</div>
+            <div className={styles.personaRow}>
+              {DEMO_PERSONAS.map((p) => (
+                <button
+                  key={p.value}
+                  className={`${styles.personaBtn} ${demoPersona === p.value ? styles.personaBtnActive : ''}`}
+                  onClick={() => handlePersonaSwitch(p.value)}
+                  disabled={isPersonaSwitching}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+            <button className={styles.exitDemoBtn} onClick={handleExitDemo}>
+              ← Exit Demo
+            </button>
+          </div>
+        )}
 
         {/* User footer */}
         <div className={styles.sidebarFooter}>

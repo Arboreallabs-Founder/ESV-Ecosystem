@@ -1,8 +1,9 @@
 'use client'
 
-import { Suspense, useState } from 'react'
+import { Suspense, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { verifyPinAndLogin } from '@/app/actions/demo'
 import styles from './page.module.css'
 
 function GoogleIcon() {
@@ -37,6 +38,25 @@ function LoginContent() {
   const [password, setPassword] = useState('')
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailError, setEmailError] = useState('')
+
+  const [showPinModal, setShowPinModal] = useState(false)
+  const [pin, setPin] = useState('')
+  const [pinError, setPinError] = useState('')
+  const [isPinPending, startPinTransition] = useTransition()
+
+  function handleDemoEnter(e: React.FormEvent) {
+    e.preventDefault()
+    if (pin.length !== 4) return
+    setPinError('')
+    startPinTransition(async () => {
+      try {
+        await verifyPinAndLogin(pin)
+        router.push('/dashboard')
+      } catch (err) {
+        setPinError(err instanceof Error ? err.message : 'Incorrect PIN')
+      }
+    })
+  }
 
   async function handleGoogleSignIn() {
     const supabase = createClient()
@@ -143,6 +163,54 @@ function LoginContent() {
             {emailLoading ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+
+        <div className={styles.demoSection}>
+          <div className={styles.demoDivider}><span>or explore without signing in</span></div>
+          {!showPinModal ? (
+            <button
+              type="button"
+              className={styles.demoBtn}
+              onClick={() => setShowPinModal(true)}
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              Try Demo Mode
+            </button>
+          ) : (
+            <form onSubmit={handleDemoEnter} className={styles.pinModal}>
+              <p className={styles.pinLabel}>Enter demo PIN</p>
+              <input
+                className={styles.pinInput}
+                type="text"
+                inputMode="numeric"
+                pattern="\d{4}"
+                maxLength={4}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                placeholder="••••"
+                autoFocus
+              />
+              {pinError && <p className={styles.pinError}>{pinError}</p>}
+              <div className={styles.pinActions}>
+                <button
+                  type="submit"
+                  className={styles.submitBtn}
+                  disabled={isPinPending || pin.length !== 4}
+                >
+                  {isPinPending ? 'Entering…' : 'Enter'}
+                </button>
+                <button
+                  type="button"
+                  className={styles.pinCancelBtn}
+                  onClick={() => { setShowPinModal(false); setPin(''); setPinError('') }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
 
         <div className={styles.footer}>
           Access is restricted to approved team members only.{' '}

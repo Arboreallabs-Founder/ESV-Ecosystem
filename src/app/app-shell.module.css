@@ -297,6 +297,84 @@
   color: var(--color-text);
 }
 
+/* ─── Demo banner ────────────────────────────────────────────────────── */
+.demoBanner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0;
+  background: rgba(245, 158, 11, 0.12);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.25);
+  color: #B45309;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* ─── Demo persona switcher ──────────────────────────────────────────── */
+.personaSwitcher {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.personaLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.personaRow {
+  display: flex;
+  gap: 0.375rem;
+}
+
+.personaBtn {
+  flex: 1;
+  padding: 0.3125rem 0;
+  background: none;
+  border: 1.5px solid var(--color-border);
+  border-radius: 6px;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s, background 0.12s;
+}
+.personaBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+.personaBtnActive {
+  border-color: var(--color-primary) !important;
+  background: rgba(116, 95, 253, 0.1) !important;
+  color: var(--color-primary) !important;
+  font-weight: 600;
+}
+.personaBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.exitDemoBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.12s;
+}
+.exitDemoBtn:hover { color: var(--color-destructive); }
+
 /* ─── Main content ────────────────────────────────────────────────────── */
 .main {
   flex: 1;
