@@ -85,6 +85,7 @@ export default function UsersTable({
           name: addName.trim(),
           role: addRole as ApprovedUser['role'],
           added_at: new Date().toISOString(),
+          org_id: null,
           userId: null,
           hasLoggedIn: false,
         }])

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireAuth } from '@/lib/guards'
 
 export async function createTask(formData: FormData) {
-  const { supabase, userId } = await requireAuth()
+  const { supabase, userId, orgId } = await requireAuth()
 
   const { error } = await supabase.from('tasks').insert({
     title: formData.get('title') as string,
@@ -14,6 +14,7 @@ export async function createTask(formData: FormData) {
     priority: (formData.get('priority') as string) || 'Medium',
     status: 'To Do',
     created_by: userId,
+    org_id: orgId,
   })
 
   if (error) throw error

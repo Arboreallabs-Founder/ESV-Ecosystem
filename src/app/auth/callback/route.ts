@@ -37,8 +37,9 @@ export async function GET(request: NextRequest) {
 
   const role = publicUser.role
   const destination =
-    role === 'franchise_partner' ? '/portal'
-    : role === 'associate' ? '/pipeline'
+    role === 'super_admin'       ? '/super-admin/orgs'
+    : role === 'franchise_partner' ? '/portal'
+    : role === 'associate'         ? '/pipeline'
     : '/dashboard'
 
   return NextResponse.redirect(new URL(destination, origin))

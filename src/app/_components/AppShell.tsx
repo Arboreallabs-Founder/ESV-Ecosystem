@@ -11,7 +11,7 @@ import styles from '@/app/app-shell.module.css'
 type UserRow = { name: string | null; role: string | null; email: string | null }
 
 const ROLE_LABELS: Record<string, string> = {
-  founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner',
+  founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner', super_admin: 'Platform Admin',
 }
 
 const ROLE_BADGE_CLASS: Record<string, string> = {

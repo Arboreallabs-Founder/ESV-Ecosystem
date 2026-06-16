@@ -4,12 +4,12 @@ import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
 async function requireAdminOrFounder() {
-  const { supabase, userId } = await requireRole(['founder', 'admin'])
-  return { supabase, callerId: userId }
+  const { supabase, userId, orgId } = await requireRole(['founder', 'admin'])
+  return { supabase, callerId: userId, orgId }
 }
 
 export async function addApprovedUser(email: string, name: string, role: string, password?: string) {
-  const { supabase, callerId } = await requireAdminOrFounder()
+  const { supabase, callerId, orgId } = await requireAdminOrFounder()
   const normalizedEmail = email.toLowerCase().trim()
   const trimmedName = name.trim()
 
@@ -18,6 +18,7 @@ export async function addApprovedUser(email: string, name: string, role: string,
     name: trimmedName,
     role,
     added_by: callerId,
+    org_id: orgId,
   })
   if (error) throw error
 

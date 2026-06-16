@@ -5,12 +5,12 @@ import { requireRole, requireAuth } from '@/lib/guards'
 import type { FormNode, FormEdge } from '@/lib/types'
 
 async function requireAdmin() {
-  const { supabase, userId } = await requireRole(['founder', 'admin'])
-  return { supabase, userId }
+  const { supabase, userId, orgId } = await requireRole(['founder', 'admin'])
+  return { supabase, userId, orgId }
 }
 
 export async function createForm(title: string, description: string, pipelineId: string | null) {
-  const { supabase, userId } = await requireAdmin()
+  const { supabase, userId, orgId } = await requireAdmin()
   const { data: form, error } = await supabase
     .from('forms')
     .insert({
@@ -18,6 +18,7 @@ export async function createForm(title: string, description: string, pipelineId:
       description: description.trim() || null,
       pipeline_id: pipelineId || null,
       created_by: userId,
+      org_id: orgId,
     })
     .select('id')
     .single()

@@ -68,21 +68,32 @@ export type FranchisePartner = {
   contract_link: string | null
 }
 
+export type UserRole = 'founder' | 'admin' | 'associate' | 'franchise_partner' | 'super_admin'
+
 export type UserRow = {
   id: string
   email: string
-  role: 'founder' | 'admin' | 'associate' | 'franchise_partner'
+  role: UserRole
   name: string
   franchise_partner_id: string | null
+  org_id: string | null  // null only for super_admin
 }
 
 export type ApprovedUser = {
   email: string
   name: string
-  role: 'founder' | 'admin' | 'associate' | 'franchise_partner'
+  role: UserRole
   added_at: string
+  org_id: string | null
   userId: string | null
   hasLoggedIn: boolean
+}
+
+export type Organization = {
+  id: string
+  name: string
+  slug: string
+  created_at: string
 }
 
 export type PartnerUser = {

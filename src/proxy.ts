@@ -44,8 +44,9 @@ export async function proxy(request: NextRequest) {
     }
 
     const destination =
-      userRow.role === 'franchise_partner' ? '/portal'
-      : userRow.role === 'associate' ? '/pipelines'
+      userRow.role === 'super_admin'         ? '/super-admin/orgs'
+      : userRow.role === 'franchise_partner' ? '/portal'
+      : userRow.role === 'associate'         ? '/pipelines'
       : '/dashboard'
     return NextResponse.redirect(new URL(destination, request.url))
   }

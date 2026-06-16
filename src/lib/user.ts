@@ -20,7 +20,7 @@ export const getUser = cache(async (): Promise<UserRow | null> => {
   if (!userId) return null
   const { data } = await supabase
     .from('users')
-    .select('id, name, role, email, franchise_partner_id')
+    .select('id, name, role, email, franchise_partner_id, org_id')
     .eq('id', userId)
     .single()
   return data ?? null

@@ -4,8 +4,8 @@ import { requireRole } from '@/lib/guards'
 import type { DealCategory } from '@/lib/types'
 
 async function requireAdmin() {
-  const { supabase, userId } = await requireRole(['founder', 'admin'])
-  return { supabase, userId }
+  const { supabase, userId, orgId } = await requireRole(['founder', 'admin'])
+  return { supabase, userId, orgId }
 }
 
 async function requireInternal() {
@@ -29,10 +29,10 @@ export async function getCategories(): Promise<DealCategory[]> {
 }
 
 export async function createCategory(name: string, description: string, color: string) {
-  const { supabase, userId } = await requireAdmin()
+  const { supabase, userId, orgId } = await requireAdmin()
   const { data, error } = await supabase
     .from('deal_categories')
-    .insert({ name: name.trim(), description: description.trim() || null, color, created_by: userId })
+    .insert({ name: name.trim(), description: description.trim() || null, color, created_by: userId, org_id: orgId })
     .select('id')
     .single()
   if (error) throw error

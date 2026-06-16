@@ -42,12 +42,14 @@ export async function createInvestor(params: {
 
   let supabase: Awaited<ReturnType<typeof requireRole>>['supabase']
   let userId: string
+  let orgId: string | null
   let referredByPartnerId = fields.referred_by_partner_id
 
   if (isPartnerReferral) {
     const result = await requireRole(['franchise_partner'])
     supabase = result.supabase
     userId = result.userId
+    orgId = result.orgId
     // Auto-resolve the partner's own franchise_partner_id
     const { data: userRow } = await supabase
       .from('users')
@@ -59,6 +61,7 @@ export async function createInvestor(params: {
     const result = await requireInternal()
     supabase = result.supabase
     userId = result.userId
+    orgId = result.orgId
   }
 
   const { data: investor, error } = await supabase
@@ -75,6 +78,7 @@ export async function createInvestor(params: {
       stage: fields.stage || null,
       referred_by_partner_id: referredByPartnerId,
       created_by: userId,
+      org_id: orgId,
     })
     .select('id')
     .single()

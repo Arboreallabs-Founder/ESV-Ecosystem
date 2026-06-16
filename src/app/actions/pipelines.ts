@@ -9,15 +9,15 @@ async function requireInternal() {
 }
 
 async function requireAdmin() {
-  const { supabase, userId } = await requireRole(['founder', 'admin'])
-  return { supabase, userId }
+  const { supabase, userId, orgId } = await requireRole(['founder', 'admin'])
+  return { supabase, userId, orgId }
 }
 
 export async function createPipeline(name: string, description: string) {
-  const { supabase, userId } = await requireAdmin()
+  const { supabase, userId, orgId } = await requireAdmin()
   const { data, error } = await supabase
     .from('pipelines')
-    .insert({ name: name.trim(), description: description.trim() || null, created_by: userId })
+    .insert({ name: name.trim(), description: description.trim() || null, created_by: userId, org_id: orgId })
     .select('id')
     .single()
   if (error) throw error

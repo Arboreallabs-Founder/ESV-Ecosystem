@@ -3,7 +3,7 @@
 import { requireAuth } from '@/lib/guards'
 
 export async function upsertPartnerDetails(userId: string, formData: FormData) {
-  const { supabase } = await requireAuth()
+  const { supabase, orgId } = await requireAuth()
 
   const { data: partner, error: insertError } = await supabase
     .from('franchise_partners')
@@ -15,6 +15,7 @@ export async function upsertPartnerDetails(userId: string, formData: FormData) {
       transaction_fee_split_pct: Number(formData.get('transaction_fee_split_pct')) || 0,
       success_fee_split_pct: Number(formData.get('success_fee_split_pct')) || 0,
       contract_link: (formData.get('contract_link') as string) || null,
+      org_id: orgId,
     })
     .select('id')
     .single()
