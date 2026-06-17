@@ -54,15 +54,33 @@ export const WIKI: Record<string, WikiSection> = {
     ],
   },
 
+  activeDeals: {
+    title: 'Active Deals',
+    summary: 'The live book of work. Every deal accepted from a pipeline lands here with its full category details, investor list, and fee tracking.',
+    items: [
+      { heading: 'How a deal enters Active Deals', body: 'When a pipeline entry is moved to the Accepted column, you are prompted to select one or more categories and fill in their fields (e.g. success fee %, total capital). On confirmation the deal appears here.' },
+      { heading: 'Two-column layout', body: 'The detail panel opens in two columns. Left side shows Assigned To, Category Details, Stage History, and Form Responses. Right side shows the Investors panel for that deal.' },
+      { heading: 'Adding Investors', body: 'In the Investors panel, click "+ Add Investor". Search the investor database and select one, or create a new investor on the spot (it will also be saved to the Investors tab). Each deal has its own independent investor list.' },
+      { heading: 'Investing toggle & Amount', body: 'Each investor row has a Yes/No toggle for whether they are investing, and an amount field (₹). The total investment across all investing parties is shown in the totals bar at the bottom.' },
+      { heading: 'Fee rows', body: 'When an investor is added, fee rows are auto-created for every percentage-type field in the deal\'s categories (e.g. Success Fee). The rate defaults to the value entered at acceptance but can be overridden per investor.' },
+      { heading: 'Enabling / disabling a fee', body: 'Click the ● / ○ toggle next to a fee to enable or disable it. You will be asked to type the deal name to confirm — this prevents accidental changes. Disabled fees are excluded from the totals.' },
+      { heading: 'Custom fees', body: 'Click "+ Add Fee" under any investor to add a fee that isn\'t part of the category (e.g. a separately negotiated charge). Custom fees have a label and a rate % and can be deleted.' },
+      { heading: 'Fee calculations', body: 'For each fee, the system shows the rate % and the calculated earning (rate × investment amount). The totals bar sums all enabled fee earnings across all investors.' },
+      { heading: 'Referral investors', body: 'If an investor was referred by a franchise partner, a Referral badge appears on their row automatically.' },
+    ],
+  },
+
   investors: {
     title: 'Investors',
-    summary: 'ESV\'s database of fund partners. Use this to track funds you\'ve introduced to deals and monitor outreach status.',
+    summary: 'ESV\'s database of investors and funds. Add them to Active Deals to track commitments and fees.',
     items: [
-      { heading: 'Adding an Investor', body: 'Click "+ Add Investor". Fill in fund name, primary contact, email, investment thesis, stage preference, and typical cheque range (min/max in ₹).' },
+      { heading: 'Adding an Investor', body: 'Click "+ Add Investor". Fill in the name, type (VC Fund, Angel Fund, Family Office, or Angel Investor), country, website, stage preference, ticket size range (₹), and sectors.' },
+      { heading: 'ESV POC', body: 'Select one or more internal team members as the Point of Contact for this investor. Type a name to search and click to select. Multiple POCs are supported — each appears as a chip.' },
+      { heading: 'Referred by Partner', body: 'If this investor was introduced by a franchise partner, select the partner here (admin/founder only). The investor will show a Referral badge when added to any deal.' },
+      { heading: 'Contacts', body: 'For funds (not angel investors), you can add individual contacts — name, role, email, phone, and LinkedIn URL. Contacts are managed from the investor detail drawer after creation.' },
+      { heading: 'Search', body: 'The search bar filters by name, country, sector, stage, or ESV POC name. No need to scroll.' },
       { heading: 'Cheque Range', body: 'Amounts are in Indian Rupees. The system auto-formats large amounts (e.g. ₹50L, ₹2.5Cr) for display.' },
-      { heading: 'Search', body: 'The search bar filters by fund name, contact name, email, thesis, or stage preference. No need to scroll.' },
-      { heading: 'Fund Outreach', body: 'To add a fund to a deal\'s outreach, open the deal and go to the Fund Outreach tab. The investor must exist in this DB first.' },
-      { heading: 'Outreach Statuses', body: 'Sent = intro made. Responded = any reply received. Interested = fund wants to proceed. Passed = fund declined.' },
+      { heading: 'Adding to a deal', body: 'Investors are attached to deals from the Active Deals panel, not from here. Open an active deal, go to the Investors panel (right column), and click "+ Add Investor".' },
     ],
   },
 
