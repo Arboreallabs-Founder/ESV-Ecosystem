@@ -218,79 +218,84 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
         {investors.length === 0 ? (
           <div className={styles.detailEmpty}>No investors added yet.</div>
         ) : (
-          <div className={styles.investorList}>
+          <div className={styles.investorTable}>
+            {/* Table header */}
+            <div className={styles.investorTableHead}>
+              <span>Investor</span>
+              <span>Investing</span>
+              <span>Amount (₹)</span>
+              <span />
+            </div>
+
             {investors.map((inv) => (
-              <div key={inv.id} className={styles.investorRow}>
-                {/* Header row */}
-                <div className={styles.investorRowHeader}>
-                  <div className={styles.investorRowLeft}>
+              <div key={inv.id} className={styles.investorGroup}>
+                {/* Main investor row */}
+                <div className={styles.investorTableRow}>
+                  <div className={styles.iColName}>
                     <span className={styles.investorName}>{inv.investor?.name}</span>
-                    <span className={styles.investorTypeBadge}>
-                      {(SERVICE_TYPE_LABELS as Record<string, string>)[inv.investor?.service_type] ?? inv.investor?.service_type}
-                    </span>
-                    {inv.is_referral && <span className={styles.referralChip}>Referral</span>}
+                    <div className={styles.investorBadges}>
+                      <span className={styles.investorTypeBadge}>
+                        {(SERVICE_TYPE_LABELS as Record<string, string>)[inv.investor?.service_type] ?? inv.investor?.service_type}
+                      </span>
+                      {inv.is_referral && <span className={styles.referralChip}>Referral</span>}
+                    </div>
                   </div>
-                  <button className={styles.removeInvestorBtn} onClick={() => handleRemoveInvestor(inv.id)} title="Remove investor">✕</button>
+                  <div className={styles.iColInvesting}>
+                    <button
+                      className={`${styles.investingToggle} ${inv.is_investing ? styles.investingOn : ''}`}
+                      onClick={() => handleToggleInvesting(inv)}
+                    >
+                      {inv.is_investing ? 'Yes' : 'No'}
+                    </button>
+                  </div>
+                  <div className={styles.iColAmount}>
+                    <input
+                      type="number"
+                      className={styles.investorAmountInput}
+                      value={inv.investment_amount ?? ''}
+                      onChange={(e) => handleAmountChange(inv, e.target.value)}
+                      onBlur={() => handleAmountBlur(inv)}
+                      placeholder="—"
+                    />
+                  </div>
+                  <div className={styles.iColAction}>
+                    <button className={styles.removeInvestorBtn} onClick={() => handleRemoveInvestor(inv.id)} title="Remove">✕</button>
+                  </div>
                 </div>
 
-                {/* Investing toggle */}
-                <div className={styles.investorField}>
-                  <span className={styles.investorFieldLabel}>Investing</span>
-                  <button
-                    className={`${styles.investingToggle} ${inv.is_investing ? styles.investingOn : ''}`}
-                    onClick={() => handleToggleInvesting(inv)}
-                  >
-                    {inv.is_investing ? 'Yes' : 'No'}
-                  </button>
-                </div>
+                {/* Fee sub-rows */}
+                <div className={styles.feeBlock}>
+                  {inv.fees.map((fee) => {
+                    const effectiveRate = getEffectiveRate(fee, dealFieldValues)
+                    const calculatedAmount = computeFeeAmount(fee, inv.investment_amount, dealFieldValues)
+                    const isEditing = editingFee?.id === fee.id
 
-                {/* Amount */}
-                <div className={styles.investorField}>
-                  <span className={styles.investorFieldLabel}>Amount (₹)</span>
-                  <input
-                    type="number"
-                    className={styles.investorAmountInput}
-                    value={inv.investment_amount ?? ''}
-                    onChange={(e) => handleAmountChange(inv, e.target.value)}
-                    onBlur={() => handleAmountBlur(inv)}
-                    placeholder="—"
-                  />
-                </div>
-
-                {/* Fees */}
-                {inv.fees.length > 0 && (
-                  <div className={styles.feeTable}>
-                    <div className={styles.feeTableHeader}>Fees</div>
-                    {inv.fees.map((fee) => {
-                      const effectiveRate = getEffectiveRate(fee, dealFieldValues)
-                      const calculatedAmount = computeFeeAmount(fee, inv.investment_amount, dealFieldValues)
-                      const isEditing = editingFee?.id === fee.id
-
-                      if (isEditing) {
-                        return (
-                          <div key={fee.id} className={styles.feeRowEdit}>
-                            <input
-                              className={styles.feeEditInput}
-                              value={editingFee.label}
-                              onChange={(e) => setEditingFee((prev) => prev ? { ...prev, label: e.target.value } : prev)}
-                              placeholder="Fee label"
-                            />
-                            <input
-                              className={`${styles.feeEditInput} ${styles.feeEditInputRate}`}
-                              type="number"
-                              value={editingFee.rate}
-                              onChange={(e) => setEditingFee((prev) => prev ? { ...prev, rate: e.target.value } : prev)}
-                              placeholder="Rate %"
-                            />
-                            <button className={styles.feeSaveBtn} onClick={() => handleFeeSave(inv.id)}>Save</button>
-                            <button className={styles.feeCancelBtn} onClick={() => setEditingFee(null)}>Cancel</button>
-                          </div>
-                        )
-                      }
-
+                    if (isEditing) {
                       return (
-                        <div key={fee.id} className={`${styles.feeRow} ${!fee.is_enabled ? styles.feeDisabled : ''}`}>
-                          {fee.source_field_id && (
+                        <div key={fee.id} className={styles.feeRowEdit}>
+                          <input
+                            className={styles.feeEditInput}
+                            value={editingFee.label}
+                            onChange={(e) => setEditingFee((prev) => prev ? { ...prev, label: e.target.value } : prev)}
+                            placeholder="Fee label"
+                          />
+                          <input
+                            className={`${styles.feeEditInput} ${styles.feeEditInputRate}`}
+                            type="number"
+                            value={editingFee.rate}
+                            onChange={(e) => setEditingFee((prev) => prev ? { ...prev, rate: e.target.value } : prev)}
+                            placeholder="%"
+                          />
+                          <button className={styles.feeSaveBtn} onClick={() => handleFeeSave(inv.id)}>Save</button>
+                          <button className={styles.feeCancelBtn} onClick={() => setEditingFee(null)}>Cancel</button>
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div key={fee.id} className={`${styles.feeRow} ${!fee.is_enabled ? styles.feeDisabled : ''}`}>
+                        <span className={styles.feeToggleCell}>
+                          {fee.source_field_id ? (
                             <button
                               className={styles.feeToggle}
                               title={fee.is_enabled ? 'Disable fee' : 'Enable fee'}
@@ -298,56 +303,51 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
                             >
                               {fee.is_enabled ? '●' : '○'}
                             </button>
+                          ) : <span className={styles.feeToggleSpacer} />}
+                        </span>
+                        <span className={styles.feeLabel}>{fee.label}</span>
+                        <span className={styles.feeRate}>
+                          {effectiveRate != null ? (
+                            <>{effectiveRate}%{fee.rate == null && fee.source_field_id && <span className={styles.feeDefault}> def</span>}</>
+                          ) : '—'}
+                        </span>
+                        <span className={styles.feeEarning}>
+                          {calculatedAmount != null ? formatINR(calculatedAmount) : '—'}
+                        </span>
+                        <span className={styles.feeActions}>
+                          <button className={styles.feeActionBtn} onClick={() => handleFeeEdit(fee)}>Edit</button>
+                          {!fee.source_field_id && (
+                            <button className={styles.feeActionBtn} onClick={() => handleFeeDelete(inv.id, fee.id)}>×</button>
                           )}
-                          <span className={styles.feeLabel}>{fee.label}</span>
-                          <span className={styles.feeRate}>
-                            {effectiveRate != null ? (
-                              <>
-                                {effectiveRate}%
-                                {fee.rate == null && fee.source_field_id && (
-                                  <span className={styles.feeDefault}> (default)</span>
-                                )}
-                              </>
-                            ) : '—'}
-                          </span>
-                          {calculatedAmount != null && (
-                            <span className={styles.feeEarning}>Earning: {formatINR(calculatedAmount)}</span>
-                          )}
-                          <div className={styles.feeActions}>
-                            <button className={styles.feeActionBtn} onClick={() => handleFeeEdit(fee)}>Edit</button>
-                            {!fee.source_field_id && (
-                              <button className={styles.feeActionBtn} onClick={() => handleFeeDelete(inv.id, fee.id)}>×</button>
-                            )}
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
+                        </span>
+                      </div>
+                    )
+                  })}
 
-                {/* Add custom fee */}
-                {addingFeeFor === inv.id ? (
-                  <div className={styles.feeRowEdit}>
-                    <input
-                      className={styles.feeEditInput}
-                      value={newFeeLabel}
-                      onChange={(e) => setNewFeeLabel(e.target.value)}
-                      placeholder="Fee label"
-                      autoFocus
-                    />
-                    <input
-                      className={`${styles.feeEditInput} ${styles.feeEditInputRate}`}
-                      type="number"
-                      value={newFeeRate}
-                      onChange={(e) => setNewFeeRate(e.target.value)}
-                      placeholder="Rate %"
-                    />
-                    <button className={styles.feeSaveBtn} onClick={() => handleAddFee(inv)}>Add</button>
-                    <button className={styles.feeCancelBtn} onClick={() => { setAddingFeeFor(null); setNewFeeLabel(''); setNewFeeRate('') }}>Cancel</button>
-                  </div>
-                ) : (
-                  <button className={styles.addFeeBtn} onClick={() => setAddingFeeFor(inv.id)}>+ Add Fee</button>
-                )}
+                  {/* Add custom fee */}
+                  {addingFeeFor === inv.id ? (
+                    <div className={styles.feeRowEdit}>
+                      <input
+                        className={styles.feeEditInput}
+                        value={newFeeLabel}
+                        onChange={(e) => setNewFeeLabel(e.target.value)}
+                        placeholder="Fee label"
+                        autoFocus
+                      />
+                      <input
+                        className={`${styles.feeEditInput} ${styles.feeEditInputRate}`}
+                        type="number"
+                        value={newFeeRate}
+                        onChange={(e) => setNewFeeRate(e.target.value)}
+                        placeholder="%"
+                      />
+                      <button className={styles.feeSaveBtn} onClick={() => handleAddFee(inv)}>Add</button>
+                      <button className={styles.feeCancelBtn} onClick={() => { setAddingFeeFor(null); setNewFeeLabel(''); setNewFeeRate('') }}>Cancel</button>
+                    </div>
+                  ) : (
+                    <button className={styles.addFeeBtn} onClick={() => setAddingFeeFor(inv.id)}>+ Add Fee</button>
+                  )}
+                </div>
               </div>
             ))}
           </div>
