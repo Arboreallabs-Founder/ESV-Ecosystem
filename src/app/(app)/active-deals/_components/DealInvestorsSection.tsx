@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import {
   getDealInvestors,
   getInvestorsForPicker,
+  getInternalUsers,
+  getFranchisePartners,
   addInvestorToDeal,
   removeInvestorFromDeal,
   updateDealInvestor,
@@ -54,6 +56,8 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
   const [investors, setInvestors] = useState<ActiveDealInvestor[]>([])
   const [dealFieldValues, setDealFieldValues] = useState<FieldValue[]>([])
   const [allInvestors, setAllInvestors] = useState<PickerInvestor[]>([])
+  const [internalUsers, setInternalUsers] = useState<Array<{ id: string; name: string }>>([])
+  const [franchisePartners, setFranchisePartners] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
   const [showPicker, setShowPicker] = useState(false)
   const [showCreateInvestor, setShowCreateInvestor] = useState(false)
@@ -65,10 +69,17 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
-    Promise.all([getDealInvestors(dealId), getInvestorsForPicker()]).then(([{ investors, dealFieldValues }, all]) => {
+    Promise.all([
+      getDealInvestors(dealId),
+      getInvestorsForPicker(),
+      getInternalUsers(),
+      getFranchisePartners(),
+    ]).then(([{ investors, dealFieldValues }, all, users, partners]) => {
       setInvestors(investors)
       setDealFieldValues(dealFieldValues)
       setAllInvestors(all)
+      setInternalUsers(users)
+      setFranchisePartners(partners)
       setLoading(false)
     })
   }, [dealId])
@@ -371,8 +382,8 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
       {showCreateInvestor && (
         <InvestorFormModal
           mode="create"
-          internalUsers={[]}
-          franchisePartners={[]}
+          internalUsers={internalUsers}
+          franchisePartners={franchisePartners}
           userRole="admin"
           onClose={() => setShowCreateInvestor(false)}
           onSaved={() => {

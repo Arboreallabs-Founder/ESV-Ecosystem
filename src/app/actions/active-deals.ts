@@ -180,6 +180,27 @@ export async function acceptDeal(
   }
 }
 
+// ── Form modal support data ───────────────────────────────────────────────────
+
+export async function getInternalUsers(): Promise<Array<{ id: string; name: string }>> {
+  const { supabase } = await requireInternal()
+  const { data } = await supabase
+    .from('users')
+    .select('id, name')
+    .in('role', ['founder', 'admin', 'associate'])
+    .order('name', { ascending: true })
+  return (data ?? []) as Array<{ id: string; name: string }>
+}
+
+export async function getFranchisePartners(): Promise<Array<{ id: string; name: string }>> {
+  const { supabase } = await requireInternal()
+  const { data } = await supabase
+    .from('franchise_partners')
+    .select('id, name')
+    .order('name', { ascending: true })
+  return (data ?? []) as Array<{ id: string; name: string }>
+}
+
 // ── Investor picker data ──────────────────────────────────────────────────────
 
 export async function getInvestorsForPicker(): Promise<Array<{
