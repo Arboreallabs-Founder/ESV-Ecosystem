@@ -9,10 +9,12 @@ export default async function InvestorsPage() {
   if (!user) redirect('/login')
   if (!['founder', 'admin', 'associate', 'franchise_partner'].includes(user.role ?? '')) redirect('/login')
 
-  const canManage = ['founder', 'admin', 'associate'].includes(user.role ?? '')
+  // Internal users manage everything; partners may add/edit their own referrals (POC stays locked).
+  const isInternal = ['founder', 'admin', 'associate'].includes(user.role ?? '')
+  const canManage = isInternal || user.role === 'franchise_partner'
   const supabase = await createClient()
   const [{ data: internalUsers }, { data: franchisePartners }] = await Promise.all([
-    canManage
+    isInternal
       ? supabase.from('users').select('id, name').in('role', ['founder', 'admin', 'associate']).order('name')
       : Promise.resolve({ data: [] }),
     ['founder', 'admin'].includes(user.role ?? '')

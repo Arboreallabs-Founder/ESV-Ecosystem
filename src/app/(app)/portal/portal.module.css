@@ -57,11 +57,61 @@
   text-transform: none;
 }
 
+.generateCard {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem 1.375rem;
+  box-shadow: var(--shadow-card);
+}
+
+.generateHint {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  margin-bottom: 0.875rem;
+  line-height: 1.5;
+}
+
 .generateRow {
   display: flex;
   gap: 0.75rem;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.generatedSuccess {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin: 0.875rem 0 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.linkOpenBtn {
+  padding: 0.3125rem 0.625rem;
+  border-radius: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.linkOpenBtn:hover { background: var(--color-bg); color: var(--color-text); }
+
+.linkRowActions {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .select {

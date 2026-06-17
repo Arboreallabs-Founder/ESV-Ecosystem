@@ -1,3 +1,5 @@
+export type TaskStatus = 'To Do' | 'Done'
+
 export type Task = {
   id: string
   title: string
@@ -5,10 +7,15 @@ export type Task = {
   assignee_id: string | null
   due_date: string | null
   priority: 'Low' | 'Medium' | 'High'
-  status: 'To Do' | 'In Progress' | 'Done'
+  status: TaskStatus
   created_by: string | null
   created_at: string
+  completed_at: string | null
+  pushed_date: string | null
+  pushed_at: string | null
+  push_count: number
   assignee?: { name: string } | null
+  created_by_user?: { name: string } | null
 }
 
 export type ServiceType = 'vc_fund' | 'angel_fund' | 'family_office' | 'angel_investor'

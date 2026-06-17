@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { createTask, updateTaskStatus } from '@/app/actions/tasks'
+import { createTask, updateTaskStatus, pushTask } from '@/app/actions/tasks'
 import type { Task, UserRow } from '@/lib/types'
 import styles from '../tasks.module.css'
 
-const STATUSES = ['To Do', 'In Progress', 'Done'] as const
+const STATUSES = ['To Do', 'Done'] as const
 type Status = (typeof STATUSES)[number]
 
 function PriorityBadge({ priority }: { priority: Task['priority'] }) {
@@ -36,9 +36,18 @@ export default function TaskBoard({
   const router = useRouter()
   const [tasks, setTasks] = useState(initialTasks)
   const [showModal, setShowModal] = useState(false)
+  const [pushTarget, setPushTarget] = useState<Task | null>(null)
+  const [pushDate, setPushDate] = useState('')
   const [isPending, startTransition] = useTransition()
 
   const canCreate = ['founder', 'admin', 'associate'].includes(userRole)
+
+  // Assignment rules: never partners; associates only to themselves or other associates.
+  const assignableUsers = users.filter((u) => {
+    if (u.role === 'franchise_partner' || u.role === 'super_admin') return false
+    if (userRole === 'associate') return u.role === 'associate' || u.id === currentUserId
+    return true
+  })
 
   const byStatus = STATUSES.reduce((acc, s) => {
     acc[s] = tasks.filter((t) => t.status === s)
@@ -46,7 +55,9 @@ export default function TaskBoard({
   }, {} as Record<Status, Task[]>)
 
   function handleStatusChange(taskId: string, newStatus: string) {
-    setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: newStatus as Task['status'] } : t))
+    setTasks((prev) => prev.map((t) => t.id === taskId
+      ? { ...t, status: newStatus as Task['status'], completed_at: newStatus === 'Done' ? new Date().toISOString() : null }
+      : t))
     startTransition(async () => { await updateTaskStatus(taskId, newStatus) })
   }
 
@@ -54,9 +65,25 @@ export default function TaskBoard({
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     startTransition(async () => {
-      await createTask(formData)
-      setShowModal(false)
-      router.refresh()
+      try {
+        await createTask(formData)
+        setShowModal(false)
+        router.refresh()
+      } catch (err) { alert(String(err)) }
+    })
+  }
+
+  function handlePushSubmit() {
+    if (!pushTarget || !pushDate) return
+    const target = pushTarget
+    setTasks((prev) => prev.map((t) => t.id === target.id
+      ? { ...t, pushed_date: pushDate, pushed_at: new Date().toISOString(), push_count: (t.push_count ?? 0) + 1 }
+      : t))
+    setPushTarget(null)
+    setPushDate('')
+    startTransition(async () => {
+      try { await pushTask(target.id, pushDate) }
+      catch (err) { alert(String(err)); router.refresh() }
     })
   }
 
@@ -84,7 +111,9 @@ export default function TaskBoard({
                 <div className={styles.emptyCol}>No tasks</div>
               ) : (
                 byStatus[status].map((task) => {
-                  const due = task.due_date ? formatDue(task.due_date) : null
+                  const effectiveDue = task.pushed_date ?? task.due_date
+                  const due = effectiveDue ? formatDue(effectiveDue) : null
+                  const isAssignee = task.assignee_id === currentUserId
                   return (
                     <div key={task.id} className={styles.card}>
                       <div className={styles.cardTop}>
@@ -105,15 +134,34 @@ export default function TaskBoard({
                             {due.isOverdue ? '⚠ ' : ''}{due.label}
                           </span>
                         )}
+                        {task.pushed_at && (
+                          <span className={styles.pushedTag} title={`Pushed ${task.push_count}×`}>
+                            ⤳ Pushed{task.push_count > 1 ? ` ${task.push_count}×` : ''}
+                          </span>
+                        )}
                       </div>
-                      <select
-                        className={styles.statusSelect}
-                        value={task.status}
-                        onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                        disabled={isPending}
-                      >
-                        {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                      </select>
+                      {task.created_by_user?.name && (
+                        <div className={styles.assignedBy}>Assigned by {task.created_by_user.name}</div>
+                      )}
+                      <div className={styles.cardActions}>
+                        <select
+                          className={styles.statusSelect}
+                          value={task.status}
+                          onChange={(e) => handleStatusChange(task.id, e.target.value)}
+                          disabled={isPending}
+                        >
+                          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        {isAssignee && task.status !== 'Done' && (
+                          <button
+                            className={styles.pushBtn}
+                            onClick={() => { setPushTarget(task); setPushDate(task.pushed_date ?? task.due_date ?? '') }}
+                            disabled={isPending}
+                          >
+                            Push
+                          </button>
+                        )}
+                      </div>
                     </div>
                   )
                 })
@@ -139,9 +187,8 @@ export default function TaskBoard({
               <div className={styles.grid2}>
                 <div className={styles.field}>
                   <label className={styles.label}>Assignee</label>
-                  <select className={styles.select} name="assignee_id">
-                    <option value="">Unassigned</option>
-                    {users.map((u) => (
+                  <select className={styles.select} name="assignee_id" defaultValue={currentUserId}>
+                    {assignableUsers.map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.name || u.email}{u.id === currentUserId ? ' (me)' : ''}
                       </option>
@@ -168,6 +215,33 @@ export default function TaskBoard({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {pushTarget && (
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setPushTarget(null)}>
+          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+            <div className={styles.modalTitle}>Push Task</div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-muted)', marginBottom: '1rem', lineHeight: 1.5 }}>
+              Pushing “{pushTarget.title}” records a new target date. The original due date stays on record.
+            </p>
+            <div className={`${styles.field} ${styles.fieldFull}`}>
+              <label className={styles.label}>New target date *</label>
+              <input
+                className={styles.input}
+                type="date"
+                value={pushDate}
+                onChange={(e) => setPushDate(e.target.value)}
+                autoFocus
+              />
+            </div>
+            <div className={styles.modalActions}>
+              <button type="button" className={styles.cancelBtn} onClick={() => setPushTarget(null)}>Cancel</button>
+              <button type="button" className={styles.submitBtn} onClick={handlePushSubmit} disabled={isPending || !pushDate}>
+                {isPending ? 'Pushing…' : 'Push Task'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -130,29 +130,40 @@ export async function updateInvestor(
     referred_by_partner_id: string | null
   }
 ): Promise<void> {
-  const { supabase } = await requireAdmin()
+  // Partners may edit their own referrals, but never the ESV POC or referral attribution.
+  const { supabase, role } = await requireRole(['founder', 'admin', 'franchise_partner'])
+  const isPartner = role === 'franchise_partner'
+
+  const baseFields = {
+    name: params.name,
+    country: params.country || null,
+    website: params.website || null,
+    sectors: params.sectors,
+    service_type: params.service_type,
+    ticket_size_min: params.ticket_size_min,
+    ticket_size_max: params.ticket_size_max,
+    stage: params.stage || null,
+  }
+
   const { error } = await supabase
     .from('investors')
-    .update({
-      name: params.name,
-      country: params.country || null,
-      website: params.website || null,
-      sectors: params.sectors,
-      service_type: params.service_type,
-      ticket_size_min: params.ticket_size_min,
-      ticket_size_max: params.ticket_size_max,
-      stage: params.stage || null,
-      referred_by_partner_id: params.referred_by_partner_id || null,
-    })
+    .update(
+      isPartner
+        ? baseFields
+        : { ...baseFields, referred_by_partner_id: params.referred_by_partner_id || null }
+    )
     .eq('id', id)
   if (error) throw error
 
-  const pocIds = params.esv_poc_ids ?? (params.esv_poc_id ? [params.esv_poc_id] : [])
-  await supabase.from('investor_poc_users').delete().eq('investor_id', id)
-  if (pocIds.length > 0) {
-    await supabase.from('investor_poc_users').insert(
-      pocIds.map((uid) => ({ investor_id: id, user_id: uid }))
-    )
+  // POC mapping is admin-owned — partners never touch investor_poc_users.
+  if (!isPartner) {
+    const pocIds = params.esv_poc_ids ?? (params.esv_poc_id ? [params.esv_poc_id] : [])
+    await supabase.from('investor_poc_users').delete().eq('investor_id', id)
+    if (pocIds.length > 0) {
+      await supabase.from('investor_poc_users').insert(
+        pocIds.map((uid) => ({ investor_id: id, user_id: uid }))
+      )
+    }
   }
 }
 

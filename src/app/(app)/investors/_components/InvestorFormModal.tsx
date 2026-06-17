@@ -54,6 +54,7 @@ export default function InvestorFormModal({
     mode === 'create' ? [] : []  // contacts managed live in detail drawer on edit
   )
 
+  const isPartner = userRole === 'franchise_partner'
   const canSetReferredBy = ['founder', 'admin'].includes(userRole)
   const showContacts = serviceType !== 'angel_investor'
 
@@ -85,13 +86,14 @@ export default function InvestorFormModal({
           website: website.trim() || null,
           sectors,
           service_type: serviceType,
-          esv_poc_id: esvPocs[0] ?? null,
-          esv_poc_ids: esvPocs,
+          esv_poc_id: isPartner ? null : (esvPocs[0] ?? null),
+          esv_poc_ids: isPartner ? [] : esvPocs,
           ticket_size_min: ticketMin ? Number(ticketMin) : null,
           ticket_size_max: ticketMax ? Number(ticketMax) : null,
           stage: stage.trim() || null,
-          referred_by_partner_id: referredBy || null,
+          referred_by_partner_id: isPartner ? null : (referredBy || null),
           contacts: contactDrafts,
+          isPartnerReferral: isPartner,
         })
       } else {
         await updateInvestor(initial!.id, {
@@ -155,6 +157,7 @@ export default function InvestorFormModal({
               <label className={styles.label}>Stage Preference</label>
               <input className={styles.input} value={stage} onChange={(e) => setStage(e.target.value)} placeholder="Pre-Seed, Seed, Series A…" />
             </div>
+            {!isPartner && (
             <div className={styles.field}>
               <label className={styles.label}>ESV POC</label>
               <div className={styles.pocSearchWrap} onClick={() => pocInputRef.current?.focus()}>
@@ -209,6 +212,7 @@ export default function InvestorFormModal({
                 )}
               </div>
             </div>
+            )}
           </div>
 
           {/* Row 4: Ticket Size */}

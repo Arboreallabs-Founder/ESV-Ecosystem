@@ -6,7 +6,7 @@ export const fetchAllTasks = cache(async (): Promise<Task[]> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('tasks')
-    .select('*, assignee:assignee_id(name)')
+    .select('*, assignee:assignee_id(name), created_by_user:created_by(name)')
     .order('created_at', { ascending: false })
   return (data ?? []) as unknown as Task[]
 })

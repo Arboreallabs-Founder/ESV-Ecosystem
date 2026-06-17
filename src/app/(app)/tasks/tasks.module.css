@@ -47,7 +47,7 @@
 /* ── Board ────────────────────────────────────────────────────────── */
 .board {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 1.25rem;
   align-items: start;
 }
@@ -162,9 +162,33 @@
 .dueDate        { color: var(--color-warning); }
 .dueDateOverdue { color: var(--color-destructive); }
 
+.pushedTag {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgba(116,95,253,0.1);
+  padding: 0.125rem 0.4375rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(116,95,253,0.25);
+}
+
+.assignedBy {
+  font-size: 0.6875rem;
+  color: var(--color-muted);
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.cardActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+}
+
 .statusSelect {
   display: block;
-  margin-top: 0.625rem;
+  flex: 1;
   padding: 0.3125rem 0.625rem;
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-sm);
@@ -180,6 +204,22 @@
 }
 .statusSelect:focus { border-color: var(--color-primary); }
 
+.pushBtn {
+  flex-shrink: 0;
+  padding: 0.3125rem 0.75rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s, border-color 0.12s;
+}
+.pushBtn:hover { background: rgba(116,95,253,0.08); border-color: rgba(116,95,253,0.35); }
+.pushBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
 .emptyCol {
   text-align: center;
   padding: 2rem 1rem;
@@ -187,6 +227,81 @@
   font-size: 0.8125rem;
   opacity: 0.7;
 }
+
+/* ── KPIs ───────────────────────────────────────────────────────── */
+.kpiCardRow {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+@media (max-width: 720px) { .kpiCardRow { grid-template-columns: repeat(2, 1fr); } }
+
+.kpiCard {
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1.25rem 1.375rem;
+  box-shadow: var(--shadow-card);
+}
+
+.kpiValue {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.1;
+}
+
+.kpiLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+  margin-top: 0.375rem;
+}
+
+.kpiTableWrap {
+  margin-top: 1.75rem;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+
+.kpiTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.kpiTable thead th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+}
+.kpiTable thead th:not(:first-child) { text-align: center; }
+
+.kpiTable tbody td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  text-align: center;
+}
+.kpiTable tbody tr:last-child td { border-bottom: none; }
+
+.kpiName {
+  text-align: left !important;
+  font-weight: 600;
+}
+
+.kpiBad { color: var(--color-destructive); font-weight: 700; }
 
 /* ── Modal ──────────────────────────────────────────────────────── */
 .overlay {

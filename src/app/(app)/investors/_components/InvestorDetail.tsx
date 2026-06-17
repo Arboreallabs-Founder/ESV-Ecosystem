@@ -44,6 +44,9 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const canManage = ['founder', 'admin'].includes(userRole)
+  // Partners may edit their own referrals (they only ever see their own via RLS) but not delete.
+  const canEdit = canManage || userRole === 'franchise_partner'
+  const isInternal = ['founder', 'admin', 'associate'].includes(userRole)
   const showContacts = investor.service_type !== 'angel_investor'
   const typeColor = SERVICE_TYPE_COLOR[investor.service_type]
 
@@ -79,17 +82,17 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
             </span>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+            {canEdit && (
+              <button className={styles.detailActionBtn} onClick={onEdit}>Edit</button>
+            )}
             {canManage && (
-              <>
-                <button className={styles.detailActionBtn} onClick={onEdit}>Edit</button>
-                <button
-                  className={styles.detailDeleteBtn}
-                  onClick={handleDeleteInvestor}
-                  disabled={isPending}
-                >
-                  {confirmDelete ? 'Confirm Delete' : 'Delete'}
-                </button>
-              </>
+              <button
+                className={styles.detailDeleteBtn}
+                onClick={handleDeleteInvestor}
+                disabled={isPending}
+              >
+                {confirmDelete ? 'Confirm Delete' : 'Delete'}
+              </button>
             )}
             <button className={styles.detailClose} onClick={onClose} aria-label="Close">×</button>
           </div>
@@ -191,12 +194,14 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
                         )}
                       </div>
                     </div>
-                    <div className={styles.contactActions}>
-                      <button className={styles.contactActionBtn}
-                        onClick={() => setContactModal({ mode: 'edit', contact: c })}>Edit</button>
-                      <button className={styles.contactActionBtn} disabled={isPending}
-                        onClick={() => handleDeleteContact(c.id)}>Delete</button>
-                    </div>
+                    {isInternal && (
+                      <div className={styles.contactActions}>
+                        <button className={styles.contactActionBtn}
+                          onClick={() => setContactModal({ mode: 'edit', contact: c })}>Edit</button>
+                        <button className={styles.contactActionBtn} disabled={isPending}
+                          onClick={() => handleDeleteContact(c.id)}>Delete</button>
+                      </div>
+                    )}
                   </div>
                 ))
               )}

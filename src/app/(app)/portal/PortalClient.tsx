@@ -75,36 +75,46 @@ export default function PortalClient({
           {/* Generate new link */}
           <div className={styles.section}>
             <div className={styles.sectionTitle}>Generate a Submission Link</div>
-            <div className={styles.generateRow}>
-              {publishedForms.length === 0 ? (
-                <p className={styles.emptyNote}>No published forms available yet. Ask an admin to publish a form.</p>
-              ) : (
+            <div className={styles.generateCard}>
+              <p className={styles.generateHint}>
+                Pick a form and (optionally) a label to track where the link is shared, then send the
+                generated URL to founders. Submissions flow straight into the linked pipeline, tagged to you.
+              </p>
+              <div className={styles.generateRow}>
+                {publishedForms.length === 0 ? (
+                  <p className={styles.emptyNote}>No published forms available yet. Ask an admin to publish a form.</p>
+                ) : (
+                  <>
+                    <select className={styles.select} value={selectedFormId} onChange={(e) => { setSelectedFormId(e.target.value); setGeneratedUrl(null) }}>
+                      {publishedForms.map((f) => (
+                        <option key={f.id} value={f.id}>{f.title}{f.pipeline ? ` → ${f.pipeline.name}` : ''}</option>
+                      ))}
+                    </select>
+                    <input
+                      className={styles.input}
+                      value={linkLabel}
+                      onChange={(e) => setLinkLabel(e.target.value)}
+                      placeholder="Label (optional, e.g. LinkedIn Campaign)"
+                    />
+                    <button className={styles.generateBtn} onClick={handleGenerate} disabled={isPending}>
+                      {isPending ? 'Generating…' : '+ Generate Link'}
+                    </button>
+                  </>
+                )}
+              </div>
+              {generatedUrl && (
                 <>
-                  <select className={styles.select} value={selectedFormId} onChange={(e) => { setSelectedFormId(e.target.value); setGeneratedUrl(null) }}>
-                    {publishedForms.map((f) => (
-                      <option key={f.id} value={f.id}>{f.title}{f.pipeline ? ` → ${f.pipeline.name}` : ''}</option>
-                    ))}
-                  </select>
-                  <input
-                    className={styles.input}
-                    value={linkLabel}
-                    onChange={(e) => setLinkLabel(e.target.value)}
-                    placeholder="Label (optional, e.g. LinkedIn Campaign)"
-                  />
-                  <button className={styles.generateBtn} onClick={handleGenerate} disabled={isPending}>
-                    {isPending ? 'Generating…' : '+ Generate Link'}
-                  </button>
+                  <div className={styles.generatedSuccess}>✓ Link ready — copy and share</div>
+                  <div className={styles.generatedBox}>
+                    <code className={styles.generatedUrl}>{generatedUrl}</code>
+                    <a className={styles.linkOpenBtn} href={generatedUrl} target="_blank" rel="noopener noreferrer">Open ↗</a>
+                    <button className={styles.copyBtnSm} onClick={() => copy(generatedUrl, 'new')}>
+                      {copied === 'new' ? 'Copied!' : 'Copy'}
+                    </button>
+                  </div>
                 </>
               )}
             </div>
-            {generatedUrl && (
-              <div className={styles.generatedBox}>
-                <code className={styles.generatedUrl}>{generatedUrl}</code>
-                <button className={styles.copyBtnSm} onClick={() => copy(generatedUrl, 'new')}>
-                  {copied === 'new' ? 'Copied!' : 'Copy'}
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Your issued links */}
@@ -131,9 +141,12 @@ export default function PortalClient({
                           <code className={styles.linkUrlText}>/f/{l.token.slice(0, 14)}…</code>
                         </div>
                       </div>
-                      <button className={styles.copyBtnSm} onClick={() => copy(url, l.id)}>
-                        {copied === l.id ? 'Copied!' : 'Copy'}
-                      </button>
+                      <div className={styles.linkRowActions}>
+                        <a className={styles.linkOpenBtn} href={url} target="_blank" rel="noopener noreferrer">Open ↗</a>
+                        <button className={styles.copyBtnSm} onClick={() => copy(url, l.id)}>
+                          {copied === l.id ? 'Copied!' : 'Copy'}
+                        </button>
+                      </div>
                     </div>
                   )
                 })}
