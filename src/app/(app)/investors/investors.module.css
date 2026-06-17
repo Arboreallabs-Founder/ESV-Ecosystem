@@ -220,34 +220,97 @@
   gap: 0.375rem;
 }
 
-.pocChipPicker {
+/* Search-to-select POC picker */
+.pocSearchWrap {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.25rem 0;
-}
-
-.pocPickerChip {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--color-text-muted);
-  background: var(--color-surface);
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2.375rem;
+  padding: 0.3rem 0.625rem;
   border: 1.5px solid var(--color-border);
-  border-radius: 9999px;
-  padding: 0.25rem 0.75rem;
-  cursor: pointer;
-  transition: all 0.12s;
+  border-radius: var(--radius-md);
+  background: var(--color-input-bg, var(--color-surface));
+  cursor: text;
+  position: relative;
+  transition: border-color 0.12s;
 }
 
-.pocPickerChip:hover {
+.pocSearchWrap:focus-within {
   border-color: var(--color-primary);
-  color: var(--color-primary);
 }
 
-.pocPickerChipActive {
+.pocSelectedChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+  font-weight: 600;
   color: var(--color-primary);
   background: rgba(116, 95, 253, 0.1);
-  border-color: var(--color-primary);
+  border-radius: 9999px;
+  padding: 0.125rem 0.5rem 0.125rem 0.625rem;
+}
+
+.pocSelectedChipRemove {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.7;
+}
+
+.pocSelectedChipRemove:hover { opacity: 1; }
+
+.pocSearchInput {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  flex: 1;
+  min-width: 120px;
+  padding: 0;
+}
+
+.pocDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+  z-index: 50;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.pocDropdownItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.pocDropdownItem:hover {
+  background: var(--color-hover, rgba(116, 95, 253, 0.07));
+}
+
+.pocDropdownEmpty {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  color: var(--color-muted);
 }
 
 .referredChip {

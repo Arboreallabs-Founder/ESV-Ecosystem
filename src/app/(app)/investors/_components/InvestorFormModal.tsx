@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createInvestor, updateInvestor } from '@/app/actions/investors'
 import { SERVICE_TYPE_LABELS } from '@/lib/types'
@@ -43,6 +43,9 @@ export default function InvestorFormModal({
   const [website, setWebsite] = useState(initial?.website ?? '')
   const [stage, setStage] = useState(initial?.stage ?? '')
   const [esvPocs, setEsvPocs] = useState<string[]>(initial?.esv_pocs?.map((p) => p.id) ?? (initial?.esv_poc_id ? [initial.esv_poc_id] : []))
+  const [pocSearch, setPocSearch] = useState('')
+  const [pocDropdownOpen, setPocDropdownOpen] = useState(false)
+  const pocInputRef = useRef<HTMLInputElement>(null)
   const [ticketMin, setTicketMin] = useState(initial?.ticket_size_min?.toString() ?? '')
   const [ticketMax, setTicketMax] = useState(initial?.ticket_size_max?.toString() ?? '')
   const [sectors, setSectors] = useState<string[]>(initial?.sectors ?? [])
@@ -154,19 +157,56 @@ export default function InvestorFormModal({
             </div>
             <div className={styles.field}>
               <label className={styles.label}>ESV POC</label>
-              <div className={styles.pocChipPicker}>
-                {internalUsers.map((u) => (
-                  <button
-                    key={u.id}
-                    type="button"
-                    className={`${styles.pocPickerChip} ${esvPocs.includes(u.id) ? styles.pocPickerChipActive : ''}`}
-                    onClick={() => setEsvPocs((prev) =>
-                      prev.includes(u.id) ? prev.filter((id) => id !== u.id) : [...prev, u.id]
+              <div className={styles.pocSearchWrap} onClick={() => pocInputRef.current?.focus()}>
+                {esvPocs.map((id) => {
+                  const user = internalUsers.find((u) => u.id === id)
+                  if (!user) return null
+                  return (
+                    <span key={id} className={styles.pocSelectedChip}>
+                      {user.name}
+                      <button
+                        type="button"
+                        className={styles.pocSelectedChipRemove}
+                        onMouseDown={(e) => { e.preventDefault(); setEsvPocs((prev) => prev.filter((x) => x !== id)) }}
+                      >×</button>
+                    </span>
+                  )
+                })}
+                <input
+                  ref={pocInputRef}
+                  type="text"
+                  className={styles.pocSearchInput}
+                  placeholder={esvPocs.length === 0 ? 'Search team member…' : ''}
+                  value={pocSearch}
+                  onChange={(e) => { setPocSearch(e.target.value); setPocDropdownOpen(true) }}
+                  onFocus={() => setPocDropdownOpen(true)}
+                  onBlur={() => setTimeout(() => setPocDropdownOpen(false), 150)}
+                />
+                {pocDropdownOpen && (
+                  <div className={styles.pocDropdown}>
+                    {internalUsers
+                      .filter((u) => !esvPocs.includes(u.id) && u.name.toLowerCase().includes(pocSearch.toLowerCase()))
+                      .map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          className={styles.pocDropdownItem}
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            setEsvPocs((prev) => [...prev, u.id])
+                            setPocSearch('')
+                            setPocDropdownOpen(false)
+                          }}
+                        >
+                          {u.name}
+                        </button>
+                      ))
+                    }
+                    {internalUsers.filter((u) => !esvPocs.includes(u.id) && u.name.toLowerCase().includes(pocSearch.toLowerCase())).length === 0 && (
+                      <div className={styles.pocDropdownEmpty}>No matches</div>
                     )}
-                  >
-                    {u.name}
-                  </button>
-                ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
