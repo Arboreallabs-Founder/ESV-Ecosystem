@@ -31,6 +31,7 @@ export async function createInvestor(params: {
   sectors: string[]
   service_type: string
   esv_poc_id: string | null
+  esv_poc_ids?: string[]
   ticket_size_min: number | null
   ticket_size_max: number | null
   stage: string | null
@@ -85,6 +86,15 @@ export async function createInvestor(params: {
 
   if (error) throw error
 
+  const pocIds = fields.esv_poc_ids && fields.esv_poc_ids.length > 0
+    ? fields.esv_poc_ids
+    : fields.esv_poc_id ? [fields.esv_poc_id] : []
+  if (pocIds.length > 0) {
+    await supabase.from('investor_poc_users').insert(
+      pocIds.map((uid) => ({ investor_id: investor.id, user_id: uid }))
+    )
+  }
+
   if (contacts.length > 0 && fields.service_type !== 'angel_investor') {
     const { error: contactErr } = await supabase.from('investor_contacts').insert(
       contacts.map((c, i) => ({
@@ -113,6 +123,7 @@ export async function updateInvestor(
     sectors: string[]
     service_type: string
     esv_poc_id: string | null
+    esv_poc_ids?: string[]
     ticket_size_min: number | null
     ticket_size_max: number | null
     stage: string | null
@@ -128,7 +139,6 @@ export async function updateInvestor(
       website: params.website || null,
       sectors: params.sectors,
       service_type: params.service_type,
-      esv_poc_id: params.esv_poc_id || null,
       ticket_size_min: params.ticket_size_min,
       ticket_size_max: params.ticket_size_max,
       stage: params.stage || null,
@@ -136,6 +146,14 @@ export async function updateInvestor(
     })
     .eq('id', id)
   if (error) throw error
+
+  const pocIds = params.esv_poc_ids ?? (params.esv_poc_id ? [params.esv_poc_id] : [])
+  await supabase.from('investor_poc_users').delete().eq('investor_id', id)
+  if (pocIds.length > 0) {
+    await supabase.from('investor_poc_users').insert(
+      pocIds.map((uid) => ({ investor_id: id, user_id: uid }))
+    )
+  }
 }
 
 export async function deleteInvestor(id: string): Promise<void> {

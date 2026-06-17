@@ -74,16 +74,8 @@ export default function ActiveDealDetail({ deal, onClose }: { deal: ActiveDeal; 
             <div className={styles.detailLoading} style={{ padding: '1.25rem 1.5rem' }}>Loading…</div>
           ) : (
             <>
-              {/* LEFT — Investors */}
+              {/* LEFT — Deal details */}
               <div className={styles.detailLeft}>
-                <DealInvestorsSection
-                  dealId={deal.id}
-                  dealTitle={deal.entry?.title ?? 'this deal'}
-                />
-              </div>
-
-              {/* RIGHT — Deal details */}
-              <div className={styles.detailRight}>
                 {/* Assigned To */}
                 <div className={styles.detailSection}>
                   <div className={styles.detailSectionTitle}>Assigned To</div>
@@ -167,6 +159,14 @@ export default function ActiveDealDetail({ deal, onClose }: { deal: ActiveDeal; 
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* RIGHT — Investors */}
+              <div className={styles.detailRight}>
+                <DealInvestorsSection
+                  dealId={deal.id}
+                  dealTitle={deal.entry?.title ?? 'this deal'}
+                />
               </div>
             </>
           )}

@@ -42,7 +42,7 @@ export default function InvestorFormModal({
   const [country, setCountry] = useState(initial?.country ?? '')
   const [website, setWebsite] = useState(initial?.website ?? '')
   const [stage, setStage] = useState(initial?.stage ?? '')
-  const [esvPoc, setEsvPoc] = useState(initial?.esv_poc_id ?? '')
+  const [esvPocs, setEsvPocs] = useState<string[]>(initial?.esv_pocs?.map((p) => p.id) ?? (initial?.esv_poc_id ? [initial.esv_poc_id] : []))
   const [ticketMin, setTicketMin] = useState(initial?.ticket_size_min?.toString() ?? '')
   const [ticketMax, setTicketMax] = useState(initial?.ticket_size_max?.toString() ?? '')
   const [sectors, setSectors] = useState<string[]>(initial?.sectors ?? [])
@@ -82,7 +82,8 @@ export default function InvestorFormModal({
           website: website.trim() || null,
           sectors,
           service_type: serviceType,
-          esv_poc_id: esvPoc || null,
+          esv_poc_id: esvPocs[0] ?? null,
+          esv_poc_ids: esvPocs,
           ticket_size_min: ticketMin ? Number(ticketMin) : null,
           ticket_size_max: ticketMax ? Number(ticketMax) : null,
           stage: stage.trim() || null,
@@ -96,7 +97,8 @@ export default function InvestorFormModal({
           website: website.trim() || null,
           sectors,
           service_type: serviceType,
-          esv_poc_id: esvPoc || null,
+          esv_poc_id: esvPocs[0] ?? null,
+          esv_poc_ids: esvPocs,
           ticket_size_min: ticketMin ? Number(ticketMin) : null,
           ticket_size_max: ticketMax ? Number(ticketMax) : null,
           stage: stage.trim() || null,
@@ -152,12 +154,20 @@ export default function InvestorFormModal({
             </div>
             <div className={styles.field}>
               <label className={styles.label}>ESV POC</label>
-              <select className={styles.select} value={esvPoc} onChange={(e) => setEsvPoc(e.target.value)}>
-                <option value="">—</option>
+              <div className={styles.pocChipPicker}>
                 {internalUsers.map((u) => (
-                  <option key={u.id} value={u.id}>{u.name}</option>
+                  <button
+                    key={u.id}
+                    type="button"
+                    className={`${styles.pocPickerChip} ${esvPocs.includes(u.id) ? styles.pocPickerChipActive : ''}`}
+                    onClick={() => setEsvPocs((prev) =>
+                      prev.includes(u.id) ? prev.filter((id) => id !== u.id) : [...prev, u.id]
+                    )}
+                  >
+                    {u.name}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
           </div>
 

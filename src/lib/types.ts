@@ -53,6 +53,7 @@ export type Investor = {
   created_by: string | null
   created_at: string
   esv_poc?: { name: string } | null
+  esv_pocs?: Array<{ id: string; name: string }>
   referred_by_partner?: { name: string } | null
   contacts?: InvestorContact[]
 }

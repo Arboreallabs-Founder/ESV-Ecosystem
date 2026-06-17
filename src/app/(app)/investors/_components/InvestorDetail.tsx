@@ -128,11 +128,13 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
                   {formatTicket(investor.ticket_size_min, investor.ticket_size_max)}
                 </div>
               </div>
-              {investor.esv_poc?.name && (
+              {(investor.esv_pocs ?? []).length > 0 && (
                 <div className={styles.detailField}>
                   <div className={styles.detailFieldLabel}>ESV POC</div>
-                  <div className={styles.detailFieldValue}>
-                    <span className={styles.pocChip}>{investor.esv_poc.name}</span>
+                  <div className={`${styles.detailFieldValue} ${styles.pocChipRow}`}>
+                    {investor.esv_pocs!.map((poc) => (
+                      <span key={poc.id} className={styles.pocChip}>{poc.name}</span>
+                    ))}
                   </div>
                 </div>
               )}

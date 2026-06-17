@@ -34,7 +34,7 @@ export default function InvestorGrid({ investors, userRole, internalUsers, franc
       (inv.country ?? '').toLowerCase().includes(q) ||
       (inv.stage ?? '').toLowerCase().includes(q) ||
       inv.sectors.join(' ').toLowerCase().includes(q) ||
-      (inv.esv_poc?.name ?? '').toLowerCase().includes(q) ||
+      (inv.esv_pocs ?? []).some((p) => p.name.toLowerCase().includes(q)) ||
       (inv.referred_by_partner?.name ?? '').toLowerCase().includes(q)
     )
   })
