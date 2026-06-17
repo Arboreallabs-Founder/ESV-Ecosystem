@@ -248,4 +248,29 @@ export type ActiveDeal = {
     sourced_via_partner?: { id: string; name: string } | null
   }
   categories: ActiveDealCategoryData[]
+  field_values?: Array<{ field_id: string; value: string | null }>
+}
+
+export type ActiveDealInvestorFee = {
+  id: string
+  label: string
+  rate: number | null
+  source_field_id: string | null
+  is_enabled: boolean
+}
+
+export type ActiveDealInvestor = {
+  id: string
+  active_deal_id: string
+  investor: {
+    id: string
+    name: string
+    service_type: ServiceType
+    referred_by_partner_id: string | null
+  }
+  is_investing: boolean
+  investment_amount: number | null
+  is_referral: boolean
+  fees: ActiveDealInvestorFee[]
+  created_at: string
 }

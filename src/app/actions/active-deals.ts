@@ -1,7 +1,7 @@
 'use server'
 
 import { requireRole } from '@/lib/guards'
-import type { DealCategory } from '@/lib/types'
+import type { ActiveDealInvestor, DealCategory } from '@/lib/types'
 
 async function requireAdmin() {
   const { supabase, userId, orgId } = await requireRole(['founder', 'admin'])
@@ -178,4 +178,180 @@ export async function acceptDeal(
   if (allValues.length > 0) {
     await supabase.from('active_deal_field_values').insert(allValues)
   }
+}
+
+// ── Investor picker data ──────────────────────────────────────────────────────
+
+export async function getInvestorsForPicker(): Promise<Array<{
+  id: string
+  name: string
+  service_type: string
+  referred_by_partner_id: string | null
+}>> {
+  const { supabase } = await requireInternal()
+  const { data } = await supabase
+    .from('investors')
+    .select('id, name, service_type, referred_by_partner_id')
+    .order('name', { ascending: true })
+  return (data ?? []) as Array<{ id: string; name: string; service_type: string; referred_by_partner_id: string | null }>
+}
+
+// ── Deal Investors ────────────────────────────────────────────────────────────
+
+export async function getDealInvestors(activeDealId: string): Promise<{
+  investors: ActiveDealInvestor[]
+  dealFieldValues: Array<{ field_id: string; value: string | null }>
+}> {
+  const { supabase } = await requireInternal()
+  const [investorsRes, fieldValuesRes] = await Promise.all([
+    supabase
+      .from('active_deal_investors')
+      .select(`
+        id, active_deal_id, is_investing, investment_amount, is_referral, created_at,
+        investor:investors(id, name, service_type, referred_by_partner_id),
+        fees:active_deal_investor_fees(id, label, rate, source_field_id, is_enabled)
+      `)
+      .eq('active_deal_id', activeDealId)
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('active_deal_field_values')
+      .select('field_id, value')
+      .eq('active_deal_id', activeDealId),
+  ])
+
+  const investors: ActiveDealInvestor[] = (investorsRes.data ?? []).map((row: any) => ({
+    id: row.id,
+    active_deal_id: row.active_deal_id,
+    is_investing: row.is_investing,
+    investment_amount: row.investment_amount,
+    is_referral: row.is_referral,
+    created_at: row.created_at,
+    investor: Array.isArray(row.investor) ? row.investor[0] : row.investor,
+    fees: row.fees ?? [],
+  }))
+
+  return {
+    investors,
+    dealFieldValues: (fieldValuesRes.data ?? []) as Array<{ field_id: string; value: string | null }>,
+  }
+}
+
+export async function addInvestorToDeal(activeDealId: string, investorId: string): Promise<ActiveDealInvestor> {
+  const { supabase } = await requireInternal()
+
+  // Check if investor is a referral
+  const { data: inv } = await supabase
+    .from('investors')
+    .select('referred_by_partner_id')
+    .eq('id', investorId)
+    .single()
+  const isReferral = !!(inv?.referred_by_partner_id)
+
+  const { data: newRow, error } = await supabase
+    .from('active_deal_investors')
+    .insert({ active_deal_id: activeDealId, investor_id: investorId, is_referral: isReferral })
+    .select('id')
+    .single()
+  if (error) throw error
+
+  // Auto-populate fee rows from this deal's percentage-type category fields
+  const { data: catFields } = await supabase
+    .from('active_deal_categories')
+    .select('category:deal_categories(fields:deal_category_fields(id, label, field_type))')
+    .eq('active_deal_id', activeDealId)
+
+  const pctFields: Array<{ id: string; label: string }> = []
+  for (const cat of catFields ?? []) {
+    const category = Array.isArray((cat as any).category) ? (cat as any).category[0] : (cat as any).category
+    for (const field of category?.fields ?? []) {
+      if (field.field_type === 'percentage') pctFields.push({ id: field.id, label: field.label })
+    }
+  }
+
+  if (pctFields.length > 0) {
+    await supabase.from('active_deal_investor_fees').insert(
+      pctFields.map((f) => ({
+        active_deal_investor_id: newRow.id,
+        label: f.label,
+        rate: null,
+        source_field_id: f.id,
+        is_enabled: true,
+      }))
+    )
+  }
+
+  // Return the full investor record
+  const { data: full } = await supabase
+    .from('active_deal_investors')
+    .select(`
+      id, active_deal_id, is_investing, investment_amount, is_referral, created_at,
+      investor:investors(id, name, service_type, referred_by_partner_id),
+      fees:active_deal_investor_fees(id, label, rate, source_field_id, is_enabled)
+    `)
+    .eq('id', newRow.id)
+    .single()
+
+  const row = full as any
+  return {
+    id: row.id,
+    active_deal_id: row.active_deal_id,
+    is_investing: row.is_investing,
+    investment_amount: row.investment_amount,
+    is_referral: row.is_referral,
+    created_at: row.created_at,
+    investor: Array.isArray(row.investor) ? row.investor[0] : row.investor,
+    fees: row.fees ?? [],
+  }
+}
+
+export async function removeInvestorFromDeal(activeDealInvestorId: string) {
+  const { supabase } = await requireInternal()
+  const { error } = await supabase.from('active_deal_investors').delete().eq('id', activeDealInvestorId)
+  if (error) throw error
+}
+
+export async function updateDealInvestor(id: string, updates: { is_investing?: boolean; investment_amount?: number | null }) {
+  const { supabase } = await requireInternal()
+  const { error } = await supabase.from('active_deal_investors').update(updates).eq('id', id)
+  if (error) throw error
+}
+
+export async function upsertInvestorFee(
+  activeDealInvestorId: string,
+  params: { id?: string; label: string; rate: number | null; source_field_id?: string | null }
+) {
+  const { supabase } = await requireInternal()
+  if (params.id) {
+    const { error } = await supabase
+      .from('active_deal_investor_fees')
+      .update({ label: params.label.trim(), rate: params.rate })
+      .eq('id', params.id)
+    if (error) throw error
+  } else {
+    const { data, error } = await supabase
+      .from('active_deal_investor_fees')
+      .insert({
+        active_deal_investor_id: activeDealInvestorId,
+        label: params.label.trim(),
+        rate: params.rate,
+        source_field_id: params.source_field_id ?? null,
+        is_enabled: true,
+      })
+      .select('id')
+      .single()
+    if (error) throw error
+    return data.id as string
+  }
+}
+
+export async function toggleInvestorFee(feeId: string, is_enabled: boolean) {
+  const { supabase } = await requireInternal()
+  const { error } = await supabase.from('active_deal_investor_fees').update({ is_enabled }).eq('id', feeId)
+  if (error) throw error
+}
+
+export async function deleteInvestorFee(feeId: string) {
+  const { supabase } = await requireInternal()
+  const { error } = await supabase.from('active_deal_investor_fees').delete().eq('id', feeId)
+  if (error) throw error
 }

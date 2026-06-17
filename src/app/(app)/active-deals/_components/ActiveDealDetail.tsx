@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { getEntryAnswers, getEntryStageHistory } from '@/app/actions/pipelines'
 import type { ActiveDeal, PipelineEntryStageHistory } from '@/lib/types'
+import DealInvestorsSection from './DealInvestorsSection'
 import styles from '../active-deals.module.css'
 
 type AnswerItem = {
@@ -116,6 +117,12 @@ export default function ActiveDealDetail({ deal, onClose }: { deal: ActiveDeal; 
                   ))}
                 </div>
               )}
+
+              {/* Investors */}
+              <DealInvestorsSection
+                dealId={deal.id}
+                dealTitle={deal.entry?.title ?? 'this deal'}
+              />
 
               {/* Stage history */}
               <div className={styles.detailSection}>
