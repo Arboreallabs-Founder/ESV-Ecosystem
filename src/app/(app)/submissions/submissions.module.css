@@ -1,0 +1,103 @@
+/* ── My Submissions ──────────────────────────────────────────────────── */
+
+.page {}
+
+.pageHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1.5rem;
+}
+
+.pageTitle {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.pageSubtitle {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  margin-top: 0.375rem;
+}
+
+.emptyState {
+  text-align: center;
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+  padding: 4rem 1rem;
+}
+
+/* Table */
+
+.tableWrap {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tableHead {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr 1fr;
+  padding: 0.625rem 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  gap: 1rem;
+}
+
+.tableRow {
+  display: grid;
+  grid-template-columns: 2fr 1.5fr 1fr 1fr;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+  gap: 1rem;
+  align-items: center;
+  transition: background 0.1s;
+}
+
+.tableRow:last-child {
+  border-bottom: none;
+}
+
+.tableRow:hover {
+  background: var(--color-surface);
+}
+
+.cellName {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.cellPipeline {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+}
+
+.cellStage {
+  font-size: 0.875rem;
+}
+
+.stageChip {
+  display: inline-block;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid;
+  white-space: nowrap;
+}
+
+.cellDate {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}

@@ -49,9 +49,10 @@ function getEffectiveRate(fee: ActiveDealInvestorFee, dealFieldValues: FieldValu
 type Props = {
   dealId: string
   dealTitle: string
+  isReadOnly?: boolean
 }
 
-export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
+export default function DealInvestorsSection({ dealId, dealTitle, isReadOnly = false }: Props) {
   const router = useRouter()
   const [investors, setInvestors] = useState<ActiveDealInvestor[]>([])
   const [dealFieldValues, setDealFieldValues] = useState<FieldValue[]>([])
@@ -69,20 +70,28 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
-    Promise.all([
-      getDealInvestors(dealId),
-      getInvestorsForPicker(),
-      getInternalUsers(),
-      getFranchisePartners(),
-    ]).then(([{ investors, dealFieldValues }, all, users, partners]) => {
-      setInvestors(investors)
-      setDealFieldValues(dealFieldValues)
-      setAllInvestors(all)
-      setInternalUsers(users)
-      setFranchisePartners(partners)
-      setLoading(false)
-    })
-  }, [dealId])
+    if (isReadOnly) {
+      getDealInvestors(dealId).then(({ investors, dealFieldValues }) => {
+        setInvestors(investors)
+        setDealFieldValues(dealFieldValues)
+        setLoading(false)
+      })
+    } else {
+      Promise.all([
+        getDealInvestors(dealId),
+        getInvestorsForPicker(),
+        getInternalUsers(),
+        getFranchisePartners(),
+      ]).then(([{ investors, dealFieldValues }, all, users, partners]) => {
+        setInvestors(investors)
+        setDealFieldValues(dealFieldValues)
+        setAllInvestors(all)
+        setInternalUsers(users)
+        setFranchisePartners(partners)
+        setLoading(false)
+      })
+    }
+  }, [dealId, isReadOnly])
 
   function mutateInvestor(id: string, updater: (inv: ActiveDealInvestor) => ActiveDealInvestor) {
     setInvestors((prev) => prev.map((inv) => inv.id === id ? updater(inv) : inv))
@@ -212,7 +221,7 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
           <div className={styles.detailSectionTitle}>
             Investors {investors.length > 0 && <span className={styles.tabCount}>{investors.length}</span>}
           </div>
-          <button className={styles.addInvestorBtn} onClick={() => setShowPicker(true)}>+ Add Investor</button>
+          {!isReadOnly && <button className={styles.addInvestorBtn} onClick={() => setShowPicker(true)}>+ Add Investor</button>}
         </div>
 
         {investors.length === 0 ? (
@@ -241,25 +250,39 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
                     </div>
                   </div>
                   <div className={styles.iColInvesting}>
-                    <button
-                      className={`${styles.investingToggle} ${inv.is_investing ? styles.investingOn : ''}`}
-                      onClick={() => handleToggleInvesting(inv)}
-                    >
-                      {inv.is_investing ? 'Yes' : 'No'}
-                    </button>
+                    {isReadOnly ? (
+                      <span className={`${styles.investingToggle} ${inv.is_investing ? styles.investingOn : ''}`} style={{ cursor: 'default', opacity: 0.75 }}>
+                        {inv.is_investing ? 'Yes' : 'No'}
+                      </span>
+                    ) : (
+                      <button
+                        className={`${styles.investingToggle} ${inv.is_investing ? styles.investingOn : ''}`}
+                        onClick={() => handleToggleInvesting(inv)}
+                      >
+                        {inv.is_investing ? 'Yes' : 'No'}
+                      </button>
+                    )}
                   </div>
                   <div className={styles.iColAmount}>
-                    <input
-                      type="number"
-                      className={styles.investorAmountInput}
-                      value={inv.investment_amount ?? ''}
-                      onChange={(e) => handleAmountChange(inv, e.target.value)}
-                      onBlur={() => handleAmountBlur(inv)}
-                      placeholder="—"
-                    />
+                    {isReadOnly ? (
+                      <span className={styles.investorAmountInput} style={{ display: 'block', lineHeight: '1', padding: '0.25rem 0' }}>
+                        {inv.investment_amount != null ? inv.investment_amount.toLocaleString('en-IN') : '—'}
+                      </span>
+                    ) : (
+                      <input
+                        type="number"
+                        className={styles.investorAmountInput}
+                        value={inv.investment_amount ?? ''}
+                        onChange={(e) => handleAmountChange(inv, e.target.value)}
+                        onBlur={() => handleAmountBlur(inv)}
+                        placeholder="—"
+                      />
+                    )}
                   </div>
                   <div className={styles.iColAction}>
-                    <button className={styles.removeInvestorBtn} onClick={() => handleRemoveInvestor(inv.id)} title="Remove">✕</button>
+                    {!isReadOnly && (
+                      <button className={styles.removeInvestorBtn} onClick={() => handleRemoveInvestor(inv.id)} title="Remove">✕</button>
+                    )}
                   </div>
                 </div>
 
@@ -295,7 +318,7 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
                     return (
                       <div key={fee.id} className={`${styles.feeRow} ${!fee.is_enabled ? styles.feeDisabled : ''}`}>
                         <span className={styles.feeToggleCell}>
-                          {fee.source_field_id ? (
+                          {!isReadOnly && fee.source_field_id ? (
                             <button
                               className={styles.feeToggle}
                               title={fee.is_enabled ? 'Disable fee' : 'Enable fee'}
@@ -303,7 +326,9 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
                             >
                               {fee.is_enabled ? '●' : '○'}
                             </button>
-                          ) : <span className={styles.feeToggleSpacer} />}
+                          ) : (
+                            <span className={styles.feeToggleSpacer}>{fee.source_field_id ? (fee.is_enabled ? '●' : '○') : ''}</span>
+                          )}
                         </span>
                         <span className={styles.feeLabel}>{fee.label}</span>
                         <span className={styles.feeRate}>
@@ -314,18 +339,20 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
                         <span className={styles.feeEarning}>
                           {calculatedAmount != null ? formatINR(calculatedAmount) : '—'}
                         </span>
-                        <span className={styles.feeActions}>
-                          <button className={styles.feeActionBtn} onClick={() => handleFeeEdit(fee)}>Edit</button>
-                          {!fee.source_field_id && (
-                            <button className={styles.feeActionBtn} onClick={() => handleFeeDelete(inv.id, fee.id)}>×</button>
-                          )}
-                        </span>
+                        {!isReadOnly && (
+                          <span className={styles.feeActions}>
+                            <button className={styles.feeActionBtn} onClick={() => handleFeeEdit(fee)}>Edit</button>
+                            {!fee.source_field_id && (
+                              <button className={styles.feeActionBtn} onClick={() => handleFeeDelete(inv.id, fee.id)}>×</button>
+                            )}
+                          </span>
+                        )}
                       </div>
                     )
                   })}
 
-                  {/* Add custom fee */}
-                  {addingFeeFor === inv.id ? (
+                  {/* Add custom fee — hidden for read-only (partners) */}
+                  {!isReadOnly && (addingFeeFor === inv.id ? (
                     <div className={styles.feeRowEdit}>
                       <input
                         className={styles.feeEditInput}
@@ -346,7 +373,7 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
                     </div>
                   ) : (
                     <button className={styles.addFeeBtn} onClick={() => setAddingFeeFor(inv.id)}>+ Add Fee</button>
-                  )}
+                  ))}
                 </div>
               </div>
             ))}
@@ -368,8 +395,8 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
         )}
       </div>
 
-      {/* Modals */}
-      {showPicker && (
+      {/* Modals — not rendered for read-only (partners) */}
+      {!isReadOnly && showPicker && (
         <InvestorPickerModal
           allInvestors={allInvestors}
           alreadyAdded={investors.map((inv) => inv.investor?.id)}
@@ -379,7 +406,7 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
         />
       )}
 
-      {showCreateInvestor && (
+      {!isReadOnly && showCreateInvestor && (
         <InvestorFormModal
           mode="create"
           internalUsers={internalUsers}
@@ -394,7 +421,7 @@ export default function DealInvestorsSection({ dealId, dealTitle }: Props) {
         />
       )}
 
-      {feeTogglePending && (
+      {!isReadOnly && feeTogglePending && (
         <FeeToggleConfirmModal
           dealName={dealTitle}
           feeLabel={feeTogglePending.fee.label}

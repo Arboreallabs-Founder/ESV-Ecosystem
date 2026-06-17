@@ -55,15 +55,21 @@ const NAV_ITEMS: NavEntry[] = [
     icon: <Icon d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />,
   },
   {
+    href: '/submissions',
+    label: 'My Submissions',
+    roles: ['franchise_partner'],
+    icon: <Icon d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 0 2-2h2a2 2 0 0 0 2 2" />,
+  },
+  {
     group: true,
     label: 'Active Deals',
-    roles: ['founder', 'admin', 'associate'],
+    roles: ['founder', 'admin', 'associate', 'franchise_partner'],
     icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
     children: [
       {
         href: '/active-deals',
         label: 'Deals',
-        roles: ['founder', 'admin', 'associate'],
+        roles: ['founder', 'admin', 'associate', 'franchise_partner'],
         icon: <Icon d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />,
       },
       {
@@ -83,7 +89,7 @@ const NAV_ITEMS: NavEntry[] = [
   {
     href: '/investors',
     label: 'Investors',
-    roles: ['founder', 'admin', 'associate'],
+    roles: ['founder', 'admin', 'associate', 'franchise_partner'],
     icon: <Icon d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />,
   },
   {
@@ -103,9 +109,9 @@ const NAV_ITEMS: NavEntry[] = [
   },
   {
     href: '/portal',
-    label: 'Portal',
+    label: 'My Links',
     roles: ['franchise_partner'],
-    icon: <Icon d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Zm0 3h.008v.008h-.008v-.008Z" />,
+    icon: <Icon d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />,
   },
 ]
 
@@ -169,7 +175,7 @@ export default function AppShell({
     startPersonaTransition(async () => {
       await switchDemoPersona(persona)
       if (persona === 'franchise_partner') {
-        router.push('/portal')
+        router.push('/submissions')
       } else if (demoPersona === 'franchise_partner') {
         router.push('/dashboard')
       } else {
@@ -256,7 +262,7 @@ export default function AppShell({
             }
             const isActive =
               pathname === entry.href ||
-              (entry.href !== '/dashboard' && entry.href !== '/portal' && pathname.startsWith(entry.href))
+              (entry.href !== '/dashboard' && entry.href !== '/portal' && entry.href !== '/submissions' && pathname.startsWith(entry.href))
             return (
               <Link
                 key={entry.href}

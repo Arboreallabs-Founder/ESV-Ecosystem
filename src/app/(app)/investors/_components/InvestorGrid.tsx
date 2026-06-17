@@ -11,6 +11,7 @@ import styles from '../investors.module.css'
 type Props = {
   investors: Investor[]
   userRole: string
+  canManage?: boolean
   internalUsers: Array<{ id: string; name: string }>
   franchisePartners: Array<{ id: string; name: string }>
 }
@@ -18,7 +19,7 @@ type Props = {
 const ALL_TABS = ['all', 'vc_fund', 'angel_fund', 'family_office', 'angel_investor'] as const
 type Tab = (typeof ALL_TABS)[number]
 
-export default function InvestorGrid({ investors, userRole, internalUsers, franchisePartners }: Props) {
+export default function InvestorGrid({ investors, userRole, canManage = true, internalUsers, franchisePartners }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('all')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Investor | null>(null)
@@ -63,7 +64,7 @@ export default function InvestorGrid({ investors, userRole, internalUsers, franc
           <h1 className={styles.pageTitle}>Investors</h1>
           <p className={styles.pageSubtitle}>Fund database and relationship tracking</p>
         </div>
-        <button className={styles.addBtn} onClick={openCreate}>+ Add Investor</button>
+        {canManage && <button className={styles.addBtn} onClick={openCreate}>+ Add Investor</button>}
       </div>
 
       {/* Tabs */}
@@ -116,7 +117,7 @@ export default function InvestorGrid({ investors, userRole, internalUsers, franc
       )}
 
       {/* Create / Edit modal */}
-      {showForm && (
+      {showForm && canManage && (
         <InvestorFormModal
           mode={editTarget ? 'edit' : 'create'}
           initial={editTarget ?? undefined}

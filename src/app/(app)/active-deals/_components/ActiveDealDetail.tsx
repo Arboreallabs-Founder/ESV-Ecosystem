@@ -31,7 +31,7 @@ function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-export default function ActiveDealDetail({ deal, onClose }: { deal: ActiveDeal; onClose: () => void }) {
+export default function ActiveDealDetail({ deal, onClose, userRole }: { deal: ActiveDeal; onClose: () => void; userRole: string }) {
   const [answers, setAnswers] = useState<AnswerItem[]>([])
   const [history, setHistory] = useState<PipelineEntryStageHistory[]>([])
   const [loading, setLoading] = useState(true)
@@ -166,6 +166,7 @@ export default function ActiveDealDetail({ deal, onClose }: { deal: ActiveDeal; 
                 <DealInvestorsSection
                   dealId={deal.id}
                   dealTitle={deal.entry?.title ?? 'this deal'}
+                  isReadOnly={userRole === 'franchise_partner'}
                 />
               </div>
             </>

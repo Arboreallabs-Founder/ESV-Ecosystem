@@ -7,12 +7,15 @@ import InvestorGrid from './_components/InvestorGrid'
 export default async function InvestorsPage() {
   const [user, investors] = await Promise.all([getUser(), fetchAllInvestors()])
   if (!user) redirect('/login')
-  if (user.role === 'franchise_partner') redirect('/portal')
+  if (!['founder', 'admin', 'associate', 'franchise_partner'].includes(user.role ?? '')) redirect('/login')
 
+  const canManage = ['founder', 'admin', 'associate'].includes(user.role ?? '')
   const supabase = await createClient()
   const [{ data: internalUsers }, { data: franchisePartners }] = await Promise.all([
-    supabase.from('users').select('id, name').in('role', ['founder', 'admin', 'associate']).order('name'),
-    ['founder', 'admin'].includes(user.role)
+    canManage
+      ? supabase.from('users').select('id, name').in('role', ['founder', 'admin', 'associate']).order('name')
+      : Promise.resolve({ data: [] }),
+    ['founder', 'admin'].includes(user.role ?? '')
       ? supabase.from('franchise_partners').select('id, name').order('name')
       : Promise.resolve({ data: [] }),
   ])
@@ -21,6 +24,7 @@ export default async function InvestorsPage() {
     <InvestorGrid
       investors={investors}
       userRole={user.role ?? 'associate'}
+      canManage={canManage}
       internalUsers={(internalUsers ?? []) as Array<{ id: string; name: string }>}
       franchisePartners={(franchisePartners ?? []) as Array<{ id: string; name: string }>}
     />

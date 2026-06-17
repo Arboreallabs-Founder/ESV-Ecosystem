@@ -22,7 +22,7 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-export default function ActiveDealsList({ deals, categories }: { deals: ActiveDeal[]; categories: DealCategory[] }) {
+export default function ActiveDealsList({ deals, categories, userRole }: { deals: ActiveDeal[]; categories: DealCategory[]; userRole: string }) {
   const [activeFilter, setActiveFilter] = useState<string>('all')
   const [selectedDeal, setSelectedDeal] = useState<ActiveDeal | null>(null)
 
@@ -38,7 +38,7 @@ export default function ActiveDealsList({ deals, categories }: { deals: ActiveDe
   return (
     <div className={styles.page}>
       {selectedDeal && (
-        <ActiveDealDetail deal={selectedDeal} onClose={() => setSelectedDeal(null)} />
+        <ActiveDealDetail deal={selectedDeal} onClose={() => setSelectedDeal(null)} userRole={userRole} />
       )}
       <div className={styles.header}>
         <div>

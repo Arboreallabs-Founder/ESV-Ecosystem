@@ -5,7 +5,7 @@ import ActiveDealsList from './_components/ActiveDealsList'
 
 export default async function ActiveDealsPage() {
   const [user, deals, categories] = await Promise.all([getUser(), fetchActiveDeals(), fetchCategories()])
-  if (!user || !['founder', 'admin', 'associate'].includes(user.role)) redirect('/login')
+  if (!user || !['founder', 'admin', 'associate', 'franchise_partner'].includes(user.role ?? '')) redirect('/login')
 
-  return <ActiveDealsList deals={deals} categories={categories} />
+  return <ActiveDealsList deals={deals} categories={categories} userRole={user.role ?? 'associate'} />
 }

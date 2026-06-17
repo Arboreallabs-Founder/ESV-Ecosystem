@@ -13,6 +13,11 @@ async function requireInternal() {
   return { supabase, userId, role }
 }
 
+async function requireInternalOrPartner() {
+  const { supabase, userId, role } = await requireRole(['founder', 'admin', 'associate', 'franchise_partner'])
+  return { supabase, userId, role }
+}
+
 // ── Categories ────────────────────────────────────────────────────────────────
 
 export async function getCategories(): Promise<DealCategory[]> {
@@ -96,7 +101,7 @@ export async function deleteCategoryField(fieldId: string) {
 // ── Active Deals List (for client-side overlay) ───────────────────────────────
 
 export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types').ActiveDeal[]; categories: import('@/lib/types').DealCategory[] }> {
-  const { supabase } = await requireInternal()
+  const { supabase } = await requireInternalOrPartner()
   const [dealsRes, catsRes] = await Promise.all([
     supabase.from('active_deals').select(`
       id, pipeline_entry_id, created_at,
@@ -223,7 +228,7 @@ export async function getDealInvestors(activeDealId: string): Promise<{
   investors: ActiveDealInvestor[]
   dealFieldValues: Array<{ field_id: string; value: string | null }>
 }> {
-  const { supabase } = await requireInternal()
+  const { supabase } = await requireInternalOrPartner()
   const [investorsRes, fieldValuesRes] = await Promise.all([
     supabase
       .from('active_deal_investors')
