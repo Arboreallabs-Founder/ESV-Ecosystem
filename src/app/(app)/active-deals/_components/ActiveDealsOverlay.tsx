@@ -8,12 +8,14 @@ import type { ActiveDeal, DealCategory } from '@/lib/types'
 export default function ActiveDealsOverlay({ onClose }: { onClose: () => void }) {
   const [deals, setDeals] = useState<ActiveDeal[]>([])
   const [categories, setCategories] = useState<DealCategory[]>([])
+  const [userRole, setUserRole] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getActiveDealsData().then(({ deals, categories }) => {
+    getActiveDealsData().then(({ deals, categories, userRole }) => {
       setDeals(deals)
       setCategories(categories)
+      setUserRole(userRole)
       setLoading(false)
     })
   }, [])
@@ -49,7 +51,7 @@ export default function ActiveDealsOverlay({ onClose }: { onClose: () => void })
           <div style={{ padding: '4rem 2rem', textAlign: 'center', color: 'var(--color-muted)', fontSize: '0.9375rem' }}>Loading…</div>
         ) : (
           <div style={{ padding: '2rem' }}>
-            <ActiveDealsList deals={deals} categories={categories} />
+            <ActiveDealsList deals={deals} categories={categories} userRole={userRole} />
           </div>
         )}
       </div>

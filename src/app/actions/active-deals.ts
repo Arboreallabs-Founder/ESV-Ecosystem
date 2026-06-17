@@ -100,8 +100,8 @@ export async function deleteCategoryField(fieldId: string) {
 
 // ── Active Deals List (for client-side overlay) ───────────────────────────────
 
-export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types').ActiveDeal[]; categories: import('@/lib/types').DealCategory[] }> {
-  const { supabase } = await requireInternalOrPartner()
+export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types').ActiveDeal[]; categories: import('@/lib/types').DealCategory[]; userRole: string }> {
+  const { supabase, role } = await requireInternalOrPartner()
   const [dealsRes, catsRes] = await Promise.all([
     supabase.from('active_deals').select(`
       id, pipeline_entry_id, created_at,
@@ -132,7 +132,7 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
     }
   })
   const categories = (catsRes.data ?? []).map((c: any) => ({ ...c, fields: (c.fields ?? []).sort((a: any, b: any) => a.position - b.position) }))
-  return { deals, categories }
+  return { deals, categories, userRole: role }
 }
 
 // ── Accept Deal ───────────────────────────────────────────────────────────────
