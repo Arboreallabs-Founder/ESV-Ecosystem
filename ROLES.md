@@ -95,6 +95,17 @@ attribution.
   *their own* links — read-only.
 - Public form submission (`/f/[token]`) is open to anonymous submitters via a scoped anon policy.
 
+### Stage questions (custom pipeline stages)
+- **Define**: Founder / Admin attach question fields (label + type: text/numeric/percentage/url +
+  required) to **custom** stages when creating/editing a stage. Lead/Accepted/Rejected never carry
+  questions (Accepted keeps its categories modal, Rejected its reason modal).
+- **Answer**: when **anyone who can move an entry** (founder/admin, or an associate assigned to it)
+  moves it **into** a stage with questions, they must answer the required ones before the move commits.
+- **Edit later**: Founder / Admin can edit a stage's recorded answers from the entry detail card;
+  associates only set them at move-time.
+- **View**: answers show in the entry detail card and in the active deal detail card. **Partners**
+  see them read-only in the active deal detail (only for deals/investors they're entitled to).
+
 ### Active Deals (`/active-deals`)
 - **View**: all four roles see the deals in their org.
   - Internal users see full deal detail and the complete investor list.

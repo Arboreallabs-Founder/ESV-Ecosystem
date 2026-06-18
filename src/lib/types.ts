@@ -146,6 +146,17 @@ export type Pipeline = {
   entry_count: number
 }
 
+export type StageQuestionFieldType = 'text' | 'numeric' | 'percentage' | 'url'
+
+export type PipelineStageQuestion = {
+  id: string
+  stage_id: string
+  label: string
+  field_type: StageQuestionFieldType
+  required: boolean
+  position: number
+}
+
 export type PipelineStage = {
   id: string
   pipeline_id: string
@@ -153,6 +164,17 @@ export type PipelineStage = {
   color: string
   position: number
   stage_type: 'lead' | 'accepted' | 'rejected' | 'custom'
+  questions?: PipelineStageQuestion[]
+}
+
+// Flattened stage-question answer for display in entry & active-deal detail.
+export type StageAnswerView = {
+  question_id: string
+  label: string
+  field_type: StageQuestionFieldType
+  value: string | null
+  stage_id: string
+  stage_name: string
 }
 
 export type FormNodeOption = {

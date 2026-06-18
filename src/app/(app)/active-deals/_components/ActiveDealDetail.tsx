@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getEntryAnswers, getEntryStageHistory } from '@/app/actions/pipelines'
-import type { ActiveDeal, PipelineEntryStageHistory } from '@/lib/types'
+import { getEntryAnswers, getEntryStageHistory, getEntryStageAnswers } from '@/app/actions/pipelines'
+import type { ActiveDeal, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
 import DealInvestorsSection from './DealInvestorsSection'
 import styles from '../active-deals.module.css'
 
@@ -34,18 +34,28 @@ function formatDateTime(iso: string) {
 export default function ActiveDealDetail({ deal, onClose, userRole }: { deal: ActiveDeal; onClose: () => void; userRole: string }) {
   const [answers, setAnswers] = useState<AnswerItem[]>([])
   const [history, setHistory] = useState<PipelineEntryStageHistory[]>([])
+  const [stageAnswers, setStageAnswers] = useState<StageAnswerView[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     Promise.all([
       getEntryAnswers(deal.pipeline_entry_id),
       getEntryStageHistory(deal.pipeline_entry_id),
-    ]).then(([ans, hist]) => {
+      getEntryStageAnswers(deal.pipeline_entry_id),
+    ]).then(([ans, hist, stageAns]) => {
       setAnswers(ans)
       setHistory(hist as PipelineEntryStageHistory[])
+      setStageAnswers(stageAns)
       setLoading(false)
     })
   }, [deal.pipeline_entry_id])
+
+  const stageAnswerGroups: Array<{ stage_id: string; stage_name: string; items: StageAnswerView[] }> = []
+  for (const a of stageAnswers) {
+    let g = stageAnswerGroups.find((x) => x.stage_id === a.stage_id)
+    if (!g) { g = { stage_id: a.stage_id, stage_name: a.stage_name, items: [] }; stageAnswerGroups.push(g) }
+    g.items.push(a)
+  }
 
   const assignees = deal.entry?.assignees ?? []
 
@@ -115,6 +125,26 @@ export default function ActiveDealDetail({ deal, onClose, userRole }: { deal: Ac
                             )
                           })
                         )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Stage inputs */}
+                {stageAnswerGroups.length > 0 && (
+                  <div className={styles.detailSection}>
+                    <div className={styles.detailSectionTitle}>Stage Inputs</div>
+                    {stageAnswerGroups.map((g) => (
+                      <div key={g.stage_id} className={styles.detailCategoryBlock}>
+                        <div className={styles.detailCategoryName}>{g.stage_name}</div>
+                        {g.items.map((a) => (
+                          <div key={a.question_id} className={styles.fieldValueRow}>
+                            <span className={styles.fieldKey}>{a.label}</span>
+                            <span className={styles.fieldVal}>
+                              {a.value ? formatValue(a.value, a.field_type) : <span style={{ color: 'var(--color-muted)' }}>—</span>}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     ))}
                   </div>

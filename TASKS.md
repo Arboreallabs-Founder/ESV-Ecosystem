@@ -224,6 +224,13 @@ Clicking the entry shows all Q&A responses + which user's link was used
 - [x] Visibility: founders/admins see all (oversight); associates see own raised; partners see only ones addressed to them — verified via RLS simulation
 - [x] `/escalations` page + list with status tabs, create modal (recipient + link pickers), gated status control; nav item for all roles; dashboard "Open Escalations" card
 
+### Pipeline stage questions
+- [x] `pipeline_stage_questions` + `pipeline_entry_stage_answers` tables (org-scoped RLS; partner read of answers gated via `entry_has_active_deal()`)
+- [x] Admins attach typed question fields (text/numeric/percentage/url, required) to **custom** stages in the stage modal
+- [x] Moving an entry into a stage with questions prompts for answers (required enforced) before the move commits
+- [x] Answers shown in the entry detail card (admins can edit later) and in the active deal detail card (read-only; partners included)
+- [x] Verified via RLS simulation (admin write, partner read of in-org deal answers)
+
 ### Fixes & docs
 - [x] Partners couldn't see active deals (sourced-only RLS gate) — added `entry_has_active_deal()` helper + `pipeline_entries` partner read policy so partners see all in-org deals
 - [x] Active-deal entries leaking into partner "My Submissions" — `/submissions` now filters explicitly by the partner's own links

@@ -21,11 +21,19 @@ export const fetchPipeline = cache(async (id: string): Promise<Pipeline | null> 
   const supabase = await createClient()
   const [{ data: p }, { data: stages }, { data: counts }] = await Promise.all([
     supabase.from('pipelines').select('*').eq('id', id).single(),
-    supabase.from('pipeline_stages').select('*').eq('pipeline_id', id).order('position', { ascending: true }),
+    supabase
+      .from('pipeline_stages')
+      .select('*, questions:pipeline_stage_questions(*)')
+      .eq('pipeline_id', id)
+      .order('position', { ascending: true }),
     supabase.from('pipeline_entries').select('pipeline_id').eq('pipeline_id', id),
   ])
   if (!p) return null
-  return { ...p, stages: stages ?? [], entry_count: (counts ?? []).length }
+  const withQuestions = (stages ?? []).map((s: any) => ({
+    ...s,
+    questions: (s.questions ?? []).sort((a: any, b: any) => a.position - b.position),
+  }))
+  return { ...p, stages: withQuestions, entry_count: (counts ?? []).length }
 })
 
 export const fetchPipelineEntries = cache(async (pipelineId: string): Promise<PipelineEntry[]> => {

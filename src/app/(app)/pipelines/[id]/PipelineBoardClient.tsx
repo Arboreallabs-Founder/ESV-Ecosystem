@@ -3,13 +3,34 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { addStage, updateStage, deleteStage, moveEntry, deleteEntry, addAssignee, removeAssignee, rejectEntry, getEntryAnswers } from '@/app/actions/pipelines'
+import { addStage, updateStage, deleteStage, moveEntry, deleteEntry, addAssignee, removeAssignee, rejectEntry, getEntryAnswers, saveStageQuestions, moveEntryWithStageAnswers, saveEntryStageAnswers, getEntryStageAnswers } from '@/app/actions/pipelines'
 import { linkFormToPipeline } from '@/app/actions/forms'
 import { getCategories, acceptDeal } from '@/app/actions/active-deals'
-import type { Pipeline, PipelineStage, PipelineEntry, DealCategory } from '@/lib/types'
+import type { Pipeline, PipelineStage, PipelineEntry, DealCategory, PipelineStageQuestion, StageAnswerView, StageQuestionFieldType } from '@/lib/types'
 import styles from './board.module.css'
 
 const STAGE_COLORS = ['#745FFD', '#16a34a', '#d97706', '#dc2626', '#0ea5e9', '#8b5cf6', '#ec4899', '#14b8a6']
+
+const QUESTION_TYPE_LABELS: Record<StageQuestionFieldType, string> = {
+  text: 'Text', numeric: 'Numeric', percentage: 'Percentage (%)', url: 'URL',
+}
+
+type QuestionDraft = { key: string; id?: string; label: string; field_type: StageQuestionFieldType; required: boolean }
+
+function inputTypeFor(t: StageQuestionFieldType) {
+  return t === 'numeric' || t === 'percentage' ? 'number' : t === 'url' ? 'url' : 'text'
+}
+
+function formatStageValue(value: string, fieldType: string) {
+  if (fieldType === 'url') {
+    try {
+      const url = new URL(value)
+      return <a href={url.href} target="_blank" rel="noopener noreferrer" className={styles.answerLink}>{url.hostname.replace('www.', '')}</a>
+    } catch { return value }
+  }
+  if (fieldType === 'percentage') return `${value}%`
+  return value
+}
 
 const STAGE_TYPE_LABELS: Record<string, string> = {
   lead: 'Lead', accepted: 'Accepted', rejected: 'Rejected',
@@ -52,11 +73,19 @@ export default function PipelineBoardClient({
   const [stageColor, setStageColor] = useState(STAGE_COLORS[0])
   const [stageError, setStageError] = useState('')
   const [stageIsPending, startStageTransition] = useTransition()
+  const [stageQuestions, setStageQuestions] = useState<QuestionDraft[]>([])
 
   // Entry detail
   const [selectedEntry, setSelectedEntry] = useState<PipelineEntry | null>(null)
   const [selectedAnswers, setSelectedAnswers] = useState<AnswerItem[]>([])
   const [answersLoading, setAnswersLoading] = useState(false)
+  const [selectedStageAnswers, setSelectedStageAnswers] = useState<StageAnswerView[]>([])
+
+  // Stage-question answer modal — capture on move-in, and admin edit later
+  const [answerModal, setAnswerModal] = useState<{ mode: 'move' | 'edit'; entryId: string; stageId: string; stageName: string; questions: PipelineStageQuestion[] } | null>(null)
+  const [answerValues, setAnswerValues] = useState<Record<string, string>>({})
+  const [answerError, setAnswerError] = useState('')
+  const [answerPending, startAnswerTransition] = useTransition()
 
   // Rejection modal
   const [rejectionPending, setRejectionPending] = useState<{ entryId: string; stageId: string } | null>(null)
@@ -104,26 +133,42 @@ export default function PipelineBoardClient({
   const acceptedStageIds = new Set(pipeline.stages.filter((s) => s.stage_type === 'accepted').map((s) => s.id))
 
   function openAddStage() {
-    setEditStage(null); setStageName(''); setStageColor(STAGE_COLORS[pipeline.stages.filter(s => s.stage_type === 'custom').length % STAGE_COLORS.length]); setStageError(''); setShowStageModal(true)
+    setEditStage(null); setStageName(''); setStageColor(STAGE_COLORS[pipeline.stages.filter(s => s.stage_type === 'custom').length % STAGE_COLORS.length]); setStageError(''); setStageQuestions([]); setShowStageModal(true)
   }
   function openEditStage(s: PipelineStage) {
-    setEditStage(s); setStageName(s.name); setStageColor(s.color); setStageError(''); setShowStageModal(true)
+    setEditStage(s); setStageName(s.name); setStageColor(s.color); setStageError('')
+    setStageQuestions((s.questions ?? []).map((q) => ({ key: q.id, id: q.id, label: q.label, field_type: q.field_type, required: q.required })))
+    setShowStageModal(true)
+  }
+
+  function addQuestionDraft() {
+    setStageQuestions((qs) => [...qs, { key: crypto.randomUUID(), label: '', field_type: 'text', required: false }])
+  }
+  function setQuestionDraft(key: string, patch: Partial<QuestionDraft>) {
+    setStageQuestions((qs) => qs.map((q) => q.key === key ? { ...q, ...patch } : q))
+  }
+  function removeQuestionDraft(key: string) {
+    setStageQuestions((qs) => qs.filter((q) => q.key !== key))
   }
 
   function handleSaveStage(e: React.FormEvent) {
     e.preventDefault()
     if (!stageName.trim()) return
     setStageError('')
+    const items = stageQuestions
+      .filter((q) => q.label.trim())
+      .map((q, i) => ({ id: q.id, label: q.label.trim(), field_type: q.field_type, required: q.required, position: i }))
     startStageTransition(async () => {
       try {
         if (editStage) {
           await updateStage(editStage.id, stageName, stageColor)
-          setPipeline((p) => ({ ...p, stages: p.stages.map((s) => s.id === editStage.id ? { ...s, name: stageName.trim(), color: stageColor } : s) }))
+          await saveStageQuestions(editStage.id, items)
         } else {
-          await addStage(pipeline.id, stageName, stageColor, pipeline.stages.filter(s => s.stage_type === 'custom').length)
-          router.refresh()
+          const newId = await addStage(pipeline.id, stageName, stageColor, pipeline.stages.filter(s => s.stage_type === 'custom').length)
+          if (items.length > 0) await saveStageQuestions(newId, items)
         }
         setShowStageModal(false)
+        router.refresh()
       } catch (err) { setStageError(String(err)) }
     })
   }
@@ -171,7 +216,63 @@ export default function PipelineBoardClient({
       }
       return
     }
+    // Custom stage with questions → prompt for answers before committing the move
+    const targetStage = newStageId ? pipeline.stages.find((s) => s.id === newStageId) : null
+    if (newStageId && targetStage && (targetStage.questions?.length ?? 0) > 0) {
+      setAnswerModal({ mode: 'move', entryId, stageId: newStageId, stageName: targetStage.name, questions: targetStage.questions! })
+      setAnswerValues({})
+      setAnswerError('')
+      return
+    }
     commitMoveEntry(entryId, newStageId)
+  }
+
+  function stageHasQuestions(stageId: string | null) {
+    if (!stageId) return false
+    const s = pipeline.stages.find((st) => st.id === stageId)
+    return (s?.questions?.length ?? 0) > 0
+  }
+
+  function handleConfirmAnswers() {
+    if (!answerModal) return
+    const { mode, entryId, stageId, questions } = answerModal
+    for (const q of questions.filter((x) => x.required)) {
+      if (!(answerValues[q.id] ?? '').trim()) { setAnswerError(`"${q.label}" is required.`); return }
+    }
+    setAnswerError('')
+    const answers = questions.map((q) => ({ questionId: q.id, value: answerValues[q.id] ?? '' }))
+
+    if (mode === 'move') {
+      setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, stage_id: stageId } : e))
+      if (selectedEntry?.id === entryId) setSelectedEntry((prev) => prev ? { ...prev, stage_id: stageId } : null)
+      startAnswerTransition(async () => {
+        try {
+          await moveEntryWithStageAnswers(entryId, stageId, answers)
+          if (selectedEntry?.id === entryId) getEntryStageAnswers(entryId).then(setSelectedStageAnswers)
+        } catch (err) { alert(String(err)); router.refresh() }
+      })
+    } else {
+      startAnswerTransition(async () => {
+        try {
+          await saveEntryStageAnswers(entryId, answers)
+          getEntryStageAnswers(entryId).then(setSelectedStageAnswers)
+        } catch (err) { alert(String(err)) }
+      })
+    }
+    setAnswerModal(null)
+  }
+
+  function openEditAnswers(stageId: string, stageName: string) {
+    if (!selectedEntry) return
+    const stage = pipeline.stages.find((s) => s.id === stageId)
+    const questions = stage?.questions ?? []
+    const values: Record<string, string> = {}
+    for (const a of selectedStageAnswers.filter((x) => x.stage_id === stageId)) {
+      values[a.question_id] = a.value ?? ''
+    }
+    setAnswerValues(values)
+    setAnswerError('')
+    setAnswerModal({ mode: 'edit', entryId: selectedEntry.id, stageId, stageName, questions })
   }
 
   function handleConfirmAcceptance() {
@@ -231,10 +332,15 @@ export default function PipelineBoardClient({
   async function handleOpenEntry(entry: PipelineEntry) {
     setSelectedEntry(entry)
     setSelectedAnswers([])
+    setSelectedStageAnswers([])
     setAnswersLoading(true)
     try {
-      const answers = await getEntryAnswers(entry.id)
+      const [answers, stageAnswers] = await Promise.all([
+        getEntryAnswers(entry.id),
+        getEntryStageAnswers(entry.id),
+      ])
       setSelectedAnswers(answers)
+      setSelectedStageAnswers(stageAnswers)
     } finally {
       setAnswersLoading(false)
     }
@@ -399,6 +505,46 @@ export default function PipelineBoardClient({
         </div>
       )}
 
+      {/* Stage questions modal (move-in capture + admin edit) */}
+      {answerModal && (
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && !answerPending && setAnswerModal(null)}>
+          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+            <div className={styles.modalTitle}>{answerModal.stageName}</div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-muted)', marginTop: '-1rem', marginBottom: '1.25rem', lineHeight: 1.55 }}>
+              {answerModal.mode === 'move'
+                ? 'Answer the following to move this entry into the stage.'
+                : 'Update the recorded answers for this stage.'}
+            </p>
+            {answerModal.questions.map((q) => (
+              <div key={q.id} className={styles.field} style={{ marginBottom: '0.75rem' }}>
+                <label className={styles.label}>
+                  {q.label}
+                  {q.required && <span style={{ color: 'var(--color-primary)' }}> *</span>}
+                  <span style={{ fontWeight: 400, marginLeft: '0.375rem', textTransform: 'none', letterSpacing: 0, fontSize: '0.7rem', color: 'var(--color-muted)' }}>
+                    {q.field_type === 'percentage' ? '%' : q.field_type === 'numeric' ? 'number' : q.field_type === 'url' ? 'https://…' : ''}
+                  </span>
+                </label>
+                <input
+                  className={styles.input}
+                  type={inputTypeFor(q.field_type)}
+                  value={answerValues[q.id] ?? ''}
+                  onChange={(e) => setAnswerValues((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                  placeholder={q.field_type === 'url' ? 'https://' : q.field_type === 'percentage' ? '0–100' : ''}
+                  required={q.required}
+                />
+              </div>
+            ))}
+            {answerError && <p className={styles.errorMsg}>{answerError}</p>}
+            <div className={styles.modalActions}>
+              <button className={styles.cancelBtn} onClick={() => setAnswerModal(null)} disabled={answerPending}>Cancel</button>
+              <button className={styles.submitBtn} onClick={handleConfirmAnswers} disabled={answerPending}>
+                {answerPending ? 'Saving…' : answerModal.mode === 'move' ? 'Save & Move →' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Acceptance modal */}
       {acceptancePending && (() => {
         const entry = entries.find((e) => e.id === acceptancePending.entryId)
@@ -506,6 +652,40 @@ export default function PipelineBoardClient({
                   ))}
                 </div>
               </div>
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  Stage Questions <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--color-muted)' }}>(asked when an entry is moved into this stage)</span>
+                </label>
+                {stageQuestions.length > 0 && (
+                  <div className={styles.questionDraftList}>
+                    {stageQuestions.map((q) => (
+                      <div key={q.key} className={styles.questionDraftRow}>
+                        <input
+                          className={styles.input}
+                          value={q.label}
+                          onChange={(e) => setQuestionDraft(q.key, { label: e.target.value })}
+                          placeholder="Question label…"
+                        />
+                        <select
+                          className={styles.select}
+                          value={q.field_type}
+                          onChange={(e) => setQuestionDraft(q.key, { field_type: e.target.value as StageQuestionFieldType })}
+                        >
+                          {(Object.keys(QUESTION_TYPE_LABELS) as StageQuestionFieldType[]).map((t) => (
+                            <option key={t} value={t}>{QUESTION_TYPE_LABELS[t]}</option>
+                          ))}
+                        </select>
+                        <label className={styles.questionReqToggle} title="Required">
+                          <input type="checkbox" checked={q.required} onChange={(e) => setQuestionDraft(q.key, { required: e.target.checked })} />
+                          Req
+                        </label>
+                        <button type="button" className={styles.questionRemoveBtn} onClick={() => removeQuestionDraft(q.key)} title="Remove">×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button type="button" className={styles.addQuestionBtn} onClick={addQuestionDraft}>+ Add question</button>
+              </div>
               {stageError && <p className={styles.errorMsg}>{stageError}</p>}
               <div className={styles.modalActions}>
                 {editStage && (
@@ -596,7 +776,7 @@ export default function PipelineBoardClient({
                   onChange={(e) => {
                     const newStageId = e.target.value || null
                     handleMoveEntry(selectedEntry.id, newStageId)
-                    if (newStageId && !rejectedStageIds.has(newStageId) && !acceptedStageIds.has(newStageId)) {
+                    if (newStageId && !rejectedStageIds.has(newStageId) && !acceptedStageIds.has(newStageId) && !stageHasQuestions(newStageId)) {
                       setSelectedEntry((prev) => prev ? { ...prev, stage_id: newStageId } : null)
                     }
                   }}
@@ -610,6 +790,39 @@ export default function PipelineBoardClient({
                 </div>
               )}
             </div>
+
+            {/* Stage inputs */}
+            {selectedStageAnswers.length > 0 && (() => {
+              const groups: Array<{ stage_id: string; stage_name: string; items: StageAnswerView[] }> = []
+              for (const a of selectedStageAnswers) {
+                let g = groups.find((x) => x.stage_id === a.stage_id)
+                if (!g) { g = { stage_id: a.stage_id, stage_name: a.stage_name, items: [] }; groups.push(g) }
+                g.items.push(a)
+              }
+              return (
+                <div className={styles.answersSection}>
+                  <div className={styles.label}>Stage Inputs</div>
+                  <div className={styles.answersList}>
+                    {groups.map((g) => (
+                      <div key={g.stage_id} className={styles.stageAnswerGroup}>
+                        <div className={styles.stageAnswerGroupHead}>
+                          <span className={styles.stageAnswerGroupName}>{g.stage_name}</span>
+                          {canManage && (
+                            <button type="button" className={styles.stageAnswerEditBtn} onClick={() => openEditAnswers(g.stage_id, g.stage_name)}>Edit</button>
+                          )}
+                        </div>
+                        {g.items.map((a) => (
+                          <div key={a.question_id} className={styles.answerItem}>
+                            <div className={styles.answerQ}>{a.label}</div>
+                            <div className={styles.answerA}>{a.value ? formatStageValue(a.value, a.field_type) : <em style={{ opacity: 0.5 }}>No answer</em>}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Q&A */}
             <div className={styles.answersSection}>
