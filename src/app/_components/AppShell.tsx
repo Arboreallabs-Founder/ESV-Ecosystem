@@ -256,6 +256,12 @@ export default function AppShell({
               const visibleChildren = entry.children.filter((c) => c.roles.includes(role))
               if (visibleChildren.length === 0) return null
               const isGroupActive = entry.children.some((c) => pathname === c.href || pathname.startsWith(c.href))
+              // Only the longest-matching child is "active" so prefix-overlapping
+              // siblings (e.g. /tasks vs /tasks/kpi) don't both highlight.
+              const activeChildHref = visibleChildren
+                .map((c) => c.href)
+                .filter((h) => pathname === h || pathname.startsWith(h + '/'))
+                .sort((a, b) => b.length - a.length)[0] ?? null
               return (
                 <div key={entry.label} className={styles.navGroupWrapper} onMouseEnter={(e) => handleGroupEnter(e, entry.label)} onMouseLeave={handleGroupLeave}>
                   <div className={`${styles.navGroupBtn} ${isGroupActive ? styles.navGroupBtnActive : ''}`}>
@@ -277,7 +283,7 @@ export default function AppShell({
                     >
                       <div className={styles.navFlyoutLabel}>{entry.label}</div>
                       {visibleChildren.map((child) => {
-                        const isActive = pathname === child.href || pathname.startsWith(child.href)
+                        const isActive = child.href === activeChildHref
                         return (
                           <Link
                             key={child.href}
