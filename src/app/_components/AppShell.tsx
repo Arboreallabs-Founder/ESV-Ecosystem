@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -159,7 +159,14 @@ export default function AppShell({
 
   const [flyoutTop, setFlyoutTop] = useState<number | null>(null)
   const [openGroup, setOpenGroup] = useState<string | null>(null)
-  const hideTimer = useState<ReturnType<typeof setTimeout> | null>(null)
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  function cancelHide() {
+    if (hideTimer.current) {
+      clearTimeout(hideTimer.current)
+      hideTimer.current = null
+    }
+  }
 
   function closeFlyout() {
     setFlyoutTop(null)
@@ -167,22 +174,22 @@ export default function AppShell({
   }
 
   function handleGroupEnter(e: React.MouseEvent<HTMLDivElement>, label: string) {
-    if (hideTimer[0]) clearTimeout(hideTimer[0])
+    cancelHide()
     const rect = e.currentTarget.getBoundingClientRect()
     setFlyoutTop(rect.top)
     setOpenGroup(label)
   }
 
   function handleGroupLeave() {
-    hideTimer[1](setTimeout(closeFlyout, 180))
+    hideTimer.current = setTimeout(closeFlyout, 180)
   }
 
   function handleFlyoutEnter() {
-    if (hideTimer[0]) clearTimeout(hideTimer[0])
+    cancelHide()
   }
 
   function handleFlyoutLeave() {
-    hideTimer[1](setTimeout(closeFlyout, 80))
+    hideTimer.current = setTimeout(closeFlyout, 80)
   }
 
   async function handleSignOut() {

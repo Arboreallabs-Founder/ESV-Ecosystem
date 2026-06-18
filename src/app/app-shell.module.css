@@ -170,6 +170,13 @@
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   padding: 0.5rem;
   z-index: 200;
+  transform-origin: left center;
+  animation: navFlyoutIn 0.14s ease-out;
+}
+
+@keyframes navFlyoutIn {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 
 /* invisible bridge so mouse can travel from sidebar to flyout */
