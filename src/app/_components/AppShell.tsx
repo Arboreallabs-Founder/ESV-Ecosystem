@@ -158,16 +158,23 @@ export default function AppShell({
   const initials = displayName.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
   const [flyoutTop, setFlyoutTop] = useState<number | null>(null)
+  const [openGroup, setOpenGroup] = useState<string | null>(null)
   const hideTimer = useState<ReturnType<typeof setTimeout> | null>(null)
 
-  function handleGroupEnter(e: React.MouseEvent<HTMLDivElement>) {
+  function closeFlyout() {
+    setFlyoutTop(null)
+    setOpenGroup(null)
+  }
+
+  function handleGroupEnter(e: React.MouseEvent<HTMLDivElement>, label: string) {
     if (hideTimer[0]) clearTimeout(hideTimer[0])
     const rect = e.currentTarget.getBoundingClientRect()
     setFlyoutTop(rect.top)
+    setOpenGroup(label)
   }
 
   function handleGroupLeave() {
-    hideTimer[1](setTimeout(() => setFlyoutTop(null), 180))
+    hideTimer[1](setTimeout(closeFlyout, 180))
   }
 
   function handleFlyoutEnter() {
@@ -175,7 +182,7 @@ export default function AppShell({
   }
 
   function handleFlyoutLeave() {
-    hideTimer[1](setTimeout(() => setFlyoutTop(null), 80))
+    hideTimer[1](setTimeout(closeFlyout, 80))
   }
 
   async function handleSignOut() {
@@ -237,7 +244,7 @@ export default function AppShell({
               if (visibleChildren.length === 0) return null
               const isGroupActive = entry.children.some((c) => pathname === c.href || pathname.startsWith(c.href))
               return (
-                <div key={entry.label} className={styles.navGroupWrapper} onMouseEnter={handleGroupEnter} onMouseLeave={handleGroupLeave}>
+                <div key={entry.label} className={styles.navGroupWrapper} onMouseEnter={(e) => handleGroupEnter(e, entry.label)} onMouseLeave={handleGroupLeave}>
                   <div className={`${styles.navGroupBtn} ${isGroupActive ? styles.navGroupBtnActive : ''}`}>
                     <span className={styles.navIcon}>{entry.icon}</span>
                     {entry.label}
@@ -248,7 +255,7 @@ export default function AppShell({
                       <path d="m9 18 6-6-6-6" />
                     </svg>
                   </div>
-                  {flyoutTop !== null && (
+                  {flyoutTop !== null && openGroup === entry.label && (
                     <div
                       className={styles.navFlyout}
                       style={{ top: flyoutTop }}
