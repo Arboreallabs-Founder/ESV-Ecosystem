@@ -8,6 +8,7 @@ import {
   deleteEscalation,
 } from '@/app/actions/escalations'
 import type { Escalation, EscalationLinkedType, EscalationStatus } from '@/lib/types'
+import Combobox from './Combobox'
 import styles from '../escalations.module.css'
 
 type Option = { id: string; label: string }
@@ -130,8 +131,7 @@ export default function EscalationsList({
     })
   }
 
-  const founders = recipients.filter((r) => r.role === 'founder')
-  const partners = recipients.filter((r) => r.role === 'franchise_partner')
+  const recipientOptions = recipients.map((r) => ({ id: r.id, label: r.name, hint: roleLabel(r.role) }))
 
   return (
     <div className={styles.page}>
@@ -219,19 +219,12 @@ export default function EscalationsList({
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Send to *</label>
-                <select className={styles.select} value={recipientId} onChange={(e) => setRecipientId(e.target.value)} required>
-                  <option value="">Select a founder or partner…</option>
-                  {founders.length > 0 && (
-                    <optgroup label="Founders">
-                      {founders.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </optgroup>
-                  )}
-                  {partners.length > 0 && (
-                    <optgroup label="Partners">
-                      {partners.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </optgroup>
-                  )}
-                </select>
+                <Combobox
+                  options={recipientOptions}
+                  value={recipientId}
+                  onChange={setRecipientId}
+                  placeholder="Search a founder or partner…"
+                />
               </div>
               <div className={styles.grid2}>
                 <div className={styles.field}>
@@ -251,10 +244,12 @@ export default function EscalationsList({
                 {linkType && (
                   <div className={styles.field}>
                     <label className={styles.label}>Select {LINK_TYPE_LABEL[linkType]}</label>
-                    <select className={styles.select} value={linkId} onChange={(e) => setLinkId(e.target.value)}>
-                      <option value="">—</option>
-                      {linkOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-                    </select>
+                    <Combobox
+                      options={linkOptions}
+                      value={linkId}
+                      onChange={setLinkId}
+                      placeholder={`Search ${LINK_TYPE_LABEL[linkType].toLowerCase()}…`}
+                    />
                   </div>
                 )}
               </div>
