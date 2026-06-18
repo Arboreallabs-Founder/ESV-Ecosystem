@@ -46,6 +46,9 @@ Legend: ✅ full · 🟡 limited/conditional · 👁 read-only · ❌ none
 | Tasks — create/assign | ✅ non-partners | ✅ non-partners | 🟡 self/associates | ❌ | ❌ |
 | Tasks — push (new date) | 🟡 own | 🟡 own | 🟡 own | ❌ | ❌ |
 | Tasks — KPI view | ✅ everyone | ✅ everyone | 🟡 own | ❌ | ❌ |
+| Escalations — view | ✅ all | ✅ all | 🟡 own raised | 🟡 sent to them | ❌ |
+| Escalations — raise | ❌ | ✅ | ✅ | ❌ | ❌ |
+| Escalations — set status | ✅ | ✅ | 🟡 own raised | 🟡 received | ❌ |
 | User management (`/admin/users`) | ✅ | ✅ | ❌ | ❌ | ✅ cross-org |
 | Partner management (`/admin/partners`) | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Manage organizations | ❌ | ❌ | ❌ | ❌ | ✅ |
@@ -136,6 +139,18 @@ attribution.
   - Definitions — *On time*: Done on/before the due date · *Pushed*: pushed at least once ·
     *Not completed*: open and past the effective deadline (`pushed_date ?? due_date`) ·
     *Pending*: open and within the effective deadline.
+
+### Escalations (`/escalations`)
+- **Raise**: **Associates and admins only**. An escalation has a subject, optional details, exactly
+  **one recipient** (a founder or a partner), and an optional link to one active deal / pipeline entry
+  / task / investor (a title snapshot is stored so partners can see "re: X" without entity access).
+- **Recipients**: only **founders** and **partners** can be selected as recipients. Founders cannot
+  raise; partners cannot raise.
+- **Status**: Open → Acknowledged → Resolved (no reply thread). Can be changed by the **recipient**
+  (incl. a partner), the **raiser**, or any **founder/admin**. Resolving stamps `resolved_at`.
+- **Visibility**: founders/admins see **all** escalations in the org (oversight); associates see only
+  the ones **they raised**; partners see only the ones **addressed to them**. Other orgs are hidden.
+- **Delete**: the raiser or a founder/admin.
 
 ### Partner Portal (`/portal` — "My Links")
 - **Partner** only: generate submission links, copy/open them, view their own issued links, and

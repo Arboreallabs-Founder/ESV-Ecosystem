@@ -217,10 +217,19 @@ Clicking the entry shows all Q&A responses + which user's link was used
 - [x] **KPI view** (`/tasks/kpi`) — On-time / Pushed / Pending / Not-completed; per-person table for founders/admins, own-only for associates
 - [x] Tasks nav converted to a Board / KPI group
 
+### Escalations module
+- [x] `escalations` table (`escalation_status` enum, single `recipient_user_id`, optional polymorphic link + snapshot `linked_title`) with org-scoped RLS
+- [x] Associates/admins raise an escalation to one recipient (a founder or partner); optional link to an active deal / pipeline entry / task / investor
+- [x] Status workflow Open → Acknowledged → Resolved (no reply thread); changeable by recipient/raiser/leadership; `resolved_at` stamped
+- [x] Visibility: founders/admins see all (oversight); associates see own raised; partners see only ones addressed to them — verified via RLS simulation
+- [x] `/escalations` page + list with status tabs, create modal (recipient + link pickers), gated status control; nav item for all roles; dashboard "Open Escalations" card
+
 ### Fixes & docs
 - [x] Partners couldn't see active deals (sourced-only RLS gate) — added `entry_has_active_deal()` helper + `pipeline_entries` partner read policy so partners see all in-org deals
+- [x] Active-deal entries leaking into partner "My Submissions" — `/submissions` now filters explicitly by the partner's own links
+- [x] Nav flyout fixes — correct group menu shows; smooth fade; no longer shuts when alternating groups
 - [x] Build fix: `userRole` threaded through `ActiveDealsOverlay` → `ActiveDealsList`
-- [x] [ROLES.md](ROLES.md) — authoritative per-role capability reference
+- [x] [ROLES.md](ROLES.md) — authoritative per-role capability reference (includes Escalations)
 
 ---
 

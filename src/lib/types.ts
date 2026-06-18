@@ -1,3 +1,24 @@
+export type EscalationStatus = 'Open' | 'Acknowledged' | 'Resolved'
+
+export type EscalationLinkedType = 'active_deal' | 'pipeline_entry' | 'task' | 'investor'
+
+export type Escalation = {
+  id: string
+  org_id: string
+  raised_by: string
+  recipient_user_id: string
+  subject: string
+  body: string | null
+  status: EscalationStatus
+  linked_type: EscalationLinkedType | null
+  linked_id: string | null
+  linked_title: string | null
+  created_at: string
+  resolved_at: string | null
+  raised_by_user?: { name: string } | null
+  recipient_user?: { name: string; role: string } | null
+}
+
 export type TaskStatus = 'To Do' | 'Done'
 
 export type Task = {

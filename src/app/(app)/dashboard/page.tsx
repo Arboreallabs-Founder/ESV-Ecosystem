@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getUser } from '@/lib/user'
 import { createClient } from '@/lib/supabase/server'
 import { fetchOpenTaskCount } from '@/lib/tasks'
+import { fetchOpenEscalationCount } from '@/lib/escalations'
 import styles from './dashboard.module.css'
 
 function formatDateTime(iso: string) {
@@ -50,10 +51,11 @@ async function fetchDashboardData() {
 export default async function DashboardPage() {
   // Data queries run under RLS, so they can start in parallel with the user
   // lookup instead of waiting for the role check.
-  const [user, data, openTasks] = await Promise.all([
+  const [user, data, openTasks, openEscalations] = await Promise.all([
     getUser(),
     fetchDashboardData(),
     fetchOpenTaskCount(),
+    fetchOpenEscalationCount(),
   ])
   if (!user) redirect('/login')
   if (user.role === 'associate') redirect('/pipelines')
@@ -67,7 +69,8 @@ export default async function DashboardPage() {
     { label: 'Pipelines',   value: data.pipelineCount, desc: 'Active pipelines',     href: '/pipelines' },
     { label: 'Submissions', value: data.entryCount,    desc: 'Total entries received', href: '/pipelines' },
     { label: 'Forms',       value: data.formCount,     desc: 'Forms created',         href: '/forms' },
-    { label: 'Open Tasks',  value: openTasks,          desc: 'To Do + In Progress',   href: '/tasks' },
+    { label: 'Open Tasks',  value: openTasks,          desc: 'Not yet done',          href: '/tasks' },
+    { label: 'Escalations', value: openEscalations,    desc: 'Open + acknowledged',   href: '/escalations' },
   ]
 
   const quickLinks = [
