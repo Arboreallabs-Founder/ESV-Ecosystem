@@ -4,10 +4,18 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createTask, updateTaskStatus, pushTask } from '@/app/actions/tasks'
 import type { Task, UserRow } from '@/lib/types'
+import Combobox from '@/app/_components/Combobox'
 import styles from '../tasks.module.css'
 
 const STATUSES = ['To Do', 'Done'] as const
 type Status = (typeof STATUSES)[number]
+
+function userRoleLabel(role: string) {
+  if (role === 'founder') return 'Founder'
+  if (role === 'admin') return 'Admin'
+  if (role === 'associate') return 'Associate'
+  return role
+}
 
 function PriorityBadge({ priority }: { priority: Task['priority'] }) {
   const cls = priority === 'High' ? styles.priorityHigh : priority === 'Medium' ? styles.priorityMedium : styles.priorityLow
@@ -38,6 +46,7 @@ export default function TaskBoard({
   const [showModal, setShowModal] = useState(false)
   const [pushTarget, setPushTarget] = useState<Task | null>(null)
   const [pushDate, setPushDate] = useState('')
+  const [assigneeId, setAssigneeId] = useState(currentUserId)
   const [isPending, startTransition] = useTransition()
 
   const canCreate = ['founder', 'admin', 'associate'].includes(userRole)
@@ -48,6 +57,12 @@ export default function TaskBoard({
     if (userRole === 'associate') return u.role === 'associate' || u.id === currentUserId
     return true
   })
+
+  const assigneeOptions = assignableUsers.map((u) => ({
+    id: u.id,
+    label: `${u.name || u.email}${u.id === currentUserId ? ' (me)' : ''}`,
+    hint: userRoleLabel(u.role),
+  }))
 
   const byStatus = STATUSES.reduce((acc, s) => {
     acc[s] = tasks.filter((t) => t.status === s)
@@ -68,6 +83,7 @@ export default function TaskBoard({
       try {
         await createTask(formData)
         setShowModal(false)
+        setAssigneeId(currentUserId)
         router.refresh()
       } catch (err) { alert(String(err)) }
     })
@@ -187,13 +203,13 @@ export default function TaskBoard({
               <div className={styles.grid2}>
                 <div className={styles.field}>
                   <label className={styles.label}>Assignee</label>
-                  <select className={styles.select} name="assignee_id" defaultValue={currentUserId}>
-                    {assignableUsers.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name || u.email}{u.id === currentUserId ? ' (me)' : ''}
-                      </option>
-                    ))}
-                  </select>
+                  <input type="hidden" name="assignee_id" value={assigneeId} />
+                  <Combobox
+                    options={assigneeOptions}
+                    value={assigneeId}
+                    onChange={setAssigneeId}
+                    placeholder="Search a team member…"
+                  />
                 </div>
                 <div className={styles.field}>
                   <label className={styles.label}>Priority</label>

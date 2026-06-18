@@ -282,63 +282,6 @@
 }
 @media (max-width: 520px) { .grid2 { grid-template-columns: 1fr; } }
 
-/* ── Combobox (type-ahead select) ─────────────────────────────────── */
-.combo { position: relative; }
-
-.comboDropdown {
-  position: absolute;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  box-shadow: var(--shadow-elevated);
-  max-height: 220px;
-  overflow-y: auto;
-  z-index: 20;
-  padding: 0.25rem;
-}
-
-.comboItem {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  width: 100%;
-  text-align: left;
-  background: none;
-  border: none;
-  padding: 0.5rem 0.625rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  color: var(--color-text);
-  font-family: inherit;
-}
-.comboItem:hover { background: var(--color-bg); }
-
-.comboItemLabel {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.comboHint {
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-  flex-shrink: 0;
-}
-
-.comboEmpty {
-  padding: 0.5rem 0.625rem;
-  font-size: 0.8125rem;
-  color: var(--color-muted);
-}
-
 .modalActions {
   display: flex;
   justify-content: flex-end;

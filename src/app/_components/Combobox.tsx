@@ -1,22 +1,24 @@
 'use client'
 
 import { useRef, useState } from 'react'
-import styles from '../escalations.module.css'
+import styles from './Combobox.module.css'
 
 export type ComboOption = { id: string; label: string; hint?: string }
 
 // Type-ahead single-select: typing filters to the closest matches; picking one
-// commits it; if nothing is picked the value stays blank.
+// commits it; if nothing is picked the value stays blank. Shared across the app.
 export default function Combobox({
   options,
   value,
   onChange,
   placeholder,
+  disabled = false,
 }: {
   options: ComboOption[]
   value: string
   onChange: (id: string) => void
   placeholder?: string
+  disabled?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -39,6 +41,7 @@ export default function Combobox({
         className={styles.input}
         value={text}
         placeholder={placeholder}
+        disabled={disabled}
         onFocus={() => { setOpen(true); setQuery(selectedLabel) }}
         onChange={(e) => { setOpen(true); setQuery(e.target.value); if (value) onChange('') }}
         onBlur={() => { blurTimer.current = setTimeout(() => { setOpen(false); setQuery('') }, 150) }}
@@ -47,15 +50,15 @@ export default function Combobox({
           if (e.key === 'Escape') setOpen(false)
         }}
       />
-      {open && (
-        <div className={styles.comboDropdown} onMouseDown={(e) => e.preventDefault()}>
+      {open && !disabled && (
+        <div className={styles.dropdown} onMouseDown={(e) => e.preventDefault()}>
           {filtered.length === 0 ? (
-            <div className={styles.comboEmpty}>No matches</div>
+            <div className={styles.empty}>No matches</div>
           ) : (
             filtered.map((o) => (
-              <button key={o.id} type="button" className={styles.comboItem} onClick={() => select(o)}>
-                <span className={styles.comboItemLabel}>{o.label}</span>
-                {o.hint && <span className={styles.comboHint}>{o.hint}</span>}
+              <button key={o.id} type="button" className={styles.item} onClick={() => select(o)}>
+                <span className={styles.itemLabel}>{o.label}</span>
+                {o.hint && <span className={styles.hint}>{o.hint}</span>}
               </button>
             ))
           )}

@@ -6,6 +6,7 @@ import { createInvestor, updateInvestor } from '@/app/actions/investors'
 import { SERVICE_TYPE_LABELS } from '@/lib/types'
 import type { Investor, ServiceType } from '@/lib/types'
 import SectorTagInput from './SectorTagInput'
+import Combobox from '@/app/_components/Combobox'
 import styles from '../investors.module.css'
 
 type ContactDraft = {
@@ -237,12 +238,12 @@ export default function InvestorFormModal({
           {canSetReferredBy && (
             <div className={styles.field}>
               <label className={styles.label}>Referred by Partner</label>
-              <select className={styles.select} value={referredBy} onChange={(e) => setReferredBy(e.target.value)}>
-                <option value="">—</option>
-                {franchisePartners.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
+              <Combobox
+                options={franchisePartners.map((p) => ({ id: p.id, label: p.name }))}
+                value={referredBy}
+                onChange={setReferredBy}
+                placeholder="Search a partner…"
+              />
             </div>
           )}
 

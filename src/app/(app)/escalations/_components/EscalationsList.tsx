@@ -8,7 +8,7 @@ import {
   deleteEscalation,
 } from '@/app/actions/escalations'
 import type { Escalation, EscalationLinkedType, EscalationStatus } from '@/lib/types'
-import Combobox from './Combobox'
+import Combobox from '@/app/_components/Combobox'
 import styles from '../escalations.module.css'
 
 type Option = { id: string; label: string }
