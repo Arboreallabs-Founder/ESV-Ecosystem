@@ -1,5 +1,7 @@
 # ESV Ecosystem — Build Tasks
-> Last updated: 2026-06-09. Phases 1–11, 13–14, 16, 22 complete. Deployed to Vercel.
+> Last updated: 2026-06-18. Phases 1–11, 13–14, 16, 22 complete + Active Deals, multi-tenancy,
+> partner scoping, and Tasks v2 (see "Since 2026-06-09" below). Deployed to Vercel.
+> Role permissions are documented separately in [ROLES.md](ROLES.md).
 
 ---
 
@@ -173,6 +175,52 @@ Clicking the entry shows all Q&A responses + which user's link was used
 - [x] `get_form_for_submission` RPC: no longer returns null for forms without a pipeline
 - [x] Assign dropdown: `.neq('role','partner')` → `.neq('role','franchise_partner')` (correct enum value)
 - [x] Standardised `revalidatePath` removal — server actions use `router.refresh()` in components
+
+---
+
+## ✅ COMPLETED — Since 2026-06-09
+
+### Active Deals module
+- [x] `active_deals`, `active_deal_categories`, `active_deal_field_values` tables + Accept-deal flow (entry → Accepted creates an active deal)
+- [x] Deal categories & fields admin (`/admin/categories`) — founder/admin CRUD; typed fields (text/numeric/percentage/url)
+- [x] Active Deals page (`/active-deals`) — category filter tabs, deal cards, full detail panel (assignees, category details, stage history, form Q&A)
+- [x] Deal investors: `active_deal_investors` + `active_deal_investor_fees` — add/remove investors, investing toggle, amounts, auto-populated percentage fees, edit/toggle/delete fees, live Investment/Earnings totals
+- [x] Investor picker + create-investor-from-deal modals
+
+### Investors v2
+- [x] Redesigned investors (`service_type`, multi ESV POC via `investor_poc_users`, referral attribution, ticket size, sectors, stage)
+- [x] Investor contacts (`investor_contacts`) with inline add/edit/delete
+- [x] ESV POC as a searchable multi-select with chips
+
+### Multi-tenancy / Organizations
+- [x] `organizations` table + `super_admin` role; `org_id` added to all root tables (backfilled, NOT NULL)
+- [x] `get_user_org_id()` + `is_super_admin()` SECURITY DEFINER helpers
+- [x] All RLS replaced with org-scoped policies (`is_super_admin()` short-circuits first)
+
+### Partner scoped navigation & read-only deal views
+- [x] Partners get the normal sidebar (Active Deals, Investors, My Submissions, My Links) instead of an isolated portal
+- [x] `/submissions` — partner view of entries that came through their own links
+- [x] Investors list scoped to a partner's own referrals; active-deal investor section read-only & referral-scoped for partners
+
+### Partner investor editing (POC locked)
+- [x] Partners can **add** investors (auto-tagged as their referral) and **edit** their own referrals from `/investors`
+- [x] ESV POC hidden/locked for partners; partner UPDATE never touches `investor_poc_users` or referral attribution (server guard + RLS)
+- [x] Polished portal submission-link UI (card layout, "link ready" state, Open/Copy actions)
+
+### Tasks v2 (push, scoping, KPIs)
+- [x] Removed "In Progress" — board is now To Do / Done (existing rows migrated)
+- [x] Visibility: founders/admins see all org tasks; **associates see only tasks assigned to them**; partners have no access and cannot be assigned tasks
+- [x] Assignment rules enforced (server + RLS): founders/admins assign to any non-partner; associates only to self/other associates; role-filtered assignee dropdown
+- [x] "Assigned by" shown on each card
+- [x] **Push** a task to a new date — assignee-only; records `pushed_date` / `pushed_at` / `push_count`; original due date retained
+- [x] `completed_at` stamped on Done (cleared when reopened)
+- [x] **KPI view** (`/tasks/kpi`) — On-time / Pushed / Pending / Not-completed; per-person table for founders/admins, own-only for associates
+- [x] Tasks nav converted to a Board / KPI group
+
+### Fixes & docs
+- [x] Partners couldn't see active deals (sourced-only RLS gate) — added `entry_has_active_deal()` helper + `pipeline_entries` partner read policy so partners see all in-org deals
+- [x] Build fix: `userRole` threaded through `ActiveDealsOverlay` → `ActiveDealsList`
+- [x] [ROLES.md](ROLES.md) — authoritative per-role capability reference
 
 ---
 
