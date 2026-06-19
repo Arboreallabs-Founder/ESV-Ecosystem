@@ -105,7 +105,7 @@ export default function PartnerEarnings({
       {rows.length === 0 ? (
         <div className={styles.empty}>
           No deals yet. This partner appears here once a deal is sourced via their link or one of their
-          referred investors is investing in an accepted deal.
+          referred investors is added to an accepted deal.
         </div>
       ) : (
         <div className={styles.tableWrap}>

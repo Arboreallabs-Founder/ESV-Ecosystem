@@ -24,14 +24,14 @@ export default async function MyEarningsPage() {
       <div className={styles.header}>
         <div className={styles.pageTitle}>My Earnings</div>
         <div className={styles.pageSub}>
-          Your share of each deal you sourced or referred an investing investor to.
+          Your share of each deal you sourced or referred an investor to.
         </div>
       </div>
 
       {deals.length === 0 ? (
         <div className={styles.empty}>
-          No earnings yet. Once a deal you sourced is accepted — or one of your referred investors
-          invests — your share will appear here.
+          No earnings yet. Once a deal you sourced is accepted — or one of your referred investors is
+          added to a deal — your share will appear here.
         </div>
       ) : (
         <>

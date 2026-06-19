@@ -129,8 +129,8 @@ totals or other investors. Computed server-side via the `get_partner_earnings` S
   Split** (`franchise_partners.success_fee_split_pct`) and is overridable per deal; `base` is the deal's
   **total org earning** or the earning from the **partner's referred investors**, chosen per deal.
 - **Admin/Founder** manage this on a **per-partner page** (`/admin/partners/[partnerId]`): every deal the
-  partner is tied to (deal **sourced via their link**, or one of their **referred investors is
-  investing**), each row showing org total earning, referred earning, a base selector, an editable
+  partner is tied to (deal **sourced via their link**, or one of their **referred investors is on the
+  deal**), each row showing org total earning, referred earning, a base selector, an editable
   split % (blank = use Standard Fee Split), and the computed share. Associates can view, not edit.
 - **Partners** get a **My Earnings** page (`/earnings`) showing only their **own** final share per deal
   and a total — **no** org totals, splits config, or other investors. The share is computed server-side

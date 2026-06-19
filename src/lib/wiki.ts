@@ -104,7 +104,7 @@ export const WIKI: Record<string, WikiSection> = {
     summary: 'Manage ESV\'s external franchise partner network. Partners refer deals and earn a share of the resulting fees.',
     items: [
       { heading: 'Partner details', body: 'In the Partners tab, fill in or edit a partner\'s firm name, contact, agreement type, Standard Fee Split %, and contract link. The Standard Fee Split is the default percentage a partner earns of the relevant deal earning.' },
-      { heading: 'Deals & earnings', body: 'Click "Deals & earnings" on a partner to open their per-partner page. It lists every deal they are tied to — deals sourced via their link, or deals where one of their referred investors is investing — with the org total earning, the earning via their referred investors, and their computed share.' },
+      { heading: 'Deals & earnings', body: 'Click "Deals & earnings" on a partner to open their per-partner page. It lists every deal they are tied to — deals sourced via their link, or deals where one of their referred investors appears — with the org total earning, the earning via their referred investors, and their computed share.' },
       { heading: 'Share base', body: 'For each deal, choose where the partner\'s share is calculated from: "Referred earning" (just their referred investors\' fees) or "Total earning" (the deal\'s whole org earning). Defaults to referred.' },
       { heading: 'Per-deal split override', body: 'Each deal uses the partner\'s Standard Fee Split by default. Override the split % on any individual deal — leave the field blank to fall back to the standard. The partner\'s share recalculates immediately.' },
       { heading: 'Linking to a Portal Account', body: 'A partner record is linked to a franchise_partner user account from User Management. This gives them access to their scoped views (Active Deals, Investors, My Submissions, My Earnings, My Links).' },
@@ -115,7 +115,7 @@ export const WIKI: Record<string, WikiSection> = {
     title: 'My Earnings (Partners)',
     summary: 'A partner\'s view of what they earn from each deal. Read-only and scoped to the partner.',
     items: [
-      { heading: 'What you see', body: 'Every deal you earn on — one you sourced via your link, or one where a referred investor of yours is investing — with your split % and your earning (₹), plus a total at the top.' },
+      { heading: 'What you see', body: 'Every deal you earn on — one you sourced via your link, or one where a referred investor of yours appears — with your split % and your earning (₹), plus a total at the top.' },
       { heading: 'How it\'s calculated', body: 'Your earning = your split % × the base set by the ESV team for that deal (either the deal\'s total earning or the earning from your referred investors). The split defaults to your Standard Fee Split but can be adjusted per deal by ESV.' },
       { heading: 'Privacy', body: 'You only ever see your own final share. Other investors, their amounts, and the org\'s overall earnings are never shown.' },
     ],

@@ -236,7 +236,7 @@ Clicking the entry shows all Q&A responses + which user's link was used
   `split_pct` override; org-scoped RLS, partner reads only own rows) + `get_partner_earnings()`
   SECURITY DEFINER aggregator (single source of truth; mirrors the deal-detail "Total Earnings" math)
 - [x] Partners tab → per-partner page (`/admin/partners/[partnerId]`): all deals the partner is tied to
-  (sourced via their link OR a referred investor investing), with org total earning, referred earning,
+  (sourced via their link OR a referred investor present on the deal), with org total earning, referred earning,
   base selector, editable split % (blank = Standard Fee Split), and computed share + summary totals
 - [x] Partner **My Earnings** page (`/earnings`) + nav item: only their own final share per deal + total;
   no org totals / other investors (computed server-side, bypasses per-investor RLS)
