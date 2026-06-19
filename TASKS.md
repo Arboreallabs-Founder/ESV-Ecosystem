@@ -232,6 +232,7 @@ Clicking the entry shows all Q&A responses + which user's link was used
 - [x] Verified via RLS simulation (admin write, partner read of in-org deal answers)
 
 ### Fixes & docs
+- [x] Re-accepting an entry no longer prompts for a category — entries carry `has_active_deal` (via an `active_deals` embed) and the accept branch short-circuits to a plain move when a deal already exists
 - [x] Re-accepting an entry no longer creates a duplicate active deal — `acceptDeal` reuses the existing deal (preserving investors/fees/categories) + a `UNIQUE(pipeline_entry_id)` index enforces it at the DB level
 - [x] Partners couldn't see active deals (sourced-only RLS gate) — added `entry_has_active_deal()` helper + `pipeline_entries` partner read policy so partners see all in-org deals
 - [x] Active-deal entries leaking into partner "My Submissions" — `/submissions` now filters explicitly by the partner's own links

@@ -44,13 +44,27 @@ export const WIKI: Record<string, WikiSection> = {
 
   tasks: {
     title: 'Tasks',
-    summary: 'Action items for the team. Tasks can be standalone or linked to a specific deal.',
+    summary: 'Action items for the team. Tasks can be standalone or linked to a specific deal. The board has two views: Board and KPI.',
     items: [
-      { heading: 'Board Columns', body: 'To Do → In Progress → Done. Move tasks by changing the status dropdown on each card.' },
-      { heading: 'Creating a Task', body: 'Click "+ New Task". Set a title, optional description, assignee (team member), linked deal, due date, and priority (Low / Medium / High).' },
+      { heading: 'Board Columns', body: 'To Do → Done. Move tasks by changing the status dropdown on each card. Moving a task to Done stamps its completion time; moving it back to To Do clears it.' },
+      { heading: 'Creating a Task', body: 'Click "+ New Task". Set a title, optional description, assignee, linked deal, due date, and priority (Low / Medium / High). Every card shows who it was assigned by.' },
+      { heading: 'Who can be assigned', body: 'Founders/admins can assign any internal team member. Associates can only assign to themselves or other associates. Franchise partners can never be assigned tasks.' },
+      { heading: 'Visibility', body: 'Founders and admins see all tasks in the organisation. Associates see only the tasks assigned to them. Partners have no task access.' },
+      { heading: 'Pushing a task', body: 'Only the assignee can push their own task to a new target date. Pushing records the new date and increments the push count — the original due date is retained for reporting.' },
       { heading: 'Priority Levels', body: 'High = blocks progress or has a hard deadline. Medium = standard work. Low = nice-to-have or whenever. Overdue tasks show a ⚠ warning.' },
-      { heading: 'Linked Deals', body: 'Linking a task to a deal lets you track deal-specific work (e.g. "Send term sheet to founder") alongside the deal record.' },
-      { heading: 'Assignees', body: 'Assign any internal team member. Associates see all tasks but typically own their own; founders/admins see the full picture.' },
+      { heading: 'KPI view', body: 'Switch to the KPI tab for performance metrics: On-time, Pushed, Pending, and Not-completed. Founders/admins see a per-person breakdown for the whole team plus org totals; associates see only their own numbers.' },
+    ],
+  },
+
+  escalations: {
+    title: 'Escalations',
+    summary: 'A direct channel for raising a query or blocker to a single founder or partner, optionally tied to a specific deal, entry, task, or investor.',
+    items: [
+      { heading: 'Who can raise', body: 'Associates and admins raise escalations. Founders and partners cannot raise — they are the recipients. Each escalation goes to exactly one recipient (a founder or a partner).' },
+      { heading: 'Raising one', body: 'Click "+ New Escalation". Give it a subject, optional details, pick the one recipient, and optionally link it to an active deal, pipeline entry, task, or investor. A snapshot of the linked item\'s title is stored so partners can see "re: X" without needing access to it.' },
+      { heading: 'Status workflow', body: 'Open → Acknowledged → Resolved (there is no reply thread). The status can be changed by the recipient, the person who raised it, or any founder/admin. Resolving stamps the resolution time.' },
+      { heading: 'Visibility', body: 'Founders and admins see every escalation in the organisation (oversight). Associates see only the ones they raised. Partners see only the ones addressed to them.' },
+      { heading: 'Deleting', body: 'The person who raised an escalation, or any founder/admin, can delete it.' },
     ],
   },
 
@@ -59,6 +73,7 @@ export const WIKI: Record<string, WikiSection> = {
     summary: 'The live book of work. Every deal accepted from a pipeline lands here with its full category details, investor list, and fee tracking.',
     items: [
       { heading: 'How a deal enters Active Deals', body: 'When a pipeline entry is moved to the Accepted column, you are prompted to select one or more categories and fill in their fields (e.g. success fee %, total capital). On confirmation the deal appears here.' },
+      { heading: 'Re-accepting a deal', body: 'If you move an accepted entry back out of Accepted, its active deal lingers (investors, fees, and categories are preserved). Moving it back into Accepted simply restores it — you are not asked for categories again and no duplicate deal is created.' },
       { heading: 'Two-column layout', body: 'The detail panel opens in two columns. Left side shows Assigned To, Category Details, Stage History, and Form Responses. Right side shows the Investors panel for that deal.' },
       { heading: 'Adding Investors', body: 'In the Investors panel, click "+ Add Investor". Search the investor database and select one, or create a new investor on the spot (it will also be saved to the Investors tab). Each deal has its own independent investor list.' },
       { heading: 'Investing toggle & Amount', body: 'Each investor row has a Yes/No toggle for whether they are investing, and an amount field (₹). The total investment across all investing parties is shown in the totals bar at the bottom.' },
@@ -138,6 +153,8 @@ export const WIKI: Record<string, WikiSection> = {
     items: [
       { heading: 'Mandatory stages', body: 'Every pipeline has three locked stages: Lead (entry point, purple), Accepted (end state, green), and Rejected (end state, red). These cannot be renamed or deleted.' },
       { heading: 'Custom stages', body: 'Add stages between Lead and the end states via the "+ Add Stage" button in the board header. Each stage has a custom name and colour. Custom stages with active deals cannot be deleted.' },
+      { heading: 'Stage questions', body: 'When creating or editing a custom stage, admins/founders can attach question fields (label + type: text, numeric, percentage, or URL) and mark any as required. Lead, Accepted, and Rejected never carry questions — they keep their own prompts.' },
+      { heading: 'Answering stage questions', body: 'Moving an entry into a stage that has questions opens a prompt — required questions must be answered before the move commits. Answers appear in the entry detail card (admins/founders can edit them later) and in the active deal detail card.' },
       { heading: 'Deleting a stage', body: 'If a custom stage has no active deals, deleting it moves any remaining entries to Unsorted. If the stage has active entries, the delete is blocked — move the deals first.' },
       { heading: 'Deleting a pipeline', body: 'Deleting a pipeline permanently destroys all its stages and every deal inside it. You must type the exact pipeline name to confirm. This cannot be undone.' },
       { heading: 'Deal cards', body: 'Each card shows the company name, submitter, assignees, and the link creator chip. Drag cards between columns to move stages. Click a card to open the full entry detail.' },
