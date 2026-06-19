@@ -159,6 +159,16 @@ export async function acceptDeal(
   // Move entry to accepted stage
   await supabase.from('pipeline_entries').update({ stage_id: stageId }).eq('id', entryId)
 
+  // If this entry was already accepted before (its active deal lingers after being
+  // moved out of Accepted), re-accepting just moves it back — don't create a second
+  // active deal; preserve the existing one's investors, fees, and categories.
+  const { data: existingDeal } = await supabase
+    .from('active_deals')
+    .select('id')
+    .eq('pipeline_entry_id', entryId)
+    .maybeSingle()
+  if (existingDeal) return
+
   // Create active deal record
   const { data: activeDeal, error: dealErr } = await supabase
     .from('active_deals')
