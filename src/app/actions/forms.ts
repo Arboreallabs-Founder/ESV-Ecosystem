@@ -235,26 +235,17 @@ export async function submitForm(
 
   if (!pipelineId) return // form not linked to a pipeline — nothing to record
 
-  const title = answers[0]?.answer_text?.slice(0, 120) || 'Form submission'
-
-  const { data: entry, error: entryErr } = await supabase
-    .from('pipeline_entries')
-    .insert({
-      pipeline_id: pipelineId,
-      form_id: formId,
-      form_link_id: linkId,
-      stage_id: firstStageId,
-      title,
-      submitter_name: submitterName || null,
-      submitter_email: submitterEmail || null,
-    })
-    .select('id')
-    .single()
-  if (entryErr) throw entryErr
-
-  if (answers.length > 0) {
-    await supabase.from('pipeline_entry_answers').insert(
-      answers.map(a => ({ entry_id: entry.id, node_id: a.node_id, answer_text: a.answer_text }))
-    )
-  }
+  // Submission goes through a SECURITY DEFINER RPC: anon can't satisfy the pipeline_entries
+  // RLS WITH CHECK directly (it joins `forms`, which anon can't read), and the insert's
+  // RETURNING needs a SELECT policy anon lacks. The RPC validates server-side and bypasses RLS.
+  const { error } = await supabase.rpc('submit_form_entry', {
+    p_link_id: linkId,
+    p_form_id: formId,
+    p_pipeline_id: pipelineId,
+    p_first_stage_id: firstStageId,
+    p_answers: answers,
+    p_submitter_name: submitterName || '',
+    p_submitter_email: submitterEmail || '',
+  })
+  if (error) throw error
 }
