@@ -75,8 +75,7 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
                 <th>Email</th>
                 <th>Firm Name</th>
                 <th>Agreement</th>
-                <th>Txn Fee Split</th>
-                <th>Success Fee Split</th>
+                <th>Standard Fee Split</th>
                 <th>Contract</th>
                 <th>Actions</th>
               </tr>
@@ -92,7 +91,6 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
                     </td>
                     <td>{p?.name || <span style={{ color: 'var(--color-muted)' }}>—</span>}</td>
                     <td>{p?.agreement_type || <span style={{ color: 'var(--color-muted)' }}>—</span>}</td>
-                    <td>{p ? <span className={styles.feeSplit}>{p.transaction_fee_split_pct}%</span> : <span style={{ color: 'var(--color-muted)' }}>—</span>}</td>
                     <td>{p ? <span className={styles.feeSplit}>{p.success_fee_split_pct}%</span> : <span style={{ color: 'var(--color-muted)' }}>—</span>}</td>
                     <td>
                       {p?.contract_link ? (
@@ -199,20 +197,7 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
                 </select>
               </div>
               <div className={styles.field}>
-                <label className={styles.label}>Transaction Fee Split %</label>
-                <input
-                  className={styles.input}
-                  name="transaction_fee_split_pct"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  defaultValue={editTarget.franchise_partners?.transaction_fee_split_pct ?? 0}
-                  placeholder="e.g. 20"
-                />
-              </div>
-              <div className={styles.field}>
-                <label className={styles.label}>Success Fee Split %</label>
+                <label className={styles.label}>Standard Fee Split %</label>
                 <input
                   className={styles.input}
                   name="success_fee_split_pct"
