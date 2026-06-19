@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { upsertPartnerDetails, updatePartnerDetails } from '@/app/actions/partners'
 import type { PartnerUser } from '@/lib/types'
 import styles from '../../admin.module.css'
@@ -117,21 +118,38 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
                           Fill in details
                         </button>
                       ) : (
-                        <button
-                          onClick={() => setEditTarget(u)}
-                          style={{
-                            padding: '0.25rem 0.75rem',
-                            border: '1.5px solid var(--color-border)',
-                            borderRadius: '6px',
-                            background: 'none',
-                            color: 'var(--color-primary)',
-                            fontSize: '0.8125rem',
-                            cursor: 'pointer',
-                            fontWeight: 600,
-                          }}
-                        >
-                          Edit
-                        </button>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          <button
+                            onClick={() => setEditTarget(u)}
+                            style={{
+                              padding: '0.25rem 0.75rem',
+                              border: '1.5px solid var(--color-border)',
+                              borderRadius: '6px',
+                              background: 'none',
+                              color: 'var(--color-primary)',
+                              fontSize: '0.8125rem',
+                              cursor: 'pointer',
+                              fontWeight: 600,
+                            }}
+                          >
+                            Edit
+                          </button>
+                          <Link
+                            href={`/admin/partners/${u.franchise_partner_id}`}
+                            style={{
+                              padding: '0.25rem 0.75rem',
+                              border: '1.5px solid var(--color-primary)',
+                              borderRadius: '6px',
+                              background: 'rgba(116,95,253,0.08)',
+                              color: 'var(--color-primary)',
+                              fontSize: '0.8125rem',
+                              fontWeight: 600,
+                              textDecoration: 'none',
+                            }}
+                          >
+                            Deals & earnings
+                          </Link>
+                        </div>
                       )}
                     </td>
                   </tr>

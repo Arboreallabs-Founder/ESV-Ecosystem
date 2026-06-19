@@ -36,6 +36,8 @@ Legend: ✅ full · 🟡 limited/conditional · 👁 read-only · ❌ none
 | My Submissions (own sourced entries) | — | — | — | 👁 | ❌ |
 | Active Deals — view | ✅ all org | ✅ all org | ✅ all org | 👁 all org¹ | ❌ |
 | Active Deals — edit investors/fees | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Partner deal shares — set base + split | ✅ | ✅ | 👁 | ❌ | ❌ |
+| Partner earnings — view | ✅ per partner³ | ✅ per partner³ | 👁 | 👁 own only⁴ | ❌ |
 | Accept a deal (entry → Accepted) | ✅ | ✅ | 🟡 if assigned | ❌ | ❌ |
 | Deal categories (CRUD) | ✅ | ✅ | 👁 | 👁 | ❌ |
 | Investors — create | ✅ | ✅ | ✅ | 🟡 referrals | ❌ |
@@ -59,6 +61,11 @@ investors** are listed and the Investment/Earnings totals are computed from thos
 deal detail is **read-only** for partners.
 ² Partners may edit only investors they referred, and **cannot** change the ESV POC or the referral
 attribution.
+³ Founders/admins open a per-partner page from the Partners tab listing every deal the partner is tied
+to, with org total earning, referred earning, a base selector, an editable split %, and the resulting
+share. Associates can read it but not change the share config.
+⁴ Partners see a **My Earnings** page with only their **own** final share per deal (₹) — never org
+totals or other investors. Computed server-side via the `get_partner_earnings` SECURITY DEFINER function.
 
 ---
 
@@ -116,6 +123,20 @@ attribution.
   Associates may only accept entries **assigned to them**.
 - **Manage deal investors** (add/remove, set investing Yes/No, amounts) and **fees** (add/edit/
   toggle/delete): Internal only.
+
+### Partner earnings & deal shares
+- A partner's earning on a deal = **split% × base**. `split%` defaults to the partner's **Standard Fee
+  Split** (`franchise_partners.success_fee_split_pct`) and is overridable per deal; `base` is the deal's
+  **total org earning** or the earning from the **partner's referred investors**, chosen per deal.
+- **Admin/Founder** manage this on a **per-partner page** (`/admin/partners/[partnerId]`): every deal the
+  partner is tied to (deal **sourced via their link**, or one of their **referred investors is
+  investing**), each row showing org total earning, referred earning, a base selector, an editable
+  split % (blank = use Standard Fee Split), and the computed share. Associates can view, not edit.
+- **Partners** get a **My Earnings** page (`/earnings`) showing only their **own** final share per deal
+  and a total — **no** org totals, splits config, or other investors. The share is computed server-side
+  by the `get_partner_earnings` SECURITY DEFINER function, so partners never read other investors' rows.
+- Config persists in `active_deal_partner_shares` (one row per deal+partner; org-scoped RLS, partner may
+  read only their own rows). Earning math mirrors the deal detail's "Total Earnings" exactly.
 - **Deal categories & fields** (`/admin/categories`): create/edit/delete is **Founder / Admin**;
   internal & partners read them as needed to render deals.
 

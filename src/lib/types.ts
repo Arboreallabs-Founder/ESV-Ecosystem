@@ -97,6 +97,30 @@ export type FranchisePartner = {
   contract_link: string | null
 }
 
+export type PartnerShareBase = 'total' | 'referred'
+
+// One row per deal a partner is tied to (returned by get_partner_earnings).
+export type PartnerDealEarning = {
+  active_deal_id: string
+  deal_title: string | null
+  accepted_at: string
+  org_total_earning: number
+  referred_earning: number
+  base_type: PartnerShareBase
+  split_pct: number
+  share_amount: number
+  is_sourced: boolean
+}
+
+// Privacy-scoped subset shown to a partner on their own earnings page.
+export type MyDealEarning = {
+  active_deal_id: string
+  deal_title: string | null
+  accepted_at: string
+  split_pct: number
+  share_amount: number
+}
+
 export type UserRole = 'founder' | 'admin' | 'associate' | 'franchise_partner' | 'super_admin'
 
 export type UserRow = {

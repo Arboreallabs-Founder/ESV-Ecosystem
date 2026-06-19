@@ -231,6 +231,19 @@ Clicking the entry shows all Q&A responses + which user's link was used
 - [x] Answers shown in the entry detail card (admins can edit later) and in the active deal detail card (read-only; partners included)
 - [x] Verified via RLS simulation (admin write, partner read of in-org deal answers)
 
+### Partner earnings & deal shares
+- [x] `active_deal_partner_shares` table (per deal+partner: `base_type` total/referred, nullable
+  `split_pct` override; org-scoped RLS, partner reads only own rows) + `get_partner_earnings()`
+  SECURITY DEFINER aggregator (single source of truth; mirrors the deal-detail "Total Earnings" math)
+- [x] Partners tab → per-partner page (`/admin/partners/[partnerId]`): all deals the partner is tied to
+  (sourced via their link OR a referred investor investing), with org total earning, referred earning,
+  base selector, editable split % (blank = Standard Fee Split), and computed share + summary totals
+- [x] Partner **My Earnings** page (`/earnings`) + nav item: only their own final share per deal + total;
+  no org totals / other investors (computed server-side, bypasses per-investor RLS)
+- [x] Removed Transaction Fee Split; renamed Success Fee Split → **Standard Fee Split** in Partners tab
+- [x] Verified: RLS simulation (partner self ✓, cross-partner Forbidden ✓, internal ✓) + math parity
+  vs deal detail
+
 ### Fixes & docs
 - [x] Re-accepting an entry no longer prompts for a category — entries carry `has_active_deal` (via an `active_deals` embed) and the accept branch short-circuits to a plain move when a deal already exists
 - [x] Re-accepting an entry no longer creates a duplicate active deal — `acceptDeal` reuses the existing deal (preserving investors/fees/categories) + a `UNIQUE(pipeline_entry_id)` index enforces it at the DB level

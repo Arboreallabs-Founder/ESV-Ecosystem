@@ -1,0 +1,82 @@
+.page { }
+
+.header {
+  margin-bottom: 1.75rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1.5rem;
+}
+
+.pageTitle {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--color-text);
+  line-height: 1.2;
+}
+
+.pageSub {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  margin-top: 0.375rem;
+}
+
+.totalCard {
+  display: inline-flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.totalLabel {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.totalValue {
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-top: 0.35rem;
+}
+
+.tableWrap {
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+.table th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: var(--color-surface);
+  border-bottom: 1.5px solid var(--color-border);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-muted);
+}
+.table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.table tr:last-child td { border-bottom: none; }
+.dealName { font-weight: 600; color: var(--color-text); }
+.amount { font-weight: 700; color: var(--color-primary); }
+.muted { color: var(--color-muted); }
+
+.empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  color: var(--color-muted);
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-md);
+}
