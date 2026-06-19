@@ -188,6 +188,7 @@ export default function PipelineBoardClient({
 
   function commitMoveEntry(entryId: string, newStageId: string | null) {
     setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, stage_id: newStageId } : e))
+    if (selectedEntry?.id === entryId) setSelectedEntry((prev) => prev ? { ...prev, stage_id: newStageId } : null)
     startTransition(async () => { await moveEntry(entryId, newStageId) })
   }
 
@@ -207,6 +208,12 @@ export default function PipelineBoardClient({
       return
     }
     if (newStageId && acceptedStageIds.has(newStageId)) {
+      // Re-accepting an entry whose deal still lingers: just move it back, no category prompt.
+      const entry = entries.find((e) => e.id === entryId)
+      if (entry?.has_active_deal) {
+        commitMoveEntry(entryId, newStageId)
+        return
+      }
       setAcceptancePending({ entryId, stageId: newStageId })
       setSelectedCategoryIds([])
       setAcceptFieldValues({})
@@ -305,8 +312,8 @@ export default function PipelineBoardClient({
     }))
 
     // Optimistic update
-    setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, stage_id: stageId } : e))
-    if (selectedEntry?.id === entryId) setSelectedEntry((prev) => prev ? { ...prev, stage_id: stageId } : null)
+    setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, stage_id: stageId, has_active_deal: true } : e))
+    if (selectedEntry?.id === entryId) setSelectedEntry((prev) => prev ? { ...prev, stage_id: stageId, has_active_deal: true } : null)
 
     startAcceptTransition(async () => { await acceptDeal(entryId, stageId, selections) })
     setAcceptancePending(null)

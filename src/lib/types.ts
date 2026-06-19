@@ -258,6 +258,7 @@ export type PipelineEntry = {
   link_creator?: { name: string } | null
   form_link_label?: string | null
   assignees?: Array<{ user_id: string; name: string }>
+  has_active_deal?: boolean
 }
 
 // ── Active Deals ──────────────────────────────────────────────────────────────
