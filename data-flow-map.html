@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ESV Ecosystem — Data Flow Map</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --purple: #745FFD;
+    --purple-light: #CEAAFD;
+    --crema: #F7ECE2;
+    --navy: #1A1A2E;
+    --raised: #22223A;
+    --fair: #F4F4F4;
+    --text: #2C2C3A;
+    --muted: #A39B95;
+    --sand: #D3C1A9;
+    --bronze: #D5AE8F;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--crema);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, #2a2a4a 100%);
+    color: #F0EDE8;
+    padding: 2rem 2.5rem 1.75rem;
+    border-bottom: 4px solid var(--purple);
+  }
+  header h1 { margin: 0 0 .35rem; font-size: 1.7rem; letter-spacing: -.02em; }
+  header p { margin: 0; color: var(--purple-light); font-size: .95rem; }
+  .wrap { max-width: 1500px; margin: 0 auto; padding: 1.75rem 2rem 4rem; }
+
+  .legend {
+    display: flex; flex-wrap: wrap; gap: .6rem 1.25rem;
+    background: var(--fair); border: 1px solid var(--sand);
+    border-radius: 14px; padding: 1rem 1.25rem; margin-bottom: 1.5rem;
+  }
+  .legend .item { display: flex; align-items: center; gap: .5rem; font-size: .82rem; }
+  .swatch { width: 16px; height: 16px; border-radius: 4px; border: 1px solid rgba(0,0,0,.15); }
+
+  .panel {
+    background: #fff; border: 1px solid var(--sand);
+    border-radius: 16px; padding: 1.25rem 1rem; margin-bottom: 1.75rem;
+    box-shadow: 0 4px 18px rgba(26,26,46,.06);
+    overflow-x: auto;
+  }
+  .panel h2 {
+    margin: .25rem .5rem 1rem; font-size: 1.05rem; color: var(--navy);
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .panel h2 .tag {
+    font-size: .68rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+    background: var(--purple-light); color: #3d2f73; padding: .2rem .55rem; border-radius: 20px;
+  }
+  .mermaid { display: flex; justify-content: center; }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+  .card {
+    background: var(--fair); border: 1px solid var(--sand); border-left: 4px solid var(--purple);
+    border-radius: 12px; padding: 1rem 1.1rem;
+  }
+  .card h3 { margin: 0 0 .5rem; font-size: .92rem; color: var(--navy); }
+  .card.bronze { border-left-color: var(--bronze); }
+  .card.warn { border-left-color: #d9534f; }
+  .card ul { margin: .25rem 0 0; padding-left: 1.1rem; }
+  .card li { font-size: .82rem; margin-bottom: .3rem; color: #444; }
+  code {
+    background: rgba(116,95,253,.12); color: #4a3aa8; padding: .08rem .35rem;
+    border-radius: 5px; font-size: .8em; font-family: "SF Mono", Consolas, monospace;
+  }
+  footer { text-align: center; color: var(--muted); font-size: .78rem; padding: 1rem 0 2rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ESV Ecosystem — Application Data Flow Map</h1>
+  <p>How data moves from actors → routes → server logic → Supabase → Postgres. Generated from source.</p>
+</header>
+
+<div class="wrap">
+  <div class="legend">
+    <div class="item"><span class="swatch" style="background:#CEAAFD"></span> Actor / Persona</div>
+    <div class="item"><span class="swatch" style="background:#745FFD"></span> Auth &amp; Middleware</div>
+    <div class="item"><span class="swatch" style="background:#9ad0c2"></span> Next.js Route / Page</div>
+    <div class="item"><span class="swatch" style="background:#f6c177"></span> Server Action (write)</div>
+    <div class="item"><span class="swatch" style="background:#e9f0a0"></span> lib/* Reader</div>
+    <div class="item"><span class="swatch" style="background:#D5AE8F"></span> Supabase Client / RPC</div>
+    <div class="item"><span class="swatch" style="background:#b8b3e8"></span> Postgres Table</div>
+  </div>
+
+  <!-- ============ MAIN FLOW ============ -->
+  <div class="panel">
+    <h2>End-to-End Request &amp; Data Flow <span class="tag">primary</span></h2>
+    <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{
+  'fontFamily':'Segoe UI, sans-serif','fontSize':'13px',
+  'primaryColor':'#F4F4F4','primaryTextColor':'#2C2C3A','primaryBorderColor':'#D3C1A9',
+  'lineColor':'#745FFD','clusterBkg':'#ffffff','clusterBorder':'#D3C1A9'
+}}}%%
+flowchart LR
+
+  %% ---- Actors ----
+  subgraph ACTORS["👥 Actors"]
+    direction TB
+    VIS["Public Visitor<br/>(unauthenticated)"]:::actor
+    INT["Internal<br/>Founder · Admin · Associate"]:::actor
+    PRT["Franchise Partner"]:::actor
+    SA["Super Admin"]:::actor
+  end
+
+  %% ---- Auth / Middleware ----
+  subgraph AUTH["🔐 Auth & Middleware"]
+    direction TB
+    OAUTH["Google OAuth<br/>/auth/callback"]:::auth
+    PROXY["proxy.ts<br/>session check + role redirect"]:::auth
+    GUARD["guards.ts<br/>requireRole / requireAuth / requireSuperAdmin"]:::auth
+  end
+
+  %% ---- Routes ----
+  subgraph ROUTES["🖥️ Next.js Routes (App Router)"]
+    direction TB
+    RPUB["/f/[token]<br/>public form renderer"]:::route
+    RAPP["(app) dashboard · pipelines · active-deals<br/>investors · tasks · forms · escalations · portal"]:::route
+    RSA["(super-admin)/orgs"]:::route
+  end
+
+  %% ---- Server logic ----
+  subgraph LOGIC["⚙️ Server Logic"]
+    direction TB
+    ACT["Server Actions /app/actions/*<br/>pipelines · active-deals · forms · investors<br/>tasks · escalations · partners · admin · super-admin"]:::action
+    LIB["lib/* readers<br/>pipelines · active-deals · investors<br/>tasks · forms · escalations · user · partners"]:::lib
+  end
+
+  %% ---- Supabase access ----
+  subgraph DAL["🗄️ Supabase Data Access"]
+    direction TB
+    SSR["SSR anon client<br/>createClient() → RLS enforced"]:::dal
+    ADMIN["Service-role client<br/>createAdminClient() → bypasses RLS"]:::dal
+    RPC["SECURITY DEFINER RPCs<br/>get_form_for_submission · submit_form_entry<br/>get_partner_earnings · get_user_role"]:::dal
+  end
+
+  %% ---- Database clusters ----
+  subgraph DB["🐘 Postgres (Supabase)"]
+    direction TB
+    TORG["organizations · users · approved_emails<br/>franchise_partners"]:::db
+    TFORM["forms · form_nodes · form_node_options<br/>form_edges · form_links"]:::db
+    TPIPE["pipelines · pipeline_stages · pipeline_entries<br/>pipeline_entry_answers/_assignees<br/>_stage_history · stage_questions · stage_answers"]:::db
+    TDEAL["active_deals · deal_categories · category_fields<br/>active_deal_categories · _field_values<br/>_investors · _investor_fees · _partner_shares"]:::db
+    TINV["investors · investor_contacts · investor_poc_users"]:::db
+    TMISC["tasks · escalations · memos"]:::db
+  end
+
+  %% ---- Actor edges ----
+  VIS --> RPUB
+  INT --> PROXY
+  PRT --> PROXY
+  SA --> PROXY
+  INT -.login.-> OAUTH
+  PRT -.login.-> OAUTH
+  SA -.login.-> OAUTH
+
+  OAUTH --> RAPP
+  PROXY --> RAPP
+  PROXY --> RSA
+
+  %% ---- Routes -> logic ----
+  RPUB -->|read schema| RPC
+  RPUB -->|submit| ACT
+  RAPP -->|mutations| ACT
+  RAPP -->|page loads| LIB
+  RSA --> ACT
+  ACT --> GUARD
+  LIB --> GUARD
+
+  %% ---- logic -> DAL ----
+  ACT --> SSR
+  ACT -->|partner earnings| RPC
+  LIB --> SSR
+  ACT -.public submit.-> ADMIN
+  GUARD --> SSR
+
+  %% ---- DAL -> DB ----
+  SSR --> TORG
+  SSR --> TPIPE
+  SSR --> TDEAL
+  SSR --> TINV
+  SSR --> TMISC
+  SSR --> TFORM
+  RPC --> TFORM
+  RPC --> TPIPE
+  RPC --> TDEAL
+  ADMIN --> TPIPE
+  ADMIN --> TFORM
+
+  classDef actor fill:#CEAAFD,stroke:#745FFD,color:#3d2f73,stroke-width:1.5px;
+  classDef auth fill:#745FFD,stroke:#4a3aa8,color:#fff,stroke-width:1.5px;
+  classDef route fill:#9ad0c2,stroke:#5fa593,color:#1a3d34;
+  classDef action fill:#f6c177,stroke:#c98a1f,color:#5c3a00;
+  classDef lib fill:#e9f0a0,stroke:#b5bf5a,color:#4a4d1a;
+  classDef dal fill:#D5AE8F,stroke:#a87c54,color:#4a2f17;
+  classDef db fill:#b8b3e8,stroke:#745FFD,color:#2a2356;
+    </pre>
+  </div>
+
+  <!-- ============ FORM PIPELINE ============ -->
+  <div class="panel">
+    <h2>Intake → Pipeline → Active Deal lifecycle <span class="tag">domain</span></h2>
+    <pre class="mermaid">
+%%{init: {'theme':'base','themeVariables':{
+  'fontFamily':'Segoe UI, sans-serif','fontSize':'13px',
+  'primaryColor':'#F4F4F4','primaryTextColor':'#2C2C3A','primaryBorderColor':'#D3C1A9','lineColor':'#745FFD'
+}}}%%
+flowchart LR
+  A["Admin builds form<br/>(builder canvas)"]:::action --> B["form_nodes / edges / options"]:::db
+  A --> C["generate link → form_links"]:::db
+  C --> D["Public visitor opens /f/[token]"]:::route
+  D --> E["get_form_for_submission (RPC)"]:::dal
+  D --> F["submit_form_entry (RPC)"]:::dal
+  F --> G["pipeline_entries + entry_answers"]:::db
+  G --> H["Kanban board /pipelines/[id]"]:::route
+  H --> I["moveEntry → stage_history<br/>stage questions/answers"]:::action
+  H --> J["acceptDeal()"]:::action
+  J --> K["active_deals + categories<br/>+ field_values"]:::db
+  K --> L["Active Deals /active-deals"]:::route
+  L --> M["add investors → active_deal_investors<br/>+ investor_fees + partner_shares"]:::action
+  M --> N["get_partner_earnings (RPC)<br/>→ Partner Portal earnings"]:::dal
+
+  classDef action fill:#f6c177,stroke:#c98a1f,color:#5c3a00;
+  classDef route fill:#9ad0c2,stroke:#5fa593,color:#1a3d34;
+  classDef dal fill:#D5AE8F,stroke:#a87c54,color:#4a2f17;
+  classDef db fill:#b8b3e8,stroke:#745FFD,color:#2a2356;
+    </pre>
+  </div>
+
+  <!-- ============ NOTES ============ -->
+  <div class="notes">
+    <div class="card">
+      <h3>🔐 Three access paths to Postgres</h3>
+      <ul>
+        <li><strong>SSR anon client</strong> (<code>createClient</code>) — every authenticated read/write; <strong>RLS enforced</strong> via <code>get_user_role()</code>.</li>
+        <li><strong>Service-role client</strong> (<code>createAdminClient</code>) — server-only, <strong>bypasses RLS</strong>; used for unauthenticated public form submission.</li>
+        <li><strong>SECURITY DEFINER RPCs</strong> — validate server-side then bypass RLS for anon-safe operations.</li>
+      </ul>
+    </div>
+    <div class="card warn">
+      <h3>🛡️ Guard pattern</h3>
+      <ul>
+        <li>Every mutating action calls <code>requireAdmin()</code> / <code>requireInternal()</code> / <code>requireSuperAdmin()</code> at the top.</li>
+        <li>Guards read JWT claims (<code>getClaims</code>) then look up <code>users.role</code> + <code>org_id</code>.</li>
+        <li><code>proxy.ts</code> does a cheap <code>getSession()</code> check and role-based redirect; pages re-validate.</li>
+      </ul>
+    </div>
+    <div class="card bronze">
+      <h3>🏢 Multi-tenancy</h3>
+      <ul>
+        <li><code>organizations</code> scopes all data; rows carry <code>org_id</code>.</li>
+        <li><strong>Super Admin</strong> manages orgs &amp; seeds users via <code>approved_emails</code>.</li>
+        <li>Login routing: super_admin→orgs, partner→portal, associate→pipelines, else→dashboard.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>✍️ Write vs Read separation</h3>
+      <ul>
+        <li>All writes funnel through <code>/src/app/actions/*</code> (server actions only).</li>
+        <li>Page loads read through <code>/src/lib/*</code> fetchers.</li>
+        <li>No <code>revalidatePath</code> — clients call <code>router.refresh()</code> after mutations.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>💰 Partner earnings</h3>
+      <ul>
+        <li>Deals link partners via referred investors on <code>active_deal_investors</code>.</li>
+        <li>Fee splits stored in <code>active_deal_investor_fees</code> + <code>active_deal_partner_shares</code>.</li>
+        <li>Aggregated by <code>get_partner_earnings(p_partner_id)</code> RPC for portal &amp; admin views.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>📋 Stage gating</h3>
+      <ul>
+        <li><code>pipeline_stage_questions</code> define per-stage required answers.</li>
+        <li>Moving an entry records <code>pipeline_entry_stage_history</code> + <code>_stage_answers</code>.</li>
+        <li>Rejections store <code>rejection_reason</code> on the entry.</li>
+      </ul>
+    </div>
+  </div>
+
+  <footer>ESV Ecosystem · Next.js 16 + Supabase · diagram derived from <code>src/app/actions</code>, <code>src/lib</code>, <code>proxy.ts</code> &amp; live schema (31 tables)</footer>
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, securityLevel: 'loose', flowchart: { curve: 'basis', useMaxWidth: true } });
+</script>
+</body>
+</html>
