@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Arapey } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from './_components/ThemeProvider'
@@ -24,6 +24,13 @@ const arapey = Arapey({
 export const metadata: Metadata = {
   title: "Ecosystem — Earlyseed Ventures",
   description: "Unified deal pipeline and CRM platform for Earlyseed Ventures.",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Allow zoom for accessibility; don't lock scale.
+  maximumScale: 5,
 };
 
 export default function RootLayout({

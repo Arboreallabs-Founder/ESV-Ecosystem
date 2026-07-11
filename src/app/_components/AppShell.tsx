@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -41,6 +41,12 @@ const NAV_ITEMS: NavEntry[] = [
     label: 'Dashboard',
     roles: ['founder', 'admin'],
     icon: <Icon d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />,
+  },
+  {
+    href: '/deal-desk',
+    label: 'Deal Desk',
+    roles: ['founder', 'admin', 'associate'],
+    icon: <Icon d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.068.157 2.148.279 3.238.364.466.037.893.281 1.153.671L12 21l2.652-3.978c.26-.39.687-.634 1.153-.67 1.09-.086 2.17-.208 3.238-.365 1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />,
   },
   {
     href: '/pipelines',
@@ -171,7 +177,11 @@ export default function AppShell({
 
   const [flyoutTop, setFlyoutTop] = useState<number | null>(null)
   const [openGroup, setOpenGroup] = useState<string | null>(null)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Close the mobile drawer whenever the route changes.
+  useEffect(() => { setMobileOpen(false) }, [pathname])
 
   function cancelHide() {
     if (hideTimer.current) {
@@ -233,7 +243,8 @@ export default function AppShell({
 
   return (
     <div className={styles.shell}>
-      <aside className={styles.sidebar}>
+      {mobileOpen && <div className={styles.backdrop} onClick={() => setMobileOpen(false)} />}
+      <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ''}`}>
         {/* Demo mode banner */}
         {demoMode && (
           <div className={styles.demoBanner}>
@@ -270,7 +281,12 @@ export default function AppShell({
                 .sort((a, b) => b.length - a.length)[0] ?? null
               return (
                 <div key={entry.label} className={styles.navGroupWrapper} onMouseEnter={(e) => handleGroupEnter(e, entry.label)} onMouseLeave={handleGroupLeave}>
-                  <div className={`${styles.navGroupBtn} ${isGroupActive ? styles.navGroupBtnActive : ''}`}>
+                  <button
+                    type="button"
+                    className={`${styles.navGroupBtn} ${isGroupActive ? styles.navGroupBtnActive : ''}`}
+                    onClick={() => setOpenGroup((prev) => (prev === entry.label ? null : entry.label))}
+                    aria-expanded={openGroup === entry.label}
+                  >
                     <span className={styles.navIcon}>{entry.icon}</span>
                     {entry.label}
                     <svg
@@ -279,6 +295,23 @@ export default function AppShell({
                     >
                       <path d="m9 18 6-6-6-6" />
                     </svg>
+                  </button>
+                  {/* Mobile: inline accordion (hover flyout doesn't work on touch) */}
+                  <div className={styles.navAccordion} data-open={openGroup === entry.label}>
+                    {visibleChildren.map((child) => {
+                      const isActive = child.href === activeChildHref
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className={`${styles.navSubItem} ${isActive ? styles.navSubItemActive : ''}`}
+                          onClick={() => setMobileOpen(false)}
+                        >
+                          <span className={styles.navIcon}>{child.icon}</span>
+                          {child.label}
+                        </Link>
+                      )
+                    })}
                   </div>
                   {flyoutTop !== null && openGroup === entry.label && (
                     <div
@@ -314,6 +347,7 @@ export default function AppShell({
                 key={entry.href}
                 href={entry.href}
                 className={`${styles.navItem} ${isActive ? styles.navItemActive : ''}`}
+                onClick={() => setMobileOpen(false)}
               >
                 <span className={styles.navIcon}>{entry.icon}</span>
                 {entry.label}
@@ -383,9 +417,34 @@ export default function AppShell({
         </div>
       </aside>
 
-      <main className={fullWidth ? styles.mainFull : styles.main}>
-        {children}
-      </main>
+      <div className={styles.contentCol}>
+        {/* Mobile top bar — hidden on desktop via CSS */}
+        <header className={styles.topbar}>
+          <button className={styles.hamburger} onClick={() => setMobileOpen(true)} aria-label="Open menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <path d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <div className={styles.topbarBrand}>
+            <div className={styles.logoMark}>
+              <svg width="14" height="14" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <path d="M7.5 1L13 4.25V11.25L7.5 14.5L2 11.25V4.25L7.5 1Z" fill="white" opacity="0.95" />
+              </svg>
+            </div>
+            <span className={styles.logoText}>Ecosystem</span>
+          </div>
+          <button
+            className={styles.topbarTheme}
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? '☀' : '🌙'}
+          </button>
+        </header>
+        <main className={fullWidth ? styles.mainFull : styles.main}>
+          {children}
+        </main>
+      </div>
     </div>
   )
 }

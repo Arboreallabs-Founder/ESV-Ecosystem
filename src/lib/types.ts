@@ -350,3 +350,115 @@ export type ActiveDealInvestor = {
   fees: ActiveDealInvestorFee[]
   created_at: string
 }
+
+// ── Deal Desk ─────────────────────────────────────────────────────────────────
+
+export const DESK_STAGES = ['MVP', 'Pre-Seed', 'Seed', 'Pre-Series A', 'Series A', 'Series A+'] as const
+export type DeskStage = typeof DESK_STAGES[number]
+
+export const DESK_VALUATION_TYPES = ['Fixed', 'TBD'] as const
+export type DeskValuationType = typeof DESK_VALUATION_TYPES[number]
+
+export const DESK_REVENUE_STATUSES = ['Yes', 'Negligible', 'No'] as const
+export type DeskRevenueStatus = typeof DESK_REVENUE_STATUSES[number]
+
+export const DESK_REVENUE_PERIODS = ['Monthly', 'Annual'] as const
+export type DeskRevenuePeriod = typeof DESK_REVENUE_PERIODS[number]
+
+export type DeskDealStatus = 'open' | 'rejected' | 'discuss' | 'more_info'
+
+export const DESK_DEAL_STATUS_LABELS: Record<DeskDealStatus, string> = {
+  open: 'Open',
+  rejected: 'Rejected',
+  discuss: 'Discuss in person',
+  more_info: 'More info requested',
+}
+
+export type DeskActionType = 'reject' | 'discuss_in_person' | 'need_more_info'
+
+export const DESK_ACTION_LABELS: Record<DeskActionType, string> = {
+  reject: 'Reject',
+  discuss_in_person: 'Discuss in person',
+  need_more_info: 'Need more info',
+}
+
+// Which deal_status an action moves the card into.
+export const DESK_ACTION_TO_STATUS: Record<DeskActionType, DeskDealStatus> = {
+  reject: 'rejected',
+  discuss_in_person: 'discuss',
+  need_more_info: 'more_info',
+}
+
+export type DeskFounder = {
+  name: string
+  affiliation: string | null
+  bio: string | null
+  linkedin_url: string | null
+}
+
+export type DeskRevenuePoint = {
+  period: string   // e.g. "2026-01"
+  amount: number
+}
+
+export type DeskDealMedia = {
+  id: string
+  deal_id: string
+  url: string          // storage object path
+  signed_url?: string  // resolved for display by the read helper
+  sort_order: number
+  created_at: string
+}
+
+export type DeskDealAction = {
+  id: string
+  deal_id: string
+  action_type: DeskActionType
+  comment_text: string | null
+  voice_note_url: string | null       // storage object path
+  voice_note_signed_url?: string      // resolved for display
+  created_by: string
+  created_by_user?: { name: string } | null
+  created_at: string
+}
+
+export type DeskDeal = {
+  id: string
+  org_id: string
+  associate_id: string
+  associate?: { name: string } | null
+  company_name: string
+  sector: string | null
+  about: string | null
+  location: string | null
+  stage: DeskStage | null
+  ask_inr: number | null
+  valuation_type: DeskValuationType | null
+  valuation_inr: number | null
+  dilution_percent: number | null
+  cap_table_notable_names: string[]
+  cap_table_structure_notes: string | null
+  revenue_status: DeskRevenueStatus | null
+  revenue_period: DeskRevenuePeriod | null
+  revenue_data: DeskRevenuePoint[]
+  usp: string | null
+  founders: DeskFounder[]
+  pitch_deck_url: string | null
+  notes: string | null
+  call_date: string | null
+  seen_status: boolean
+  starred: boolean
+  deal_status: DeskDealStatus
+  created_at: string
+  updated_at: string
+  media: DeskDealMedia[]
+  actions: DeskDealAction[]
+}
+
+export type DeskAssociateSummary = {
+  id: string
+  name: string
+  unseen_count: number
+  seen_count: number
+  starred_count: number
+}
