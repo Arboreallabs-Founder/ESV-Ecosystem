@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react'
 import { importDealsCsv, type ImportResult } from '@/app/actions/deal-desk'
 import { parseDeskCsv, AI_AGENT_INSTRUCTIONS, CSV_TEMPLATE } from '@/lib/deal-desk-csv'
+import Spinner from '@/app/_components/Spinner'
 import styles from './deal-desk.module.css'
 
 export default function CsvImportModal({ onClose, onImported }: { onClose: () => void; onImported: () => void }) {
@@ -118,7 +119,9 @@ export default function CsvImportModal({ onClose, onImported }: { onClose: () =>
             <>
               <button className={styles.ghostBtn} onClick={onClose} disabled={pending}>Cancel</button>
               <button className={styles.primaryBtn} onClick={doImport} disabled={pending || !preview || preview.ok === 0}>
-                {pending ? 'Importing…' : `Import ${preview?.ok ?? 0} deal${preview?.ok === 1 ? '' : 's'}`}
+                {pending
+                  ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><Spinner size={14} className="spinnerOnPrimary" /> Importing…</span>
+                  : `Import ${preview?.ok ?? 0} deal${preview?.ok === 1 ? '' : 's'}`}
               </button>
             </>
           )}

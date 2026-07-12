@@ -13,6 +13,7 @@ import RevenueBarChart from './RevenueBarChart'
 import VoiceRecorder from './VoiceRecorder'
 import DealEditModal from './DealEditModal'
 import NotesList from './NotesList'
+import Spinner from '@/app/_components/Spinner'
 import styles from './deal-desk.module.css'
 
 const BUCKET = 'deal-desk'
@@ -289,7 +290,9 @@ export default function DealDetailOverlay({
                 </div>
                 <VoiceRecorder onRecorded={setVoiceBlob} onCleared={() => setVoiceBlob(null)} />
                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
-                  <button className={styles.primaryBtn} onClick={submitMoreInfo} disabled={pending}>Send request</button>
+                  <button className={styles.primaryBtn} onClick={submitMoreInfo} disabled={pending}>
+                    {pending ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><Spinner size={14} className="spinnerOnPrimary" /> Sending…</span> : 'Send request'}
+                  </button>
                   <button className={styles.ghostBtn} onClick={() => { setMoreInfoOpen(false); setComment(''); setVoiceBlob(null) }} disabled={pending}>Cancel</button>
                 </div>
               </div>

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { getActiveDealsData } from '@/app/actions/active-deals'
 import ActiveDealsList from './ActiveDealsList'
+import Spinner from '@/app/_components/Spinner'
 import type { ActiveDeal, DealCategory } from '@/lib/types'
 
 export default function ActiveDealsOverlay({ onClose }: { onClose: () => void }) {
@@ -48,7 +49,7 @@ export default function ActiveDealsOverlay({ onClose }: { onClose: () => void })
       </div>
       <div style={{ flex: 1, overflow: 'auto' }}>
         {loading ? (
-          <div style={{ padding: '4rem 2rem', textAlign: 'center', color: 'var(--color-muted)', fontSize: '0.9375rem' }}>Loading…</div>
+          <Spinner size={28} label="Loading deals…" center />
         ) : (
           <div style={{ padding: '2rem' }}>
             <ActiveDealsList deals={deals} categories={categories} userRole={userRole} />

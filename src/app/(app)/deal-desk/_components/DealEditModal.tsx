@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { updateDeskDeal, withdrawDeskDeal, type DeskDealPatch } from '@/app/actions/deal-desk'
 import { DESK_STAGES, DESK_VALUATION_TYPES, DESK_REVENUE_STATUSES, DESK_INSTRUMENTS, DESK_ROUND_STATUSES } from '@/lib/types'
 import type { DeskDeal } from '@/lib/types'
+import Spinner from '@/app/_components/Spinner'
 import styles from './deal-desk.module.css'
 
 // Lightweight author edit for the most-changed fields + withdraw. Full structured data
@@ -213,7 +214,9 @@ export default function DealEditModal({ deal, onClose, onSaved }: { deal: DeskDe
           <button className={styles.ghostBtn} onClick={withdraw} disabled={pending} style={{ color: 'var(--color-destructive)' }}>Withdraw</button>
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <button className={styles.ghostBtn} onClick={onClose} disabled={pending}>Cancel</button>
-            <button className={styles.primaryBtn} onClick={save} disabled={pending}>{pending ? 'Saving…' : 'Save'}</button>
+            <button className={styles.primaryBtn} onClick={save} disabled={pending}>
+              {pending ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><Spinner size={14} className="spinnerOnPrimary" /> Saving…</span> : 'Save'}
+            </button>
           </div>
         </div>
       </div>
