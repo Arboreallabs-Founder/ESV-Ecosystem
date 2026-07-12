@@ -9,6 +9,7 @@ import {
 } from '@/app/actions/escalations'
 import type { Escalation, EscalationLinkedType, EscalationStatus } from '@/lib/types'
 import Combobox from '@/app/_components/Combobox'
+import FilterTabs from '@/app/_components/FilterTabs'
 import styles from '../escalations.module.css'
 
 type Option = { id: string; label: string }
@@ -145,17 +146,11 @@ export default function EscalationsList({
         )}
       </div>
 
-      <div className={styles.tabs}>
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            className={`${styles.tab} ${filter === f ? styles.tabActive : ''}`}
-            onClick={() => setFilter(f)}
-          >
-            {f} <span className={styles.tabCount}>{counts[f]}</span>
-          </button>
-        ))}
-      </div>
+      <FilterTabs
+        tabs={FILTERS.map((f) => ({ value: f, label: f, count: counts[f] }))}
+        value={filter}
+        onChange={(v) => setFilter(v as Filter)}
+      />
 
       {filtered.length === 0 ? (
         <div className={styles.empty}>

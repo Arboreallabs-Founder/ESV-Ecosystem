@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { ActiveDeal, DealCategory } from '@/lib/types'
 import ActiveDealDetail from './ActiveDealDetail'
+import FilterTabs from '@/app/_components/FilterTabs'
 import styles from '../active-deals.module.css'
 
 const FIELD_UNIT: Record<string, string> = { percentage: '%', numeric: '', text: '', url: '' }
@@ -49,31 +50,22 @@ export default function ActiveDealsList({ deals, categories, userRole }: { deals
 
       {/* Category filter tabs */}
       {(categorised.length > 0 || uncategorised.length > 0) && (
-        <div className={styles.tabs}>
-          <button className={`${styles.tab} ${activeFilter === 'all' ? styles.tabActive : ''}`} onClick={() => setActiveFilter('all')}>
-            All <span className={styles.tabCount}>{deals.length}</span>
-          </button>
-          {categorised.map((cat) => {
-            const count = deals.filter((d) => d.categories.some((c) => c.category.id === cat.id)).length
-            return (
-              <button
-                key={cat.id}
-                className={`${styles.tab} ${activeFilter === cat.id ? styles.tabActive : ''}`}
-                style={activeFilter === cat.id ? { borderBottomColor: cat.color, color: cat.color } : undefined}
-                onClick={() => setActiveFilter(cat.id)}
-              >
-                <span className={styles.tabDot} style={{ background: cat.color }} />
-                {cat.name}
-                <span className={styles.tabCount}>{count}</span>
-              </button>
-            )
-          })}
-          {uncategorised.length > 0 && (
-            <button className={`${styles.tab} ${activeFilter === 'uncategorised' ? styles.tabActive : ''}`} onClick={() => setActiveFilter('uncategorised')}>
-              Uncategorised <span className={styles.tabCount}>{uncategorised.length}</span>
-            </button>
-          )}
-        </div>
+        <FilterTabs
+          tabs={[
+            { value: 'all', label: 'All', count: deals.length },
+            ...categorised.map((cat) => ({
+              value: cat.id,
+              label: cat.name,
+              dot: cat.color,
+              count: deals.filter((d) => d.categories.some((c) => c.category.id === cat.id)).length,
+            })),
+            ...(uncategorised.length > 0
+              ? [{ value: 'uncategorised', label: 'Uncategorised', count: uncategorised.length }]
+              : []),
+          ]}
+          value={activeFilter}
+          onChange={setActiveFilter}
+        />
       )}
 
       {filtered.length === 0 ? (

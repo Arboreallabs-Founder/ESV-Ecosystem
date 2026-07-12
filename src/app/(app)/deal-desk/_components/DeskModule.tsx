@@ -9,6 +9,7 @@ import DealStack from './DealStack'
 import DesktopDealTable from './DesktopDealTable'
 import DealDetailOverlay from './DealDetailOverlay'
 import CsvImportModal from './CsvImportModal'
+import FilterTabs from '@/app/_components/FilterTabs'
 import styles from './deal-desk.module.css'
 
 type View = 'cards' | 'grid' | 'stack' | 'table'
@@ -96,14 +97,14 @@ export default function DeskModule({
       </div>
 
       {isCardView && (
-        <div className={styles.tabs}>
-          <button className={`${styles.tab} ${tab === 'unseen' ? styles.tabActive : ''}`} onClick={() => setTab('unseen')}>
-            Unseen <span className={styles.tabCount}>{unseen.length}</span>
-          </button>
-          <button className={`${styles.tab} ${tab === 'seen' ? styles.tabActive : ''}`} onClick={() => setTab('seen')}>
-            Seen <span className={styles.tabCount}>{seen.length}</span>
-          </button>
-        </div>
+        <FilterTabs
+          tabs={[
+            { value: 'unseen', label: 'Unseen', count: unseen.length },
+            { value: 'seen', label: 'Seen', count: seen.length },
+          ]}
+          value={tab}
+          onChange={(v) => setTab(v as Tab)}
+        />
       )}
 
       {feedDeals.length === 0 ? (

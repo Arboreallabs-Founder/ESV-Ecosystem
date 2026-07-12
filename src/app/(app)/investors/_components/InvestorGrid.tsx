@@ -6,6 +6,7 @@ import type { Investor, ServiceType } from '@/lib/types'
 import InvestorCard from './InvestorCard'
 import InvestorDetail from './InvestorDetail'
 import InvestorFormModal from './InvestorFormModal'
+import FilterTabs from '@/app/_components/FilterTabs'
 import styles from '../investors.module.css'
 
 type Props = {
@@ -68,18 +69,15 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
       </div>
 
       {/* Tabs */}
-      <div className={styles.tabs}>
-        {ALL_TABS.map((tab) => (
-          <button
-            key={tab}
-            className={`${styles.tab} ${activeTab === tab ? styles.tabActive : ''}`}
-            onClick={() => setActiveTab(tab)}
-          >
-            {tab === 'all' ? 'All' : SERVICE_TYPE_LABELS[tab as ServiceType]}
-            <span className={styles.tabCount}>{countFor(tab)}</span>
-          </button>
-        ))}
-      </div>
+      <FilterTabs
+        tabs={ALL_TABS.map((tab) => ({
+          value: tab,
+          label: tab === 'all' ? 'All' : SERVICE_TYPE_LABELS[tab as ServiceType],
+          count: countFor(tab),
+        }))}
+        value={activeTab}
+        onChange={(v) => setActiveTab(v as Tab)}
+      />
 
       {/* Search */}
       <div className={styles.searchWrap}>

@@ -1,0 +1,73 @@
+/* Segmented pill filter bar with a purple-gradient active pill. */
+.tabs {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  padding: 5px;
+  max-width: 100%;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  border: none;
+  background: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+.tab:hover {
+  color: var(--color-text);
+  background: rgba(116, 95, 253, 0.06);
+}
+
+/* Active = light purple→bronze gradient pill (theme-stable, colours don't rely on the
+   backdrop) + deep-purple text, so it reads in both light and dark mode. */
+.tabActive,
+.tabActive:hover {
+  color: #241a4d;
+  background: linear-gradient(135deg, #cbb2fb 0%, #a98bf6 58%, #e3cbb0 100%);
+  box-shadow: 0 1px 4px rgba(116, 95, 253, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  background: transparent;
+  color: var(--color-muted);
+  border: 1px solid var(--color-border);
+}
+.tabActive .count {
+  background: rgba(255, 255, 255, 0.55);
+  color: #241a4d;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+@media (max-width: 560px) {
+  .tabs { display: flex; overflow-x: auto; flex-wrap: nowrap; }
+}
