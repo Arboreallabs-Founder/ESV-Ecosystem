@@ -122,6 +122,130 @@
   max-width: 520px;
   margin: 0 auto;
 }
+/* Grid view — cards multiple-per-row */
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+/* Stack view — condensed glass cards that fan out on click */
+.stackShell { max-width: 460px; margin: 0 auto; }
+.stack {
+  position: relative;
+  transition: height 0.6s cubic-bezier(0.075, 0.82, 0.165, 1);
+}
+.stack[role='button'] { cursor: pointer; }
+.stackItem {
+  position: absolute;
+  left: 0;
+  right: 0;
+  transform-origin: top center;
+  will-change: top, transform, opacity;
+  transition:
+    top 0.6s cubic-bezier(0.075, 0.82, 0.165, 1),
+    transform 0.6s cubic-bezier(0.075, 0.82, 0.165, 1),
+    opacity 0.4s ease;
+}
+
+/* Compact glass card with animated ESV aurora gradient border */
+.stackCard {
+  position: relative;
+  height: 132px;
+  border-radius: 20px;
+  padding: 0.9rem 1rem;
+  /* Opaque surface (cards overlap, so it must not bleed the card behind) + a radial
+     white sheen for the glass highlight — the same technique as the AuroraCard reference. */
+  background:
+    radial-gradient(130% 130% at 100% 0%, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0) 52%),
+    var(--color-card-raised);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+.stackCard::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  padding: 2px;
+  background: linear-gradient(110deg,
+    rgba(116, 95, 253, 0.75) 0%,
+    rgba(206, 170, 253, 0.5) 32%,
+    rgba(213, 174, 143, 0.55) 62%,
+    rgba(255, 255, 255, 0.85) 100%);
+  background-size: 200% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  animation: auroraShift 7s linear infinite;
+  pointer-events: none;
+}
+@keyframes auroraShift {
+  0% { background-position: 0% 0; }
+  100% { background-position: 200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .stackCard::before { animation: none; }
+}
+
+.stackCardTop { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.4rem; }
+.stackCompany {
+  font-family: var(--font-serif);
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--color-text);
+  margin: 0 0 0.1rem;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stackAbout {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.stackStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: auto;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+.stackStats strong { color: var(--color-text); font-weight: 700; }
+.stackGrowthUp { color: var(--color-success); font-weight: 700; }
+.stackGrowthDown { color: var(--color-destructive); font-weight: 700; }
+
+.showLess {
+  display: block;
+  margin: 1rem auto 0;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text);
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.showLess:hover { background: var(--color-card-raised); }
+.stackHint {
+  text-align: center;
+  margin-top: 0.85rem;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
 .card {
   position: relative;
   background: var(--color-card-raised);
@@ -238,18 +362,79 @@
   letter-spacing: -0.01em;
 }
 
+/* ── Deal math (computed) + round status ────────────────────────────────── */
+.dealMath {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin: 0.6rem 0 0.2rem;
+}
+.mathItem { font-size: 0.8125rem; color: var(--color-muted); }
+.mathItem strong { color: var(--color-text); font-weight: 700; }
+.mathMultiple {
+  font-size: 0.75rem; font-weight: 700; color: var(--color-primary);
+  background: var(--color-primary-light); border-radius: 999px; padding: 0.1rem 0.5rem;
+}
+.roundPill {
+  margin-left: auto; font-size: 0.6875rem; font-weight: 700; padding: 0.1rem 0.5rem;
+  border-radius: 999px; letter-spacing: 0.02em;
+}
+.round_Open { background: rgba(46,125,50,0.14); color: var(--color-success); }
+.round_Closing { background: rgba(213,174,143,0.22); color: var(--color-accent); }
+.round_Committed { background: var(--color-card); border: 1px solid var(--color-border); color: var(--color-muted); }
+
+/* ── Round funding progress bar ─────────────────────────────────────────── */
+.progressWrap { margin: 0.5rem 0 0.2rem; }
+.progressBar {
+  height: 7px; border-radius: 999px; background: var(--color-card);
+  border: 1px solid var(--color-border); overflow: hidden;
+}
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  border-radius: 999px;
+}
+.progressLabel { font-size: 0.6875rem; color: var(--color-muted); margin-top: 0.3rem; }
+
+/* ── Signal chips (traction / unit economics) ───────────────────────────── */
+.signalChips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.15rem 0 0.85rem; }
+.signalChip {
+  font-size: 0.6875rem; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 6px;
+  background: var(--color-card); border: 1px solid var(--color-border); color: var(--color-text);
+  white-space: nowrap;
+}
+
+/* ── Card meta (freshness) ──────────────────────────────────────────────── */
+.cardMeta { font-size: 0.6875rem; color: var(--color-muted); margin-top: 0.3rem; }
+.cardMetaStale { color: var(--color-warning); font-weight: 600; }
+
 /* ── Revenue mini bar chart ─────────────────────────────────────────────── */
 .chart { margin: 0.5rem 0 0.85rem; }
-.chartLabel { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-muted); margin-bottom: 0.35rem; }
-.bars { display: flex; align-items: flex-end; gap: 4px; height: 46px; }
-.barCol { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; justify-content: flex-end; }
+.chartHeader { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.4rem; }
+.chartLabel { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--color-muted); font-weight: 600; }
+.revenueMuted { font-size: 0.8125rem; color: var(--color-muted); font-style: italic; }
+
+.growthBadge {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+.growthUp { background: rgba(46, 125, 50, 0.14); color: var(--color-success); }
+.growthDown { background: rgba(192, 57, 43, 0.14); color: var(--color-destructive); }
+.growthFlat { background: var(--color-card); color: var(--color-muted); }
+
+.bars { display: flex; align-items: stretch; gap: 5px; height: 84px; }
+.barCol { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.barTrack { flex: 1; width: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px; }
+.barValue { font-size: 0.5625rem; font-weight: 700; color: var(--color-text); white-space: nowrap; line-height: 1; }
 .bar {
   width: 100%;
   background: linear-gradient(180deg, var(--color-primary), var(--color-primary-light));
   border-radius: 3px 3px 0 0;
   min-height: 2px;
 }
-.barTick { font-size: 0.5625rem; color: var(--color-muted); white-space: nowrap; }
+.barTick { font-size: 0.5625rem; color: var(--color-muted); white-space: nowrap; line-height: 1; }
 
 /* ── Gallery strip ──────────────────────────────────────────────────────── */
 .gallery { display: flex; gap: 7px; margin-bottom: 0.9rem; }
@@ -278,6 +463,17 @@
 }
 .founderName { font-size: 0.8125rem; font-weight: 600; color: var(--color-text); line-height: 1.25; }
 .founderAff { font-size: 0.75rem; color: var(--color-muted); line-height: 1.3; }
+/* One-line founder: name · affiliation, truncated to keep the card compact */
+.founderInline {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.founderInline .founderAff { overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Action row ─────────────────────────────────────────────────────────── */
 .actions {
@@ -377,6 +573,59 @@
 .chip {
   display: inline-block; font-size: 0.75rem; padding: 0.2rem 0.55rem; margin: 0 0.35rem 0.35rem 0;
   background: var(--color-card); border: 1px solid var(--color-border); border-radius: 6px; color: var(--color-text);
+}
+.moreChip {
+  display: inline-block; font-size: 0.75rem; padding: 0.2rem 0.55rem; margin: 0 0.35rem 0.35rem 0;
+  background: var(--color-primary-light); border: 1px solid transparent; border-radius: 6px;
+  color: #3a2c6b; font-weight: 600; font-family: inherit; cursor: pointer;
+}
+.moreChip:hover { filter: brightness(0.97); }
+
+/* Notes as a numbered list (avoid display:flex — it suppresses <li> markers) */
+.notesList {
+  margin: 0 0 0.4rem;
+  padding-left: 1.5rem;
+  list-style-position: outside;
+  list-style-type: decimal;
+}
+.notesList li {
+  display: list-item;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--color-text);
+  padding-left: 0.2rem;
+  margin-bottom: 0.3rem;
+}
+.notesList li:last-child { margin-bottom: 0; }
+.notesList li::marker {
+  color: var(--color-muted);
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+
+/* KPI grid (deal terms / key metrics in detail overlay) */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 0.5rem;
+}
+.kpi {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.55rem 0.7rem;
+}
+.kpiLabel { font-size: 0.625rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--color-muted); font-weight: 600; }
+.kpiValue { font-size: 0.9375rem; font-weight: 700; color: var(--color-text); margin-top: 0.15rem; }
+
+.sanityWarn {
+  background: rgba(203, 140, 124, 0.12);
+  border: 1px solid rgba(203, 140, 124, 0.35);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-warning);
+  margin-bottom: 1rem;
 }
 
 /* Action thread */

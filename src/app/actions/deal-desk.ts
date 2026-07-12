@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { parseDeskCsv } from '@/lib/deal-desk-csv'
-import { DESK_ACTION_TO_STATUS, type DeskActionType, type DeskStage, type DeskValuationType, type DeskRevenueStatus } from '@/lib/types'
+import { DESK_ACTION_TO_STATUS, type DeskActionType, type DeskStage, type DeskValuationType, type DeskRevenueStatus, type DeskInstrument, type DeskRoundStatus } from '@/lib/types'
 
 async function requireReviewer() {
   return requireRole(['founder', 'admin'])
@@ -54,6 +54,15 @@ export type DeskDealPatch = {
   usp?: string | null
   notes?: string | null
   pitch_deck_url?: string | null
+  business_model?: string | null
+  instrument?: DeskInstrument | null
+  round_status?: DeskRoundStatus | null
+  committed_inr?: number | null
+  total_raised_inr?: number | null
+  gross_margin_pct?: number | null
+  monthly_burn_inr?: number | null
+  runway_months?: number | null
+  customers_count?: number | null
 }
 
 export async function updateDeskDeal(id: string, patch: DeskDealPatch) {

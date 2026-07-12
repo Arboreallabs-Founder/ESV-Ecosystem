@@ -5,13 +5,21 @@ import { useRouter } from 'next/navigation'
 import { actOnDeal, toggleStar } from '@/app/actions/deal-desk'
 import type { DeskActionType, DeskDeal } from '@/lib/types'
 import DealCard from './DealCard'
+import DealStack from './DealStack'
 import DesktopDealTable from './DesktopDealTable'
 import DealDetailOverlay from './DealDetailOverlay'
 import CsvImportModal from './CsvImportModal'
 import styles from './deal-desk.module.css'
 
-type View = 'mobile' | 'desktop'
+type View = 'cards' | 'grid' | 'stack' | 'table'
 type Tab = 'unseen' | 'seen'
+
+const VIEW_OPTIONS: { value: View; label: string }[] = [
+  { value: 'cards', label: 'Cards' },
+  { value: 'grid', label: 'Grid' },
+  { value: 'stack', label: 'Stack' },
+  { value: 'table', label: 'Table' },
+]
 
 export default function DeskModule({
   deals,
@@ -38,13 +46,12 @@ export default function DeskModule({
   const [, startTransition] = useTransition()
 
   const refresh = () => startTransition(() => router.refresh())
-
-  // Look the selected deal up from the live list so it stays fresh across refreshes.
   const selected = useMemo(() => deals.find((d) => d.id === selectedId) ?? null, [deals, selectedId])
 
   const unseen = deals.filter((d) => !d.seen_status)
   const seen = deals.filter((d) => d.seen_status)
-  const feedDeals = view === 'mobile' ? (tab === 'unseen' ? unseen : seen) : deals
+  const isCardView = view !== 'table' // card-based views share the Unseen/Seen tabs
+  const feedDeals = view === 'table' ? deals : tab === 'unseen' ? unseen : seen
 
   function cardStar(deal: DeskDeal) {
     startTransition(async () => { await toggleStar(deal.id, !deal.starred); router.refresh() })
@@ -52,6 +59,19 @@ export default function DeskModule({
   function cardAction(deal: DeskDeal, type: DeskActionType) {
     if (type === 'need_more_info') { setSelectedId(deal.id); return } // needs the detail panel
     startTransition(async () => { await actOnDeal(deal.id, { actionType: type }); router.refresh() })
+  }
+
+  function renderCard(deal: DeskDeal) {
+    return (
+      <DealCard
+        key={deal.id}
+        deal={deal}
+        canReview={canReview}
+        onOpen={() => setSelectedId(deal.id)}
+        onStar={() => cardStar(deal)}
+        onAction={(type) => cardAction(deal, type)}
+      />
+    )
   }
 
   return (
@@ -62,13 +82,20 @@ export default function DeskModule({
           {subtitle && <div className={styles.subtitle}>{subtitle}</div>}
         </div>
         <div className={styles.toggle}>
-          <button className={`${styles.toggleBtn} ${view === 'mobile' ? styles.toggleBtnActive : ''}`} onClick={() => setView('mobile')}>Cards</button>
-          <button className={`${styles.toggleBtn} ${view === 'desktop' ? styles.toggleBtnActive : ''}`} onClick={() => setView('desktop')}>Table</button>
+          {VIEW_OPTIONS.map((o) => (
+            <button
+              key={o.value}
+              className={`${styles.toggleBtn} ${view === o.value ? styles.toggleBtnActive : ''}`}
+              onClick={() => setView(o.value)}
+            >
+              {o.label}
+            </button>
+          ))}
         </div>
         {isOwnBoard && <button className={styles.primaryBtn} onClick={() => setImportOpen(true)}>Import CSV</button>}
       </div>
 
-      {view === 'mobile' && (
+      {isCardView && (
         <div className={styles.tabs}>
           <button className={`${styles.tab} ${tab === 'unseen' ? styles.tabActive : ''}`} onClick={() => setTab('unseen')}>
             Unseen <span className={styles.tabCount}>{unseen.length}</span>
@@ -84,21 +111,19 @@ export default function DeskModule({
           <div className={styles.emptyTitle}>Nothing here yet</div>
           <div>{isOwnBoard ? 'Import a CSV to add your first deal.' : 'No deals in this view.'}</div>
         </div>
-      ) : view === 'mobile' ? (
-        <div className={styles.feed}>
-          {feedDeals.map((deal) => (
-            <DealCard
-              key={deal.id}
-              deal={deal}
-              canReview={canReview}
-              onOpen={() => setSelectedId(deal.id)}
-              onStar={() => cardStar(deal)}
-              onAction={(type) => cardAction(deal, type)}
-            />
-          ))}
-        </div>
-      ) : (
+      ) : view === 'table' ? (
         <DesktopDealTable deals={feedDeals} showAssociate={canReview} onOpen={(d) => setSelectedId(d.id)} />
+      ) : view === 'grid' ? (
+        <div className={styles.cardGrid}>{feedDeals.map(renderCard)}</div>
+      ) : view === 'stack' ? (
+        <DealStack
+          deals={feedDeals}
+          canReview={canReview}
+          onOpen={(id) => setSelectedId(id)}
+          onStar={cardStar}
+        />
+      ) : (
+        <div className={styles.feed}>{feedDeals.map(renderCard)}</div>
       )}
 
       {selected && (

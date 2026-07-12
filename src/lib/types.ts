@@ -374,6 +374,12 @@ export const DESK_DEAL_STATUS_LABELS: Record<DeskDealStatus, string> = {
   more_info: 'More info requested',
 }
 
+export const DESK_INSTRUMENTS = ['Equity', 'SAFE', 'Convertible', 'Other'] as const
+export type DeskInstrument = typeof DESK_INSTRUMENTS[number]
+
+export const DESK_ROUND_STATUSES = ['Open', 'Closing', 'Committed'] as const
+export type DeskRoundStatus = typeof DESK_ROUND_STATUSES[number]
+
 export type DeskActionType = 'reject' | 'discuss_in_person' | 'need_more_info'
 
 export const DESK_ACTION_LABELS: Record<DeskActionType, string> = {
@@ -446,6 +452,16 @@ export type DeskDeal = {
   pitch_deck_url: string | null
   notes: string | null
   call_date: string | null
+  // Tier-2 enrichment (all optional)
+  business_model: string | null
+  instrument: DeskInstrument | null
+  round_status: DeskRoundStatus | null
+  committed_inr: number | null
+  total_raised_inr: number | null
+  gross_margin_pct: number | null
+  monthly_burn_inr: number | null
+  runway_months: number | null
+  customers_count: number | null
   seen_status: boolean
   starred: boolean
   deal_status: DeskDealStatus

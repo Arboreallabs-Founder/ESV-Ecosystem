@@ -34,7 +34,7 @@ export default async function AssociateFeedPage({ params }: { params: Promise<{ 
       isOwnBoard={isOwn}
       title={isOwn ? 'My Deal Desk' : (name ?? 'Deal feed')}
       subtitle={isOwn ? 'Submit and manage your deal summaries.' : 'Review and act on these deal cards.'}
-      defaultView={isOwn ? 'desktop' : 'mobile'}
+      defaultView={isOwn ? 'table' : 'cards'}
     />
   )
 }

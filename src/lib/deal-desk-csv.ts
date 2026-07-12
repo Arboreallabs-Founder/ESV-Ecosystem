@@ -7,12 +7,16 @@ import {
   DESK_VALUATION_TYPES,
   DESK_REVENUE_STATUSES,
   DESK_REVENUE_PERIODS,
+  DESK_INSTRUMENTS,
+  DESK_ROUND_STATUSES,
   type DeskFounder,
   type DeskRevenuePoint,
   type DeskStage,
   type DeskValuationType,
   type DeskRevenueStatus,
   type DeskRevenuePeriod,
+  type DeskInstrument,
+  type DeskRoundStatus,
 } from '@/lib/types'
 
 // The exact column order the AI agent must emit (spec §5).
@@ -39,6 +43,16 @@ export const CSV_COLUMNS = [
   'pitch_deck_url',
   'notes',
   'call_date',
+  // Tier-2 enrichment columns (optional; appended so older 22-column CSVs still import).
+  'business_model',
+  'instrument',
+  'round_status',
+  'committed_inr',
+  'total_raised_inr',
+  'gross_margin_percent',
+  'monthly_burn_inr',
+  'runway_months',
+  'customers_count',
 ] as const
 
 // A validated deal ready to insert (DB column names; excludes org_id/associate_id which
@@ -63,6 +77,15 @@ export type ParsedDeskDeal = {
   pitch_deck_url: string | null
   notes: string | null
   call_date: string | null
+  business_model: string | null
+  instrument: DeskInstrument | null
+  round_status: DeskRoundStatus | null
+  committed_inr: number | null
+  total_raised_inr: number | null
+  gross_margin_pct: number | null
+  monthly_burn_inr: number | null
+  runway_months: number | null
+  customers_count: number | null
 }
 
 export type CsvRowError = { row: number; message: string }
@@ -137,17 +160,20 @@ export function parseDeskCsv(text: string): CsvParseResult {
     return { rows: [], errors: [{ row: 0, message: 'The file is empty.' }] }
   }
 
-  // Header validation — exact names, exact order.
+  // Header validation — must be a correct in-order PREFIX of the known columns. This lets an
+  // older CSV (the original 22 columns) import fine while newer files add the Tier-2 columns.
   const header = matrix[0].map((h) => h.trim())
-  if (header.length !== CSV_COLUMNS.length || !CSV_COLUMNS.every((c, i) => header[i] === c)) {
+  const validPrefix = header.length <= CSV_COLUMNS.length && header.every((h, i) => h === CSV_COLUMNS[i])
+  if (!validPrefix) {
     return {
       rows: [],
       errors: [{
         row: 1,
-        message: `Header row must be exactly, in order: ${CSV_COLUMNS.join(', ')}`,
+        message: `Header must be these columns in order (trailing ones optional): ${CSV_COLUMNS.join(', ')}`,
       }],
     }
   }
+  const colCount = header.length
 
   if (matrix.length === 1) {
     return { rows: [], errors: [{ row: 1, message: 'No data rows found after the header.' }] }
@@ -156,11 +182,12 @@ export function parseDeskCsv(text: string): CsvParseResult {
   for (let r = 1; r < matrix.length; r++) {
     const rowNum = r + 1 // 1-indexed, header is row 1
     const cells = matrix[r]
-    if (cells.length !== CSV_COLUMNS.length) {
-      errors.push({ row: rowNum, message: `Expected ${CSV_COLUMNS.length} columns, found ${cells.length}. Check for unescaped commas.` })
+    if (cells.length !== colCount) {
+      errors.push({ row: rowNum, message: `Expected ${colCount} columns, found ${cells.length}. Check for unescaped commas.` })
       continue
     }
 
+    // Columns beyond this file's header are treated as empty (optional trailing fields).
     const get = (name: typeof CSV_COLUMNS[number]) => clean(cells[CSV_COLUMNS.indexOf(name)])
     const rowErrors: string[] = []
 
@@ -285,6 +312,36 @@ export function parseDeskCsv(text: string): CsvParseResult {
       } else call_date = callDateRaw
     }
 
+    // ── Tier-2 enrichment fields (all optional) ──
+    const instrumentRaw = get('instrument')
+    let instrument: DeskInstrument | null = null
+    if (instrumentRaw) {
+      if (!(DESK_INSTRUMENTS as readonly string[]).includes(instrumentRaw)) {
+        rowErrors.push(`instrument "${instrumentRaw}" must be one of: ${DESK_INSTRUMENTS.join(', ')}`)
+      } else instrument = instrumentRaw as DeskInstrument
+    }
+
+    const roundStatusRaw = get('round_status')
+    let round_status: DeskRoundStatus | null = null
+    if (roundStatusRaw) {
+      if (!(DESK_ROUND_STATUSES as readonly string[]).includes(roundStatusRaw)) {
+        rowErrors.push(`round_status "${roundStatusRaw}" must be one of: ${DESK_ROUND_STATUSES.join(', ')}`)
+      } else round_status = roundStatusRaw as DeskRoundStatus
+    }
+
+    const committed = parseNumber(get('committed_inr'), 'committed_inr')
+    if (committed.error) rowErrors.push(committed.error)
+    const totalRaised = parseNumber(get('total_raised_inr'), 'total_raised_inr')
+    if (totalRaised.error) rowErrors.push(totalRaised.error)
+    const grossMargin = parseNumber(get('gross_margin_percent'), 'gross_margin_percent')
+    if (grossMargin.error) rowErrors.push(grossMargin.error)
+    const burn = parseNumber(get('monthly_burn_inr'), 'monthly_burn_inr')
+    if (burn.error) rowErrors.push(burn.error)
+    const runway = parseNumber(get('runway_months'), 'runway_months')
+    if (runway.error) rowErrors.push(runway.error)
+    const customers = parseNumber(get('customers_count'), 'customers_count')
+    if (customers.error) rowErrors.push(customers.error)
+
     if (rowErrors.length > 0) {
       errors.push({ row: rowNum, message: rowErrors.join('; ') })
       continue
@@ -310,6 +367,15 @@ export function parseDeskCsv(text: string): CsvParseResult {
       pitch_deck_url: emptyToNull(get('pitch_deck_url')),
       notes: emptyToNull(get('notes')),
       call_date,
+      business_model: emptyToNull(get('business_model')),
+      instrument,
+      round_status,
+      committed_inr: committed.value,
+      total_raised_inr: totalRaised.value,
+      gross_margin_pct: grossMargin.value,
+      monthly_burn_inr: burn.value,
+      runway_months: runway.value,
+      customers_count: customers.value,
     })
   }
 
@@ -318,7 +384,7 @@ export function parseDeskCsv(text: string): CsvParseResult {
 
 // A ready-to-use example data row (the Kyoora sample from the spec), correctly quoted.
 export const CSV_EXAMPLE_ROW =
-  'Kyoora Ventures,Deep tech,AI-driven drug discovery platform,"Mumbai, India",Series A,40000000,Fixed,800000000,5,Sequoia Surge|Blume Ventures,"Priced round, no bridge notes",Yes,Monthly,2026-01:1500000|2026-02:1800000|2026-03:2100000,3 enterprise LOIs signed pre-round,Priya Shah|Rahul Mehta,Ex-Google DeepMind|Ex-Flipkart,Led ML team at DeepMind for 6 years|Built and scaled Flipkart\'s fraud stack,https://linkedin.com/in/priyashah|https://linkedin.com/in/rahulmehta,https://drive.google.com/xyz,"Strong technical team, watch runway",2026-07-10'
+  'Kyoora Ventures,Deep tech,AI-driven drug discovery platform,"Mumbai, India",Series A,40000000,Fixed,800000000,5,Sequoia Surge|Blume Ventures,"Priced round, no bridge notes",Yes,Monthly,2026-01:1500000|2026-02:1800000|2026-03:2100000,3 enterprise LOIs signed pre-round,Priya Shah|Rahul Mehta,Ex-Google DeepMind|Ex-Flipkart,Led ML team at DeepMind for 6 years|Built and scaled Flipkart\'s fraud stack,https://linkedin.com/in/priyashah|https://linkedin.com/in/rahulmehta,https://drive.google.com/xyz,3 enterprise LOIs signed pre-round; 40% MoM growth; strong technical team; runway into Q4 2026,2026-07-10,B2B Deep tech,Equity,Open,15000000,60000000,72,2500000,18,8'
 
 // The header row on its own.
 export const CSV_HEADER = CSV_COLUMNS.join(',')
@@ -343,7 +409,7 @@ OUTPUT RULES
 
 COLUMNS — use exactly these names, in this exact order:
 1.  company_name — text, REQUIRED, max 40 characters
-2.  sector — text, e.g. Fintech, Climate tech, Deep tech, Health tech, SaaS, Consumer, Agritech
+2.  sector — text; used for colour-coding, so prefer one of: Deep tech, Climate tech, Health tech, Consumer, Fintech, SaaS, Agritech
 3.  about — text, max 50 characters, one line
 4.  location — text, max 50 characters
 5.  stage — one of EXACTLY: MVP, Pre-Seed, Seed, Pre-Series A, Series A, Series A+
@@ -362,8 +428,17 @@ COLUMNS — use exactly these names, in this exact order:
 18. founder_bios — pipe-separated, same order as founder_names, max 50 characters EACH
 19. founder_linkedin_urls — pipe-separated, same order as founder_names
 20. pitch_deck_url — URL, empty if none
-21. notes — free text, optional
+21. notes — optional; write as SEMICOLON-separated short facts / traction proof points, not flowing prose (e.g. "120M+ views in 11 days; 3 enterprise LOIs signed; 40% MoM growth"). These render as a numbered list.
 22. call_date — date in YYYY-MM-DD format
+23. business_model — optional short tag, e.g. "B2B SaaS", "D2C", "Marketplace", "B2B Deep tech"
+24. instrument — optional; EXACTLY one of: Equity, SAFE, Convertible, Other
+25. round_status — optional; EXACTLY one of: Open, Closing, Committed
+26. committed_inr — optional number; amount committed in THIS round so far (plain INR)
+27. total_raised_inr — optional number; total raised to date across prior rounds (plain INR)
+28. gross_margin_percent — optional number, e.g. 72
+29. monthly_burn_inr — optional number; monthly cash burn (plain INR)
+30. runway_months — optional number, e.g. 18
+31. customers_count — optional number; paying customers or active users
 
 EXAMPLE (header + one valid row):
 ${CSV_HEADER}

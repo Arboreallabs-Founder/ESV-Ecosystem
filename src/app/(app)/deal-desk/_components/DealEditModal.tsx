@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { updateDeskDeal, withdrawDeskDeal, type DeskDealPatch } from '@/app/actions/deal-desk'
-import { DESK_STAGES, DESK_VALUATION_TYPES, DESK_REVENUE_STATUSES } from '@/lib/types'
+import { DESK_STAGES, DESK_VALUATION_TYPES, DESK_REVENUE_STATUSES, DESK_INSTRUMENTS, DESK_ROUND_STATUSES } from '@/lib/types'
 import type { DeskDeal } from '@/lib/types'
 import styles from './deal-desk.module.css'
 
@@ -23,6 +23,15 @@ export default function DealEditModal({ deal, onClose, onSaved }: { deal: DeskDe
     usp: deal.usp ?? '',
     notes: deal.notes ?? '',
     pitch_deck_url: deal.pitch_deck_url ?? '',
+    business_model: deal.business_model ?? '',
+    instrument: deal.instrument ?? '',
+    round_status: deal.round_status ?? '',
+    committed_inr: deal.committed_inr?.toString() ?? '',
+    total_raised_inr: deal.total_raised_inr?.toString() ?? '',
+    gross_margin_pct: deal.gross_margin_pct?.toString() ?? '',
+    monthly_burn_inr: deal.monthly_burn_inr?.toString() ?? '',
+    runway_months: deal.runway_months?.toString() ?? '',
+    customers_count: deal.customers_count?.toString() ?? '',
   })
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -48,6 +57,15 @@ export default function DealEditModal({ deal, onClose, onSaved }: { deal: DeskDe
       usp: form.usp.trim() || null,
       notes: form.notes.trim() || null,
       pitch_deck_url: form.pitch_deck_url.trim() || null,
+      business_model: form.business_model.trim() || null,
+      instrument: (form.instrument || null) as DeskDealPatch['instrument'],
+      round_status: (form.round_status || null) as DeskDealPatch['round_status'],
+      committed_inr: num(form.committed_inr),
+      total_raised_inr: num(form.total_raised_inr),
+      gross_margin_pct: num(form.gross_margin_pct),
+      monthly_burn_inr: num(form.monthly_burn_inr),
+      runway_months: num(form.runway_months),
+      customers_count: num(form.customers_count),
     }
     startTransition(async () => {
       try { await updateDeskDeal(deal.id, patch); onSaved(); onClose() }
@@ -134,6 +152,57 @@ export default function DealEditModal({ deal, onClose, onSaved }: { deal: DeskDe
             <label className={styles.fieldLabel}>Pitch deck URL</label>
             <input className={styles.input} value={form.pitch_deck_url} onChange={(e) => set('pitch_deck_url', e.target.value)} />
           </div>
+
+          <div className={styles.sectionLabel} style={{ margin: '0.5rem 0 0.6rem' }}>Deal terms</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Business model</label>
+              <input className={styles.input} value={form.business_model} onChange={(e) => set('business_model', e.target.value)} placeholder="e.g. B2B SaaS" />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Instrument</label>
+              <select className={styles.select} value={form.instrument} onChange={(e) => set('instrument', e.target.value)}>
+                <option value="">—</option>
+                {DESK_INSTRUMENTS.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Round status</label>
+              <select className={styles.select} value={form.round_status} onChange={(e) => set('round_status', e.target.value)}>
+                <option value="">—</option>
+                {DESK_ROUND_STATUSES.map((v) => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Committed so far (₹)</label>
+              <input className={styles.input} inputMode="numeric" value={form.committed_inr} onChange={(e) => set('committed_inr', e.target.value)} />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Total raised to date (₹)</label>
+              <input className={styles.input} inputMode="numeric" value={form.total_raised_inr} onChange={(e) => set('total_raised_inr', e.target.value)} />
+            </div>
+          </div>
+
+          <div className={styles.sectionLabel} style={{ margin: '0.5rem 0 0.6rem' }}>Metrics</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Gross margin (%)</label>
+              <input className={styles.input} inputMode="numeric" value={form.gross_margin_pct} onChange={(e) => set('gross_margin_pct', e.target.value)} />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Monthly burn (₹)</label>
+              <input className={styles.input} inputMode="numeric" value={form.monthly_burn_inr} onChange={(e) => set('monthly_burn_inr', e.target.value)} />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Runway (months)</label>
+              <input className={styles.input} inputMode="numeric" value={form.runway_months} onChange={(e) => set('runway_months', e.target.value)} />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Customers</label>
+              <input className={styles.input} inputMode="numeric" value={form.customers_count} onChange={(e) => set('customers_count', e.target.value)} />
+            </div>
+          </div>
+
           <div className={styles.field}>
             <label className={styles.fieldLabel}>Notes</label>
             <textarea className={styles.textarea} value={form.notes} onChange={(e) => set('notes', e.target.value)} />

@@ -28,7 +28,7 @@ export default async function DealDeskPage() {
         isOwnBoard
         title="My Deal Desk"
         subtitle="Submit and manage your post-call deal summaries."
-        defaultView="desktop"
+        defaultView="table"
       />
     )
   }

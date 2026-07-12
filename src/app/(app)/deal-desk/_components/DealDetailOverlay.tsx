@@ -5,10 +5,14 @@ import { createClient } from '@/lib/supabase/client'
 import { actOnDeal, addDealMedia, removeDealMedia, setSeen, toggleStar } from '@/app/actions/deal-desk'
 import { DESK_DEAL_STATUS_LABELS } from '@/lib/types'
 import type { DeskDeal } from '@/lib/types'
-import { formatDate, formatInr, formatValuation, initials } from './format'
+import {
+  formatDate, formatInr, formatValuation, initials, sectorBadge,
+  arrRunRate, valuationMultiple, valuationSanity, roundProgress, freshnessLabel,
+} from './format'
 import RevenueBarChart from './RevenueBarChart'
 import VoiceRecorder from './VoiceRecorder'
 import DealEditModal from './DealEditModal'
+import NotesList from './NotesList'
 import styles from './deal-desk.module.css'
 
 const BUCKET = 'deal-desk'
@@ -76,6 +80,12 @@ export default function DealDetailOverlay({
     e.target.value = ''
   }
 
+  const arr = arrRunRate(deal)
+  const mult = valuationMultiple(deal)
+  const progress = roundProgress(deal)
+  const sanity = valuationSanity(deal)
+  const fresh = freshnessLabel(deal.call_date)
+
   return (
     <>
     <div className={styles.overlay} onMouseDown={onClose}>
@@ -84,10 +94,11 @@ export default function DealDetailOverlay({
           <div style={{ flex: 1 }}>
             <h2 className={styles.modalTitle}>{deal.company_name}</h2>
             <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
-              {deal.sector && <span className={`${styles.badge} ${styles.badgeSector}`}>{deal.sector}</span>}
+              {deal.sector && <span className={`${styles.badge} ${styles.badgeSector}`} style={sectorBadge(deal.sector) ?? undefined}>{deal.sector}</span>}
               {deal.stage && <span className={`${styles.badge} ${styles.badgeStage}`}>{deal.stage}</span>}
               <span className={`${styles.statusPill} ${statusClass(deal.deal_status)}`}>{DESK_DEAL_STATUS_LABELS[deal.deal_status]}</span>
               {deal.associate?.name && <span className={styles.founderAff}>· {deal.associate.name}</span>}
+              {fresh && <span className={styles.founderAff}>· {fresh}</span>}
             </div>
           </div>
           {isOwner && (
@@ -106,7 +117,7 @@ export default function DealDetailOverlay({
           <button className={styles.closeBtn} onClick={onClose} aria-label="Close">×</button>
         </div>
 
-        <div className={styles.modalBody}>
+        <div className={styles.modalBody} style={canReview ? { paddingBottom: '1.5rem' } : undefined}>
           {deal.about && <div className={styles.section}><div className={styles.sectionLabel}>About</div><div className={styles.sectionText}>{deal.about}</div></div>}
           {deal.location && <div className={styles.section}><div className={styles.sectionLabel}>Location</div><div className={styles.sectionText}>{deal.location}</div></div>}
 
@@ -116,20 +127,65 @@ export default function DealDetailOverlay({
             <div className={styles.stat}><div className={styles.statLabel}>Dilution</div><div className={styles.statValue}>{deal.dilution_percent != null ? `${deal.dilution_percent}%` : '—'}</div></div>
           </div>
 
-          {deal.revenue_status === 'Yes' && (
-            <div className={styles.section}><RevenueBarChart points={deal.revenue_data} period={deal.revenue_period} /></div>
+          {sanity && sanity.gapPct >= 25 && (
+            <div className={styles.sanityWarn}>
+              ⚠ Ask ÷ dilution implies a ~{formatInr(sanity.implied)} valuation, but {formatInr(sanity.stated)} is stated ({Math.round(sanity.gapPct)}% gap) — worth clarifying.
+            </div>
           )}
-          {deal.revenue_status && deal.revenue_status !== 'Yes' && (
-            <div className={styles.section}><div className={styles.sectionLabel}>Revenue</div><div className={styles.sectionText}>{deal.revenue_status}</div></div>
+
+          {/* Deal terms */}
+          {(deal.business_model || deal.instrument || deal.round_status || deal.total_raised_inr != null || progress) && (
+            <div className={styles.section}>
+              <div className={styles.sectionLabel}>Deal terms</div>
+              <div className={styles.kpiGrid}>
+                {deal.business_model && <Kpi label="Model" value={deal.business_model} />}
+                {deal.instrument && <Kpi label="Instrument" value={deal.instrument} />}
+                {deal.round_status && <Kpi label="Round" value={deal.round_status} />}
+                {deal.total_raised_inr != null && <Kpi label="Raised to date" value={formatInr(deal.total_raised_inr)} />}
+              </div>
+              {progress && (
+                <div className={styles.progressWrap}>
+                  <div className={styles.progressBar}><div className={styles.progressFill} style={{ width: `${progress.pct}%` }} /></div>
+                  <div className={styles.progressLabel}>{formatInr(progress.committed)} of {formatInr(progress.ask)} committed · {Math.round(progress.pct)}%</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Key metrics (computed + unit economics) */}
+          {(arr != null || deal.gross_margin_pct != null || deal.monthly_burn_inr != null || deal.runway_months != null || deal.customers_count != null) && (
+            <div className={styles.section}>
+              <div className={styles.sectionLabel}>Key metrics</div>
+              <div className={styles.kpiGrid}>
+                {arr != null && <Kpi label="ARR run-rate" value={formatInr(arr)} />}
+                {mult != null && <Kpi label="Valuation" value={`${Number(mult.toFixed(1))}× ARR`} />}
+                {deal.gross_margin_pct != null && <Kpi label="Gross margin" value={`${deal.gross_margin_pct}%`} />}
+                {deal.monthly_burn_inr != null && <Kpi label="Monthly burn" value={formatInr(deal.monthly_burn_inr)} />}
+                {deal.runway_months != null && <Kpi label="Runway" value={`${deal.runway_months} mo`} />}
+                {deal.customers_count != null && <Kpi label="Customers" value={deal.customers_count.toLocaleString('en-IN')} />}
+              </div>
+            </div>
+          )}
+
+          {deal.revenue_status && (
+            <div className={styles.section}>
+              <RevenueBarChart status={deal.revenue_status} points={deal.revenue_data} period={deal.revenue_period} />
+            </div>
           )}
 
           {deal.usp && <div className={styles.section}><div className={styles.sectionLabel}>USP</div><div className={styles.sectionText}>{deal.usp}</div></div>}
 
-          {(deal.cap_table_notable_names.length > 0 || deal.cap_table_structure_notes) && (
+          {deal.cap_table_notable_names.length > 0 && (
             <div className={styles.section}>
               <div className={styles.sectionLabel}>Cap table</div>
               {deal.cap_table_notable_names.map((n, i) => <span key={i} className={styles.chip}>{n}</span>)}
-              {deal.cap_table_structure_notes && <div className={styles.sectionText} style={{ marginTop: '0.4rem' }}>{deal.cap_table_structure_notes}</div>}
+            </div>
+          )}
+
+          {deal.cap_table_structure_notes && (
+            <div className={styles.section}>
+              <div className={styles.sectionLabel}>Cap table notes</div>
+              <div className={styles.sectionText}>{deal.cap_table_structure_notes}</div>
             </div>
           )}
 
@@ -154,38 +210,41 @@ export default function DealDetailOverlay({
             </div>
           )}
 
-          {deal.notes && <div className={styles.section}><div className={styles.sectionLabel}>Notes</div><div className={styles.sectionText}>{deal.notes}</div></div>}
+          {deal.notes && <div className={styles.section}><div className={styles.sectionLabel}>Notes</div><NotesList notes={deal.notes} /></div>}
 
           <div className={styles.section} style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
             {deal.call_date && <div><div className={styles.sectionLabel}>Call date</div><div className={styles.sectionText}>{formatDate(deal.call_date)}</div></div>}
             {deal.pitch_deck_url && <div><div className={styles.sectionLabel}>Pitch deck</div><a className={styles.sectionText} style={{ color: 'var(--color-primary)' }} href={deal.pitch_deck_url} target="_blank" rel="noreferrer">Open deck ↗</a></div>}
           </div>
 
-          {/* Gallery + uploader (author only) */}
-          <div className={styles.section}>
-            <div className={styles.sectionLabel}>Gallery</div>
-            <div className={styles.gallery} style={{ flexWrap: 'wrap' }}>
-              {deal.media.map((m) => (
-                <div key={m.id} style={{ position: 'relative' }}>
-                  {m.signed_url && <img className={styles.thumb} src={m.signed_url} alt="" />}
-                  {isOwner && (
-                    <button
-                      onClick={() => run(() => removeDealMedia(m.id))}
-                      style={{ position: 'absolute', top: -6, right: -6, background: 'var(--color-destructive)', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 11, cursor: 'pointer', lineHeight: 1 }}
-                      title="Remove"
-                    >×</button>
-                  )}
+          {/* Gallery — hidden entirely when empty for reviewers; owners always see the uploader */}
+          {(deal.media.length > 0 || isOwner) && (
+            <div className={styles.section}>
+              <div className={styles.sectionLabel}>Gallery</div>
+              {deal.media.length > 0 && (
+                <div className={styles.gallery} style={{ flexWrap: 'wrap' }}>
+                  {deal.media.map((m) => (
+                    <div key={m.id} style={{ position: 'relative' }}>
+                      {m.signed_url && <img className={styles.thumb} src={m.signed_url} alt="" />}
+                      {isOwner && (
+                        <button
+                          onClick={() => run(() => removeDealMedia(m.id))}
+                          style={{ position: 'absolute', top: -6, right: -6, background: 'var(--color-destructive)', color: '#fff', border: 'none', borderRadius: '50%', width: 18, height: 18, fontSize: 11, cursor: 'pointer', lineHeight: 1 }}
+                          title="Remove"
+                        >×</button>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-              {deal.media.length === 0 && !isOwner && <span className={styles.founderAff}>No images.</span>}
+              )}
+              {isOwner && (
+                <>
+                  <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={onPickImages} />
+                  <button className={styles.ghostBtn} onClick={() => fileRef.current?.click()} disabled={pending} style={{ marginTop: deal.media.length > 0 ? '0.5rem' : 0 }}>+ Add images</button>
+                </>
+              )}
             </div>
-            {isOwner && (
-              <>
-                <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={onPickImages} />
-                <button className={styles.ghostBtn} onClick={() => fileRef.current?.click()} disabled={pending} style={{ marginTop: '0.5rem' }}>+ Add images</button>
-              </>
-            )}
-          </div>
+          )}
 
           {/* Action thread — the MD's feedback, visible to the author too */}
           {deal.actions.length > 0 && (
@@ -248,6 +307,15 @@ export default function DealDetailOverlay({
       />
     )}
     </>
+  )
+}
+
+function Kpi({ label, value }: { label: string; value: string }) {
+  return (
+    <div className={styles.kpi}>
+      <div className={styles.kpiLabel}>{label}</div>
+      <div className={styles.kpiValue}>{value}</div>
+    </div>
   )
 }
 
