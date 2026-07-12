@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -13,13 +13,6 @@ type UserRow = { name: string | null; role: string | null; email: string | null 
 
 const ROLE_LABELS: Record<string, string> = {
   founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner', super_admin: 'Platform Admin',
-}
-
-const ROLE_BADGE_CLASS: Record<string, string> = {
-  founder: styles.badgeFounder,
-  admin: styles.badgeAdmin,
-  associate: styles.badgeAssociate,
-  franchise_partner: styles.badgePartner,
 }
 
 function Icon({ d, d2 }: { d: string; d2?: string }) {
@@ -175,43 +168,19 @@ export default function AppShell({
   const displayName = user.name ?? user.email ?? 'User'
   const initials = displayName.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 
-  const [flyoutTop, setFlyoutTop] = useState<number | null>(null)
-  const [openGroup, setOpenGroup] = useState<string | null>(null)
+  const [openGroups, setOpenGroups] = useState<Set<string>>(new Set())
   const [mobileOpen, setMobileOpen] = useState(false)
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
-  function cancelHide() {
-    if (hideTimer.current) {
-      clearTimeout(hideTimer.current)
-      hideTimer.current = null
-    }
-  }
-
-  function closeFlyout() {
-    setFlyoutTop(null)
-    setOpenGroup(null)
-  }
-
-  function handleGroupEnter(e: React.MouseEvent<HTMLDivElement>, label: string) {
-    cancelHide()
-    const rect = e.currentTarget.getBoundingClientRect()
-    setFlyoutTop(rect.top)
-    setOpenGroup(label)
-  }
-
-  function handleGroupLeave() {
-    hideTimer.current = setTimeout(closeFlyout, 180)
-  }
-
-  function handleFlyoutEnter() {
-    cancelHide()
-  }
-
-  function handleFlyoutLeave() {
-    hideTimer.current = setTimeout(closeFlyout, 80)
+  function toggleGroup(label: string) {
+    setOpenGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(label)) next.delete(label)
+      else next.add(label)
+      return next
+    })
   }
 
   async function handleSignOut() {
@@ -253,17 +222,22 @@ export default function AppShell({
           </div>
         )}
 
-        {/* Logo / workspace */}
+        {/* Workspace header */}
         <div className={styles.sidebarTop}>
-          <div className={styles.workspace}>
+          <Link href="/settings" className={styles.workspace} onClick={() => setMobileOpen(false)}>
             <div className={styles.logoMark}>
-              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+              <svg width="17" height="17" viewBox="0 0 15 15" fill="none" aria-hidden="true">
                 <path d="M7.5 1L13 4.25V11.25L7.5 14.5L2 11.25V4.25L7.5 1Z" fill="white" opacity="0.95" />
               </svg>
             </div>
-            <span className={styles.logoText}>Ecosystem</span>
-          </div>
-          <div className={styles.workspaceSub}>{demoMode ? 'AA Labs — Demo' : 'Earlyseed Ventures'}</div>
+            <div className={styles.workspaceText}>
+              <span className={styles.logoText}>Ecosystem</span>
+              <span className={styles.workspaceSub}>{demoMode ? 'AA Labs — Demo' : 'Earlyseed Ventures'}</span>
+            </div>
+            <svg className={styles.workspaceChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </Link>
         </div>
 
         {/* Nav links */}
@@ -272,68 +246,42 @@ export default function AppShell({
             if ('group' in entry) {
               const visibleChildren = entry.children.filter((c) => c.roles.includes(role))
               if (visibleChildren.length === 0) return null
-              const isGroupActive = entry.children.some((c) => pathname === c.href || pathname.startsWith(c.href))
-              // Only the longest-matching child is "active" so prefix-overlapping
-              // siblings (e.g. /tasks vs /tasks/kpi) don't both highlight.
+              // Longest-matching child is "active" so /tasks vs /tasks/kpi don't both highlight.
               const activeChildHref = visibleChildren
                 .map((c) => c.href)
                 .filter((h) => pathname === h || pathname.startsWith(h + '/'))
                 .sort((a, b) => b.length - a.length)[0] ?? null
+              // Open if toggled open, or auto-open because it holds the active route.
+              const open = openGroups.has(entry.label) || activeChildHref !== null
               return (
-                <div key={entry.label} className={styles.navGroupWrapper} onMouseEnter={(e) => handleGroupEnter(e, entry.label)} onMouseLeave={handleGroupLeave}>
+                <div key={entry.label} className={styles.navGroupWrapper}>
                   <button
                     type="button"
-                    className={`${styles.navGroupBtn} ${isGroupActive ? styles.navGroupBtnActive : ''}`}
-                    onClick={() => setOpenGroup((prev) => (prev === entry.label ? null : entry.label))}
-                    aria-expanded={openGroup === entry.label}
+                    className={`${styles.navGroupBtn} ${activeChildHref ? styles.navGroupBtnActive : ''}`}
+                    onClick={() => toggleGroup(entry.label)}
+                    aria-expanded={open}
                   >
                     <span className={styles.navIcon}>{entry.icon}</span>
-                    {entry.label}
+                    <span className={styles.navLabel}>{entry.label}</span>
                     <svg
-                      className={styles.navGroupChevron}
+                      className={`${styles.navGroupChevron} ${open ? styles.navGroupChevronOpen : ''}`}
                       viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
                     >
                       <path d="m9 18 6-6-6-6" />
                     </svg>
                   </button>
-                  {/* Mobile: inline accordion (hover flyout doesn't work on touch) */}
-                  <div className={styles.navAccordion} data-open={openGroup === entry.label}>
-                    {visibleChildren.map((child) => {
-                      const isActive = child.href === activeChildHref
-                      return (
+                  {open && (
+                    <div className={styles.navAccordion}>
+                      {visibleChildren.map((child) => (
                         <Link
                           key={child.href}
                           href={child.href}
-                          className={`${styles.navSubItem} ${isActive ? styles.navSubItemActive : ''}`}
+                          className={`${styles.navSubItem} ${child.href === activeChildHref ? styles.navSubItemActive : ''}`}
                           onClick={() => setMobileOpen(false)}
                         >
-                          <span className={styles.navIcon}>{child.icon}</span>
                           {child.label}
                         </Link>
-                      )
-                    })}
-                  </div>
-                  {flyoutTop !== null && openGroup === entry.label && (
-                    <div
-                      className={styles.navFlyout}
-                      style={{ top: flyoutTop }}
-                      onMouseEnter={handleFlyoutEnter}
-                      onMouseLeave={handleFlyoutLeave}
-                    >
-                      <div className={styles.navFlyoutLabel}>{entry.label}</div>
-                      {visibleChildren.map((child) => {
-                        const isActive = child.href === activeChildHref
-                        return (
-                          <Link
-                            key={child.href}
-                            href={child.href}
-                            className={`${styles.navSubItem} ${isActive ? styles.navSubItemActive : ''}`}
-                          >
-                            <span className={styles.navIcon}>{child.icon}</span>
-                            {child.label}
-                          </Link>
-                        )
-                      })}
+                      ))}
                     </div>
                   )}
                 </div>
@@ -350,19 +298,19 @@ export default function AppShell({
                 onClick={() => setMobileOpen(false)}
               >
                 <span className={styles.navIcon}>{entry.icon}</span>
-                {entry.label}
+                <span className={styles.navLabel}>{entry.label}</span>
               </Link>
             )
           })}
-          <div style={{ marginTop: 'auto', paddingTop: '0.5rem', borderTop: '1px solid var(--color-border)' }}>
+          <div className={styles.sidebarHelp}>
             <WikiSidebarButton />
-            <Link href="/wiki" className={styles.navItem} style={{ marginTop: '0.125rem' }}>
+            <Link href="/wiki" className={styles.navItem} onClick={() => setMobileOpen(false)}>
               <span className={styles.navIcon}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                 </svg>
               </span>
-              Full Wiki
+              <span className={styles.navLabel}>Full Wiki</span>
             </Link>
           </div>
         </nav>
@@ -391,19 +339,18 @@ export default function AppShell({
 
         {/* User footer */}
         <div className={styles.sidebarFooter}>
-          <div className={styles.userRow}>
+          <Link href="/settings" className={styles.userRow} onClick={() => setMobileOpen(false)}>
             <div className={styles.userAvatar}>{initials}</div>
             <div className={styles.userDetails}>
               <div className={styles.userName}>{displayName}</div>
-              <div className={`${styles.roleBadge} ${ROLE_BADGE_CLASS[role] ?? styles.badgeAssociate}`}>
-                {ROLE_LABELS[role] ?? role}
-              </div>
+              <div className={styles.userEmail}>{user.email ?? ROLE_LABELS[role] ?? role}</div>
             </div>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem' }}>
-            <Link href="/settings" className={styles.signOutBtn} style={{ flex: 1, textAlign: 'center' }}>
-              Settings
-            </Link>
+            <svg className={styles.userChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 18 6-6-6-6" />
+            </svg>
+          </Link>
+          <div className={styles.footerControls}>
+            <button className={styles.signOutBtn} onClick={handleSignOut} style={{ flex: 1 }}>Sign out</button>
             <button
               className={styles.signOutBtn}
               onClick={toggleTheme}
@@ -413,7 +360,6 @@ export default function AppShell({
               {theme === 'dark' ? '☀' : '🌙'}
             </button>
           </div>
-          <button className={styles.signOutBtn} onClick={handleSignOut}>Sign out</button>
         </div>
       </aside>
 
