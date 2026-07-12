@@ -1,9 +1,8 @@
 /* Deal Desk — all styling on ESV globals.css tokens. */
 
+/* Left-aligned, full-width within the page's main padding (matches other pages). */
 .wrap {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 2rem;
+  width: 100%;
 }
 
 /* ── Header: title + view toggle + import ───────────────────────────────── */
@@ -120,7 +119,6 @@
   flex-direction: column;
   gap: 1rem;
   max-width: 520px;
-  margin: 0 auto;
 }
 /* Grid view — cards multiple-per-row */
 .cardGrid {
@@ -131,7 +129,7 @@
 }
 
 /* Stack view — condensed glass cards that fan out on click */
-.stackShell { max-width: 460px; margin: 0 auto; }
+.stackShell { max-width: 460px; }
 .stack {
   position: relative;
   transition: height 0.6s cubic-bezier(0.075, 0.82, 0.165, 1);
@@ -675,7 +673,6 @@
 
 /* ─── Mobile ────────────────────────────────────────────────────────────── */
 @media (max-width: 860px) {
-  .wrap { padding: 1.25rem 1rem; }
   .title { font-size: 1.5rem; }
   .header { gap: 0.75rem; }
   /* Keep the view toggle + import reachable without crowding the title. */
