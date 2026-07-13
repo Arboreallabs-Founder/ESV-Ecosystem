@@ -462,6 +462,8 @@ export type DeskDeal = {
   monthly_burn_inr: number | null
   runway_months: number | null
   customers_count: number | null
+  analyst_opinion: string | null   // added in-app after import (≤100 chars)
+  referrer: string | null          // who referred/sourced the deal; indexed for BI
   seen_status: boolean
   starred: boolean
   deal_status: DeskDealStatus

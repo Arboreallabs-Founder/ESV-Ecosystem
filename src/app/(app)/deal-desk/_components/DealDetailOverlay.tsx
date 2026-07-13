@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { actOnDeal, addDealMedia, removeDealMedia, setSeen, toggleStar } from '@/app/actions/deal-desk'
+import { actOnDeal, addDealMedia, removeDealMedia, setSeen, toggleStar, updateDeskDeal } from '@/app/actions/deal-desk'
 import { DESK_DEAL_STATUS_LABELS } from '@/lib/types'
 import type { DeskDeal } from '@/lib/types'
 import {
@@ -39,6 +39,7 @@ export default function DealDetailOverlay({
   const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
+  const [opinion, setOpinion] = useState(deal.analyst_opinion ?? '')
   const fileRef = useRef<HTMLInputElement>(null)
 
   function run(fn: () => Promise<void>) {
@@ -121,6 +122,45 @@ export default function DealDetailOverlay({
         <div className={styles.modalBody} style={canReview ? { paddingBottom: '1.5rem' } : undefined}>
           {deal.about && <div className={styles.section}><div className={styles.sectionLabel}>About</div><div className={styles.sectionText}>{deal.about}</div></div>}
           {deal.location && <div className={styles.section}><div className={styles.sectionLabel}>Location</div><div className={styles.sectionText}>{deal.location}</div></div>}
+
+          {/* Analyst's opinion — the author adds it in-app after import */}
+          {(isOwner || deal.analyst_opinion) && (
+            <div className={styles.section}>
+              <div className={styles.sectionLabel}>Analyst&rsquo;s opinion</div>
+              {isOwner ? (
+                <>
+                  <textarea
+                    className={styles.textarea}
+                    maxLength={100}
+                    rows={2}
+                    value={opinion}
+                    onChange={(e) => setOpinion(e.target.value)}
+                    placeholder="Your quick take on this deal (max 100 characters)…"
+                  />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.4rem' }}>
+                    <span className={styles.charCount}>{opinion.length}/100</span>
+                    <button
+                      className={styles.primaryBtn}
+                      style={{ padding: '0.4rem 0.85rem' }}
+                      disabled={pending || opinion.trim() === (deal.analyst_opinion ?? '')}
+                      onClick={() => run(() => updateDeskDeal(deal.id, { analyst_opinion: opinion }))}
+                    >
+                      {pending
+                        ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><Spinner size={13} className="spinnerOnPrimary" /> Saving…</span>
+                        : 'Save opinion'}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className={styles.opinion}>
+                  <svg className={styles.opinionIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  {deal.analyst_opinion}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className={styles.stats}>
             <div className={styles.stat}><div className={styles.statLabel}>Ask</div><div className={styles.statValue}>{formatInr(deal.ask_inr)}</div></div>
@@ -214,6 +254,7 @@ export default function DealDetailOverlay({
           {deal.notes && <div className={styles.section}><div className={styles.sectionLabel}>Notes</div><NotesList notes={deal.notes} /></div>}
 
           <div className={styles.section} style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+            {deal.referrer && <div><div className={styles.sectionLabel}>Referrer</div><div className={styles.sectionText}>{deal.referrer}</div></div>}
             {deal.call_date && <div><div className={styles.sectionLabel}>Call date</div><div className={styles.sectionText}>{formatDate(deal.call_date)}</div></div>}
             {deal.pitch_deck_url && <div><div className={styles.sectionLabel}>Pitch deck</div><a className={styles.sectionText} style={{ color: 'var(--color-primary)' }} href={deal.pitch_deck_url} target="_blank" rel="noreferrer">Open deck ↗</a></div>}
           </div>

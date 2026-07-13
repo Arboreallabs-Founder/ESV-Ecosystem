@@ -24,6 +24,8 @@ export default function DealEditModal({ deal, onClose, onSaved }: { deal: DeskDe
     usp: deal.usp ?? '',
     notes: deal.notes ?? '',
     pitch_deck_url: deal.pitch_deck_url ?? '',
+    analyst_opinion: deal.analyst_opinion ?? '',
+    referrer: deal.referrer ?? '',
     business_model: deal.business_model ?? '',
     instrument: deal.instrument ?? '',
     round_status: deal.round_status ?? '',
@@ -58,6 +60,8 @@ export default function DealEditModal({ deal, onClose, onSaved }: { deal: DeskDe
       usp: form.usp.trim() || null,
       notes: form.notes.trim() || null,
       pitch_deck_url: form.pitch_deck_url.trim() || null,
+      analyst_opinion: form.analyst_opinion.trim() || null,
+      referrer: form.referrer.trim() || null,
       business_model: form.business_model.trim() || null,
       instrument: (form.instrument || null) as DeskDealPatch['instrument'],
       round_status: (form.round_status || null) as DeskDealPatch['round_status'],
@@ -204,6 +208,14 @@ export default function DealEditModal({ deal, onClose, onSaved }: { deal: DeskDe
             </div>
           </div>
 
+          <div className={styles.field}>
+            <label className={styles.fieldLabel}>Referrer</label>
+            <input className={styles.input} value={form.referrer} onChange={(e) => set('referrer', e.target.value)} placeholder="Who referred / sourced this deal" />
+          </div>
+          <div className={styles.field}>
+            <label className={styles.fieldLabel}>Analyst&rsquo;s opinion (max 100)</label>
+            <textarea className={styles.textarea} maxLength={100} value={form.analyst_opinion} onChange={(e) => set('analyst_opinion', e.target.value)} placeholder="Your quick take on this deal…" />
+          </div>
           <div className={styles.field}>
             <label className={styles.fieldLabel}>Notes</label>
             <textarea className={styles.textarea} value={form.notes} onChange={(e) => set('notes', e.target.value)} />

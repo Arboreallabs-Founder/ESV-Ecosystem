@@ -63,6 +63,8 @@ export type DeskDealPatch = {
   monthly_burn_inr?: number | null
   runway_months?: number | null
   customers_count?: number | null
+  analyst_opinion?: string | null
+  referrer?: string | null
 }
 
 export async function updateDeskDeal(id: string, patch: DeskDealPatch) {
@@ -72,6 +74,15 @@ export async function updateDeskDeal(id: string, patch: DeskDealPatch) {
     if (!name) throw new Error('Company name is required.')
     if (name.length > 40) throw new Error('Company name exceeds 40 characters.')
     patch = { ...patch, company_name: name }
+  }
+  if (patch.analyst_opinion !== undefined) {
+    const op = patch.analyst_opinion?.trim() || null
+    if (op && op.length > 100) throw new Error('Analyst opinion exceeds 100 characters.')
+    patch = { ...patch, analyst_opinion: op }
+  }
+  // Normalise referrer (trim) for consistent grouping in later BI/reporting.
+  if (patch.referrer !== undefined) {
+    patch = { ...patch, referrer: patch.referrer?.trim() || null }
   }
   // RLS ensures the caller owns the row; no cross-associate edits possible.
   const { error } = await supabase.from('desk_deals').update(patch).eq('id', id)

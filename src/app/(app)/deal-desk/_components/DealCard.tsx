@@ -80,6 +80,16 @@ export default function DealCard({
         </div>
       )}
 
+      {/* 3b. Analyst's opinion */}
+      {deal.analyst_opinion && (
+        <div className={styles.opinion}>
+          <svg className={styles.opinionIcon} width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
+          {deal.analyst_opinion}
+        </div>
+      )}
+
       {/* 4. Stats row */}
       <div className={styles.stats}>
         <div className={styles.stat}>
@@ -151,9 +161,13 @@ export default function DealCard({
         </div>
       )}
 
-      {/* 7b. Freshness meta */}
-      {fresh && (
-        <div className={`${styles.cardMeta} ${isStale(deal.call_date) ? styles.cardMetaStale : ''}`}>{fresh}</div>
+      {/* 7b. Referrer + freshness meta */}
+      {(deal.referrer || fresh) && (
+        <div className={`${styles.cardMeta} ${isStale(deal.call_date) ? styles.cardMetaStale : ''}`}>
+          {deal.referrer && <>via {deal.referrer}</>}
+          {deal.referrer && fresh && ' · '}
+          {fresh}
+        </div>
       )}
 
       {/* 8. Action row (reviewers only) */}
