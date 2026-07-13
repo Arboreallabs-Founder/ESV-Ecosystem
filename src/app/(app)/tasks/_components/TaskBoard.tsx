@@ -49,6 +49,15 @@ export default function TaskBoard({
   const [assigneeId, setAssigneeId] = useState(currentUserId)
   const [isPending, startTransition] = useTransition()
 
+  // View / filters / collapse
+  const [view, setView] = useState<'board' | 'list'>('board')
+  const [search, setSearch] = useState('')
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all') // 'all' | 'mine' | userId
+  const [collapsedCols, setCollapsedCols] = useState<Set<Status>>(() => new Set<Status>(['Done']))
+  function toggleCollapse(s: Status) {
+    setCollapsedCols((prev) => { const n = new Set(prev); if (n.has(s)) n.delete(s); else n.add(s); return n })
+  }
+
   const canCreate = ['founder', 'admin', 'associate'].includes(userRole)
 
   // Assignment rules: never partners; associates only to themselves or other associates.
@@ -64,10 +73,34 @@ export default function TaskBoard({
     hint: userRoleLabel(u.role),
   }))
 
+  // Search + assignee filter applied to what's shown.
+  const filteredTasks = tasks.filter((t) => {
+    if (assigneeFilter === 'mine') { if (t.assignee_id !== currentUserId) return false }
+    else if (assigneeFilter !== 'all') { if (t.assignee_id !== assigneeFilter) return false }
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      if (!`${t.title} ${t.description ?? ''} ${t.assignee?.name ?? ''}`.toLowerCase().includes(q)) return false
+    }
+    return true
+  })
+  const filtering = search.trim() !== '' || assigneeFilter !== 'all'
+
   const byStatus = STATUSES.reduce((acc, s) => {
-    acc[s] = tasks.filter((t) => t.status === s)
+    acc[s] = filteredTasks.filter((t) => t.status === s)
     return acc
   }, {} as Record<Status, Task[]>)
+
+  // Task summary (respects filters)
+  const nowDate = new Date()
+  const taskOverdue = (t: Task) => { const d = t.pushed_date ?? t.due_date; return t.status !== 'Done' && !!d && new Date(d) < nowDate }
+  const summary = {
+    open: filteredTasks.filter((t) => t.status !== 'Done').length,
+    overdue: filteredTasks.filter(taskOverdue).length,
+    high: filteredTasks.filter((t) => t.status !== 'Done' && t.priority === 'High').length,
+    done: filteredTasks.filter((t) => t.status === 'Done').length,
+  }
+
+  const assigneeChoices = assignableUsers.filter((u) => tasks.some((t) => t.assignee_id === u.id))
 
   function handleStatusChange(taskId: string, newStatus: string) {
     setTasks((prev) => prev.map((t) => t.id === taskId
@@ -103,6 +136,60 @@ export default function TaskBoard({
     })
   }
 
+  function renderCard(task: Task) {
+    const effectiveDue = task.pushed_date ?? task.due_date
+    const due = effectiveDue ? formatDue(effectiveDue) : null
+    const isAssignee = task.assignee_id === currentUserId
+    return (
+      <div key={task.id} className={styles.card}>
+        <div className={styles.cardTop}>
+          <div className={styles.cardTitle}>{task.title}</div>
+          <PriorityBadge priority={task.priority} />
+        </div>
+        {task.description && (
+          <div style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginBottom: '0.375rem', lineHeight: 1.4 }}>
+            {task.description}
+          </div>
+        )}
+        <div className={styles.cardMeta}>
+          {task.assignee?.name && <span className={styles.metaTag}>{task.assignee.name}</span>}
+          {due && (
+            <span className={`${styles.metaTag} ${due.isOverdue ? styles.dueDateOverdue : styles.dueDate}`}>
+              {due.isOverdue ? '⚠ ' : ''}{due.label}
+            </span>
+          )}
+          {task.pushed_at && (
+            <span className={styles.pushedTag} title={`Pushed ${task.push_count}×`}>
+              ⤳ Pushed{task.push_count > 1 ? ` ${task.push_count}×` : ''}
+            </span>
+          )}
+        </div>
+        {task.created_by_user?.name && (
+          <div className={styles.assignedBy}>Assigned by {task.created_by_user.name}</div>
+        )}
+        <div className={styles.cardActions}>
+          <select
+            className={styles.statusSelect}
+            value={task.status}
+            onChange={(e) => handleStatusChange(task.id, e.target.value)}
+            disabled={isPending}
+          >
+            {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          {isAssignee && task.status !== 'Done' && (
+            <button
+              className={styles.pushBtn}
+              onClick={() => { setPushTarget(task); setPushDate(task.pushed_date ?? task.due_date ?? '') }}
+              disabled={isPending}
+            >
+              Push
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className={styles.page}>
       <div className={styles.header}>
@@ -115,77 +202,80 @@ export default function TaskBoard({
         )}
       </div>
 
-      <div className={styles.board}>
-        {STATUSES.map((status) => (
-          <div key={status} className={styles.column}>
-            <div className={styles.columnHeader}>
-              <span className={styles.columnTitle}>{status}</span>
-              <span className={styles.columnCount}>{byStatus[status].length}</span>
-            </div>
-            <div className={styles.columnBody}>
-              {byStatus[status].length === 0 ? (
-                <div className={styles.emptyCol}>No tasks</div>
-              ) : (
-                byStatus[status].map((task) => {
-                  const effectiveDue = task.pushed_date ?? task.due_date
-                  const due = effectiveDue ? formatDue(effectiveDue) : null
-                  const isAssignee = task.assignee_id === currentUserId
-                  return (
-                    <div key={task.id} className={styles.card}>
-                      <div className={styles.cardTop}>
-                        <div className={styles.cardTitle}>{task.title}</div>
-                        <PriorityBadge priority={task.priority} />
-                      </div>
-                      {task.description && (
-                        <div style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginBottom: '0.375rem', lineHeight: 1.4 }}>
-                          {task.description}
-                        </div>
-                      )}
-                      <div className={styles.cardMeta}>
-                        {task.assignee?.name && (
-                          <span className={styles.metaTag}>{task.assignee.name}</span>
-                        )}
-                        {due && (
-                          <span className={`${styles.metaTag} ${due.isOverdue ? styles.dueDateOverdue : styles.dueDate}`}>
-                            {due.isOverdue ? '⚠ ' : ''}{due.label}
-                          </span>
-                        )}
-                        {task.pushed_at && (
-                          <span className={styles.pushedTag} title={`Pushed ${task.push_count}×`}>
-                            ⤳ Pushed{task.push_count > 1 ? ` ${task.push_count}×` : ''}
-                          </span>
-                        )}
-                      </div>
-                      {task.created_by_user?.name && (
-                        <div className={styles.assignedBy}>Assigned by {task.created_by_user.name}</div>
-                      )}
-                      <div className={styles.cardActions}>
-                        <select
-                          className={styles.statusSelect}
-                          value={task.status}
-                          onChange={(e) => handleStatusChange(task.id, e.target.value)}
-                          disabled={isPending}
-                        >
-                          {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-                        </select>
-                        {isAssignee && task.status !== 'Done' && (
-                          <button
-                            className={styles.pushBtn}
-                            onClick={() => { setPushTarget(task); setPushDate(task.pushed_date ?? task.due_date ?? '') }}
-                            disabled={isPending}
-                          >
-                            Push
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })
-              )}
-            </div>
-          </div>
-        ))}
+      {/* Controls: search + assignee filter + view toggle */}
+      <div className={styles.controls}>
+        <input className={styles.search} placeholder="Search tasks…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select className={styles.filterSelect} value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)}>
+          <option value="all">All assignees</option>
+          <option value="mine">My tasks</option>
+          {assigneeChoices.map((u) => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
+        </select>
+        <div style={{ flex: 1 }} />
+        <div className={styles.viewToggle}>
+          <button className={`${styles.viewBtn} ${view === 'board' ? styles.viewBtnActive : ''}`} onClick={() => setView('board')}>Board</button>
+          <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')}>List</button>
+        </div>
       </div>
+
+      {/* Summary */}
+      <div className={styles.summaryBar}>
+        <div className={styles.summaryPill}><span className={styles.summaryNum}>{summary.open}</span><span className={styles.summaryLabel}>Open</span></div>
+        <div className={`${styles.summaryPill} ${summary.overdue > 0 ? styles.summaryOverdue : ''}`}><span className={styles.summaryNum}>{summary.overdue}</span><span className={styles.summaryLabel}>Overdue</span></div>
+        <div className={`${styles.summaryPill} ${summary.high > 0 ? styles.summaryHigh : ''}`}><span className={styles.summaryNum}>{summary.high}</span><span className={styles.summaryLabel}>High priority</span></div>
+        <div className={styles.summaryPill}><span className={styles.summaryNum}>{summary.done}</span><span className={styles.summaryLabel}>Done</span></div>
+      </div>
+
+      {/* Board view */}
+      {view === 'board' && (
+        <div className={styles.board}>
+          {STATUSES.map((status) => {
+            if (collapsedCols.has(status)) {
+              return (
+                <div key={status} className={styles.columnRail} onClick={() => toggleCollapse(status)} title={`Expand ${status}`}>
+                  <span className={styles.railCount}>{byStatus[status].length}</span>
+                  <span className={styles.railName}>{status}</span>
+                </div>
+              )
+            }
+            return (
+              <div key={status} className={styles.column}>
+                <div className={styles.columnHeader}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <button className={styles.collapseBtn} onClick={() => toggleCollapse(status)} title="Collapse">‹</button>
+                    <span className={styles.columnTitle}>{status}</span>
+                  </div>
+                  <span className={styles.columnCount}>{byStatus[status].length}</span>
+                </div>
+                <div className={styles.columnBody}>
+                  {byStatus[status].length === 0 ? (
+                    <div className={styles.emptyCol}>{filtering ? 'No matches' : 'No tasks'}</div>
+                  ) : (
+                    byStatus[status].map(renderCard)
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* List view */}
+      {view === 'list' && (
+        <div className={styles.listView}>
+          {STATUSES.map((status) => byStatus[status].length === 0 ? null : (
+            <div key={status} className={styles.listGroup}>
+              <div className={styles.listGroupHead}>
+                <span className={styles.listGroupName}>{status}</span>
+                <span className={styles.columnCount}>{byStatus[status].length}</span>
+              </div>
+              <div className={styles.listCards}>{byStatus[status].map(renderCard)}</div>
+            </div>
+          ))}
+          {filteredTasks.length === 0 && (
+            <div className={styles.emptyCol} style={{ padding: '3rem' }}>{filtering ? 'No tasks match your filters.' : 'No tasks yet.'}</div>
+          )}
+        </div>
+      )}
 
       {showModal && (
         <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setShowModal(false)}>
