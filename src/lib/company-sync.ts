@@ -3,6 +3,7 @@
 // by brand OR legal name within the org and linked to; otherwise a new profile is created.
 // Plain helpers (take a Supabase client) so both server actions and other actions can reuse them.
 import type { SupabaseClient } from '@supabase/supabase-js'
+import { extractMetaTags } from '@/lib/company-tags'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SB = SupabaseClient<any, 'public', any>
@@ -53,11 +54,14 @@ export async function findOrCreateCompanyForDeskDeal(supabase: SB, orgId: string
     name: f.name, role: null, bio: f.bio ?? null, ex_affiliations: f.affiliation ?? null, linkedin_url: f.linkedin_url ?? null, equity_pct: null,
   }))
 
+  const meta_tags = extractMetaTags(brand, deal.about, deal.usp, deal.business_model, deal.notes, deal.sector)
+
   const { data: created, error } = await supabase.from('companies').insert({
     org_id: orgId, created_by: userId, name: brand,
     one_liner: deal.about ?? null, hq_city: deal.location ?? null,
     sectors: deal.sector ? [deal.sector] : [],
     stage: deal.stage ?? null, business_model: deal.business_model ?? null, usp: deal.usp ?? null,
+    meta_tags,
     founders,
     arr_inr: arr, customers_count: deal.customers_count ?? null, gross_margin_pct: deal.gross_margin_pct ?? null,
     monthly_burn_inr: deal.monthly_burn_inr ?? null, runway_months: deal.runway_months ?? null,

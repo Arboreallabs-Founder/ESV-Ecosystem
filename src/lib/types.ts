@@ -597,6 +597,7 @@ export type Company = {
   business_model: string | null
   status: CompanyStatus
   tags: string[]
+  meta_tags: string[]   // themes for investor matching (keyword-extracted + hand-edited)
   // Product
   product_description: string | null
   usp: string | null
@@ -632,6 +633,21 @@ export type Company = {
   field_values: CompanyFieldValue[]
   linked_desk_deals: LinkedDeskDeal[]
   linked_pipeline_entries: LinkedPipelineEntry[]
+}
+
+// Suggested investors on a company profile, bucketed by fit strength.
+export type InvestorSuggestionBucket = 'sector' | 'synergy' | 'agnostic'
+export type SuggestedInvestor = {
+  id: string
+  name: string
+  service_type: ServiceType
+  sectors: string[]
+  stage: string | null
+  ticket_size_min: number | null
+  ticket_size_max: number | null
+  bucket: InvestorSuggestionBucket
+  reasons: string[]        // matched sector / tag names
+  stageFit: boolean        // investor stage matches the company stage
 }
 
 // Trimmed row for the database list view.

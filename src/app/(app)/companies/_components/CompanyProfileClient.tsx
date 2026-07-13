@@ -10,14 +10,16 @@ import {
   addDocument, removeDocument,
   addUpdate, deleteUpdate,
   saveFieldDef, setFieldValue,
-  createDeskDealFromCompany,
+  createDeskDealFromCompany, suggestMetaTags,
   type CompanyPatch,
 } from '@/app/actions/companies'
 import {
   COMPANY_STATUS_LABELS, COMPANY_STATUSES, COMPANY_DOC_TYPES, COMPANY_DOC_TYPE_LABELS, COMPANY_FIELD_TYPES,
+  SERVICE_TYPE_LABELS,
 } from '@/lib/types'
 import type {
   Company, CompanyFieldDef, CompanyStatus, CompanyDocType, CompanyFieldType, CompanyFounder, CompanyTeamMember,
+  SuggestedInvestor,
 } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import { formatInr, formatDate, initials, locationLabel } from './format'
@@ -134,7 +136,9 @@ const OVERVIEW_SPECS: Spec[] = [
   { key: 'hq_city', label: 'HQ city' }, { key: 'hq_country', label: 'HQ country' }, { key: 'founded_date', label: 'Founded', type: 'date' },
   { key: 'incorporation_type', label: 'Incorporation type' }, { key: 'incorporation_no', label: 'Incorporation / CIN' },
   { key: 'sectors', label: 'Sectors', type: 'tags' }, { key: 'stage', label: 'Stage' }, { key: 'business_model', label: 'Business model' },
-  { key: 'status', label: 'Status', type: 'status' }, { key: 'tags', label: 'Tags', type: 'tags' }, { key: 'esv_poc_id', label: 'ESV point of contact', type: 'user' },
+  { key: 'status', label: 'Status', type: 'status' }, { key: 'tags', label: 'Tags', type: 'tags' },
+  { key: 'meta_tags', label: 'Meta-tags (themes for investor matching)', type: 'tags' },
+  { key: 'esv_poc_id', label: 'ESV point of contact', type: 'user' },
 ]
 const TRACTION_SPECS: Spec[] = [
   { key: 'arr_inr', label: 'ARR', type: 'number' }, { key: 'mrr_inr', label: 'MRR', type: 'number' }, { key: 'customers_count', label: 'Customers', type: 'number' },
@@ -153,9 +157,9 @@ const PRODUCT_SPECS: Spec[] = [
 ]
 
 export default function CompanyProfileClient({
-  company, fieldDefs, canManage, canAuthorCard, teamMembers,
+  company, fieldDefs, canManage, canAuthorCard, teamMembers, suggestions,
 }: {
-  company: Company; fieldDefs: CompanyFieldDef[]; canManage: boolean; canAuthorCard: boolean; teamMembers: Team
+  company: Company; fieldDefs: CompanyFieldDef[]; canManage: boolean; canAuthorCard: boolean; teamMembers: Team; suggestions: SuggestedInvestor[]
 }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
@@ -210,6 +214,9 @@ export default function CompanyProfileClient({
           {canManage && <button className={styles.dangerBtn} onClick={handleDelete}>Delete</button>}
         </div>
       </div>
+
+      <div className={styles.profileBody}>
+        <div className={styles.profileMain}>
 
       {/* Key metrics */}
       <div className={styles.section}>
@@ -324,6 +331,14 @@ export default function CompanyProfileClient({
 
       {/* Updates timeline */}
       <UpdatesSection company={company} onChanged={refresh} />
+
+        </div>
+
+        <aside className={styles.profileAside}>
+          <MetaTagsCard company={company} onChanged={refresh} />
+          <SuggestedInvestorsPanel suggestions={suggestions} />
+        </aside>
+      </div>
 
       {/* Modals */}
       {modal && modalSpecs[modal] && (
@@ -592,6 +607,80 @@ function CustomFieldsSection({ company, fieldDefs, canManage, onChanged }: {
           ))}
         </div>
       )}
+    </div>
+  )
+}
+
+// ── Meta-tags (aside) ─────────────────────────────────────────────────────────
+function MetaTagsCard({ company, onChanged }: { company: Company; onChanged: () => void }) {
+  const [pending, startTransition] = useTransition()
+  return (
+    <div className={styles.asideCard}>
+      <div className={styles.asideHead}>
+        <span className={styles.asideTitle}>Themes</span>
+        <button className={styles.smallBtn} onClick={() => startTransition(async () => { await suggestMetaTags(company.id); onChanged() })} disabled={pending} title="Extract themes from the company's text">
+          {pending ? '…' : '↻ Suggest'}
+        </button>
+      </div>
+      {company.meta_tags.length === 0 ? (
+        <div className={styles.muted}>No themes yet. Click Suggest to extract from the description, or add them in Edit.</div>
+      ) : (
+        <div className={styles.chips}>{company.meta_tags.map((t) => <span key={t} className={styles.metaChip}>{t}</span>)}</div>
+      )}
+    </div>
+  )
+}
+
+// ── Suggested investors (aside) ───────────────────────────────────────────────
+const BUCKETS: Array<{ key: SuggestedInvestor['bucket']; label: string; hint: string }> = [
+  { key: 'sector', label: 'Sector preference', hint: 'Their thesis covers this sector' },
+  { key: 'synergy', label: 'Synergetic', hint: 'Matches a company theme' },
+  { key: 'agnostic', label: 'Sector-agnostic', hint: 'Invests broadly' },
+]
+
+function ticketLabel(inv: SuggestedInvestor): string | null {
+  if (inv.ticket_size_min == null && inv.ticket_size_max == null) return null
+  if (inv.ticket_size_min != null && inv.ticket_size_max != null) return `${formatInr(inv.ticket_size_min)}–${formatInr(inv.ticket_size_max)}`
+  return formatInr(inv.ticket_size_min ?? inv.ticket_size_max)
+}
+
+function SuggestedInvestorsPanel({ suggestions }: { suggestions: SuggestedInvestor[] }) {
+  return (
+    <div className={styles.asideCard}>
+      <div className={styles.asideTitle}>Suggested investors</div>
+      {suggestions.length === 0 ? (
+        <div className={styles.muted}>No matches yet — add sectors/themes to this company, or investors to the database.</div>
+      ) : (
+        BUCKETS.map((b) => {
+          const items = suggestions.filter((s) => s.bucket === b.key)
+          if (items.length === 0) return null
+          return (
+            <div key={b.key} className={styles.invGroup}>
+              <div className={styles.invGroupHead}>
+                <span className={`${styles.invBucket} ${styles[`bucket_${b.key}`]}`}>{b.label}</span>
+                <span className={styles.muted} title={b.hint}>{items.length}</span>
+              </div>
+              {items.map((inv) => {
+                const ticket = ticketLabel(inv)
+                return (
+                  <div key={inv.id} className={styles.invRow}>
+                    <div className={styles.invName}>
+                      {inv.name}
+                      {inv.stageFit && <span className={styles.stageFit} title="Stage fit">◎</span>}
+                    </div>
+                    <div className={styles.invMeta}>
+                      {SERVICE_TYPE_LABELS[inv.service_type]}
+                      {inv.reasons.length > 0 && <> · {inv.reasons.join(', ')}</>}
+                    </div>
+                    {ticket && <div className={styles.invTicket}>{ticket} ticket</div>}
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })
+      )}
+      <Link href="/investors" className={styles.asideLink}>View all investors →</Link>
     </div>
   )
 }

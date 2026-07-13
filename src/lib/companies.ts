@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { Company, CompanyFieldDef, CompanyListItem } from '@/lib/types'
+import type { Company, CompanyFieldDef, CompanyListItem, SuggestedInvestor, InvestorSuggestionBucket } from '@/lib/types'
 
 // Database list — trimmed rows, newest-touched first. RLS scopes to the org.
 export const fetchCompanies = cache(async (): Promise<CompanyListItem[]> => {
@@ -38,6 +38,9 @@ export const fetchCompany = cache(async (id: string): Promise<Company | null> =>
   return {
     ...(row as unknown as Company),
     esv_poc: one(row.esv_poc as { name: string } | { name: string }[] | null),
+    meta_tags: (row.meta_tags as string[]) ?? [],
+    tags: (row.tags as string[]) ?? [],
+    sectors: (row.sectors as string[]) ?? [],
     founders: (row.founders as Company['founders']) ?? [],
     team: (row.team as Company['team']) ?? [],
     funding_rounds: ((row.funding_rounds as Company['funding_rounds']) ?? []).sort((a, b) => a.sort_order - b.sort_order),
@@ -72,4 +75,45 @@ export const fetchCompanyOptions = cache(async (): Promise<Array<{ id: string; n
   const supabase = await createClient()
   const { data } = await supabase.from('companies').select('id, name').order('name')
   return (data as Array<{ id: string; name: string }>) ?? []
+})
+
+/**
+ * Suggested investors for a company, prioritised by fit:
+ *   sector  — investor's stated thesis sector matches the company's primary sector
+ *   synergy — investor's thesis matches one of the company's meta-tags (adjacent theme)
+ *   agnostic — investor has no stated sectors (invests broadly)
+ * Investors whose sectors don't overlap and who aren't agnostic are excluded.
+ */
+export const fetchInvestorSuggestions = cache(async (
+  sectors: string[], metaTags: string[], stage: string | null,
+): Promise<SuggestedInvestor[]> => {
+  const supabase = await createClient()
+  const { data } = await supabase.from('investors').select('id, name, service_type, sectors, stage, ticket_size_min, ticket_size_max')
+
+  const secLower = new Set((sectors ?? []).map((s) => s.toLowerCase().trim()).filter(Boolean))
+  const tagLower = new Set((metaTags ?? []).map((t) => t.toLowerCase().trim()).filter(Boolean))
+  const stageLower = (stage ?? '').toLowerCase().trim()
+
+  const out: SuggestedInvestor[] = []
+  for (const inv of (data as Array<Record<string, unknown>>) ?? []) {
+    const invSectors = (inv.sectors as string[]) ?? []
+    const sectorReasons = invSectors.filter((s) => secLower.has(s.toLowerCase().trim()))
+    const synergyReasons = invSectors.filter((s) => tagLower.has(s.toLowerCase().trim()))
+    let bucket: InvestorSuggestionBucket
+    let reasons: string[]
+    if (sectorReasons.length) { bucket = 'sector'; reasons = sectorReasons }
+    else if (synergyReasons.length) { bucket = 'synergy'; reasons = synergyReasons }
+    else if (invSectors.length === 0) { bucket = 'agnostic'; reasons = [] }
+    else continue
+    const invStage = (inv.stage as string | null) ?? null
+    out.push({
+      id: inv.id as string, name: inv.name as string, service_type: inv.service_type as SuggestedInvestor['service_type'],
+      sectors: invSectors, stage: invStage,
+      ticket_size_min: (inv.ticket_size_min as number | null) ?? null, ticket_size_max: (inv.ticket_size_max as number | null) ?? null,
+      bucket, reasons, stageFit: !!stageLower && !!invStage && invStage.toLowerCase().includes(stageLower),
+    })
+  }
+  const order: Record<InvestorSuggestionBucket, number> = { sector: 0, synergy: 1, agnostic: 2 }
+  out.sort((a, b) => order[a.bucket] - order[b.bucket] || Number(b.stageFit) - Number(a.stageFit) || a.name.localeCompare(b.name))
+  return out
 })

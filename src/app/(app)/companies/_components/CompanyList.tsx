@@ -23,8 +23,12 @@ export default function CompanyList({ companies }: { companies: CompanyListItem[
     setSyncMsg(null)
     startSync(async () => {
       try {
-        const { cards, deals } = await syncCompaniesFromExisting()
-        setSyncMsg(cards + deals === 0 ? 'Everything is already synced.' : `Synced ${cards} Deal Desk card${cards === 1 ? '' : 's'} and ${deals} deal${deals === 1 ? '' : 's'}.`)
+        const { cards, deals, tagged } = await syncCompaniesFromExisting()
+        const parts: string[] = []
+        if (cards) parts.push(`${cards} Deal Desk card${cards === 1 ? '' : 's'}`)
+        if (deals) parts.push(`${deals} deal${deals === 1 ? '' : 's'}`)
+        if (tagged) parts.push(`tagged ${tagged} compan${tagged === 1 ? 'y' : 'ies'}`)
+        setSyncMsg(parts.length === 0 ? 'Everything is already synced.' : `Synced ${parts.join(', ')}.`)
         router.refresh()
       } catch (e) { setSyncMsg((e as Error).message) }
     })

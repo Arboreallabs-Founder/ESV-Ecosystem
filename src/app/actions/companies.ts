@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { findOrCreateCompanyForDeskDeal, findOrCreateCompanyByName, enumOrNull } from '@/lib/company-sync'
+import { extractMetaTags } from '@/lib/company-tags'
 import { DESK_STAGES, DESK_INSTRUMENTS, DESK_ROUND_STATUSES } from '@/lib/types'
 import type {
   CompanyStatus, CompanyDocType, CompanyFieldType,
@@ -34,6 +35,7 @@ export type CompanyPatch = Partial<{
   business_model: string | null
   status: CompanyStatus
   tags: string[]
+  meta_tags: string[]
   esv_poc_id: string | null
   product_description: string | null
   usp: string | null
@@ -64,14 +66,34 @@ export async function createCompany(patch: CompanyPatch): Promise<string> {
   const { supabase, userId, orgId } = await requireInternal()
   const name = patch.name?.trim()
   if (!name) throw new Error('Company name is required.')
+  // Auto-extract meta-tags from any text provided, unless the caller set them explicitly.
+  const meta_tags = patch.meta_tags ?? extractMetaTags(patch.name, patch.one_liner, patch.description, patch.product_description, patch.usp, patch.business_model)
   const { data, error } = await supabase
     .from('companies')
-    .insert({ ...patch, name, org_id: orgId, created_by: userId })
+    .insert({ ...patch, name, meta_tags, org_id: orgId, created_by: userId })
     .select('id')
     .single()
   if (error) throw error
   revalidatePath('/companies')
   return data.id as string
+}
+
+/** Re-run keyword extraction over the company's text and merge into its meta-tags. */
+export async function suggestMetaTags(companyId: string): Promise<void> {
+  const { supabase } = await requireInternal()
+  const { data: c } = await supabase.from('companies')
+    .select('name, one_liner, description, product_description, usp, business_model, meta_tags')
+    .eq('id', companyId).single()
+  if (!c) throw new Error('Company not found.')
+  const row = c as Record<string, unknown>
+  const extracted = extractMetaTags(
+    row.name as string, row.one_liner as string, row.description as string,
+    row.product_description as string, row.usp as string, row.business_model as string,
+  )
+  const merged = Array.from(new Set([...((row.meta_tags as string[]) ?? []), ...extracted]))
+  const { error } = await supabase.from('companies').update({ meta_tags: merged }).eq('id', companyId)
+  if (error) throw error
+  revalidatePath(`/companies/${companyId}`)
 }
 
 export async function updateCompany(id: string, patch: CompanyPatch) {
@@ -235,10 +257,11 @@ export async function setFieldValue(companyId: string, fieldDefId: string, value
  * card and every accepted (active) deal without a linked company gets create-or-linked by name.
  * Scoped by the caller's visibility (a founder/admin sees everything; an associate their own cards).
  */
-export async function syncCompaniesFromExisting(): Promise<{ cards: number; deals: number }> {
+export async function syncCompaniesFromExisting(): Promise<{ cards: number; deals: number; tagged: number }> {
   const { supabase, userId, orgId } = await requireInternal()
   let cards = 0
   let deals = 0
+  let tagged = 0
 
   // Deal Desk cards without a company.
   const { data: unlinkedCards } = await supabase.from('desk_deals').select('*').is('company_id', null)
@@ -263,8 +286,24 @@ export async function syncCompaniesFromExisting(): Promise<{ cards: number; deal
     } catch { /* skip this deal */ }
   }
 
+  // Backfill meta-tags from company text (keyword extraction), merging into any existing tags.
+  const { data: companyRows } = await supabase.from('companies')
+    .select('id, name, one_liner, description, product_description, usp, business_model, meta_tags')
+  for (const c of (companyRows ?? []) as Array<Record<string, unknown>>) {
+    const existing = (c.meta_tags as string[]) ?? []
+    const extracted = extractMetaTags(
+      c.name as string, c.one_liner as string, c.description as string,
+      c.product_description as string, c.usp as string, c.business_model as string,
+    )
+    const merged = Array.from(new Set([...existing, ...extracted]))
+    if (merged.length !== existing.length) {
+      await supabase.from('companies').update({ meta_tags: merged }).eq('id', c.id as string)
+      tagged++
+    }
+  }
+
   revalidatePath('/companies')
-  return { cards, deals }
+  return { cards, deals, tagged }
 }
 
 // ── Linking ─────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
-import { fetchCompany, fetchCompanyFieldDefs } from '@/lib/companies'
+import { fetchCompany, fetchCompanyFieldDefs, fetchInvestorSuggestions } from '@/lib/companies'
 import { getInternalUsers } from '@/app/actions/active-deals'
 import CompanyProfileClient from '../_components/CompanyProfileClient'
 
@@ -10,14 +10,16 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
   if (!user) redirect('/login')
   if (!['founder', 'admin', 'associate', 'super_admin'].includes(user.role ?? '')) redirect('/dashboard')
 
-  const [company, fieldDefs, team] = await Promise.all([
-    fetchCompany(id),
+  const company = await fetchCompany(id)
+  if (!company) notFound()
+
+  const [fieldDefs, team, suggestions] = await Promise.all([
     fetchCompanyFieldDefs(),
     getInternalUsers().catch(() => []),
+    fetchInvestorSuggestions(company.sectors, company.meta_tags, company.stage),
   ])
-  if (!company) notFound()
 
   const canManage = ['founder', 'admin'].includes(user.role ?? '')
   const canAuthorCard = ['associate', 'admin'].includes(user.role ?? '')
-  return <CompanyProfileClient company={company} fieldDefs={fieldDefs} canManage={canManage} canAuthorCard={canAuthorCard} teamMembers={team} />
+  return <CompanyProfileClient company={company} fieldDefs={fieldDefs} canManage={canManage} canAuthorCard={canAuthorCard} teamMembers={team} suggestions={suggestions} />
 }
