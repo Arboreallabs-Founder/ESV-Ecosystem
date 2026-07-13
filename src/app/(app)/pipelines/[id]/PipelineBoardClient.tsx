@@ -111,6 +111,22 @@ export default function PipelineBoardClient({
   const [dragEntryId, setDragEntryId] = useState<string | null>(null)
   const [dragOverStageId, setDragOverStageId] = useState<string | 'unsorted' | null>(null)
 
+  // View / filters / collapse
+  const [view, setView] = useState<'board' | 'list'>('board')
+  const [search, setSearch] = useState('')
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all') // 'all' | 'mine' | userId
+  // Terminal stages (Accepted/Rejected) start collapsed — they're archives, not workspaces.
+  const [collapsedStages, setCollapsedStages] = useState<Set<string>>(
+    () => new Set(initial.stages.filter((s) => s.stage_type === 'accepted' || s.stage_type === 'rejected').map((s) => s.id)),
+  )
+  function toggleCollapse(id: string) {
+    setCollapsedStages((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  }
+  function focusStage(id: string) {
+    setCollapsedStages((prev) => { if (!prev.has(id)) return prev; const n = new Set(prev); n.delete(id); return n })
+    requestAnimationFrame(() => document.getElementById(`stage-col-${id}`)?.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' }))
+  }
+
   // Associates can only drag/move entries they're personally assigned to
   const canMoveEntry = (entry: PipelineEntry) => {
     if (canManage) return true
@@ -385,7 +401,23 @@ export default function PipelineBoardClient({
     startFormsTransition(async () => { await linkFormToPipeline(formId, null) })
   }
 
-  const unsorted = entries.filter((e) => !e.stage_id || !pipeline.stages.find((s) => s.id === e.stage_id))
+  // Search + assignee filter — applied to what's shown on the board/list (not to counts used for guards).
+  const filteredEntries = entries.filter((e) => {
+    if (assigneeFilter === 'mine') {
+      if (!currentUserId || !(e.assignees ?? []).some((a) => a.user_id === currentUserId)) return false
+    } else if (assigneeFilter !== 'all') {
+      if (!(e.assignees ?? []).some((a) => a.user_id === assigneeFilter)) return false
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      const hay = `${e.title ?? ''} ${e.submitter_name ?? ''} ${e.submitter_email ?? ''}`.toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    return true
+  })
+  const entriesForStage = (stageId: string) => filteredEntries.filter((e) => e.stage_id === stageId)
+  const unsorted = filteredEntries.filter((e) => !e.stage_id || !pipeline.stages.find((s) => s.id === e.stage_id))
+  const filtering = search.trim() !== '' || assigneeFilter !== 'all'
 
   return (
     <div className={styles.page}>
@@ -407,82 +439,190 @@ export default function PipelineBoardClient({
         </div>
       </div>
 
-      <div className={styles.board}>
-        {sortedStages.map((stage) => {
-          const stageEntries = entries.filter((e) => e.stage_id === stage.id)
-          const isDragOver = dragOverStageId === stage.id
-          const isMandatory = stage.stage_type !== 'custom'
-          return (
-            <div key={stage.id} className={`${styles.column} ${isMandatory ? styles.columnMandatory : ''}`}>
-              <div className={styles.columnHeader} style={{ borderTopColor: stage.color }}>
-                <div className={styles.columnTitleRow}>
-                  <div className={styles.columnTitle}>{stage.name}</div>
-                  {isMandatory && (
-                    <span className={`${styles.mandatoryBadge} ${styles[`mandatoryBadge_${stage.stage_type}`]}`}>
-                      {STAGE_TYPE_LABELS[stage.stage_type]}
-                    </span>
+      {/* Controls: search + assignee filter + view toggle */}
+      <div className={styles.controls}>
+        <input className={styles.search} placeholder="Search deals…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <select className={styles.filterSelect} value={assigneeFilter} onChange={(e) => setAssigneeFilter(e.target.value)}>
+          <option value="all">All assignees</option>
+          {currentUserId && <option value="mine">My deals</option>}
+          {teamMembers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+        </select>
+        <div style={{ flex: 1 }} />
+        <div className={styles.viewToggle}>
+          <button className={`${styles.viewBtn} ${view === 'board' ? styles.viewBtnActive : ''}`} onClick={() => setView('board')}>Board</button>
+          <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')}>List</button>
+        </div>
+      </div>
+
+      {/* Funnel overview (board view) — click a stage to scroll it into view */}
+      {view === 'board' && sortedStages.length > 0 && (() => {
+        const counts = sortedStages.map((s) => entriesForStage(s.id).length)
+        const max = Math.max(1, ...counts)
+        return (
+          <div className={styles.funnelBar}>
+            {sortedStages.map((stage, i) => (
+              <button key={stage.id} className={styles.funnelSeg} onClick={() => focusStage(stage.id)} title={`${stage.name}: ${counts[i]}`}>
+                <span className={styles.funnelSegHead}>
+                  <span className={styles.funnelDot} style={{ background: stage.color }} />
+                  <span className={styles.funnelName}>{stage.name}</span>
+                  <span className={styles.funnelCount}>{counts[i]}</span>
+                </span>
+                <span className={styles.funnelTrack}><span className={styles.funnelFill} style={{ width: `${(counts[i] / max) * 100}%`, background: stage.color }} /></span>
+              </button>
+            ))}
+          </div>
+        )
+      })()}
+
+      {/* Board view */}
+      {view === 'board' && (
+        <div className={styles.board}>
+          {sortedStages.map((stage) => {
+            const stageEntries = entriesForStage(stage.id)
+            const isDragOver = dragOverStageId === stage.id
+            const isMandatory = stage.stage_type !== 'custom'
+            if (collapsedStages.has(stage.id)) {
+              return (
+                <div
+                  key={stage.id}
+                  id={`stage-col-${stage.id}`}
+                  className={`${styles.columnRail} ${isDragOver ? styles.columnRailDragOver : ''}`}
+                  style={{ borderTopColor: stage.color }}
+                  onClick={() => toggleCollapse(stage.id)}
+                  onDragOver={(e) => handleDragOver(e, stage.id)}
+                  onDrop={() => handleDrop(stage.id)}
+                  onDragLeave={() => setDragOverStageId(null)}
+                  title={`Expand ${stage.name}`}
+                >
+                  <span className={styles.railCount}>{stageEntries.length}</span>
+                  <span className={styles.railName}>{stage.name}</span>
+                </div>
+              )
+            }
+            return (
+              <div key={stage.id} id={`stage-col-${stage.id}`} className={`${styles.column} ${isMandatory ? styles.columnMandatory : ''}`}>
+                <div className={styles.columnHeader} style={{ borderTopColor: stage.color }}>
+                  <div className={styles.columnTitleRow}>
+                    <button className={styles.collapseBtn} onClick={() => toggleCollapse(stage.id)} title="Collapse stage">‹</button>
+                    <div className={styles.columnTitle}>{stage.name}</div>
+                    {isMandatory && (
+                      <span className={`${styles.mandatoryBadge} ${styles[`mandatoryBadge_${stage.stage_type}`]}`}>
+                        {STAGE_TYPE_LABELS[stage.stage_type]}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span className={styles.columnCount}>{stageEntries.length}</span>
+                    {canManage && !isMandatory && (
+                      <button className={styles.stageMenuBtn} onClick={() => openEditStage(stage)} title="Edit stage">⚙</button>
+                    )}
+                  </div>
+                </div>
+                <div
+                  className={`${styles.columnBody} ${isDragOver ? styles.columnBodyDragOver : ''}`}
+                  onDragOver={(e) => handleDragOver(e, stage.id)}
+                  onDrop={() => handleDrop(stage.id)}
+                  onDragLeave={() => setDragOverStageId(null)}
+                >
+                  {stageEntries.length === 0 && !isDragOver ? (
+                    <div className={styles.emptyCol}>{filtering ? 'No matches' : 'No entries'}</div>
+                  ) : (
+                    stageEntries.map((entry) => (
+                      <EntryCard
+                        key={entry.id}
+                        entry={entry}
+                        isDragging={dragEntryId === entry.id}
+                        canDrag={canMoveEntry(entry)}
+                        onDragStart={() => handleDragStart(entry.id)}
+                        onDragEnd={handleDragEnd}
+                        onClick={() => handleOpenEntry(entry)}
+                        showAssigneeError={assigneeGateEntry === entry.id}
+                      />
+                    ))
                   )}
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className={styles.columnCount}>{stageEntries.length}</span>
-                  {canManage && !isMandatory && (
-                    <button className={styles.stageMenuBtn} onClick={() => openEditStage(stage)} title="Edit stage">⚙</button>
-                  )}
-                </div>
+              </div>
+            )
+          })}
+
+          {(unsorted.length > 0 || dragOverStageId === 'unsorted') && (
+            <div className={styles.column}>
+              <div className={styles.columnHeader} style={{ borderTopColor: 'var(--color-muted)' }}>
+                <div className={styles.columnTitle} style={{ color: 'var(--color-muted)' }}>Unsorted</div>
+                <span className={styles.columnCount}>{unsorted.length}</span>
               </div>
               <div
-                className={`${styles.columnBody} ${isDragOver ? styles.columnBodyDragOver : ''}`}
-                onDragOver={(e) => handleDragOver(e, stage.id)}
-                onDrop={() => handleDrop(stage.id)}
+                className={`${styles.columnBody} ${dragOverStageId === 'unsorted' ? styles.columnBodyDragOver : ''}`}
+                onDragOver={(e) => handleDragOver(e, 'unsorted')}
+                onDrop={() => handleDrop(null)}
                 onDragLeave={() => setDragOverStageId(null)}
               >
-                {stageEntries.length === 0 && !isDragOver ? (
-                  <div className={styles.emptyCol}>No entries</div>
-                ) : (
-                  stageEntries.map((entry) => (
-                    <EntryCard
-                      key={entry.id}
-                      entry={entry}
-                      isDragging={dragEntryId === entry.id}
-                      canDrag={canMoveEntry(entry)}
-                      onDragStart={() => handleDragStart(entry.id)}
-                      onDragEnd={handleDragEnd}
-                      onClick={() => handleOpenEntry(entry)}
-                      showAssigneeError={assigneeGateEntry === entry.id}
-                    />
-                  ))
-                )}
+                {unsorted.map((entry) => (
+                  <EntryCard key={entry.id} entry={entry} isDragging={dragEntryId === entry.id} canDrag={canMoveEntry(entry)} onDragStart={() => handleDragStart(entry.id)} onDragEnd={handleDragEnd} onClick={() => handleOpenEntry(entry)} showAssigneeError={assigneeGateEntry === entry.id} />
+                ))}
               </div>
             </div>
-          )
-        })}
+          )}
 
-        {(unsorted.length > 0 || dragOverStageId === 'unsorted') && (
-          <div className={styles.column}>
-            <div className={styles.columnHeader} style={{ borderTopColor: 'var(--color-muted)' }}>
-              <div className={styles.columnTitle} style={{ color: 'var(--color-muted)' }}>Unsorted</div>
-              <span className={styles.columnCount}>{unsorted.length}</span>
+          {pipeline.stages.filter(s => s.stage_type === 'custom').length === 0 && entries.length === 0 && (
+            <div className={styles.emptyBoard}>
+              <div>Add stages to this pipeline, then link a form to start collecting submissions.</div>
+              {canManage && <button className={styles.addStageBtn} style={{ marginTop: '1rem' }} onClick={openAddStage}>+ Add First Stage</button>}
             </div>
-            <div
-              className={`${styles.columnBody} ${dragOverStageId === 'unsorted' ? styles.columnBodyDragOver : ''}`}
-              onDragOver={(e) => handleDragOver(e, 'unsorted')}
-              onDrop={() => handleDrop(null)}
-              onDragLeave={() => setDragOverStageId(null)}
-            >
-              {unsorted.map((entry) => (
-                <EntryCard key={entry.id} entry={entry} isDragging={dragEntryId === entry.id} canDrag={canMoveEntry(entry)} onDragStart={() => handleDragStart(entry.id)} onDragEnd={handleDragEnd} onClick={() => handleOpenEntry(entry)} showAssigneeError={assigneeGateEntry === entry.id} />
-              ))}
-            </div>
-          </div>
-        )}
+          )}
+        </div>
+      )}
 
-        {pipeline.stages.filter(s => s.stage_type === 'custom').length === 0 && entries.length === 0 && (
-          <div className={styles.emptyBoard}>
-            <div>Add stages to this pipeline, then link a form to start collecting submissions.</div>
-            {canManage && <button className={styles.addStageBtn} style={{ marginTop: '1rem' }} onClick={openAddStage}>+ Add First Stage</button>}
-          </div>
-        )}
-      </div>
+      {/* List view — grouped by stage, move via dropdown (works on mobile) */}
+      {view === 'list' && (
+        <div className={styles.listView}>
+          {[...sortedStages, null].map((stage) => {
+            const rows = stage ? entriesForStage(stage.id) : unsorted
+            if (rows.length === 0) return null
+            const stageName = stage ? stage.name : 'Unsorted'
+            const color = stage ? stage.color : 'var(--color-muted)'
+            return (
+              <div key={stage?.id ?? 'unsorted'} className={styles.listGroup}>
+                <div className={styles.listGroupHead}>
+                  <span className={styles.listGroupDot} style={{ background: color }} />
+                  <span className={styles.listGroupName}>{stageName}</span>
+                  <span className={styles.columnCount}>{rows.length}</span>
+                </div>
+                <div className={styles.listRows}>
+                  {rows.map((entry) => (
+                    <div key={entry.id} className={styles.listRow} onClick={() => handleOpenEntry(entry)}>
+                      <div className={styles.listRowMain}>
+                        <div className={styles.listRowTitle}>{entry.title || 'Untitled submission'}</div>
+                        <div className={styles.listRowMeta}>
+                          {entry.submitter_name && <span>{entry.submitter_name}</span>}
+                          <span>{new Date(entry.submitted_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+                          {(entry.assignees ?? []).map((a) => <span key={a.user_id} className={styles.entryAssigneeChip}>{a.name.split(' ')[0]}</span>)}
+                        </div>
+                      </div>
+                      {canMoveEntry(entry) ? (
+                        <select
+                          className={styles.listRowStage}
+                          value={entry.stage_id ?? ''}
+                          onClick={(e) => e.stopPropagation()}
+                          onChange={(e) => handleMoveEntry(entry.id, e.target.value || null)}
+                        >
+                          <option value="">Unsorted</option>
+                          {sortedStages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                        </select>
+                      ) : (
+                        <span className={styles.listRowStageStatic}>{stageName}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })}
+          {filteredEntries.length === 0 && (
+            <div className={styles.emptyBoard} style={{ padding: '3rem' }}>{filtering ? 'No deals match your filters.' : 'No submissions yet.'}</div>
+          )}
+        </div>
+      )}
 
       {/* Rejection reason modal */}
       {rejectionPending && (
