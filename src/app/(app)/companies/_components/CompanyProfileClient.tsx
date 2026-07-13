@@ -268,7 +268,9 @@ export default function CompanyProfileClient({
           <div className={styles.people}>
             {company.founders.map((f, i) => (
               <div key={i} className={styles.person}>
-                <div className={styles.avatar}>{initials(f.name)}</div>
+                <div className={`${styles.avatar} ${f.photo_url ? styles.avatarImg : ''}`}>
+                  {f.photo_url ? <img src={f.photo_url} alt="" /> : initials(f.name)}
+                </div>
                 <div>
                   <div className={styles.personName}>{f.name}{f.linkedin_url && <a href={f.linkedin_url} target="_blank" rel="noreferrer" className={styles.liLink}>LinkedIn ↗</a>}</div>
                   {f.role && <div className={styles.personRole}>{f.role}</div>}
@@ -358,13 +360,14 @@ function PeopleModal({ title, kind, company, onClose, onSaved }: {
     (kind === 'founders' ? company.founders : company.team).map((p) => ({
       name: p.name ?? '', role: p.role ?? '', linkedin_url: p.linkedin_url ?? '',
       bio: (p as CompanyFounder).bio ?? '', ex_affiliations: (p as CompanyFounder).ex_affiliations ?? '',
+      photo_url: (p as CompanyFounder).photo_url ?? '',
       equity_pct: (p as CompanyFounder).equity_pct != null ? String((p as CompanyFounder).equity_pct) : '',
     })),
   )
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
-  const add = () => setRows((r) => [...r, { name: '', role: '', linkedin_url: '', bio: '', ex_affiliations: '', equity_pct: '' }])
+  const add = () => setRows((r) => [...r, { name: '', role: '', linkedin_url: '', bio: '', ex_affiliations: '', photo_url: '', equity_pct: '' }])
   const set = (i: number, k: string, v: string) => setRows((r) => r.map((row, idx) => idx === i ? { ...row, [k]: v } : row))
   const remove = (i: number) => setRows((r) => r.filter((_, idx) => idx !== i))
 
@@ -377,6 +380,7 @@ function PeopleModal({ title, kind, company, onClose, onSaved }: {
           const founders: CompanyFounder[] = cleaned.map((r) => ({
             name: r.name.trim(), role: r.role.trim() || null, bio: r.bio.trim() || null,
             ex_affiliations: r.ex_affiliations.trim() || null, linkedin_url: r.linkedin_url.trim() || null,
+            photo_url: r.photo_url.trim() || null,
             equity_pct: r.equity_pct.trim() ? Number(r.equity_pct) : null,
           }))
           await updateCompany(company.id, { founders })
@@ -402,6 +406,7 @@ function PeopleModal({ title, kind, company, onClose, onSaved }: {
                 <input className={styles.input} placeholder="LinkedIn URL" value={r.linkedin_url} onChange={(e) => set(i, 'linkedin_url', e.target.value)} />
                 {kind === 'founders' && <>
                   <input className={styles.input} placeholder="Ex-affiliations" value={r.ex_affiliations} onChange={(e) => set(i, 'ex_affiliations', e.target.value)} />
+                  <input className={styles.input} placeholder="Photo URL" value={r.photo_url} onChange={(e) => set(i, 'photo_url', e.target.value)} />
                   <input className={styles.input} placeholder="Equity %" inputMode="numeric" value={r.equity_pct} onChange={(e) => set(i, 'equity_pct', e.target.value)} />
                   <input className={styles.input} placeholder="Bio" value={r.bio} onChange={(e) => set(i, 'bio', e.target.value)} />
                 </>}

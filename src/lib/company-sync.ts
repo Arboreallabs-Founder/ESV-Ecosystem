@@ -9,6 +9,9 @@ import { extractMetaTags } from '@/lib/company-tags'
 type SB = SupabaseClient<any, 'public', any>
 
 /** Match an existing company by brand or legal name (case-insensitive) within the org. */
+export async function findCompanyIdByName(supabase: SB, orgId: string, name: string): Promise<string | null> {
+  return findCompanyId(supabase, orgId, name)
+}
 async function findCompanyId(supabase: SB, orgId: string, name: string): Promise<string | null> {
   const clean = name.trim()
   if (!clean) return null
@@ -51,7 +54,7 @@ export async function findOrCreateCompanyForDeskDeal(supabase: SB, orgId: string
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const founders = (deal.founders ?? []).map((f: Record<string, any>) => ({
-    name: f.name, role: null, bio: f.bio ?? null, ex_affiliations: f.affiliation ?? null, linkedin_url: f.linkedin_url ?? null, equity_pct: null,
+    name: f.name, role: null, bio: f.bio ?? null, ex_affiliations: f.affiliation ?? null, linkedin_url: f.linkedin_url ?? null, photo_url: f.photo_url ?? null, equity_pct: null,
   }))
 
   // Themes the AI agent tagged in the CSV, plus keyword-extracted ones as a safety net.

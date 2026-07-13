@@ -8,6 +8,7 @@ import { COMPANY_STATUS_LABELS, COMPANY_STATUSES } from '@/lib/types'
 import type { CompanyListItem, CompanyStatus } from '@/lib/types'
 import FilterTabs from '@/app/_components/FilterTabs'
 import Spinner from '@/app/_components/Spinner'
+import CompaniesImportModal from './CompaniesImportModal'
 import { formatInr, initials, locationLabel } from './format'
 import styles from '../companies.module.css'
 
@@ -16,6 +17,7 @@ export default function CompanyList({ companies }: { companies: CompanyListItem[
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<string>('all')
   const [showNew, setShowNew] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [syncMsg, setSyncMsg] = useState<string | null>(null)
   const [syncing, startSync] = useTransition()
 
@@ -59,6 +61,7 @@ export default function CompanyList({ companies }: { companies: CompanyListItem[
           <button className={styles.ghostBtn} onClick={handleSync} disabled={syncing} title="Backfill profiles from Deal Desk cards & active deals">
             {syncing ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><Spinner size={14} /> Syncing…</span> : '↻ Sync'}
           </button>
+          <button className={styles.ghostBtn} onClick={() => setShowImport(true)}>Import CSV</button>
           <button className={styles.primaryBtn} onClick={() => setShowNew(true)}>+ New company</button>
         </div>
       </div>
@@ -97,6 +100,7 @@ export default function CompanyList({ companies }: { companies: CompanyListItem[
       )}
 
       {showNew && <NewCompanyModal existingNames={companies.map((c) => c.name)} onClose={() => setShowNew(false)} onCreated={(id) => router.push(`/companies/${id}`)} />}
+      {showImport && <CompaniesImportModal onClose={() => setShowImport(false)} onImported={() => router.refresh()} />}
     </div>
   )
 }

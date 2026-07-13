@@ -506,6 +506,7 @@ export type CompanyFounder = {
   bio: string | null
   ex_affiliations: string | null
   linkedin_url: string | null
+  photo_url: string | null
   equity_pct: number | null
 }
 

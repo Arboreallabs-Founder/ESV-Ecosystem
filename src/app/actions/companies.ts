@@ -2,8 +2,9 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
-import { findOrCreateCompanyForDeskDeal, findOrCreateCompanyByName, enumOrNull } from '@/lib/company-sync'
+import { findOrCreateCompanyForDeskDeal, findOrCreateCompanyByName, findCompanyIdByName, enumOrNull } from '@/lib/company-sync'
 import { extractMetaTags } from '@/lib/company-tags'
+import { parseCompaniesCsv, type ParsedCompany } from '@/lib/companies-csv'
 import { DESK_STAGES, DESK_INSTRUMENTS, DESK_ROUND_STATUSES } from '@/lib/types'
 import type {
   CompanyStatus, CompanyDocType, CompanyFieldType,
@@ -76,6 +77,94 @@ export async function createCompany(patch: CompanyPatch): Promise<string> {
   if (error) throw error
   revalidatePath('/companies')
   return data.id as string
+}
+
+// ── Bulk CSV import ─────────────────────────────────────────────────────────
+
+export type CompanyImportResult = {
+  created: number
+  updated: number
+  errors: { row: number; message: string }[]
+}
+
+// The company columns a CSV row can populate (arrays/JSON handled separately).
+const IMPORT_SCALARS = [
+  'legal_name', 'website', 'one_liner', 'description', 'hq_city', 'hq_country',
+  'stage', 'status', 'business_model', 'instrument', 'round_status',
+  'arr_inr', 'mrr_inr', 'customers_count', 'team_size', 'gross_margin_pct',
+  'monthly_burn_inr', 'runway_months', 'ask_inr', 'total_raised_inr',
+] as const
+
+/**
+ * Bulk-import companies from a company-shaped CSV. Deduped by name (create-or-link): a matching
+ * profile is UPDATED in place, filling only blank fields (never clobbering existing data); a new
+ * name creates a fresh profile. meta_tags merge explicit CSV values with keyword extraction.
+ */
+export async function importCompaniesCsv(csvText: string): Promise<CompanyImportResult> {
+  const { supabase, userId, orgId } = await requireInternal()
+  if (!orgId) throw new Error('No organisation in scope.')
+
+  const { rows, errors } = parseCompaniesCsv(csvText)
+  if (rows.length === 0) return { created: 0, updated: 0, errors }
+
+  let created = 0
+  let updated = 0
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]
+    const metaTags = Array.from(new Set([
+      ...row.meta_tags,
+      ...extractMetaTags(row.name, row.one_liner, row.description, row.business_model),
+    ]))
+    try {
+      const existingId = await findCompanyIdByName(supabase, orgId, row.name)
+      if (existingId) {
+        await updateBlanks(supabase, existingId, orgId, row, metaTags)
+        updated++
+      } else {
+        const insert: Record<string, unknown> = { org_id: orgId, created_by: userId, name: row.name, meta_tags: metaTags }
+        for (const k of IMPORT_SCALARS) insert[k] = row[k]
+        if (row.sectors.length) insert.sectors = row.sectors
+        if (row.founders.length) insert.founders = row.founders
+        const { error } = await supabase.from('companies').insert(insert)
+        if (error) throw error
+        created++
+      }
+    } catch (e) {
+      errors.push({ row: i + 2, message: e instanceof Error ? e.message : 'Failed to import row.' })
+    }
+  }
+
+  revalidatePath('/companies')
+  return { created, updated, errors }
+}
+
+// Fill only empty columns on an existing company; union array fields; never overwrite entered data.
+async function updateBlanks(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any, companyId: string, orgId: string, row: ParsedCompany, metaTags: string[],
+): Promise<void> {
+  const { data: ex } = await supabase.from('companies')
+    .select(`id, sectors, meta_tags, founders, ${IMPORT_SCALARS.join(', ')}`)
+    .eq('id', companyId).single()
+  if (!ex) return
+  const existing = ex as Record<string, unknown>
+  const patch: Record<string, unknown> = {}
+  for (const k of IMPORT_SCALARS) {
+    const cur = existing[k]
+    if ((cur === null || cur === undefined || cur === '') && row[k] !== null) patch[k] = row[k]
+  }
+  const curSectors = (existing.sectors as string[]) ?? []
+  const mergedSectors = Array.from(new Set([...curSectors, ...row.sectors]))
+  if (mergedSectors.length > curSectors.length) patch.sectors = mergedSectors
+  const curTags = (existing.meta_tags as string[]) ?? []
+  const mergedTags = Array.from(new Set([...curTags, ...metaTags]))
+  if (mergedTags.length > curTags.length) patch.meta_tags = mergedTags
+  const curFounders = (existing.founders as unknown[]) ?? []
+  if (curFounders.length === 0 && row.founders.length > 0) patch.founders = row.founders
+
+  if (Object.keys(patch).length === 0) return
+  const { error } = await supabase.from('companies').update(patch).eq('id', companyId).eq('org_id', orgId)
+  if (error) throw error
 }
 
 /** Re-run keyword extraction over the company's text and merge into its meta-tags. */
