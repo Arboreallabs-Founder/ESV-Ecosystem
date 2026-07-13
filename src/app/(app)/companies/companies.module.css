@@ -1,7 +1,7 @@
 /* Company Profile / Startup Database — ESV tokens. */
 
-.page { max-width: 1100px; }
-.profile { max-width: 1180px; }
+.page { width: 100%; }
+.profile { width: 100%; }
 
 /* Two-column profile: main content + sticky aside (Suggested investors) */
 .profileBody { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 2rem; align-items: start; }
