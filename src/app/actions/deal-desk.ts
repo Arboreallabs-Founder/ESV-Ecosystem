@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { parseDeskCsv } from '@/lib/deal-desk-csv'
+import { findOrCreateCompanyForDeskDeal } from '@/lib/company-sync'
 import { DESK_ACTION_TO_STATUS, type DeskActionType, type DeskStage, type DeskValuationType, type DeskRevenueStatus, type DeskInstrument, type DeskRoundStatus } from '@/lib/types'
 
 async function requireReviewer() {
@@ -27,11 +28,20 @@ export async function importDealsCsv(csvText: string): Promise<ImportResult> {
   const { rows, errors } = parseDeskCsv(csvText)
   if (rows.length === 0) return { inserted: 0, errors }
 
-  const payload = rows.map((r) => ({ ...r, org_id: orgId, associate_id: userId }))
+  // Every imported card materialises into a Company Profile (create-or-link by name), so all
+  // the data is captured regardless of go/no-go, and the card links back.
+  const payload: Array<Record<string, unknown>> = []
+  for (const r of rows) {
+    let companyId: string | null = null
+    try { companyId = await findOrCreateCompanyForDeskDeal(supabase, orgId, userId, r as unknown as Record<string, unknown>) }
+    catch { companyId = null }
+    payload.push({ ...r, org_id: orgId, associate_id: userId, company_id: companyId })
+  }
   const { data, error } = await supabase.from('desk_deals').insert(payload).select('id')
   if (error) throw error
 
   revalidatePath('/deal-desk')
+  revalidatePath('/companies')
   return { inserted: data?.length ?? 0, errors }
 }
 

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { addStage, updateStage, deleteStage, moveEntry, deleteEntry, addAssignee, removeAssignee, rejectEntry, getEntryAnswers, saveStageQuestions, moveEntryWithStageAnswers, saveEntryStageAnswers, getEntryStageAnswers } from '@/app/actions/pipelines'
 import { linkFormToPipeline } from '@/app/actions/forms'
 import { getCategories, acceptDeal } from '@/app/actions/active-deals'
+import { linkPipelineEntryToCompany } from '@/app/actions/companies'
 import type { Pipeline, PipelineStage, PipelineEntry, DealCategory, PipelineStageQuestion, StageAnswerView, StageQuestionFieldType } from '@/lib/types'
 import styles from './board.module.css'
 
@@ -52,6 +53,7 @@ export default function PipelineBoardClient({
   teamMembers,
   forms: initialForms,
   currentUserId,
+  companyOptions = [],
 }: {
   pipeline: Pipeline
   entries: PipelineEntry[]
@@ -59,6 +61,7 @@ export default function PipelineBoardClient({
   teamMembers: Array<{ id: string; name: string }>
   forms: FormItem[]
   currentUserId?: string
+  companyOptions?: Array<{ id: string; name: string }>
 }) {
   const router = useRouter()
   const [pipeline, setPipeline] = useState(initial)
@@ -381,6 +384,12 @@ export default function PipelineBoardClient({
     setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, assignees: (e.assignees ?? []).filter((a) => a.user_id !== userId) } : e))
     setSelectedEntry((prev) => prev ? { ...prev, assignees: (prev.assignees ?? []).filter((a) => a.user_id !== userId) } : null)
     startTransition(async () => { await removeAssignee(entryId, userId) })
+  }
+
+  function handleLinkCompany(entryId: string, companyId: string | null) {
+    setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, company_id: companyId } : e))
+    setSelectedEntry((prev) => prev ? { ...prev, company_id: companyId } : null)
+    startTransition(async () => { await linkPipelineEntryToCompany(entryId, companyId) })
   }
 
   // Drag and drop
@@ -935,6 +944,22 @@ export default function PipelineBoardClient({
                 <div className={styles.input} style={{ color: 'var(--color-muted)', cursor: 'default', userSelect: 'none' }}>
                   {sortedStages.find((s) => s.id === selectedEntry.stage_id)?.name ?? 'Unsorted'}
                 </div>
+              )}
+            </div>
+
+            {/* Company profile link */}
+            <div className={styles.field}>
+              <label className={styles.label}>Company profile</label>
+              <select
+                className={styles.select}
+                value={selectedEntry.company_id ?? ''}
+                onChange={(e) => handleLinkCompany(selectedEntry.id, e.target.value || null)}
+              >
+                <option value="">Not linked</option>
+                {companyOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              {selectedEntry.company_id && (
+                <a href={`/companies/${selectedEntry.company_id}`} style={{ fontSize: '0.75rem', color: 'var(--color-primary)', display: 'inline-block', marginTop: '0.35rem' }}>View profile ↗</a>
               )}
             </div>
 

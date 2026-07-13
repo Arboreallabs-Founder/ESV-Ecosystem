@@ -106,6 +106,12 @@ const NAV_ITEMS: NavEntry[] = [
     icon: <Icon d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />,
   },
   {
+    href: '/companies',
+    label: 'Companies',
+    roles: ['founder', 'admin', 'associate'],
+    icon: <Icon d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />,
+  },
+  {
     href: '/investors',
     label: 'Investors',
     roles: ['founder', 'admin', 'associate', 'franchise_partner'],

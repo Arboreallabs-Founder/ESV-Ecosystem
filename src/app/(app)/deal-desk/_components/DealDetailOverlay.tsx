@@ -1,8 +1,10 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { actOnDeal, addDealMedia, removeDealMedia, setSeen, toggleStar, updateDeskDeal } from '@/app/actions/deal-desk'
+import { promoteDeskDealToCompany } from '@/app/actions/companies'
 import { DESK_DEAL_STATUS_LABELS } from '@/lib/types'
 import type { DeskDeal } from '@/lib/types'
 import {
@@ -40,7 +42,17 @@ export default function DealDetailOverlay({
   const [error, setError] = useState<string | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [opinion, setOpinion] = useState(deal.analyst_opinion ?? '')
+  const [promoting, startPromote] = useTransition()
+  const router = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
+
+  function handlePromote() {
+    setError(null)
+    startPromote(async () => {
+      try { const id = await promoteDeskDealToCompany(deal.id); router.push(`/companies/${id}`) }
+      catch (e) { setError((e as Error).message) }
+    })
+  }
 
   function run(fn: () => Promise<void>) {
     setError(null)
@@ -122,6 +134,20 @@ export default function DealDetailOverlay({
         <div className={styles.modalBody} style={canReview ? { paddingBottom: '1.5rem' } : undefined}>
           {deal.about && <div className={styles.section}><div className={styles.sectionLabel}>About</div><div className={styles.sectionText}>{deal.about}</div></div>}
           {deal.location && <div className={styles.section}><div className={styles.sectionLabel}>Location</div><div className={styles.sectionText}>{deal.location}</div></div>}
+
+          {/* Company profile link / promote */}
+          <div className={styles.section}>
+            <div className={styles.sectionLabel}>Company profile</div>
+            {deal.company_id ? (
+              <a className={styles.sectionText} style={{ color: 'var(--color-primary)' }} href={`/companies/${deal.company_id}`}>View full profile ↗</a>
+            ) : (
+              <button className={styles.ghostBtn} onClick={handlePromote} disabled={promoting}>
+                {promoting
+                  ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><Spinner size={13} /> Creating…</span>
+                  : '+ Create company profile'}
+              </button>
+            )}
+          </div>
 
           {/* Analyst's opinion — the author adds it in-app after import */}
           {(isOwner || deal.analyst_opinion) && (

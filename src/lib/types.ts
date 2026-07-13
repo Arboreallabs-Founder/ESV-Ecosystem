@@ -278,6 +278,7 @@ export type PipelineEntry = {
   submitter_name: string | null
   submitter_email: string | null
   submitted_at: string
+  company_id?: string | null
   form?: { title: string } | null
   link_creator?: { name: string } | null
   form_link_label?: string | null
@@ -464,6 +465,7 @@ export type DeskDeal = {
   customers_count: number | null
   analyst_opinion: string | null   // added in-app after import (≤100 chars)
   referrer: string | null          // who referred/sourced the deal; indexed for BI
+  company_id: string | null        // linked Company Profile, if promoted
   seen_status: boolean
   starred: boolean
   deal_status: DeskDealStatus
@@ -479,4 +481,170 @@ export type DeskAssociateSummary = {
   unseen_count: number
   seen_count: number
   starred_count: number
+}
+
+// ── Company Profile / Startup Database ─────────────────────────────────────────
+
+export const COMPANY_STATUSES = ['prospect', 'screening', 'active', 'portfolio', 'passed', 'dead'] as const
+export type CompanyStatus = typeof COMPANY_STATUSES[number]
+export const COMPANY_STATUS_LABELS: Record<CompanyStatus, string> = {
+  prospect: 'Prospect', screening: 'Screening', active: 'Active', portfolio: 'Portfolio', passed: 'Passed', dead: 'Dead',
+}
+
+export const COMPANY_DOC_TYPES = ['deck', 'financial_model', 'cap_table', 'incorporation', 'data_room', 'other'] as const
+export type CompanyDocType = typeof COMPANY_DOC_TYPES[number]
+export const COMPANY_DOC_TYPE_LABELS: Record<CompanyDocType, string> = {
+  deck: 'Pitch deck', financial_model: 'Financial model', cap_table: 'Cap table', incorporation: 'Incorporation', data_room: 'Data room', other: 'Other',
+}
+
+export const COMPANY_FIELD_TYPES = ['text', 'numeric', 'percentage', 'url', 'date'] as const
+export type CompanyFieldType = typeof COMPANY_FIELD_TYPES[number]
+
+export type CompanyFounder = {
+  name: string
+  role: string | null
+  bio: string | null
+  ex_affiliations: string | null
+  linkedin_url: string | null
+  equity_pct: number | null
+}
+
+export type CompanyTeamMember = {
+  name: string
+  role: string | null
+  linkedin_url: string | null
+}
+
+export type CompanyFundingRound = {
+  id: string
+  company_id: string
+  round_name: string | null
+  date: string | null
+  amount_inr: number | null
+  valuation_inr: number | null
+  instrument: string | null
+  lead_investor: string | null
+  investors: string[]
+  notes: string | null
+  sort_order: number
+}
+
+export type CompanyCapTableEntry = {
+  id: string
+  company_id: string
+  holder_name: string
+  holder_type: 'founder' | 'investor' | 'esop' | 'other' | null
+  pct: number | null
+  shares: number | null
+  notes: string | null
+  sort_order: number
+}
+
+export type CompanyDocument = {
+  id: string
+  company_id: string
+  label: string
+  doc_type: CompanyDocType
+  url: string
+  created_at: string
+}
+
+export type CompanyUpdate = {
+  id: string
+  company_id: string
+  body: string
+  author_id: string | null
+  author?: { name: string } | null
+  created_at: string
+}
+
+export type CompanyFieldDef = {
+  id: string
+  label: string
+  field_type: CompanyFieldType
+  position: number
+}
+
+export type CompanyFieldValue = {
+  field_def_id: string
+  value: string | null
+}
+
+// Deal records linked to a company (shown in the profile's Linked deals section).
+export type LinkedDeskDeal = { id: string; company_name: string; associate_id: string; deal_status: string }
+export type LinkedPipelineEntry = { id: string; title: string | null; pipeline_id: string; stage_name: string | null }
+
+export type Company = {
+  id: string
+  org_id: string
+  created_by: string | null
+  esv_poc_id: string | null
+  esv_poc?: { name: string } | null
+  // Identity / overview
+  name: string
+  legal_name: string | null
+  website: string | null
+  logo_url: string | null
+  one_liner: string | null
+  description: string | null
+  hq_city: string | null
+  hq_country: string | null
+  founded_date: string | null
+  incorporation_type: string | null
+  incorporation_no: string | null
+  sectors: string[]
+  stage: string | null
+  business_model: string | null
+  status: CompanyStatus
+  tags: string[]
+  // Product
+  product_description: string | null
+  usp: string | null
+  tech_stack: string | null
+  product_links: string[]
+  // Traction summary
+  arr_inr: number | null
+  mrr_inr: number | null
+  customers_count: number | null
+  team_size: number | null
+  gross_margin_pct: number | null
+  monthly_burn_inr: number | null
+  runway_months: number | null
+  // Current raise
+  ask_inr: number | null
+  instrument: string | null
+  pre_money_inr: number | null
+  post_money_inr: number | null
+  round_status: string | null
+  min_ticket_inr: number | null
+  total_raised_inr: number | null
+  use_of_funds: string | null
+  // People
+  founders: CompanyFounder[]
+  team: CompanyTeamMember[]
+  created_at: string
+  updated_at: string
+  // Embedded children (on full fetch)
+  funding_rounds: CompanyFundingRound[]
+  cap_table: CompanyCapTableEntry[]
+  documents: CompanyDocument[]
+  updates: CompanyUpdate[]
+  field_values: CompanyFieldValue[]
+  linked_desk_deals: LinkedDeskDeal[]
+  linked_pipeline_entries: LinkedPipelineEntry[]
+}
+
+// Trimmed row for the database list view.
+export type CompanyListItem = {
+  id: string
+  name: string
+  logo_url: string | null
+  one_liner: string | null
+  sectors: string[]
+  stage: string | null
+  status: CompanyStatus
+  hq_city: string | null
+  hq_country: string | null
+  arr_inr: number | null
+  updated_at: string
 }

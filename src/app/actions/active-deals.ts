@@ -1,6 +1,7 @@
 'use server'
 
 import { requireRole } from '@/lib/guards'
+import { findOrCreateCompanyByName } from '@/lib/company-sync'
 import type { ActiveDealInvestor, DealCategory } from '@/lib/types'
 
 async function requireAdmin() {
@@ -158,6 +159,19 @@ export async function acceptDeal(
 
   // Move entry to accepted stage
   await supabase.from('pipeline_entries').update({ stage_id: stageId }).eq('id', entryId)
+
+  // Every accepted deal materialises into a Company Profile (create-or-link by name), unless
+  // the entry is already linked. org_id comes from the parent pipeline (entries have none).
+  const { data: entryRow } = await supabase.from('pipeline_entries').select('title, company_id, pipeline_id').eq('id', entryId).single()
+  if (entryRow && !entryRow.company_id && entryRow.title) {
+    const { data: pl } = await supabase.from('pipelines').select('org_id').eq('id', entryRow.pipeline_id).single()
+    if (pl?.org_id) {
+      try {
+        const res = await findOrCreateCompanyByName(supabase, pl.org_id as string, userId, entryRow.title as string)
+        if (res) await supabase.from('pipeline_entries').update({ company_id: res.id }).eq('id', entryId)
+      } catch { /* non-fatal: acceptance shouldn't fail if company sync hiccups */ }
+    }
+  }
 
   // If this entry was already accepted before (its active deal lingers after being
   // moved out of Accepted), re-accepting just moves it back — don't create a second
