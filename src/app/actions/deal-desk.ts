@@ -35,7 +35,10 @@ export async function importDealsCsv(csvText: string): Promise<ImportResult> {
     let companyId: string | null = null
     try { companyId = await findOrCreateCompanyForDeskDeal(supabase, orgId, userId, r as unknown as Record<string, unknown>) }
     catch { companyId = null }
-    payload.push({ ...r, org_id: orgId, associate_id: userId, company_id: companyId })
+    // meta_tags live on the company profile, not the card — strip before inserting the desk_deal.
+    const { meta_tags: _metaTags, ...card } = r
+    void _metaTags
+    payload.push({ ...card, org_id: orgId, associate_id: userId, company_id: companyId })
   }
   const { data, error } = await supabase.from('desk_deals').insert(payload).select('id')
   if (error) throw error

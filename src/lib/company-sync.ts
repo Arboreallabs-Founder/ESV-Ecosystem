@@ -54,7 +54,12 @@ export async function findOrCreateCompanyForDeskDeal(supabase: SB, orgId: string
     name: f.name, role: null, bio: f.bio ?? null, ex_affiliations: f.affiliation ?? null, linkedin_url: f.linkedin_url ?? null, equity_pct: null,
   }))
 
-  const meta_tags = extractMetaTags(brand, deal.about, deal.usp, deal.business_model, deal.notes, deal.sector)
+  // Themes the AI agent tagged in the CSV, plus keyword-extracted ones as a safety net.
+  const explicitTags = Array.isArray(deal.meta_tags) ? (deal.meta_tags as string[]) : []
+  const meta_tags = Array.from(new Set([
+    ...explicitTags.map((t) => t.trim()).filter(Boolean),
+    ...extractMetaTags(brand, deal.about, deal.usp, deal.business_model, deal.notes, deal.sector),
+  ]))
 
   const { data: created, error } = await supabase.from('companies').insert({
     org_id: orgId, created_by: userId, name: brand,

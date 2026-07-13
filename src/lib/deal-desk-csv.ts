@@ -53,6 +53,7 @@ export const CSV_COLUMNS = [
   'monthly_burn_inr',
   'runway_months',
   'customers_count',
+  'meta_tags',
 ] as const
 
 // A validated deal ready to insert (DB column names; excludes org_id/associate_id which
@@ -86,6 +87,7 @@ export type ParsedDeskDeal = {
   monthly_burn_inr: number | null
   runway_months: number | null
   customers_count: number | null
+  meta_tags: string[]   // company-profile themes for investor matching (not stored on the card)
 }
 
 export type CsvRowError = { row: number; message: string }
@@ -376,6 +378,7 @@ export function parseDeskCsv(text: string): CsvParseResult {
       monthly_burn_inr: burn.value,
       runway_months: runway.value,
       customers_count: customers.value,
+      meta_tags: splitPipe(get('meta_tags')),
     })
   }
 
@@ -384,7 +387,7 @@ export function parseDeskCsv(text: string): CsvParseResult {
 
 // A ready-to-use example data row (the Kyoora sample from the spec), correctly quoted.
 export const CSV_EXAMPLE_ROW =
-  'Kyoora Ventures,Deep tech,AI-driven drug discovery platform,"Mumbai, India",Series A,40000000,Fixed,800000000,5,Sequoia Surge|Blume Ventures,"Priced round, no bridge notes",Yes,Monthly,2026-01:1500000|2026-02:1800000|2026-03:2100000,3 enterprise LOIs signed pre-round,Priya Shah|Rahul Mehta,Ex-Google DeepMind|Ex-Flipkart,Led ML team at DeepMind for 6 years|Built and scaled Flipkart\'s fraud stack,https://linkedin.com/in/priyashah|https://linkedin.com/in/rahulmehta,https://drive.google.com/xyz,3 enterprise LOIs signed pre-round; 40% MoM growth; strong technical team; runway into Q4 2026,2026-07-10,B2B Deep tech,Equity,Open,15000000,60000000,72,2500000,18,8'
+  'Kyoora Ventures,Deep tech,AI-driven drug discovery platform,"Mumbai, India",Series A,40000000,Fixed,800000000,5,Sequoia Surge|Blume Ventures,"Priced round, no bridge notes",Yes,Monthly,2026-01:1500000|2026-02:1800000|2026-03:2100000,3 enterprise LOIs signed pre-round,Priya Shah|Rahul Mehta,Ex-Google DeepMind|Ex-Flipkart,Led ML team at DeepMind for 6 years|Built and scaled Flipkart\'s fraud stack,https://linkedin.com/in/priyashah|https://linkedin.com/in/rahulmehta,https://drive.google.com/xyz,3 enterprise LOIs signed pre-round; 40% MoM growth; strong technical team; runway into Q4 2026,2026-07-10,B2B Deep tech,Equity,Open,15000000,60000000,72,2500000,18,8,AI/ML|Deep Tech|Healthtech|B2B'
 
 // The header row on its own.
 export const CSV_HEADER = CSV_COLUMNS.join(',')
@@ -439,6 +442,7 @@ COLUMNS — use exactly these names, in this exact order:
 29. monthly_burn_inr — optional number; monthly cash burn (plain INR)
 30. runway_months — optional number, e.g. 18
 31. customers_count — optional number; paying customers or active users
+32. meta_tags — optional PIPE-separated themes for investor matching that flow into the company profile. Tag the business model AND any adjacent/synergetic themes it touches — e.g. a D2C brand selling via quick-commerce is "D2C|Quick Commerce". Prefer recognisable themes from: Quick Commerce, D2C, SaaS, Marketplace, Subscription, AI/ML, Fintech, Healthtech, Climate, Deep Tech, Agritech, Edtech, Logistics, FMCG, Mobility, B2B, B2C.
 
 EXAMPLE (header + one valid row):
 ${CSV_HEADER}
