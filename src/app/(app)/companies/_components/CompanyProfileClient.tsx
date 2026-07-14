@@ -19,9 +19,10 @@ import {
 } from '@/lib/types'
 import type {
   Company, CompanyFieldDef, CompanyStatus, CompanyDocType, CompanyFieldType, CompanyFounder, CompanyTeamMember,
-  SuggestedInvestor,
+  SuggestedInvestor, DealCategory,
 } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
+import CreateDealModal from './CreateDealModal'
 import { formatInr, formatDate, initials, locationLabel } from './format'
 import styles from '../companies.module.css'
 
@@ -157,14 +158,16 @@ const PRODUCT_SPECS: Spec[] = [
 ]
 
 export default function CompanyProfileClient({
-  company, fieldDefs, canManage, canAuthorCard, teamMembers, suggestions,
+  company, fieldDefs, canManage, canAuthorCard, teamMembers, suggestions, dealCategories,
 }: {
   company: Company; fieldDefs: CompanyFieldDef[]; canManage: boolean; canAuthorCard: boolean; teamMembers: Team; suggestions: SuggestedInvestor[]
+  dealCategories: DealCategory[]
 }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [cardPending, startCard] = useTransition()
   const [modal, setModal] = useState<null | 'overview' | 'traction' | 'raise' | 'product' | 'founders' | 'team'>(null)
+  const [showDealModal, setShowDealModal] = useState(false)
   const refresh = () => startTransition(() => router.refresh())
 
   function handleDelete() {
@@ -210,6 +213,7 @@ export default function CompanyProfileClient({
         </div>
         <div className={styles.headActions}>
           {canAuthorCard && <button className={styles.ghostBtn} onClick={handleCreateCard} disabled={cardPending}>{cardPending ? 'Creating…' : 'Create card'}</button>}
+          {canManage && <button className={styles.ghostBtn} onClick={() => setShowDealModal(true)}>Create deal</button>}
           <button className={styles.ghostBtn} onClick={() => setModal('overview')}>Edit</button>
           {canManage && <button className={styles.dangerBtn} onClick={handleDelete}>Delete</button>}
         </div>
@@ -348,6 +352,9 @@ export default function CompanyProfileClient({
       )}
       {modal === 'founders' && <PeopleModal title="Founders" kind="founders" company={company} onClose={() => setModal(null)} onSaved={refresh} />}
       {modal === 'team' && <PeopleModal title="Team" kind="team" company={company} onClose={() => setModal(null)} onSaved={refresh} />}
+      {showDealModal && (
+        <CreateDealModal companyId={company.id} companyName={company.name} categories={dealCategories} onClose={() => setShowDealModal(false)} />
+      )}
     </div>
   )
 }

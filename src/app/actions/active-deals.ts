@@ -1,7 +1,9 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { findOrCreateCompanyByName } from '@/lib/company-sync'
+import { parseDealsCsv } from '@/lib/active-deals-csv'
 import type { ActiveDealInvestor, DealCategory } from '@/lib/types'
 
 async function requireAdmin() {
@@ -207,6 +209,134 @@ export async function acceptDeal(
   if (allValues.length > 0) {
     await supabase.from('active_deal_field_values').insert(allValues)
   }
+}
+
+// ── Create / import standalone deals (portfolio & off-pipeline) ─────────────────
+// Active deals require a pipeline_entry, so directly-created deals live in a dedicated
+// per-org "Imported Deals" pipeline (at its Accepted stage). Each row create-or-links a
+// company by name and links the entry to it, so the deal reflects on the company profile.
+
+const IMPORT_PIPELINE_NAME = 'Imported Deals'
+
+async function ensureImportPipeline(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any, orgId: string, userId: string,
+): Promise<{ pipelineId: string; acceptedStageId: string }> {
+  const { data: found } = await supabase
+    .from('pipelines').select('id').eq('org_id', orgId).eq('name', IMPORT_PIPELINE_NAME).limit(1)
+  let pipelineId = found?.[0]?.id as string | undefined
+  if (!pipelineId) {
+    const { data: created, error } = await supabase
+      .from('pipelines')
+      .insert({ name: IMPORT_PIPELINE_NAME, description: 'Portfolio & off-pipeline deals added directly to Active Deals.', created_by: userId, org_id: orgId })
+      .select('id').single()
+    if (error) throw error
+    pipelineId = created.id as string
+    await supabase.from('pipeline_stages').insert([
+      { pipeline_id: pipelineId, name: 'Lead', color: '#745FFD', position: -1, stage_type: 'lead' },
+      { pipeline_id: pipelineId, name: 'Accepted', color: '#16a34a', position: 998, stage_type: 'accepted' },
+      { pipeline_id: pipelineId, name: 'Rejected', color: '#dc2626', position: 999, stage_type: 'rejected' },
+    ])
+  }
+  const { data: stage } = await supabase
+    .from('pipeline_stages').select('id').eq('pipeline_id', pipelineId).eq('stage_type', 'accepted').limit(1)
+  const acceptedStageId = stage?.[0]?.id as string | undefined
+  if (!acceptedStageId) throw new Error('The Imported Deals pipeline is missing an Accepted stage.')
+  return { pipelineId, acceptedStageId }
+}
+
+type StandaloneDealInput = {
+  deal_name: string
+  category_id: string | null
+  submitter_name: string | null
+  submitter_email: string | null
+  field_values: Record<string, string>
+  // Set when the deal is created FROM a company profile — links directly to that company
+  // instead of matching by name (avoids any name-drift ambiguity).
+  company_id?: string | null
+}
+
+async function insertStandaloneDeal(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any, importPipeline: { pipelineId: string; acceptedStageId: string }, orgId: string, userId: string, row: StandaloneDealInput,
+): Promise<string> {
+  const { data: entry, error: entryErr } = await supabase
+    .from('pipeline_entries')
+    .insert({ pipeline_id: importPipeline.pipelineId, stage_id: importPipeline.acceptedStageId, title: row.deal_name, submitter_name: row.submitter_name, submitter_email: row.submitter_email })
+    .select('id').single()
+  if (entryErr) throw entryErr
+  const entryId = entry.id as string
+
+  // Link to a company: directly, if one was already chosen (created from its profile); otherwise
+  // materialise/find one by name (create-or-link), so every deal has a company profile behind it.
+  try {
+    if (row.company_id) {
+      await supabase.from('pipeline_entries').update({ company_id: row.company_id }).eq('id', entryId)
+    } else {
+      const res = await findOrCreateCompanyByName(supabase, orgId, userId, row.deal_name)
+      if (res) await supabase.from('pipeline_entries').update({ company_id: res.id }).eq('id', entryId)
+    }
+  } catch { /* non-fatal: don't fail the deal if company sync hiccups */ }
+
+  const { data: deal, error: dealErr } = await supabase
+    .from('active_deals').insert({ pipeline_entry_id: entryId }).select('id').single()
+  if (dealErr) throw dealErr
+
+  if (row.category_id) {
+    await supabase.from('active_deal_categories').insert({ active_deal_id: deal.id, category_id: row.category_id })
+    const values = Object.entries(row.field_values)
+      .filter(([, v]) => v && v.trim() !== '')
+      .map(([field_id, value]) => ({ active_deal_id: deal.id, field_id, value: value.trim() }))
+    if (values.length > 0) await supabase.from('active_deal_field_values').insert(values)
+  }
+  return deal.id as string
+}
+
+export async function createStandaloneDeal(input: {
+  deal_name: string
+  category_id?: string | null
+  submitter_name?: string | null
+  submitter_email?: string | null
+  field_values?: Record<string, string>
+  company_id?: string | null
+}): Promise<string> {
+  const { supabase, userId, orgId } = await requireAdmin()
+  if (!orgId) throw new Error('No organisation in scope.')
+  const name = input.deal_name.trim()
+  if (!name) throw new Error('Deal name is required.')
+  const importPipeline = await ensureImportPipeline(supabase, orgId, userId)
+  const id = await insertStandaloneDeal(supabase, importPipeline, orgId, userId, {
+    deal_name: name,
+    category_id: input.category_id ?? null,
+    submitter_name: input.submitter_name?.trim() || null,
+    submitter_email: input.submitter_email?.trim() || null,
+    field_values: input.field_values ?? {},
+    company_id: input.company_id ?? null,
+  })
+  revalidatePath('/active-deals'); revalidatePath('/companies'); revalidatePath(`/pipelines/${importPipeline.pipelineId}`)
+  return id
+}
+
+export async function importActiveDealsCsv(csvText: string): Promise<{ created: number; errors: { row: number; message: string }[] }> {
+  const { supabase, userId, orgId } = await requireAdmin()
+  if (!orgId) throw new Error('No organisation in scope.')
+
+  // Categories drive the dynamic columns; read them the same shape getCategories() returns.
+  const { data: catData } = await supabase
+    .from('deal_categories').select('*, fields:deal_category_fields(*)').order('created_at', { ascending: true })
+  const categories: DealCategory[] = ((catData ?? []) as DealCategory[]).map((c) => ({ ...c, fields: [...(c.fields ?? [])].sort((a, b) => a.position - b.position) }))
+
+  const { rows, errors } = parseDealsCsv(csvText, categories)
+  if (rows.length === 0) return { created: 0, errors }
+
+  const importPipeline = await ensureImportPipeline(supabase, orgId, userId)
+  let created = 0
+  for (let i = 0; i < rows.length; i++) {
+    try { await insertStandaloneDeal(supabase, importPipeline, orgId, userId, rows[i]); created++ }
+    catch (e) { errors.push({ row: i + 2, message: e instanceof Error ? e.message : 'Failed to import row.' }) }
+  }
+  revalidatePath('/active-deals'); revalidatePath('/companies'); revalidatePath(`/pipelines/${importPipeline.pipelineId}`)
+  return { created, errors }
 }
 
 // ── Form modal support data ───────────────────────────────────────────────────

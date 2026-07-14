@@ -1,12 +1,23 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import type { ActiveDeal, DealCategory } from '@/lib/types'
 import ActiveDealDetail from './ActiveDealDetail'
+import NewDealModal from './NewDealModal'
+import DealImportModal from './DealImportModal'
 import FilterTabs from '@/app/_components/FilterTabs'
 import styles from '../active-deals.module.css'
 
-const FIELD_UNIT: Record<string, string> = { percentage: '%', numeric: '', text: '', url: '' }
+// Group a plain number with Indian digit separators (e.g. 100000000 → 10,00,00,000).
+// Leaves non-numeric text (e.g. "100 Cr", "8cr") untouched.
+function delimitNumber(value: string): string {
+  const raw = value.replace(/,/g, '').trim()
+  if (raw === '' || !/^-?\d+(\.\d+)?$/.test(raw)) return value
+  const n = Number(raw)
+  if (!Number.isFinite(n)) return value
+  return n.toLocaleString('en-IN')
+}
 
 function formatValue(value: string, fieldType: string) {
   if (fieldType === 'url') {
@@ -15,7 +26,8 @@ function formatValue(value: string, fieldType: string) {
       return <a href={url.href} target="_blank" rel="noopener noreferrer" className={styles.fieldLink}>{url.hostname.replace('www.', '')}</a>
     } catch { return value }
   }
-  if (fieldType === 'percentage') return `${value}%`
+  if (fieldType === 'percentage') return `${delimitNumber(value)}%`
+  if (fieldType === 'numeric') return delimitNumber(value)
   return value
 }
 
@@ -24,8 +36,12 @@ function formatDate(iso: string) {
 }
 
 export default function ActiveDealsList({ deals, categories, userRole }: { deals: ActiveDeal[]; categories: DealCategory[]; userRole: string }) {
+  const router = useRouter()
   const [activeFilter, setActiveFilter] = useState<string>('all')
   const [selectedDeal, setSelectedDeal] = useState<ActiveDeal | null>(null)
+  const [showNew, setShowNew] = useState(false)
+  const [showImport, setShowImport] = useState(false)
+  const canManage = userRole === 'founder' || userRole === 'admin'
 
   const uncategorised = deals.filter((d) => d.categories.length === 0)
   const categorised = categories.filter((cat) => deals.some((d) => d.categories.some((c) => c.category.id === cat.id)))
@@ -41,11 +57,19 @@ export default function ActiveDealsList({ deals, categories, userRole }: { deals
       {selectedDeal && (
         <ActiveDealDetail deal={selectedDeal} onClose={() => setSelectedDeal(null)} userRole={userRole} />
       )}
+      {showNew && <NewDealModal categories={categories} onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); router.refresh() }} />}
+      {showImport && <DealImportModal categories={categories} onClose={() => setShowImport(false)} onImported={() => router.refresh()} />}
       <div className={styles.header}>
         <div>
           <div className={styles.pageTitle}>Active Deals</div>
           <div className={styles.pageSub}>{deals.length} deal{deals.length !== 1 ? 's' : ''} accepted</div>
         </div>
+        {canManage && (
+          <div className={styles.headerActions}>
+            <button className={styles.ghostBtn} onClick={() => setShowImport(true)}>Import CSV</button>
+            <button className={styles.primaryBtn} onClick={() => setShowNew(true)}>+ New deal</button>
+          </div>
+        )}
       </div>
 
       {/* Category filter tabs */}
@@ -114,7 +138,7 @@ export default function ActiveDealsList({ deals, categories, userRole }: { deals
                       return (
                         <div key={fv.field_id} className={styles.fieldValueRow}>
                           <span className={styles.fieldKey}>{field.label}</span>
-                          <span className={styles.fieldVal}>{formatValue(fv.value!, field.field_type)}</span>
+                          <span className={`${styles.fieldVal} ${field.field_type === 'numeric' || field.field_type === 'percentage' ? styles.fieldValNum : ''}`}>{formatValue(fv.value!, field.field_type)}</span>
                         </div>
                       )
                     })}
