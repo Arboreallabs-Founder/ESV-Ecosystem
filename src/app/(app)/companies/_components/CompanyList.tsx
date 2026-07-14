@@ -8,6 +8,7 @@ import { COMPANY_STATUS_LABELS, COMPANY_STATUSES } from '@/lib/types'
 import type { CompanyListItem, CompanyStatus } from '@/lib/types'
 import FilterTabs from '@/app/_components/FilterTabs'
 import Spinner from '@/app/_components/Spinner'
+import { WikiButton } from '@/app/_components/WikiPanel'
 import CompaniesImportModal from './CompaniesImportModal'
 import { formatInr, initials, locationLabel } from './format'
 import styles from '../companies.module.css'
@@ -54,7 +55,10 @@ export default function CompanyList({ companies }: { companies: CompanyListItem[
     <div className={styles.page}>
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Companies</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 className={styles.pageTitle}>Companies</h1>
+            <WikiButton sectionKey="companies" />
+          </div>
           <p className={styles.pageSubtitle}>Startup database — the full profile behind each deal.</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>

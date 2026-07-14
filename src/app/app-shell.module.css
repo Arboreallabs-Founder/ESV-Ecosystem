@@ -92,14 +92,44 @@
 }
 
 .navSection {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
   font-size: 0.6875rem;
   font-weight: 700;
-  color: var(--color-muted);
+  color: var(--color-warning);
   text-transform: uppercase;
   letter-spacing: 0.07em;
   padding: 0.875rem 0.5rem 0.375rem;
-  opacity: 0.6;
+  transition: opacity 0.12s;
 }
+.navSection:hover { opacity: 0.75; }
+
+.navSectionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+}
+.navSectionIcon svg { width: 13px; height: 13px; }
+
+.navSectionText { flex: 1; text-align: left; }
+
+.navSectionChevron {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: transform 0.15s;
+}
+.navSectionChevronOpen { transform: rotate(90deg); }
 
 .navItem {
   display: flex;

@@ -7,6 +7,7 @@ import ActiveDealDetail from './ActiveDealDetail'
 import NewDealModal from './NewDealModal'
 import DealImportModal from './DealImportModal'
 import FilterTabs from '@/app/_components/FilterTabs'
+import { WikiButton } from '@/app/_components/WikiPanel'
 import styles from '../active-deals.module.css'
 
 // Group a plain number with Indian digit separators (e.g. 100000000 → 10,00,00,000).
@@ -61,7 +62,10 @@ export default function ActiveDealsList({ deals, categories, userRole }: { deals
       {showImport && <DealImportModal categories={categories} onClose={() => setShowImport(false)} onImported={() => router.refresh()} />}
       <div className={styles.header}>
         <div>
-          <div className={styles.pageTitle}>Active Deals</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className={styles.pageTitle}>Active Deals</div>
+            <WikiButton sectionKey="activeDeals" />
+          </div>
           <div className={styles.pageSub}>{deals.length} deal{deals.length !== 1 ? 's' : ''} accepted</div>
         </div>
         {canManage && (
