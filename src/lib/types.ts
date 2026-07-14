@@ -39,6 +39,87 @@ export type Task = {
   created_by_user?: { name: string } | null
 }
 
+export type TaskComment = {
+  id: string
+  task_id: string
+  body: string
+  author_id: string | null
+  created_at: string
+  author?: { name: string } | null
+}
+
+export type PersonalTodo = {
+  id: string
+  user_id: string
+  title: string
+  notes: string | null
+  done: boolean
+  done_at: string | null
+  due_date: string | null
+  linked_task_id: string | null
+  position: number
+  created_at: string
+  linked_task?: { id: string; title: string; status: TaskStatus; due_date: string | null } | null
+}
+
+export const RECURRENCE_TYPES = ['daily', 'weekly', 'monthly'] as const
+export type RecurrenceType = typeof RECURRENCE_TYPES[number]
+
+export type RecurringTaskStatus = 'hidden' | 'upcoming' | 'overdue'
+
+export type RecurringTask = {
+  id: string
+  title: string
+  description: string | null
+  link_url: string | null
+  recurrence_type: RecurrenceType
+  lead_days: number
+  assignee_id: string | null
+  active: boolean
+  next_due_date: string
+  created_by: string | null
+  created_at: string
+  assignee?: { name: string } | null
+  last_completion?: { completed_at: string; completed_by_name: string | null } | null
+}
+
+export type RecurringTaskCompletion = {
+  id: string
+  recurring_task_id: string
+  occurrence_date: string
+  completed_by: string | null
+  completed_at: string
+  completed_by_user?: { name: string } | null
+}
+
+export const BULLETIN_POST_TYPES = ['event', 'announcement'] as const
+export type BulletinPostType = typeof BULLETIN_POST_TYPES[number]
+
+export type BulletinPost = {
+  id: string
+  post_type: BulletinPostType
+  title: string
+  body: string | null
+  event_date: string | null
+  event_time: string | null
+  location: string | null
+  pinned: boolean
+  created_by: string | null
+  created_at: string
+  created_by_user?: { name: string } | null
+}
+
+export type HrPolicy = {
+  id: string
+  title: string
+  category: string | null
+  body: string
+  position: number
+  created_by: string | null
+  updated_at: string
+  created_by_user?: { name: string } | null
+}
+
 export type ServiceType = 'vc_fund' | 'angel_fund' | 'family_office' | 'angel_investor'
 
 export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {

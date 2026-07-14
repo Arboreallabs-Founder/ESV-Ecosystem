@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
+import type { TaskComment } from '@/lib/types'
 
 export async function createTask(formData: FormData) {
   const { supabase, userId, orgId, role } = await requireRole(['founder', 'admin', 'associate'])
@@ -46,8 +47,13 @@ export async function updateTaskStatus(taskId: string, status: string) {
   // Stamp completion time on Done; clear it when reopened.
   const completed_at = status === 'Done' ? new Date().toISOString() : null
   await supabase.from('tasks').update({ status, completed_at }).eq('id', taskId)
+
+  // Two-way sync: anyone who's ported this task into their personal to-do list sees it flip too.
+  await supabase.from('personal_todos').update({ done: status === 'Done', done_at: completed_at }).eq('linked_task_id', taskId)
+
   revalidatePath('/tasks')
   revalidatePath('/dashboard')
+  revalidatePath('/my-todos')
 }
 
 export async function pushTask(taskId: string, newDate: string) {
@@ -70,6 +76,34 @@ export async function pushTask(taskId: string, newDate: string) {
       push_count: (task.push_count ?? 0) + 1,
     })
     .eq('id', taskId)
+  if (error) throw error
+  revalidatePath('/tasks')
+}
+
+// ── Comment thread ───────────────────────────────────────────────────────────
+
+export async function getTaskComments(taskId: string): Promise<TaskComment[]> {
+  const { supabase } = await requireRole(['founder', 'admin', 'associate'])
+  const { data } = await supabase
+    .from('task_comments')
+    .select('*, author:author_id(name)')
+    .eq('task_id', taskId)
+    .order('created_at', { ascending: true })
+  return (data ?? []) as unknown as TaskComment[]
+}
+
+export async function addTaskComment(taskId: string, body: string) {
+  const { supabase, userId, orgId } = await requireRole(['founder', 'admin', 'associate'])
+  const text = body.trim()
+  if (!text) throw new Error('Comment cannot be empty.')
+  const { error } = await supabase.from('task_comments').insert({ task_id: taskId, org_id: orgId, body: text, author_id: userId })
+  if (error) throw error
+  revalidatePath('/tasks')
+}
+
+export async function deleteTaskComment(id: string) {
+  const { supabase } = await requireRole(['founder', 'admin', 'associate'])
+  const { error } = await supabase.from('task_comments').delete().eq('id', id)
   if (error) throw error
   revalidatePath('/tasks')
 }

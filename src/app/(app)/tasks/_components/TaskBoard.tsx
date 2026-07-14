@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { createTask, updateTaskStatus, pushTask } from '@/app/actions/tasks'
 import type { Task, UserRow } from '@/lib/types'
 import Combobox from '@/app/_components/Combobox'
+import TaskDetailModal from './TaskDetailModal'
+import { WikiButton } from '@/app/_components/WikiPanel'
 import styles from '../tasks.module.css'
 
 const STATUSES = ['To Do', 'Done'] as const
@@ -46,6 +48,7 @@ export default function TaskBoard({
   const [showModal, setShowModal] = useState(false)
   const [pushTarget, setPushTarget] = useState<Task | null>(null)
   const [pushDate, setPushDate] = useState('')
+  const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [assigneeId, setAssigneeId] = useState(currentUserId)
   const [isPending, startTransition] = useTransition()
 
@@ -185,6 +188,7 @@ export default function TaskBoard({
               Push
             </button>
           )}
+          <button className={styles.commentsBtn} onClick={() => setDetailTask(task)}>Comments</button>
         </div>
       </div>
     )
@@ -194,7 +198,10 @@ export default function TaskBoard({
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <div className={styles.pageTitle}>Tasks</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className={styles.pageTitle}>Tasks</div>
+            <WikiButton sectionKey="tasks" />
+          </div>
           <div className={styles.pageSub}>{tasks.filter((t) => t.status !== 'Done').length} open task{tasks.filter((t) => t.status !== 'Done').length !== 1 ? 's' : ''}</div>
         </div>
         {canCreate && (
@@ -351,6 +358,8 @@ export default function TaskBoard({
           </div>
         </div>
       )}
+
+      {detailTask && <TaskDetailModal task={detailTask} onClose={() => setDetailTask(null)} />}
     </div>
   )
 }
