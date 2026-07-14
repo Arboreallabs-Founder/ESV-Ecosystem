@@ -14,7 +14,7 @@ import {
   type CompanyPatch,
 } from '@/app/actions/companies'
 import {
-  COMPANY_STATUS_LABELS, COMPANY_STATUSES, COMPANY_DOC_TYPES, COMPANY_DOC_TYPE_LABELS, COMPANY_FIELD_TYPES,
+  COMPANY_STATUS_LABELS, COMPANY_DOC_TYPES, COMPANY_DOC_TYPE_LABELS, COMPANY_FIELD_TYPES,
   SERVICE_TYPE_LABELS,
 } from '@/lib/types'
 import type {
@@ -23,29 +23,14 @@ import type {
 } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import CreateDealModal from './CreateDealModal'
+import CallUpdateModal from './CallUpdateModal'
+import { SpecField, OVERVIEW_SPECS, TRACTION_SPECS, RAISE_SPECS, PRODUCT_SPECS, initValue, coerce, type Spec } from './field-specs'
 import { formatInr, formatDate, initials, locationLabel } from './format'
 import styles from '../companies.module.css'
 
 type Team = Array<{ id: string; name: string }>
 
 // ── Generic scalar-fields edit modal ──────────────────────────────────────────
-type FieldType = 'text' | 'number' | 'percent' | 'textarea' | 'date' | 'tags' | 'status' | 'user'
-type Spec = { key: keyof CompanyPatch; label: string; type?: FieldType }
-
-function initValue(company: Company, spec: Spec): string {
-  const v = (company as Record<string, unknown>)[spec.key as string]
-  if (spec.type === 'tags') return Array.isArray(v) ? (v as string[]).join(', ') : ''
-  if (v == null) return ''
-  return String(v)
-}
-function coerce(raw: string, type?: FieldType): unknown {
-  const v = raw.trim()
-  if (type === 'number' || type === 'percent') return v === '' ? null : Number(v)
-  if (type === 'tags') return v === '' ? [] : v.split(',').map((s) => s.trim()).filter(Boolean)
-  if (type === 'date') return v || null
-  return v || null
-}
-
 function EditFieldsModal({
   title, company, specs, team, onClose, onSaved,
 }: {
@@ -76,34 +61,9 @@ function EditFieldsModal({
       <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
         <div className={styles.modalHead}><h2 className={styles.modalTitle}>{title}</h2><button className={styles.closeBtn} onClick={onClose}>×</button></div>
         <div className={styles.modalBody}>
-          {specs.map((s) => {
-            const val = form[s.key as string] ?? ''
-            return (
-              <div key={s.key as string} className={styles.field}>
-                <label className={styles.fieldLabel}>{s.label}{s.type === 'percent' ? ' (%)' : s.type === 'tags' ? ' (comma-separated)' : ''}</label>
-                {s.type === 'textarea' ? (
-                  <textarea className={styles.textarea} value={val} onChange={(e) => set(s.key as string, e.target.value)} />
-                ) : s.type === 'status' ? (
-                  <select className={styles.select} value={val} onChange={(e) => set(s.key as string, e.target.value)}>
-                    {COMPANY_STATUSES.map((o) => <option key={o} value={o}>{COMPANY_STATUS_LABELS[o]}</option>)}
-                  </select>
-                ) : s.type === 'user' ? (
-                  <select className={styles.select} value={val} onChange={(e) => set(s.key as string, e.target.value)}>
-                    <option value="">—</option>
-                    {team.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                  </select>
-                ) : (
-                  <input
-                    className={styles.input}
-                    type={s.type === 'number' || s.type === 'percent' ? 'text' : s.type === 'date' ? 'date' : 'text'}
-                    inputMode={s.type === 'number' || s.type === 'percent' ? 'numeric' : undefined}
-                    value={val}
-                    onChange={(e) => set(s.key as string, e.target.value)}
-                  />
-                )}
-              </div>
-            )
-          })}
+          {specs.map((s) => (
+            <SpecField key={s.key as string} spec={s} value={form[s.key as string] ?? ''} onChange={(v) => set(s.key as string, v)} team={team} />
+          ))}
           {error && <div className={styles.errBox}>{error}</div>}
         </div>
         <div className={styles.modalFoot}>
@@ -131,32 +91,6 @@ function SectionHead({ title, onEdit, action }: { title: string; onEdit?: () => 
   )
 }
 
-const OVERVIEW_SPECS: Spec[] = [
-  { key: 'name', label: 'Name' }, { key: 'legal_name', label: 'Legal name' }, { key: 'website', label: 'Website' },
-  { key: 'logo_url', label: 'Logo URL' }, { key: 'one_liner', label: 'One-liner' }, { key: 'description', label: 'Description', type: 'textarea' },
-  { key: 'hq_city', label: 'HQ city' }, { key: 'hq_country', label: 'HQ country' }, { key: 'founded_date', label: 'Founded', type: 'date' },
-  { key: 'incorporation_type', label: 'Incorporation type' }, { key: 'incorporation_no', label: 'Incorporation / CIN' },
-  { key: 'sectors', label: 'Sectors', type: 'tags' }, { key: 'stage', label: 'Stage' }, { key: 'business_model', label: 'Business model' },
-  { key: 'status', label: 'Status', type: 'status' }, { key: 'tags', label: 'Tags', type: 'tags' },
-  { key: 'meta_tags', label: 'Meta-tags (themes for investor matching)', type: 'tags' },
-  { key: 'esv_poc_id', label: 'ESV point of contact', type: 'user' },
-]
-const TRACTION_SPECS: Spec[] = [
-  { key: 'arr_inr', label: 'ARR', type: 'number' }, { key: 'mrr_inr', label: 'MRR', type: 'number' }, { key: 'customers_count', label: 'Customers', type: 'number' },
-  { key: 'team_size', label: 'Team size', type: 'number' }, { key: 'gross_margin_pct', label: 'Gross margin', type: 'percent' },
-  { key: 'monthly_burn_inr', label: 'Monthly burn', type: 'number' }, { key: 'runway_months', label: 'Runway (months)', type: 'number' },
-]
-const RAISE_SPECS: Spec[] = [
-  { key: 'ask_inr', label: 'Ask', type: 'number' }, { key: 'instrument', label: 'Instrument' }, { key: 'round_status', label: 'Round status' },
-  { key: 'pre_money_inr', label: 'Pre-money', type: 'number' }, { key: 'post_money_inr', label: 'Post-money', type: 'number' },
-  { key: 'min_ticket_inr', label: 'Min ticket', type: 'number' }, { key: 'total_raised_inr', label: 'Total raised to date', type: 'number' },
-  { key: 'use_of_funds', label: 'Use of funds', type: 'textarea' },
-]
-const PRODUCT_SPECS: Spec[] = [
-  { key: 'product_description', label: 'Product', type: 'textarea' }, { key: 'usp', label: 'USP', type: 'textarea' },
-  { key: 'tech_stack', label: 'Tech stack' }, { key: 'product_links', label: 'Product links', type: 'tags' },
-]
-
 export default function CompanyProfileClient({
   company, fieldDefs, canManage, canAuthorCard, teamMembers, suggestions, dealCategories,
 }: {
@@ -168,6 +102,7 @@ export default function CompanyProfileClient({
   const [cardPending, startCard] = useTransition()
   const [modal, setModal] = useState<null | 'overview' | 'traction' | 'raise' | 'product' | 'founders' | 'team'>(null)
   const [showDealModal, setShowDealModal] = useState(false)
+  const [showCallModal, setShowCallModal] = useState(false)
   const refresh = () => startTransition(() => router.refresh())
 
   function handleDelete() {
@@ -212,6 +147,7 @@ export default function CompanyProfileClient({
           </div>
         </div>
         <div className={styles.headActions}>
+          <button className={styles.primaryBtn} onClick={() => setShowCallModal(true)}>Update from call</button>
           {canAuthorCard && <button className={styles.ghostBtn} onClick={handleCreateCard} disabled={cardPending}>{cardPending ? 'Creating…' : 'Create card'}</button>}
           {canManage && <button className={styles.ghostBtn} onClick={() => setShowDealModal(true)}>Create deal</button>}
           <button className={styles.ghostBtn} onClick={() => setModal('overview')}>Edit</button>
@@ -354,6 +290,9 @@ export default function CompanyProfileClient({
       {modal === 'team' && <PeopleModal title="Team" kind="team" company={company} onClose={() => setModal(null)} onSaved={refresh} />}
       {showDealModal && (
         <CreateDealModal companyId={company.id} companyName={company.name} categories={dealCategories} onClose={() => setShowDealModal(false)} />
+      )}
+      {showCallModal && (
+        <CallUpdateModal company={company} fieldDefs={fieldDefs} teamMembers={teamMembers} onClose={() => setShowCallModal(false)} onSaved={refresh} />
       )}
     </div>
   )

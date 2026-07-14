@@ -212,6 +212,7 @@
 .overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 1rem; }
 .modal { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-xl); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-elevated); }
 .modalWide { max-width: 680px; }
+.modalXWide { max-width: 920px; }
 .modalHead { display: flex; align-items: center; padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--color-border); position: sticky; top: 0; background: var(--color-bg); }
 .modalTitle { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 500; color: var(--color-text); margin: 0; flex: 1; }
 .closeBtn { border: none; background: none; cursor: pointer; color: var(--color-muted); font-size: 1.25rem; line-height: 1; }
@@ -227,6 +228,11 @@
 .repeatRow { display: flex; gap: 0.5rem; align-items: flex-start; margin-bottom: 0.75rem; }
 .repeatGrid { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
 
+/* ── Call update form (consolidated multi-section form) ───────────────── */
+.callSection { border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 1rem 1.1rem 0.75rem; margin-bottom: 1rem; background: var(--color-card-raised); }
+.callSectionTitle { font-family: var(--font-serif); font-size: 1rem; font-weight: 500; color: var(--color-text); margin-bottom: 0.75rem; }
+.formGrid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+
 .errBox { background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.3); border-radius: var(--radius-md); padding: 0.6rem 0.75rem; font-size: 0.8125rem; color: var(--color-destructive); margin-top: 0.5rem; }
 .okBox { background: rgba(39,174,96,0.08); border: 1px solid rgba(39,174,96,0.3); border-radius: var(--radius-md); padding: 0.6rem 0.75rem; font-size: 0.8125rem; color: var(--color-success); margin-top: 0.5rem; }
 .errRow { margin-top: 0.35rem; }
@@ -238,4 +244,5 @@
 @media (max-width: 640px) {
   .repeatGrid { grid-template-columns: 1fr; }
   .profileHead { flex-wrap: wrap; }
+  .formGrid2 { grid-template-columns: 1fr; }
 }
