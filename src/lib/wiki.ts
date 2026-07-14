@@ -44,7 +44,7 @@ export const WIKI: Record<string, WikiSection> = {
 
   tasks: {
     title: 'Tasks',
-    summary: 'Action items for the team. Tasks can be standalone or linked to a specific deal. The board has two views: Board and KPI.',
+    summary: 'Action items for the team. Tasks can be standalone or linked to a specific deal. The board has three views: Board, My To-Dos, Recurring, and KPI.',
     items: [
       { heading: 'Board Columns', body: 'To Do → Done. Move tasks by changing the status dropdown on each card. Moving a task to Done stamps its completion time; moving it back to To Do clears it.' },
       { heading: 'Creating a Task', body: 'Click "+ New Task". Set a title, optional description, assignee, linked deal, due date, and priority (Low / Medium / High). Every card shows who it was assigned by.' },
@@ -52,7 +52,32 @@ export const WIKI: Record<string, WikiSection> = {
       { heading: 'Visibility', body: 'Founders and admins see all tasks in the organisation. Associates see only the tasks assigned to them. Partners have no task access.' },
       { heading: 'Pushing a task', body: 'Only the assignee can push their own task to a new target date. Pushing records the new date and increments the push count — the original due date is retained for reporting.' },
       { heading: 'Priority Levels', body: 'High = blocks progress or has a hard deadline. Medium = standard work. Low = nice-to-have or whenever. Overdue tasks show a ⚠ warning.' },
+      { heading: 'Comments', body: 'Click "Comments" on any task card to open a discussion thread for that task. Founders/admins can comment on any task; associates only on tasks assigned to them. Anyone who can see the thread can delete a comment on it.' },
       { heading: 'KPI view', body: 'Switch to the KPI tab for performance metrics: On-time, Pushed, Pending, and Not-completed. Founders/admins see a per-person breakdown for the whole team plus org totals; associates see only their own numbers.' },
+    ],
+  },
+
+  myTodos: {
+    title: 'My To-Dos',
+    summary: 'A personal, private checklist — only you can see your own list. Quick items and tasks assigned to you live side by side, with completion synced back to the Tasks board.',
+    items: [
+      { heading: 'Adding a quick item', body: 'Type into the box at the top and press Enter or click Add. Quick items are personal only — they never appear on the shared Tasks board.' },
+      { heading: 'Porting in a task', body: 'Click "Port in a task" to pick from tasks assigned to you and add one to your list, linked back to the original. Already-ported tasks are excluded from the picker.' },
+      { heading: 'Two-way sync', body: 'Checking off a ported item marks the linked Task as Done on the shared board too — and vice versa: marking a Task Done on the board flips any personal to-do linked to it. Unchecking either side reopens both.' },
+      { heading: 'Notes & due dates', body: 'Click the "⋯" on any item to add notes or a due date, or to unlink it from its task (keeping it as a standalone personal item).' },
+      { heading: 'Completed section', body: 'Finished items collapse into a "Completed" group at the bottom so your active list stays short.' },
+    ],
+  },
+
+  recurringTasks: {
+    title: 'Recurring Tasks',
+    summary: 'Admin-defined tasks that repeat on a schedule (e.g. a weekly form to fill in) with a single shared tick-off per occurrence.',
+    items: [
+      { heading: 'When it shows up', body: 'A recurring task is hidden until a configurable number of days before it\'s due (2 by default) — then it appears as "Upcoming". If it\'s missed, it does not reset or disappear: it stays visible as "Overdue" indefinitely until someone ticks it off.' },
+      { heading: 'Ticking off', body: 'Click the checkmark to mark the current occurrence done. This logs who completed it and when, then schedules the next occurrence — measured from the original due date, not the completion date, so a late tick-off doesn\'t shift the regular cadence (e.g. it\'s still due next Saturday, not "a week after you got to it").' },
+      { heading: 'Supporting link', body: 'Each recurring task can carry a link (e.g. a Google Form) shown as an "Open" button, so the same link is reused every cycle.' },
+      { heading: 'Creating one', body: 'Founders/admins click "+ New recurring task": title, optional description, optional link, repeat frequency (daily / weekly / monthly), lead time, optional assignee, and the first due date.' },
+      { heading: 'Due vs All view', body: 'The "Due" tab (default) shows only what\'s actionable now. The "All" tab is the management view — see every recurring task regardless of due date, and edit, pause/resume, or delete it (founder/admin only).' },
     ],
   },
 
@@ -82,6 +107,22 @@ export const WIKI: Record<string, WikiSection> = {
       { heading: 'Custom fees', body: 'Click "+ Add Fee" under any investor to add a fee that isn\'t part of the category (e.g. a separately negotiated charge). Custom fees have a label and a rate % and can be deleted.' },
       { heading: 'Fee calculations', body: 'For each fee, the system shows the rate % and the calculated earning (rate × investment amount). The totals bar sums all enabled fee earnings across all investors.' },
       { heading: 'Referral investors', body: 'If an investor was referred by a franchise partner, a Referral badge appears on their row automatically.' },
+      { heading: 'Adding a deal directly', body: 'Not every deal comes through a pipeline — click "+ New deal" (founder/admin) to add a portfolio or off-pipeline deal straight into Active Deals. It creates or links a company profile by name automatically.' },
+      { heading: 'Importing deals from CSV', body: 'Click "Import CSV" (founder/admin) for a bulk path: copy the AI-agent prompt (columns are generated from your org\'s deal categories), have an AI agent turn your source list into a CSV, then upload it. Each row becomes an active deal.' },
+      { heading: 'Creating a deal from a company profile', body: 'On any Company Profile, founders/admins can click "Create deal" to add that company straight to Active Deals — linked directly to the profile rather than matched by name.' },
+    ],
+  },
+
+  companies: {
+    title: 'Companies',
+    summary: 'The startup database — one master profile per company, the deep dossier behind every deal. Deal Desk cards, pipeline deals, and Active Deals all create-or-link a company profile automatically, so the same company is never duplicated.',
+    items: [
+      { heading: 'Profile sections', body: 'Overview, Traction & metrics, Current raise, Product, Founders, Team, Funding history, Cap table, Documents, Custom fields, and an Updates timeline — plus a Suggested Investors panel that matches the company\'s sectors and themes against your investor database.' },
+      { heading: '"Update from call" form', body: 'Instead of editing each section separately, click "Update from call" to fill in everything from a founder call in one continuous form. Each section has an optional Notes box for anything that doesn\'t fit a field — on save, all filled notes post as one combined Company Update.' },
+      { heading: 'Founders', body: 'Each founder can have a name, role, bio, ex-affiliations, LinkedIn URL, equity %, and a photo URL (shown as their avatar on the profile).' },
+      { heading: 'Importing companies from CSV', body: 'Click "Import CSV" on the Companies list for the same AI-prompt-and-upload flow used elsewhere in the app. Rows are deduped by name: a matching company gets its blank fields filled in (never overwriting what\'s already entered); a new name creates a fresh profile.' },
+      { heading: 'Meta-tags & Suggested Investors', body: 'Meta-tags are themes (e.g. "D2C", "Quick Commerce") extracted from the company\'s text, or set explicitly via the CSV. They drive the Suggested Investors panel, which buckets matches into Sector preference, Synergetic, and Sector-agnostic.' },
+      { heading: 'Linking & creating decisions', body: 'A company profile can spawn a Deal Desk card ("Create card") or an Active Deal ("Create deal"). The Sync button backfills profiles from existing Deal Desk cards and active deals that predate the company database.' },
     ],
   },
 
@@ -183,6 +224,25 @@ export const WIKI: Record<string, WikiSection> = {
       { heading: 'Tracking Referrals', body: 'The table shows all deals you\'ve referred and their current stage. Stages auto-update as the ESV team moves them.' },
       { heading: 'Setup Notice', body: 'If you see "Account not set up", your portal account hasn\'t been linked to a partner record yet. Contact Earlyseed Ventures to resolve this.' },
       { heading: 'Confidentiality', body: 'You only see your own referred deals, not the broader ESV pipeline. All data is governed by your franchise agreement.' },
+    ],
+  },
+
+  bulletin: {
+    title: 'Bulletin Board',
+    summary: 'A company-wide board for upcoming events and announcements. Internal team only (founder/admin/associate) — franchise partners don\'t see it.',
+    items: [
+      { heading: 'Reading it', body: 'Posts are grouped into Pinned, Upcoming events, and Announcements, with a collapsed "Past events" section at the bottom so old events don\'t clutter the board.' },
+      { heading: 'Posting', body: 'Founders/admins click "+ New post", choose Event or Announcement, and fill in a title and details. Events also take a date, optional time, and location.' },
+      { heading: 'Pinning', body: 'Pin a post to keep it at the top of the board regardless of date, for anything that needs everyone\'s attention.' },
+    ],
+  },
+
+  hr: {
+    title: 'HR Zone',
+    summary: 'Company policies, published by founders/admins and readable by the whole internal team.',
+    items: [
+      { heading: 'Reading a policy', body: 'Click any policy title to expand it in place. Each policy shows an optional category tag and when it was last updated (and by whom).' },
+      { heading: 'Publishing & editing', body: 'Founders/admins click "+ New policy" to publish one, or "Edit" on an existing one. A policy has a title, an optional category (e.g. Leave, Conduct, Expenses), and the full policy text.' },
     ],
   },
 }
