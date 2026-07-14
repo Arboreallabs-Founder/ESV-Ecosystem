@@ -22,7 +22,7 @@ const arapey = Arapey({
 });
 
 export const metadata: Metadata = {
-  title: "Ecosystem — Earlyseed Ventures",
+  title: "Ecosystem",
   description: "Unified deal pipeline and CRM platform for Earlyseed Ventures.",
 };
 
