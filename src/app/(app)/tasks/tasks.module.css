@@ -243,6 +243,22 @@
 }
 .commentsBtn:hover { background: rgba(116,95,253,0.08); border-color: rgba(116,95,253,0.35); color: var(--color-primary); }
 
+.deleteBtn {
+  flex-shrink: 0;
+  padding: 0.3125rem 0.5625rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.deleteBtn:hover { background: rgba(220,38,38,0.08); border-color: rgba(220,38,38,0.4); color: var(--color-destructive); }
+.deleteBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
 /* ── Task detail modal + comment thread ───────────────────────────── */
 .modalWide { max-width: 600px; }
 .detailMeta { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.5rem 0 1.5rem; }

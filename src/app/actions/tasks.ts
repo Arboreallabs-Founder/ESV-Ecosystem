@@ -87,6 +87,15 @@ export async function pushTask(taskId: string, newDate: string) {
   revalidatePath('/tasks')
 }
 
+export async function deleteTask(taskId: string) {
+  const { supabase } = await requireRole(['founder', 'admin'])
+  const { error } = await supabase.from('tasks').delete().eq('id', taskId)
+  if (error) throw error
+  revalidatePath('/tasks')
+  revalidatePath('/dashboard')
+  revalidatePath('/my-todos')
+}
+
 // ── Comment thread ───────────────────────────────────────────────────────────
 
 export async function getTaskComments(taskId: string): Promise<TaskComment[]> {

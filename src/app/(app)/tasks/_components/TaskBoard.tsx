@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createTask, updateTaskStatus, pushTask } from '@/app/actions/tasks'
+import { createTask, updateTaskStatus, pushTask, deleteTask } from '@/app/actions/tasks'
 import type { Task, UserRow } from '@/lib/types'
 import Combobox from '@/app/_components/Combobox'
 import TaskDetailModal from './TaskDetailModal'
@@ -74,6 +74,7 @@ export default function TaskBoard({
   }
 
   const canCreate = ['founder', 'admin', 'associate'].includes(userRole)
+  const canDelete = ['founder', 'admin'].includes(userRole)
 
   // Assignment rules: never partners; associates only to themselves or other associates.
   const assignableUsers = users.filter((u) => {
@@ -122,6 +123,15 @@ export default function TaskBoard({
       ? { ...t, status: newStatus as Task['status'], completed_at: newStatus === 'Done' ? new Date().toISOString() : null }
       : t))
     startTransition(async () => { await updateTaskStatus(taskId, newStatus) })
+  }
+
+  function handleDelete(task: Task) {
+    if (!confirm(`Delete task "${task.title}"? This cannot be undone.`)) return
+    setTasks((prev) => prev.filter((t) => t.id !== task.id))
+    startTransition(async () => {
+      try { await deleteTask(task.id) }
+      catch (err) { alert(String(err)); router.refresh() }
+    })
   }
 
   function resetTaskDraft() {
@@ -232,6 +242,17 @@ export default function TaskBoard({
             </button>
           )}
           <button className={styles.commentsBtn} onClick={() => setDetailTask(task)}>Comments</button>
+          {canDelete && (
+            <button
+              className={styles.deleteBtn}
+              onClick={() => handleDelete(task)}
+              disabled={isPending}
+              title="Delete task"
+              aria-label="Delete task"
+            >
+              🗑
+            </button>
+          )}
         </div>
       </div>
     )
