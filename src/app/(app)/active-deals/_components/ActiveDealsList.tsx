@@ -1,11 +1,10 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ActiveDeal, DealCategory, DealState } from '@/lib/types'
 import { DEAL_STATES, DEAL_STATE_META } from '@/lib/types'
 import { updateDealState } from '@/app/actions/active-deals'
-import ActiveDealDetail from './ActiveDealDetail'
 import NewDealModal from './NewDealModal'
 import DealImportModal from './DealImportModal'
 import FilterTabs from '@/app/_components/FilterTabs'
@@ -26,7 +25,7 @@ function formatValue(value: string, fieldType: string) {
   if (fieldType === 'url') {
     try {
       const url = new URL(value)
-      return <a href={url.href} target="_blank" rel="noopener noreferrer" className={styles.fieldLink}>{url.hostname.replace('www.', '')}</a>
+      return <a href={url.href} target="_blank" rel="noopener noreferrer" className={styles.fieldLink} onClick={(e) => e.stopPropagation()}>{url.hostname.replace('www.', '')}</a>
     } catch { return value }
   }
   if (fieldType === 'percentage') return `${delimitNumber(value)}%`
@@ -43,18 +42,18 @@ type StateFilter = 'open' | DealState
 
 export default function ActiveDealsList({ deals: initialDeals, categories, userRole }: { deals: ActiveDeal[]; categories: DealCategory[]; userRole: string }) {
   const router = useRouter()
-  const [deals, setDeals] = useState(initialDeals)
   const [stateFilter, setStateFilter] = useState<StateFilter>('open')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
-  const [selectedDeal, setSelectedDeal] = useState<ActiveDeal | null>(null)
   const [showNew, setShowNew] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  // Optimistic state overrides layered over server data — avoids re-seeding a whole
+  // deals array (and a setState-in-effect) when the server refreshes after a new deal.
+  const [stateOverrides, setStateOverrides] = useState<Record<string, DealState>>({})
   const [, startTransition] = useTransition()
   const canManage = userRole === 'founder' || userRole === 'admin'
   const canEditState = userRole !== 'franchise_partner'
 
-  // Re-sync when the server sends fresh data (after a new/imported deal → router.refresh()).
-  useEffect(() => { setDeals(initialDeals) }, [initialDeals])
+  const deals = initialDeals.map((d) => stateOverrides[d.id] ? { ...d, deal_state: stateOverrides[d.id] } : d)
 
   const usedCategories = categories.filter((cat) => deals.some((d) => d.categories.some((c) => c.category.id === cat.id)))
 
@@ -73,24 +72,31 @@ export default function ActiveDealsList({ deals: initialDeals, categories, userR
   })
 
   function handleStateChange(deal: ActiveDeal, next: DealState) {
-    setDeals((prev) => prev.map((d) => d.id === deal.id ? { ...d, deal_state: next } : d))
-    setSelectedDeal((cur) => cur && cur.id === deal.id ? { ...cur, deal_state: next } : cur)
+    const prevState = deal.deal_state
+    setStateOverrides((prev) => ({ ...prev, [deal.id]: next }))
     startTransition(async () => {
       try { await updateDealState(deal.id, next) }
-      catch (err) { alert(String(err)); router.refresh() }
+      catch (err) {
+        setStateOverrides((prev) => ({ ...prev, [deal.id]: prevState }))
+        alert(String(err))
+        router.refresh()
+      }
     })
+  }
+
+  function openDeal(id: string) {
+    router.push(`/active-deals/${id}`)
+  }
+
+  function handleCardKeyDown(event: KeyboardEvent<HTMLElement>, id: string) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      openDeal(id)
+    }
   }
 
   return (
     <div className={styles.page}>
-      {selectedDeal && (
-        <ActiveDealDetail
-          deal={selectedDeal}
-          onClose={() => setSelectedDeal(null)}
-          userRole={userRole}
-          onStateChange={canEditState ? (s) => handleStateChange(selectedDeal, s) : undefined}
-        />
-      )}
       {showNew && <NewDealModal categories={categories} onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); router.refresh() }} />}
       {showImport && <DealImportModal categories={categories} onClose={() => setShowImport(false)} onImported={() => router.refresh()} />}
       <div className={styles.header}>
@@ -142,14 +148,26 @@ export default function ActiveDealsList({ deals: initialDeals, categories, userR
           {filtered.map((deal) => {
             const meta = DEAL_STATE_META[deal.deal_state]
             return (
-              <div key={deal.id} className={styles.card} onClick={() => setSelectedDeal(deal)}>
+              <article
+                key={deal.id}
+                className={styles.card}
+                role="button"
+                tabIndex={0}
+                onClick={() => openDeal(deal.id)}
+                onKeyDown={(event) => handleCardKeyDown(event, deal.id)}
+                aria-label={`Open ${deal.entry?.title ?? 'deal'}`}
+              >
                 <div className={styles.cardHead}>
-                  <div className={styles.dealTitle}>{deal.entry?.title ?? 'Untitled'}</div>
+                  <div className={styles.cardTitleBlock}>
+                    <div className={styles.dealTitle}>{deal.entry?.title ?? 'Untitled'}</div>
+                    <div className={styles.openHint}>Open record</div>
+                  </div>
                   {canEditState ? (
                     <select
                       className={styles.stateSelect}
                       value={deal.deal_state}
                       onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
                       onChange={(e) => { e.stopPropagation(); handleStateChange(deal, e.target.value as DealState) }}
                       style={{ color: meta.color, borderColor: `${meta.color}55`, background: `${meta.color}12` }}
                       title="Change deal state"
@@ -164,8 +182,8 @@ export default function ActiveDealsList({ deals: initialDeals, categories, userR
                 </div>
 
                 <div className={styles.dealMeta}>
-                  {deal.entry?.submitter_name && <span>{deal.entry.submitter_name}</span>}
-                  <span className={styles.dealDate}>Accepted {formatDate(deal.created_at)}</span>
+                  {deal.entry?.submitter_name && <span className={styles.metaPill}>{deal.entry.submitter_name}</span>}
+                  <span className={styles.metaPill}>Accepted {formatDate(deal.created_at)}</span>
                   {deal.entry?.sourced_via_partner && (
                     <span className={styles.partnerChip}>via {deal.entry.sourced_via_partner.name}</span>
                   )}
@@ -200,7 +218,7 @@ export default function ActiveDealsList({ deals: initialDeals, categories, userR
                     </div>
                   )
                 })}
-              </div>
+              </article>
             )
           })}
         </div>

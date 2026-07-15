@@ -1,14 +1,20 @@
-.page { }
+.page {
+  display: flex;
+  flex-direction: column;
+}
 
 .header {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.75rem;
+  margin-bottom: 1.25rem;
   flex-wrap: wrap;
   gap: 1rem;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 1.5rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.15rem 1.25rem;
+  box-shadow: var(--shadow-card);
 }
 
 .pageTitle {
@@ -115,23 +121,31 @@
 /* Deal card grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 1rem;
 }
 
 .card {
-  background: var(--color-card);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  background: var(--color-card-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
   padding: 1.125rem 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: 0.75rem;
   box-shadow: var(--shadow-card);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
   cursor: pointer;
 }
-.card:hover { border-color: var(--color-primary-light, #CEAAFD); box-shadow: var(--shadow-elevated); }
+.card:hover {
+  border-color: rgba(116,95,253,0.42);
+  box-shadow: var(--shadow-elevated);
+  transform: translateY(-1px);
+}
+.card:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 3px;
+}
 
 .cardTop { display: flex; flex-direction: column; gap: 0.375rem; }
 
@@ -143,14 +157,33 @@
   gap: 0.625rem;
 }
 
+.cardTitleBlock {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
 .dealTitle {
   font-family: var(--font-serif);
-  font-size: 1.0625rem;
+  font-size: 1.15rem;
   font-weight: 400;
   color: var(--color-text);
-  line-height: 1.35;
+  line-height: 1.25;
   min-width: 0;
 }
+
+.openHint {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.card:hover .openHint,
+.card:focus-visible .openHint { opacity: 1; }
 
 /* ── Deal state badge / dropdown ─────────────────────────────────── */
 .stateBadge {
@@ -188,9 +221,19 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem 0.625rem;
+  gap: 0.375rem;
   font-size: 0.8125rem;
   color: var(--color-muted);
+}
+
+.metaPill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.45rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-bg);
 }
 
 /* ── Secondary controls (category filter) ────────────────────────── */
@@ -257,8 +300,8 @@
 .fieldGroup {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  padding-top: 0.625rem;
+  gap: 0.35rem;
+  padding-top: 0.75rem;
   border-top: 1px solid var(--color-border);
 }
 
@@ -278,6 +321,7 @@
   gap: 0.875rem;
   font-size: 0.8125rem;
   line-height: 1.45;
+  min-width: 0;
 }
 
 .fieldKey {
@@ -306,6 +350,137 @@
   font-weight: 500;
 }
 .fieldLink:hover { text-decoration: underline; }
+
+/* ── Deal page (full-page detail) ──────────────────────────────── */
+.dealPage {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.detailTopBar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0.25rem 0;
+  margin-bottom: 1rem;
+  transition: color 0.12s;
+}
+.backLink:hover { color: var(--color-primary); }
+
+.dealPageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.25rem 1.35rem;
+  margin-bottom: 0.75rem;
+  box-shadow: var(--shadow-card);
+}
+
+.dealPageHeaderMain { min-width: 0; }
+
+.dealPageTitle {
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 400;
+  color: var(--color-text);
+  line-height: 1.2;
+  margin: 0;
+}
+
+.summaryRail {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.summaryItem {
+  min-width: 0;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0.75rem 0.85rem;
+}
+
+.summaryLabel {
+  display: block;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-muted);
+  margin-bottom: 0.25rem;
+}
+
+.summaryValue {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 650;
+  color: var(--color-text);
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dealPageGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.dealPageMain {
+  min-width: 0;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0 1.25rem;
+  box-shadow: var(--shadow-card);
+}
+
+.dealPageAside {
+  min-width: 0;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.25rem 1.375rem;
+  box-shadow: var(--shadow-card);
+  position: sticky;
+  top: 1rem;
+}
+.dealPageAside > .detailSection { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+@media (max-width: 860px) {
+  .summaryRail { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dealPageGrid { grid-template-columns: 1fr; gap: 1.25rem; }
+  .dealPageHeader { flex-wrap: wrap; }
+  .dealPageTitle { font-size: 1.375rem; }
+  .dealPageAside { position: static; }
+}
+
+@media (max-width: 560px) {
+  .summaryRail { grid-template-columns: 1fr; }
+  .dealPageMain,
+  .dealPageAside,
+  .dealPageHeader { padding-left: 1rem; padding-right: 1rem; }
+}
 
 /* ── Deal detail modal ─────────────────────────────────────────── */
 .detailOverlay {
@@ -423,6 +598,16 @@
   padding: 1rem 0;
 }
 
+.detailError {
+  background: rgba(192,57,43,0.08);
+  border: 1px solid rgba(192,57,43,0.28);
+  color: var(--color-destructive);
+  border-radius: 8px;
+  padding: 0.9rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
 .detailSection {
   padding-bottom: 1.25rem;
   margin-bottom: 1.25rem;
@@ -430,13 +615,21 @@
 }
 .detailSection:last-child { border-bottom: none; margin-bottom: 0; }
 
+.dealPageMain .detailSection {
+  padding: 1.1rem 0;
+  margin: 0;
+}
+
+.dealPageMain .detailSection:first-child { padding-top: 1.25rem; }
+.dealPageMain .detailSection:last-child { padding-bottom: 1.25rem; }
+
 .detailSectionTitle {
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--color-muted);
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.85rem;
 }
 
 .detailEmpty {
@@ -461,6 +654,8 @@
 
 .detailCategoryBlock {
   margin-bottom: 1rem;
+  padding-left: 0.875rem;
+  border-left: 2px solid var(--color-border);
 }
 .detailCategoryBlock:last-child { margin-bottom: 0; }
 
@@ -543,7 +738,10 @@
   display: flex;
   flex-direction: column;
   gap: 0.1875rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--color-border);
 }
+.answerRow:last-child { border-bottom: none; padding-bottom: 0; }
 
 .answerQuestion {
   font-size: 0.8125rem;
@@ -563,7 +761,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.9rem;
 }
 
 .investorsHeaderActions {
@@ -661,17 +859,18 @@
 .investorTable {
   width: 100%;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border-radius: 8px;
   overflow: hidden;
   font-size: 0.8125rem;
+  background: var(--color-card-raised);
 }
 
 .investorTableHead {
   display: grid;
   grid-template-columns: 1fr 52px 78px 22px;
   gap: 0.25rem;
-  padding: 0.3125rem 0.625rem;
-  background: var(--color-surface, var(--color-bg));
+  padding: 0.45rem 0.625rem;
+  background: var(--color-bg);
   border-bottom: 1px solid var(--color-border);
   font-size: 0.625rem;
   font-weight: 700;
@@ -690,7 +889,7 @@
   grid-template-columns: 1fr 52px 78px 22px;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.5rem 0.625rem;
+  padding: 0.65rem 0.625rem;
 }
 
 .iColName { min-width: 0; }
@@ -952,6 +1151,7 @@
   margin-top: 0.875rem;
   padding-top: 0.875rem;
   border-top: 1.5px solid var(--color-border);
+  flex-wrap: wrap;
 }
 
 .totalsItem {
