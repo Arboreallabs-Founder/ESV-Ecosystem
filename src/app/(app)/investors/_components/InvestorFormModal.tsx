@@ -51,6 +51,9 @@ export default function InvestorFormModal({
   const [ticketMax, setTicketMax] = useState(initial?.ticket_size_max?.toString() ?? '')
   const [sectors, setSectors] = useState<string[]>(initial?.sectors ?? [])
   const [referredBy, setReferredBy] = useState(initial?.referred_by_partner_id ?? '')
+  const [onboardingDone, setOnboardingDone] = useState(initial?.onboarding_form_completed ?? false)
+  const [onboardingUrl, setOnboardingUrl] = useState(initial?.onboarding_form_url ?? '')
+  const [kycDone, setKycDone] = useState(initial?.kyc_done ?? false)
   const [contacts, setContacts] = useState<ContactDraft[]>(
     mode === 'create' ? [] : []  // contacts managed live in detail drawer on edit
   )
@@ -58,6 +61,7 @@ export default function InvestorFormModal({
   const isPartner = userRole === 'franchise_partner'
   const canSetReferredBy = ['founder', 'admin'].includes(userRole)
   const showContacts = serviceType !== 'angel_investor'
+  const showOnboardingKyc = serviceType === 'angel_investor' && !isPartner
 
   function setContact(key: string, field: keyof ContactDraft, val: string) {
     setContacts((cs) => cs.map((c) => c.key === key ? { ...c, [field]: val } : c))
@@ -93,6 +97,9 @@ export default function InvestorFormModal({
           ticket_size_max: ticketMax ? Number(ticketMax) : null,
           stage: stage.trim() || null,
           referred_by_partner_id: isPartner ? null : (referredBy || null),
+          onboarding_form_completed: showOnboardingKyc ? onboardingDone : false,
+          onboarding_form_url: showOnboardingKyc ? (onboardingUrl.trim() || null) : null,
+          kyc_done: showOnboardingKyc ? kycDone : false,
           contacts: contactDrafts,
           isPartnerReferral: isPartner,
         })
@@ -109,6 +116,9 @@ export default function InvestorFormModal({
           ticket_size_max: ticketMax ? Number(ticketMax) : null,
           stage: stage.trim() || null,
           referred_by_partner_id: referredBy || null,
+          onboarding_form_completed: showOnboardingKyc ? onboardingDone : false,
+          onboarding_form_url: showOnboardingKyc ? (onboardingUrl.trim() || null) : null,
+          kyc_done: showOnboardingKyc ? kycDone : false,
         })
       }
       router.refresh()
@@ -227,6 +237,30 @@ export default function InvestorFormModal({
               <input className={styles.input} type="number" min={0} value={ticketMax} onChange={(e) => setTicketMax(e.target.value)} placeholder="e.g. 50000000" />
             </div>
           </div>
+
+          {/* Onboarding + KYC — angel investors only */}
+          {showOnboardingKyc && (
+            <div className={styles.formRow}>
+              <div className={styles.field}>
+                <label className={styles.label}>Onboarding Form Completed</label>
+                <select className={styles.select} value={onboardingDone ? 'yes' : 'no'} onChange={(e) => setOnboardingDone(e.target.value === 'yes')}>
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </select>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>KYC Done</label>
+                <select className={styles.select} value={kycDone ? 'yes' : 'no'} onChange={(e) => setKycDone(e.target.value === 'yes')}>
+                  <option value="no">No</option>
+                  <option value="yes">Yes</option>
+                </select>
+              </div>
+              <div className={styles.field} style={{ flex: 2 }}>
+                <label className={styles.label}>Signed Onboarding Form Link</label>
+                <input className={styles.input} type="url" value={onboardingUrl} onChange={(e) => setOnboardingUrl(e.target.value)} placeholder="https://…" />
+              </div>
+            </div>
+          )}
 
           {/* Sectors */}
           <div className={styles.field}>

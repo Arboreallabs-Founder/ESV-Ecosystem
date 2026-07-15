@@ -36,6 +36,9 @@ export async function createInvestor(params: {
   ticket_size_max: number | null
   stage: string | null
   referred_by_partner_id: string | null
+  onboarding_form_completed?: boolean
+  onboarding_form_url?: string | null
+  kyc_done?: boolean
   contacts: ContactDraft[]
   isPartnerReferral?: boolean
 }): Promise<{ id: string }> {
@@ -78,6 +81,9 @@ export async function createInvestor(params: {
       ticket_size_max: fields.ticket_size_max,
       stage: fields.stage || null,
       referred_by_partner_id: referredByPartnerId,
+      onboarding_form_completed: fields.onboarding_form_completed ?? false,
+      onboarding_form_url: fields.onboarding_form_url || null,
+      kyc_done: fields.kyc_done ?? false,
       created_by: userId,
       org_id: orgId,
     })
@@ -128,6 +134,9 @@ export async function updateInvestor(
     ticket_size_max: number | null
     stage: string | null
     referred_by_partner_id: string | null
+    onboarding_form_completed?: boolean
+    onboarding_form_url?: string | null
+    kyc_done?: boolean
   }
 ): Promise<void> {
   // Partners may edit their own referrals, but never the ESV POC or referral attribution.
@@ -143,6 +152,9 @@ export async function updateInvestor(
     ticket_size_min: params.ticket_size_min,
     ticket_size_max: params.ticket_size_max,
     stage: params.stage || null,
+    onboarding_form_completed: params.onboarding_form_completed ?? false,
+    onboarding_form_url: params.onboarding_form_url || null,
+    kyc_done: params.kyc_done ?? false,
   }
 
   const { error } = await supabase

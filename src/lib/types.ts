@@ -168,6 +168,10 @@ export type Investor = {
   referred_by_partner_id: string | null
   created_by: string | null
   created_at: string
+  // Angel-investor only (shown/edited when service_type === 'angel_investor').
+  onboarding_form_completed: boolean
+  onboarding_form_url: string | null
+  kyc_done: boolean
   esv_poc?: { name: string } | null
   esv_pocs?: Array<{ id: string; name: string }>
   referred_by_partner?: { name: string } | null
@@ -258,7 +262,7 @@ export type Pipeline = {
   entry_count: number
 }
 
-export type StageQuestionFieldType = 'text' | 'numeric' | 'percentage' | 'url'
+export type StageQuestionFieldType = 'text' | 'numeric' | 'percentage' | 'url' | 'boolean'
 
 export type PipelineStageQuestion = {
   id: string
@@ -438,6 +442,16 @@ export type ActiveDealInvestorFee = {
   is_enabled: boolean
 }
 
+export const ACTIVE_DEAL_INVESTOR_STATUSES = ['not_started', 'commitment_received', 'funds_received', 'shares_transferred'] as const
+export type ActiveDealInvestorStatus = typeof ACTIVE_DEAL_INVESTOR_STATUSES[number]
+
+export const ACTIVE_DEAL_INVESTOR_STATUS_META: Record<ActiveDealInvestorStatus, { label: string; color: string }> = {
+  not_started:          { label: 'Not Started',         color: '#A39B95' },
+  commitment_received:  { label: 'Commitment Received', color: '#8B6245' },
+  funds_received:       { label: 'Funds Received',       color: '#745FFD' },
+  shares_transferred:   { label: 'Shares Transferred',   color: '#16a34a' },
+}
+
 export type ActiveDealInvestor = {
   id: string
   active_deal_id: string
@@ -450,6 +464,8 @@ export type ActiveDealInvestor = {
   is_investing: boolean
   investment_amount: number | null
   is_referral: boolean
+  status: ActiveDealInvestorStatus
+  shares: number | null
   fees: ActiveDealInvestorFee[]
   created_at: string
 }

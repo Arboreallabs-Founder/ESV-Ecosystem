@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireRole, requireAuth } from '@/lib/guards'
+import type { StageQuestionFieldType } from '@/lib/types'
 
 async function requireInternal() {
   const { supabase } = await requireRole(['founder', 'admin', 'associate'])
@@ -143,7 +144,7 @@ export async function rejectEntry(entryId: string, stageId: string, reason: stri
 type StageQuestionItem = {
   id?: string
   label: string
-  field_type: 'text' | 'numeric' | 'percentage' | 'url'
+  field_type: StageQuestionFieldType
   required: boolean
   position: number
 }
@@ -252,7 +253,7 @@ export async function getEntryStageAnswers(entryId: string) {
     return {
       question_id: q?.id as string,
       label: q?.label as string,
-      field_type: q?.field_type as 'text' | 'numeric' | 'percentage' | 'url',
+      field_type: q?.field_type as StageQuestionFieldType,
       value: (row.value ?? null) as string | null,
       stage_id: q?.stage_id as string,
       stage_name: (stage?.name ?? 'Stage') as string,

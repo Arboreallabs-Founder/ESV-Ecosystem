@@ -152,6 +152,39 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
             </div>
           </div>
 
+          {/* Onboarding + KYC — angel investors only */}
+          {investor.service_type === 'angel_investor' && (
+            <div className={styles.detailSection}>
+              <div className={styles.detailSectionTitle}>Onboarding &amp; KYC</div>
+              <div className={styles.detailGrid}>
+                <div className={styles.detailField}>
+                  <div className={styles.detailFieldLabel}>Onboarding Form</div>
+                  <div className={styles.detailFieldValue}>
+                    <span className={investor.onboarding_form_completed ? styles.statusYes : styles.statusNo}>
+                      {investor.onboarding_form_completed ? 'Completed' : 'Not completed'}
+                    </span>
+                  </div>
+                </div>
+                <div className={styles.detailField}>
+                  <div className={styles.detailFieldLabel}>KYC</div>
+                  <div className={styles.detailFieldValue}>
+                    <span className={investor.kyc_done ? styles.statusYes : styles.statusNo}>
+                      {investor.kyc_done ? 'Done' : 'Pending'}
+                    </span>
+                  </div>
+                </div>
+                {investor.onboarding_form_url && (
+                  <div className={styles.detailField}>
+                    <div className={styles.detailFieldLabel}>Signed Form</div>
+                    <div className={styles.detailFieldValue}>
+                      <a href={investor.onboarding_form_url} target="_blank" rel="noopener noreferrer" className={styles.detailLink}>View signed form ↗</a>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Sectors */}
           {investor.sectors.length > 0 && (
             <div className={styles.detailSection}>

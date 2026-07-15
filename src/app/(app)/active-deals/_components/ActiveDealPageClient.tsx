@@ -7,8 +7,11 @@ import { getEntryAnswers, getEntryStageHistory, getEntryStageAnswers } from '@/a
 import { createOrLinkCompanyForActiveDeal, linkActiveDealToCompany, updateActiveDealDetails, updateDealState } from '@/app/actions/active-deals'
 import type { ActiveDeal, DealCategory, DealState, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
 import { DEAL_STATES, DEAL_STATE_META } from '@/lib/types'
-import DealInvestorsSection from './DealInvestorsSection'
 import styles from '../active-deals.module.css'
+
+function formatINR(amount: number) {
+  return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
+}
 
 type AnswerItem = {
   id: string
@@ -25,6 +28,7 @@ function delimitNumber(value: string): string {
 }
 
 function formatValue(value: string, fieldType: string) {
+  if (fieldType === 'boolean') return value === 'true' ? 'Yes' : 'No'
   if (fieldType === 'url') {
     try {
       const url = new URL(value)
@@ -49,11 +53,13 @@ export default function ActiveDealPageClient({
   userRole,
   categories,
   companyOptions,
+  investorSummary,
 }: {
   deal: ActiveDeal
   userRole: string
   categories: DealCategory[]
   companyOptions: Array<{ id: string; name: string }>
+  investorSummary: { count: number; totalCommitted: number }
 }) {
   const router = useRouter()
   const [dealState, setDealState] = useState<DealState>(deal.deal_state)
@@ -70,7 +76,6 @@ export default function ActiveDealPageClient({
 
   const canEditState = userRole !== 'franchise_partner'
   const canManageDeal = userRole !== 'franchise_partner'
-  const isReadOnly = userRole === 'franchise_partner'
 
   useEffect(() => {
     Promise.all([
@@ -326,13 +331,15 @@ export default function ActiveDealPageClient({
             </div>
           </div>
 
-          {/* RIGHT — Investors */}
+          {/* RIGHT — Investors summary */}
           <div className={styles.dealPageAside}>
-            <DealInvestorsSection
-              dealId={deal.id}
-              dealTitle={deal.entry?.title ?? 'this deal'}
-              isReadOnly={isReadOnly}
-            />
+            <div className={styles.detailSectionTitle}>Investors</div>
+            <div className={styles.investorSummaryStat}>
+              <span className={styles.investorSummaryCount}>{investorSummary.count}</span>
+              <span className={styles.investorSummaryLabel}>investor{investorSummary.count === 1 ? '' : 's'}</span>
+            </div>
+            <div className={styles.investorSummaryTotal}>{formatINR(investorSummary.totalCommitted)} committed</div>
+            <Link href={`/active-deals/${deal.id}/investors`} className={styles.viewInvestorsBtn}>Open investor table →</Link>
           </div>
         </div>
       )}

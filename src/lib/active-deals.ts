@@ -136,3 +136,18 @@ export const fetchActiveDeal = cache(async (id: string): Promise<ActiveDeal | nu
     .maybeSingle()
   return data ? shapeActiveDealRow(data as unknown as ActiveDealRow) : null
 })
+
+// Lightweight investor count + committed total for the deal page's summary card
+// (the full breakdown lives on the dedicated /investors sub-page).
+export const fetchActiveDealInvestorSummary = cache(async (activeDealId: string): Promise<{ count: number; totalCommitted: number }> => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('active_deal_investors')
+    .select('investment_amount')
+    .eq('active_deal_id', activeDealId)
+  const rows = (data ?? []) as Array<{ investment_amount: number | null }>
+  return {
+    count: rows.length,
+    totalCommitted: rows.reduce((sum, r) => sum + (r.investment_amount ?? 0), 0),
+  }
+})

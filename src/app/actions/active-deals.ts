@@ -6,7 +6,7 @@ import { requireRole } from '@/lib/guards'
 import { findOrCreateCompanyByName } from '@/lib/company-sync'
 import { parseDealsCsv } from '@/lib/active-deals-csv'
 import { DEAL_STATES } from '@/lib/types'
-import type { ActiveDealInvestor, ActiveDealInvestorFee, DealCategory, DealState } from '@/lib/types'
+import type { ActiveDealInvestor, ActiveDealInvestorFee, ActiveDealInvestorStatus, DealCategory, DealState } from '@/lib/types'
 
 type DealCategoryFieldRow = DealCategory['fields'][number]
 type DealCategoryRow = Omit<DealCategory, 'fields'> & { fields?: DealCategoryFieldRow[] | null }
@@ -614,7 +614,7 @@ export async function getInvestorsForPicker(): Promise<Array<{
 // ── Deal Investors ────────────────────────────────────────────────────────────
 
 const DEAL_INVESTOR_SELECT = `
-  id, active_deal_id, is_investing, investment_amount, is_referral, created_at,
+  id, active_deal_id, is_investing, investment_amount, is_referral, status, shares, created_at,
   investor:investors(id, name, service_type, referred_by_partner_id),
   fees:active_deal_investor_fees(id, label, rate, source_field_id, is_enabled)
 `
@@ -626,6 +626,8 @@ function shapeDealInvestor(row: DealInvestorRow): ActiveDealInvestor {
     is_investing: row.is_investing,
     investment_amount: row.investment_amount,
     is_referral: row.is_referral,
+    status: row.status ?? 'not_started',
+    shares: row.shares,
     created_at: row.created_at,
     investor: first(row.investor)!,
     fees: row.fees ?? [],
@@ -732,7 +734,12 @@ export async function removeInvestorFromDeal(activeDealInvestorId: string) {
   if (error) throw error
 }
 
-export async function updateDealInvestor(id: string, updates: { is_investing?: boolean; investment_amount?: number | null }) {
+export async function updateDealInvestor(id: string, updates: {
+  is_investing?: boolean
+  investment_amount?: number | null
+  status?: ActiveDealInvestorStatus
+  shares?: number | null
+}) {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('active_deal_investors').update(updates).eq('id', id)
   if (error) throw error

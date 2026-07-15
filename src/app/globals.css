@@ -15,6 +15,12 @@
   --color-destructive:   #C0392B;
   --color-success:       #2E7D32;
 
+  --scrollbar-size:         10px;
+  --scrollbar-track:        rgba(247, 236, 226, 0.72);
+  --scrollbar-thumb:        #D3C1A9;
+  --scrollbar-thumb-hover:  #D5AE8F;
+  --scrollbar-thumb-active: #745FFD;
+
   --font-serif:  var(--font-arapey), 'Arapey', Georgia, 'Times New Roman', serif;
 
   --radius-sm:   6px;
@@ -41,6 +47,11 @@
   --color-warning:       #CB8C7C;
   --color-destructive:   #E74C3C;
   --color-success:       #66BB6A;
+
+  --scrollbar-track:        rgba(34, 34, 58, 0.72);
+  --scrollbar-thumb:        #A39B95;
+  --scrollbar-thumb-hover:  #D5AE8F;
+  --scrollbar-thumb-active: #745FFD;
 
   --shadow-card:     0 2px 12px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
   --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
@@ -80,6 +91,41 @@ button {
 
 input, textarea, select {
   font-family: inherit;
+}
+
+/* ESV branded scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  min-height: 40px;
+  background: linear-gradient(180deg, var(--scrollbar-thumb), var(--scrollbar-thumb-hover));
+  border: 2px solid var(--scrollbar-track);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--scrollbar-thumb-hover), var(--color-primary-light));
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background: var(--scrollbar-thumb-active);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 /* ─── Skeleton loading animation ────────────────────────────────────── */

@@ -13,7 +13,7 @@ import styles from './board.module.css'
 const STAGE_COLORS = ['#745FFD', '#16a34a', '#d97706', '#dc2626', '#0ea5e9', '#8b5cf6', '#ec4899', '#14b8a6']
 
 const QUESTION_TYPE_LABELS: Record<StageQuestionFieldType, string> = {
-  text: 'Text', numeric: 'Numeric', percentage: 'Percentage (%)', url: 'URL',
+  text: 'Text', numeric: 'Numeric', percentage: 'Percentage (%)', url: 'URL', boolean: 'Yes/No',
 }
 
 type QuestionDraft = { key: string; id?: string; label: string; field_type: StageQuestionFieldType; required: boolean }
@@ -23,6 +23,7 @@ function inputTypeFor(t: StageQuestionFieldType) {
 }
 
 function formatStageValue(value: string, fieldType: string) {
+  if (fieldType === 'boolean') return value === 'true' ? 'Yes' : 'No'
   if (fieldType === 'url') {
     try {
       const url = new URL(value)
@@ -262,11 +263,15 @@ export default function PipelineBoardClient({
   function handleConfirmAnswers() {
     if (!answerModal) return
     const { mode, entryId, stageId, questions } = answerModal
-    for (const q of questions.filter((x) => x.required)) {
+    // Yes/No questions are always answered (checked or not) — nothing to require.
+    for (const q of questions.filter((x) => x.required && x.field_type !== 'boolean')) {
       if (!(answerValues[q.id] ?? '').trim()) { setAnswerError(`"${q.label}" is required.`); return }
     }
     setAnswerError('')
-    const answers = questions.map((q) => ({ questionId: q.id, value: answerValues[q.id] ?? '' }))
+    const answers = questions.map((q) => ({
+      questionId: q.id,
+      value: q.field_type === 'boolean' ? (answerValues[q.id] ?? 'false') : (answerValues[q.id] ?? ''),
+    }))
 
     if (mode === 'move') {
       setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, stage_id: stageId } : e))
@@ -673,21 +678,35 @@ export default function PipelineBoardClient({
             </p>
             {answerModal.questions.map((q) => (
               <div key={q.id} className={styles.field} style={{ marginBottom: '0.75rem' }}>
-                <label className={styles.label}>
-                  {q.label}
-                  {q.required && <span style={{ color: 'var(--color-primary)' }}> *</span>}
-                  <span style={{ fontWeight: 400, marginLeft: '0.375rem', textTransform: 'none', letterSpacing: 0, fontSize: '0.7rem', color: 'var(--color-muted)' }}>
-                    {q.field_type === 'percentage' ? '%' : q.field_type === 'numeric' ? 'number' : q.field_type === 'url' ? 'https://…' : ''}
-                  </span>
-                </label>
-                <input
-                  className={styles.input}
-                  type={inputTypeFor(q.field_type)}
-                  value={answerValues[q.id] ?? ''}
-                  onChange={(e) => setAnswerValues((prev) => ({ ...prev, [q.id]: e.target.value }))}
-                  placeholder={q.field_type === 'url' ? 'https://' : q.field_type === 'percentage' ? '0–100' : ''}
-                  required={q.required}
-                />
+                {q.field_type === 'boolean' ? (
+                  <label className={styles.questionReqToggle} style={{ fontWeight: 500, textTransform: 'none', letterSpacing: 0, fontSize: '0.875rem', color: 'var(--color-text)' }}>
+                    <input
+                      type="checkbox"
+                      checked={(answerValues[q.id] ?? 'false') === 'true'}
+                      onChange={(e) => setAnswerValues((prev) => ({ ...prev, [q.id]: e.target.checked ? 'true' : 'false' }))}
+                    />
+                    {q.label}
+                    {q.required && <span style={{ color: 'var(--color-primary)' }}> *</span>}
+                  </label>
+                ) : (
+                  <>
+                    <label className={styles.label}>
+                      {q.label}
+                      {q.required && <span style={{ color: 'var(--color-primary)' }}> *</span>}
+                      <span style={{ fontWeight: 400, marginLeft: '0.375rem', textTransform: 'none', letterSpacing: 0, fontSize: '0.7rem', color: 'var(--color-muted)' }}>
+                        {q.field_type === 'percentage' ? '%' : q.field_type === 'numeric' ? 'number' : q.field_type === 'url' ? 'https://…' : ''}
+                      </span>
+                    </label>
+                    <input
+                      className={styles.input}
+                      type={inputTypeFor(q.field_type)}
+                      value={answerValues[q.id] ?? ''}
+                      onChange={(e) => setAnswerValues((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                      placeholder={q.field_type === 'url' ? 'https://' : q.field_type === 'percentage' ? '0–100' : ''}
+                      required={q.required}
+                    />
+                  </>
+                )}
               </div>
             ))}
             {answerError && <p className={styles.errorMsg}>{answerError}</p>}

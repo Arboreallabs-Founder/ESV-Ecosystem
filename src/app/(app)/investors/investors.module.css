@@ -322,6 +322,24 @@
   border-radius: 9999px;
 }
 
+.statusYes {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.1);
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+}
+
+.statusNo {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  background: var(--color-bg);
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+}
+
 .emptyState {
   text-align: center;
   padding: 5rem 2rem;

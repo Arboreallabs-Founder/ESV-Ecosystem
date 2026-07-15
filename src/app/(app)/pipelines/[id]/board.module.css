@@ -98,7 +98,8 @@
 }
 .board::-webkit-scrollbar { height: 5px; }
 .board::-webkit-scrollbar-track { background: transparent; }
-.board::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+.board::-webkit-scrollbar-thumb { background: linear-gradient(90deg, var(--scrollbar-thumb), var(--scrollbar-thumb-hover)); border-radius: 999px; }
+.board::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-active); }
 
 .column {
   width: 272px;
@@ -188,7 +189,8 @@
 }
 .columnBody::-webkit-scrollbar { width: 5px; }
 .columnBody::-webkit-scrollbar-track { background: transparent; }
-.columnBody::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 3px; }
+.columnBody::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--scrollbar-thumb), var(--scrollbar-thumb-hover)); border-radius: 999px; }
+.columnBody::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-active); }
 
 .emptyCol {
   font-size: 0.8125rem;
@@ -943,7 +945,8 @@
   flex-shrink: 0;
 }
 .funnelBar::-webkit-scrollbar { height: 4px; }
-.funnelBar::-webkit-scrollbar-thumb { background: var(--color-border); border-radius: 2px; }
+.funnelBar::-webkit-scrollbar-thumb { background: linear-gradient(90deg, var(--scrollbar-thumb), var(--scrollbar-thumb-hover)); border-radius: 999px; }
+.funnelBar::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-active); }
 .funnelSeg {
   flex: 1 1 0;
   min-width: 96px;
