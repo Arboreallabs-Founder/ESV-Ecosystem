@@ -54,6 +54,21 @@ The favicon source asset was created/updated according to `image-assets.md`.
 - Treatment: Sand `#D3C1A9` rounded-square background with Purple `#745FFD` outlined sapling
 - No app code was wired for the favicon; the work order said the implementation copy into `src/app/icon.png` would be handled separately.
 
+### Dashboard redesign
+
+The main dashboard was reorganized to make the first screen more action-oriented and less like a wall of equal-weight cards.
+
+- Dashboard page: `src/app/(app)/dashboard/page.tsx`
+- Dashboard styles: `src/app/(app)/dashboard/dashboard.module.css`
+
+Layout changes:
+
+- Greeting now sits alone as a compact hero.
+- Bulletin Board and Recent Activity are directly under the greeting so the user sees live updates first.
+- Quick links moved below the two live panels and now render as a horizontal carousel.
+- Overview metrics moved below quick links as a compact "Ecosystem health" section.
+- Dashboard CSS was rebuilt around the new hierarchy with calmer 8px cards, fixed carousel item sizing, responsive breakpoints, and denser metrics.
+
 ## Files to include in commit
 
 Active Deals files:
@@ -72,6 +87,11 @@ Asset:
 
 - `public/ecosystem-favicon-sapling.png`
 
+Dashboard:
+
+- `src/app/(app)/dashboard/page.tsx`
+- `src/app/(app)/dashboard/dashboard.module.css`
+
 Documentation:
 
 - `UI-agent-Development.md`
@@ -86,6 +106,14 @@ npm run lint -- "src/app/(app)/active-deals/page.tsx" "src/app/(app)/active-deal
 npm run build
 ```
 
+These also passed after the dashboard redesign:
+
+```bash
+npx tsc --noEmit --pretty false
+npm run lint -- "src/app/(app)/dashboard/page.tsx"
+npm run build
+```
+
 Local server note:
 
 - `http://localhost:3000/active-deals` responded, but redirected to `/login` in the headless browser check because there was no authenticated session.
@@ -94,9 +122,4 @@ Local server note:
 
 ## Working tree caution
 
-At the time this handoff doc was written, there were also modified dashboard files in the working tree:
-
-- `src/app/(app)/dashboard/page.tsx`
-- `src/app/(app)/dashboard/dashboard.module.css`
-
-Those dashboard edits were not part of this Active Deals UI pass. Do not attribute them to this work unless the other agent confirms they belong in the same commit.
+Earlier dashboard edits were already present in the working tree before the dashboard redesign request. The current dashboard files now include intentional UI-agent changes and should be included if committing the dashboard redesign.

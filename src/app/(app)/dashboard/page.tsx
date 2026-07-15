@@ -126,38 +126,14 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <h1 className={styles.greeting}>{greeting}{firstName ? `, ${firstName}` : ''}.</h1>
-      <p className={styles.greetingSub}>Here&apos;s an overview of everything happening across the ecosystem.</p>
-
-      <div className={styles.statsGrid}>
-        {stats.map(({ label, value, desc, href }) => (
-          <Link key={label} href={href} className={styles.statCard}>
-            <div className={styles.statLabel}>{label}</div>
-            <div className={styles.statValue}>{value}</div>
-            <div className={styles.statDesc}>{desc}</div>
-          </Link>
-        ))}
+      <div className={styles.heroBlock}>
+        <h1 className={styles.greeting}>{greeting}{firstName ? `, ${firstName}` : ''}.</h1>
+        <p className={styles.greetingSub}>Here&apos;s what needs attention across the ecosystem.</p>
       </div>
 
       {/* Quick links — the 8 most-used destinations */}
-      <div className={styles.actionsGrid}>
-        {QUICK_ACTIONS.map(({ href, label, d, d2 }) => {
-          const meta = actionMeta[href]
-          return (
-            <Link key={href} href={href} className={styles.actionCard}>
-              <div className={styles.actionCardTop}>
-                <span className={styles.actionIcon}><Icon d={d} d2={d2} /></span>
-                {!!meta.badge && meta.badge > 0 && <span className={styles.actionBadge}>{meta.badge}</span>}
-              </div>
-              <div className={styles.actionLabel}>{label}</div>
-              <div className={styles.actionDesc}>{meta.desc}</div>
-            </Link>
-          )
-        })}
-      </div>
-
       {/* Bottom: Bulletin + Recent Activity */}
-      <div className={styles.bottomGrid}>
+      <div className={styles.focusGrid}>
         {/* Bulletin updates */}
         <div className={styles.activityCard}>
           <div className={styles.activityHeader}>
@@ -251,6 +227,50 @@ export default async function DashboardPage() {
           )}
         </div>
       </div>
+
+      <section className={styles.quickSection} aria-labelledby="dashboard-quick-links">
+        <div className={styles.sectionHeader}>
+          <div>
+            <h2 id="dashboard-quick-links" className={styles.sectionTitle}>Quick links</h2>
+            <p className={styles.sectionSub}>Jump to the workspaces the team uses most.</p>
+          </div>
+          <span className={styles.carouselHint}>Scroll sideways</span>
+        </div>
+
+        <div className={styles.actionsCarousel}>
+          {QUICK_ACTIONS.map(({ href, label, d, d2 }) => {
+            const meta = actionMeta[href]
+            return (
+              <Link key={href} href={href} className={styles.actionCard}>
+                <div className={styles.actionCardTop}>
+                  <span className={styles.actionIcon}><Icon d={d} d2={d2} /></span>
+                  {!!meta.badge && meta.badge > 0 && <span className={styles.actionBadge}>{meta.badge}</span>}
+                </div>
+                <div className={styles.actionLabel}>{label}</div>
+                <div className={styles.actionDesc}>{meta.desc}</div>
+              </Link>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className={styles.metricsSection} aria-labelledby="dashboard-health">
+        <div className={styles.sectionHeader}>
+          <div>
+            <h2 id="dashboard-health" className={styles.sectionTitle}>Ecosystem health</h2>
+            <p className={styles.sectionSub}>A compact read on volume and open work.</p>
+          </div>
+        </div>
+        <div className={styles.statsGrid}>
+          {stats.map(({ label, value, desc, href }) => (
+            <Link key={label} href={href} className={styles.statCard}>
+              <div className={styles.statLabel}>{label}</div>
+              <div className={styles.statValue}>{value}</div>
+              <div className={styles.statDesc}>{desc}</div>
+            </Link>
+          ))}
+        </div>
+      </section>
     </>
   )
 }
