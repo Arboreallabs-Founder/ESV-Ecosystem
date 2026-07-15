@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { Company, CompanyFieldDef, CompanyListItem, SuggestedInvestor, InvestorSuggestionBucket } from '@/lib/types'
+import type { Company, CompanyFieldDef, CompanyListItem, SuggestedInvestor, InvestorSuggestionBucket, DealState } from '@/lib/types'
 
 // Database list — trimmed rows, newest-touched first. RLS scopes to the org.
 export const fetchCompanies = cache(async (): Promise<CompanyListItem[]> => {
@@ -28,7 +28,13 @@ export const fetchCompany = cache(async (id: string): Promise<Company | null> =>
       updates:company_updates(*, author:users!author_id(name)),
       field_values:company_field_values(field_def_id, value),
       linked_desk_deals:desk_deals!company_id(id, company_name, associate_id, deal_status),
-      linked_pipeline_entries:pipeline_entries!company_id(id, title, pipeline_id, stage:pipeline_stages!stage_id(name))
+      linked_pipeline_entries:pipeline_entries!company_id(
+        id,
+        title,
+        pipeline_id,
+        stage:pipeline_stages!stage_id(name),
+        active_deals(id, deal_state)
+      )
     `)
     .eq('id', id)
     .single()
@@ -56,6 +62,8 @@ export const fetchCompany = cache(async (id: string): Promise<Company | null> =>
       title: (e.title as string | null) ?? null,
       pipeline_id: e.pipeline_id as string,
       stage_name: one(e.stage as { name: string } | { name: string }[] | null)?.name ?? null,
+      active_deal_id: one(e.active_deals as { id: string; deal_state: DealState } | { id: string; deal_state: DealState }[] | null)?.id ?? null,
+      active_deal_state: one(e.active_deals as { id: string; deal_state: DealState } | { id: string; deal_state: DealState }[] | null)?.deal_state ?? null,
     })),
   }
 })

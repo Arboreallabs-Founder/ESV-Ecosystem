@@ -40,7 +40,17 @@ function formatDate(iso: string) {
 // State filter: 'open' = everything except archived (the default working set).
 type StateFilter = 'open' | DealState
 
-export default function ActiveDealsList({ deals: initialDeals, categories, userRole }: { deals: ActiveDeal[]; categories: DealCategory[]; userRole: string }) {
+export default function ActiveDealsList({
+  deals: initialDeals,
+  categories,
+  companyOptions,
+  userRole,
+}: {
+  deals: ActiveDeal[]
+  categories: DealCategory[]
+  companyOptions: Array<{ id: string; name: string }>
+  userRole: string
+}) {
   const router = useRouter()
   const [stateFilter, setStateFilter] = useState<StateFilter>('open')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
@@ -97,7 +107,7 @@ export default function ActiveDealsList({ deals: initialDeals, categories, userR
 
   return (
     <div className={styles.page}>
-      {showNew && <NewDealModal categories={categories} onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); router.refresh() }} />}
+      {showNew && <NewDealModal categories={categories} companyOptions={companyOptions} onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); router.refresh() }} />}
       {showImport && <DealImportModal categories={categories} onClose={() => setShowImport(false)} onImported={() => router.refresh()} />}
       <div className={styles.header}>
         <div>

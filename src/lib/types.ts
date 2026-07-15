@@ -421,6 +421,8 @@ export type ActiveDeal = {
     submitter_email: string | null
     submitted_at: string
     pipeline_id: string
+    company_id?: string | null
+    company?: { id: string; name: string } | null
     assignees?: Array<{ user_id: string; name: string }>
     sourced_via_partner?: { id: string; name: string } | null
   }
@@ -673,7 +675,14 @@ export type CompanyFieldValue = {
 
 // Deal records linked to a company (shown in the profile's Linked deals section).
 export type LinkedDeskDeal = { id: string; company_name: string; associate_id: string; deal_status: string }
-export type LinkedPipelineEntry = { id: string; title: string | null; pipeline_id: string; stage_name: string | null }
+export type LinkedPipelineEntry = {
+  id: string
+  title: string | null
+  pipeline_id: string
+  stage_name: string | null
+  active_deal_id: string | null
+  active_deal_state: DealState | null
+}
 
 export type Company = {
   id: string

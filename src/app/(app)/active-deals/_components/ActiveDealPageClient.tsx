@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { getEntryAnswers, getEntryStageHistory, getEntryStageAnswers } from '@/app/actions/pipelines'
-import { updateDealState } from '@/app/actions/active-deals'
-import type { ActiveDeal, DealState, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
+import { createOrLinkCompanyForActiveDeal, linkActiveDealToCompany, updateActiveDealDetails, updateDealState } from '@/app/actions/active-deals'
+import type { ActiveDeal, DealCategory, DealState, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
 import { DEAL_STATES, DEAL_STATE_META } from '@/lib/types'
 import DealInvestorsSection from './DealInvestorsSection'
 import styles from '../active-deals.module.css'
@@ -43,17 +44,32 @@ function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-export default function ActiveDealPageClient({ deal, userRole }: { deal: ActiveDeal; userRole: string }) {
+export default function ActiveDealPageClient({
+  deal,
+  userRole,
+  categories,
+  companyOptions,
+}: {
+  deal: ActiveDeal
+  userRole: string
+  categories: DealCategory[]
+  companyOptions: Array<{ id: string; name: string }>
+}) {
   const router = useRouter()
   const [dealState, setDealState] = useState<DealState>(deal.deal_state)
+  const [showEdit, setShowEdit] = useState(false)
+  const [companyId, setCompanyId] = useState(deal.entry?.company_id ?? '')
+  const [linkedCompany, setLinkedCompany] = useState(deal.entry?.company ?? null)
   const [answers, setAnswers] = useState<AnswerItem[]>([])
   const [history, setHistory] = useState<PipelineEntryStageHistory[]>([])
   const [stageAnswers, setStageAnswers] = useState<StageAnswerView[]>([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
-  const [, startTransition] = useTransition()
+  const [, startStateTransition] = useTransition()
+  const [linkPending, startLinkTransition] = useTransition()
 
   const canEditState = userRole !== 'franchise_partner'
+  const canManageDeal = userRole !== 'franchise_partner'
   const isReadOnly = userRole === 'franchise_partner'
 
   useEffect(() => {
@@ -75,9 +91,32 @@ export default function ActiveDealPageClient({ deal, userRole }: { deal: ActiveD
   function handleStateChange(next: DealState) {
     const prev = dealState
     setDealState(next)
-    startTransition(async () => {
+    startStateTransition(async () => {
       try { await updateDealState(deal.id, next) }
       catch (err) { setDealState(prev); alert(String(err)) }
+    })
+  }
+
+  function handleCompanyLink(nextCompanyId: string | null) {
+    startLinkTransition(async () => {
+      try {
+        await linkActiveDealToCompany(deal.id, nextCompanyId)
+        const company = companyOptions.find((c) => c.id === nextCompanyId) ?? null
+        setCompanyId(nextCompanyId ?? '')
+        setLinkedCompany(company)
+        router.refresh()
+      } catch (err) { alert(String(err)) }
+    })
+  }
+
+  function handleCreateCompanyProfile() {
+    startLinkTransition(async () => {
+      try {
+        const id = await createOrLinkCompanyForActiveDeal(deal.id)
+        setCompanyId(id)
+        setLinkedCompany(companyOptions.find((c) => c.id === id) ?? { id, name: deal.entry?.title ?? 'Company profile' })
+        router.refresh()
+      } catch (err) { alert(String(err)) }
     })
   }
 
@@ -119,15 +158,18 @@ export default function ActiveDealPageClient({ deal, userRole }: { deal: ActiveD
           )}
         </div>
         {canEditState ? (
-          <select
-            className={styles.stateSelect}
-            value={dealState}
-            onChange={(e) => handleStateChange(e.target.value as DealState)}
-            style={{ color: meta.color, borderColor: `${meta.color}55`, background: `${meta.color}12` }}
-            title="Change deal state"
-          >
-            {DEAL_STATES.map((s) => <option key={s} value={s} style={{ color: 'var(--color-text)' }}>{DEAL_STATE_META[s].label}</option>)}
-          </select>
+          <div className={styles.detailHeadRight}>
+            <select
+              className={styles.stateSelect}
+              value={dealState}
+              onChange={(e) => handleStateChange(e.target.value as DealState)}
+              style={{ color: meta.color, borderColor: `${meta.color}55`, background: `${meta.color}12` }}
+              title="Change deal state"
+            >
+              {DEAL_STATES.map((s) => <option key={s} value={s} style={{ color: 'var(--color-text)' }}>{DEAL_STATE_META[s].label}</option>)}
+            </select>
+            {canManageDeal && <button className={styles.ghostBtn} onClick={() => setShowEdit(true)}>Edit deal</button>}
+          </div>
         ) : (
           <span className={styles.stateBadge} style={{ color: meta.color, borderColor: `${meta.color}55`, background: `${meta.color}12` }}>
             {meta.label}
@@ -152,6 +194,33 @@ export default function ActiveDealPageClient({ deal, userRole }: { deal: ActiveD
         <div className={styles.dealPageGrid}>
           {/* LEFT — Deal details */}
           <div className={styles.dealPageMain}>
+            <div className={styles.detailSection}>
+              <div className={styles.detailSectionHead}>
+                <div className={styles.detailSectionTitle}>Company Profile</div>
+                {linkedCompany && <Link href={`/companies/${linkedCompany.id}`} className={styles.inlineLink}>View profile</Link>}
+              </div>
+              {canManageDeal ? (
+                <div className={styles.companyLinkBox}>
+                  <select
+                    className={styles.formSelect}
+                    value={companyId}
+                    disabled={linkPending}
+                    onChange={(e) => handleCompanyLink(e.target.value || null)}
+                  >
+                    <option value="">No linked company profile</option>
+                    {companyOptions.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}
+                  </select>
+                  <button className={styles.ghostBtn} disabled={linkPending} onClick={handleCreateCompanyProfile}>
+                    {linkedCompany ? 'Relink by name' : 'Create/link by name'}
+                  </button>
+                </div>
+              ) : linkedCompany ? (
+                <div className={styles.detailEmpty}>{linkedCompany.name}</div>
+              ) : (
+                <div className={styles.detailEmpty}>No company profile linked.</div>
+              )}
+            </div>
+
             {/* Assigned To */}
             <div className={styles.detailSection}>
               <div className={styles.detailSectionTitle}>Assigned To</div>
@@ -267,6 +336,124 @@ export default function ActiveDealPageClient({ deal, userRole }: { deal: ActiveD
           </div>
         </div>
       )}
+      {showEdit && (
+        <EditActiveDealModal
+          deal={deal}
+          categories={categories}
+          onClose={() => setShowEdit(false)}
+          onSaved={() => {
+            setShowEdit(false)
+            router.refresh()
+          }}
+        />
+      )}
+    </div>
+  )
+}
+
+function EditActiveDealModal({
+  deal,
+  categories,
+  onClose,
+  onSaved,
+}: {
+  deal: ActiveDeal
+  categories: DealCategory[]
+  onClose: () => void
+  onSaved: () => void
+}) {
+  const initialCategoryId = deal.categories[0]?.category.id ?? ''
+  const [name, setName] = useState(deal.entry?.title ?? '')
+  const [submitterName, setSubmitterName] = useState(deal.entry?.submitter_name ?? '')
+  const [submitterEmail, setSubmitterEmail] = useState(deal.entry?.submitter_email ?? '')
+  const [categoryId, setCategoryId] = useState(initialCategoryId)
+  const [values, setValues] = useState<Record<string, string>>(() => {
+    const out: Record<string, string> = {}
+    for (const group of deal.categories) {
+      for (const value of group.field_values) out[value.field_id] = value.value ?? ''
+    }
+    return out
+  })
+  const [error, setError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
+  const category = categories.find((c) => c.id === categoryId) ?? null
+
+  function submit() {
+    setError(null)
+    if (!name.trim()) { setError('Deal name is required.'); return }
+    startTransition(async () => {
+      try {
+        await updateActiveDealDetails(deal.id, {
+          deal_name: name,
+          category_id: categoryId || null,
+          submitter_name: submitterName,
+          submitter_email: submitterEmail,
+          field_values: values,
+        })
+        onSaved()
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Could not save deal.')
+      }
+    })
+  }
+
+  return (
+    <div className={styles.modalOverlay} onMouseDown={onClose}>
+      <div className={`${styles.modalPanel} ${styles.modalPanelWide}`} onMouseDown={(e) => e.stopPropagation()}>
+        <div className={styles.modalHeader}>
+          <div className={styles.modalTitle}>Edit deal</div>
+          <button className={styles.detailClose} onClick={onClose} aria-label="Close">x</button>
+        </div>
+        <div className={`${styles.modalBody} ${styles.modalScroll}`}>
+          <div className={styles.formField}>
+            <label className={styles.formLabel}>Deal / company name *</label>
+            <input className={styles.formInput} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+            <div className={styles.formField}>
+              <label className={styles.formLabel}>Contact name</label>
+              <input className={styles.formInput} value={submitterName} onChange={(e) => setSubmitterName(e.target.value)} />
+            </div>
+            <div className={styles.formField}>
+              <label className={styles.formLabel}>Contact email</label>
+              <input className={styles.formInput} value={submitterEmail} onChange={(e) => setSubmitterEmail(e.target.value)} />
+            </div>
+          </div>
+
+          <div className={styles.formField}>
+            <label className={styles.formLabel}>Category</label>
+            <select className={styles.formSelect} value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setValues({}) }}>
+              <option value="">Uncategorised</option>
+              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+          </div>
+
+          {category && category.fields.length > 0 && (
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.85rem', marginTop: '0.25rem' }}>
+              <div className={styles.formLabel} style={{ color: category.color, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.6875rem', marginBottom: '0.6rem' }}>{category.name}</div>
+              {category.fields.map((field) => (
+                <div key={field.id} className={styles.formField}>
+                  <label className={styles.formLabel}>{field.label}{field.required && ' *'}</label>
+                  <input
+                    className={styles.formInput}
+                    value={values[field.id] ?? ''}
+                    onChange={(e) => setValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
+                    inputMode={field.field_type === 'numeric' || field.field_type === 'percentage' ? 'decimal' : undefined}
+                    placeholder={field.field_type === 'url' ? 'https://' : field.field_type === 'percentage' ? '%' : field.field_type === 'numeric' ? 'Number (no commas)' : ''}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {error && <div className={styles.errBox}>{error}</div>}
+        </div>
+        <div className={styles.modalActions} style={{ padding: '0.85rem 1.375rem', borderTop: '1px solid var(--color-border)' }}>
+          <button className={styles.modalCancel} onClick={onClose} disabled={pending}>Cancel</button>
+          <button className={styles.modalAccept} onClick={submit} disabled={pending}>{pending ? 'Saving...' : 'Save changes'}</button>
+        </div>
+      </div>
     </div>
   )
 }

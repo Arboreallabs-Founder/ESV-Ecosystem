@@ -52,7 +52,7 @@ export default function ActiveDealsOverlay({ onClose }: { onClose: () => void })
           <Spinner size={28} label="Loading deals…" center />
         ) : (
           <div style={{ padding: '2rem' }}>
-            <ActiveDealsList deals={deals} categories={categories} userRole={userRole} />
+            <ActiveDealsList deals={deals} categories={categories} companyOptions={[]} userRole={userRole} />
           </div>
         )}
       </div>

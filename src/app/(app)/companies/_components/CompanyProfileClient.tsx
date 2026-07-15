@@ -15,10 +15,10 @@ import {
 } from '@/app/actions/companies'
 import {
   COMPANY_STATUS_LABELS, COMPANY_DOC_TYPES, COMPANY_DOC_TYPE_LABELS, COMPANY_FIELD_TYPES,
-  SERVICE_TYPE_LABELS,
+  SERVICE_TYPE_LABELS, DEAL_STATE_META,
 } from '@/lib/types'
 import type {
-  Company, CompanyFieldDef, CompanyStatus, CompanyDocType, CompanyFieldType, CompanyFounder, CompanyTeamMember,
+  Company, CompanyFieldDef, CompanyDocType, CompanyFieldType, CompanyFounder, CompanyTeamMember,
   SuggestedInvestor, DealCategory,
 } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
@@ -265,7 +265,30 @@ export default function CompanyProfileClient({
               <Link key={d.id} href="/deal-desk" className={styles.linkedRow}><span className={styles.linkedType}>Deal Desk</span><span>{d.company_name}</span><span className={styles.muted}>{d.deal_status}</span></Link>
             ))}
             {company.linked_pipeline_entries.map((e) => (
-              <Link key={e.id} href={`/pipelines/${e.pipeline_id}`} className={styles.linkedRow}><span className={styles.linkedType}>Pipeline</span><span>{e.title ?? 'Deal'}</span><span className={styles.muted}>{e.stage_name ?? '—'}</span></Link>
+              <Link
+                key={e.id}
+                href={e.active_deal_id ? `/active-deals/${e.active_deal_id}` : `/pipelines/${e.pipeline_id}`}
+                className={styles.linkedRow}
+              >
+                <span className={e.active_deal_id ? `${styles.linkedType} ${styles.linkedTypeActive}` : styles.linkedType}>
+                  {e.active_deal_id ? 'Active Deal' : 'Pipeline'}
+                </span>
+                <span className={styles.linkedName}>{e.title ?? 'Deal'}</span>
+                {e.active_deal_state ? (
+                  <span
+                    className={styles.linkedState}
+                    style={{
+                      color: DEAL_STATE_META[e.active_deal_state].color,
+                      borderColor: `${DEAL_STATE_META[e.active_deal_state].color}55`,
+                      background: `${DEAL_STATE_META[e.active_deal_state].color}12`,
+                    }}
+                  >
+                    {DEAL_STATE_META[e.active_deal_state].label}
+                  </span>
+                ) : (
+                  <span className={styles.muted}>{e.stage_name ?? '-'}</span>
+                )}
+              </Link>
             ))}
           </div>
         </div>

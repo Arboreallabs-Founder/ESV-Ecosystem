@@ -6,10 +6,14 @@ import { createStandaloneDeal } from '@/app/actions/active-deals'
 import Spinner from '@/app/_components/Spinner'
 import styles from '../active-deals.module.css'
 
-export default function NewDealModal({ categories, onClose, onCreated }: {
-  categories: DealCategory[]; onClose: () => void; onCreated: () => void
+export default function NewDealModal({ categories, companyOptions, onClose, onCreated }: {
+  categories: DealCategory[]
+  companyOptions: Array<{ id: string; name: string }>
+  onClose: () => void
+  onCreated: () => void
 }) {
   const [name, setName] = useState('')
+  const [companyId, setCompanyId] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [values, setValues] = useState<Record<string, string>>({})
   const [submitterName, setSubmitterName] = useState('')
@@ -31,6 +35,7 @@ export default function NewDealModal({ categories, onClose, onCreated }: {
           submitter_name: submitterName.trim() || null,
           submitter_email: submitterEmail.trim() || null,
           field_values: category ? values : {},
+          company_id: companyId || null,
         })
         onCreated()
       } catch (e) { setError((e as Error).message) }
@@ -52,6 +57,17 @@ export default function NewDealModal({ categories, onClose, onCreated }: {
           <div className={styles.formField}>
             <label className={styles.formLabel}>Deal / company name *</label>
             <input className={styles.formInput} value={name} onChange={(e) => setName(e.target.value)} autoFocus placeholder="e.g. Arboreal Labs" />
+          </div>
+
+          <div className={styles.formField}>
+            <label className={styles.formLabel}>Company profile</label>
+            <select className={styles.formSelect} value={companyId} onChange={(e) => setCompanyId(e.target.value)}>
+              <option value="">Create/link automatically by name</option>
+              {companyOptions.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}
+            </select>
+            <div className={styles.helpText} style={{ marginTop: '0.35rem', fontSize: '0.75rem' }}>
+              Pick an existing profile now, or leave this blank to create or match one from the deal name.
+            </div>
           </div>
 
           <div className={styles.formField}>
