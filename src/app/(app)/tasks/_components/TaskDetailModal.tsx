@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { getTaskComments, addTaskComment, deleteTaskComment } from '@/app/actions/tasks'
 import type { Task, TaskComment } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
@@ -50,10 +51,30 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
           {task.assignee?.name && <span className={styles.metaTag}>{task.assignee.name}</span>}
           <span className={styles.metaTag}>{task.status}</span>
           <span className={`${styles.priority} ${task.priority === 'High' ? styles.priorityHigh : task.priority === 'Medium' ? styles.priorityMedium : styles.priorityLow}`}>{task.priority}</span>
-          {task.due_date && <span className={styles.metaTag}>Due {new Date(task.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>}
+          {task.due_date ? (
+            <span className={styles.metaTag}>Due {new Date(task.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+          ) : (
+            <span className={styles.metaTag}>Assigned {new Date(task.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} (no due date)</span>
+          )}
         </div>
+        {(task.assigned_by_user?.name || task.created_by_user?.name) && (
+          <div className={styles.assignedBy} style={{ marginTop: '-1rem', marginBottom: '1rem' }}>
+            Assigned by {task.assigned_by_user?.name ?? task.created_by_user?.name}
+          </div>
+        )}
         {task.description && (
           <div style={{ fontSize: '0.875rem', color: 'var(--color-muted)', lineHeight: 1.5, marginBottom: '1.5rem' }}>{task.description}</div>
+        )}
+        {(task.company || task.desk_deal || task.link_url) && (
+          <div className={styles.linkChips} style={{ marginBottom: '1.5rem' }}>
+            {task.company && (
+              <Link href={`/companies/${task.company.id}`} className={styles.linkChipTag}>🏢 {task.company.name}</Link>
+            )}
+            {task.desk_deal && <span className={styles.linkChipTag}>💼 {task.desk_deal.company_name}</span>}
+            {task.link_url && (
+              <a href={task.link_url} target="_blank" rel="noreferrer" className={styles.recLinkBtn}>Open link ↗</a>
+            )}
+          </div>
         )}
 
         <div className={styles.detailSectionTitle}>Comments</div>

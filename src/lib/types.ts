@@ -30,6 +30,10 @@ export type Task = {
   priority: 'Low' | 'Medium' | 'High'
   status: TaskStatus
   created_by: string | null
+  assigned_by_id: string | null
+  company_id: string | null
+  desk_deal_id: string | null
+  link_url: string | null
   created_at: string
   completed_at: string | null
   pushed_date: string | null
@@ -37,6 +41,9 @@ export type Task = {
   push_count: number
   assignee?: { name: string } | null
   created_by_user?: { name: string } | null
+  assigned_by_user?: { name: string } | null
+  company?: { id: string; name: string } | null
+  desk_deal?: { id: string; company_name: string } | null
 }
 
 export type TaskComment = {

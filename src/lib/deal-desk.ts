@@ -105,6 +105,13 @@ export const fetchDeskDeals = cache(async (associateId?: string): Promise<DeskDe
   return (data as any[]).map((row) => shapeDeal(row, signed))
 })
 
+// Lightweight options for a "link deal" picker (id + name). RLS scopes automatically.
+export const fetchDeskDealOptions = cache(async (): Promise<Array<{ id: string; name: string }>> => {
+  const supabase = await createClient()
+  const { data } = await supabase.from('desk_deals').select('id, company_name').order('company_name')
+  return ((data as Array<{ id: string; company_name: string }>) ?? []).map((d) => ({ id: d.id, name: d.company_name }))
+})
+
 /** Single deal detail with media + action thread. */
 export const fetchDeskDeal = cache(async (id: string): Promise<DeskDeal | null> => {
   const supabase = await createClient()

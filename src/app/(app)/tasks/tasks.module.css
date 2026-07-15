@@ -393,6 +393,95 @@
   gap: 1rem;
 }
 
+/* ── New Task modal + side "link" panel ───────────────────────────── */
+.modalRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  width: 100%;
+  max-width: 860px;
+}
+.modalRow .modal { flex-shrink: 0; }
+
+.linkPanel {
+  max-width: 320px;
+  width: 100%;
+}
+
+@media (max-width: 860px) {
+  .modalRow { flex-direction: column; }
+  .linkPanel { max-width: 500px; }
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  margin-top: 0.5rem;
+  cursor: pointer;
+}
+.checkboxLabel input { cursor: pointer; }
+
+.linkChips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.linkChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgba(116,95,253,0.08);
+  border: 1px solid rgba(116,95,253,0.25);
+  border-radius: 9999px;
+  padding: 0.25rem 0.375rem 0.25rem 0.625rem;
+}
+.linkChip button {
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1;
+  padding: 0 0.125rem;
+  opacity: 0.7;
+}
+.linkChip button:hover { opacity: 1; }
+
+.linkAddBtn {
+  padding: 0.3125rem 0.75rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: 9999px;
+  background: none;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 0.12s, color 0.12s;
+}
+.linkAddBtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+.linkChipTag {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: rgba(116,95,253,0.08);
+  padding: 0.125rem 0.4375rem;
+  border-radius: 9999px;
+  border: 1px solid rgba(116,95,253,0.2);
+  text-decoration: none;
+  white-space: nowrap;
+}
+a.linkChipTag:hover { background: rgba(116,95,253,0.16); }
+
 .field {
   display: flex;
   flex-direction: column;

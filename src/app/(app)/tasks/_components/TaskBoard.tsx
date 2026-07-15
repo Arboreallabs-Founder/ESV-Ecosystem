@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createTask, updateTaskStatus, pushTask } from '@/app/actions/tasks'
 import type { Task, UserRow } from '@/lib/types'
 import Combobox from '@/app/_components/Combobox'
@@ -35,11 +36,15 @@ function formatDue(dateStr: string) {
 export default function TaskBoard({
   tasks: initialTasks,
   users,
+  companyOptions,
+  dealOptions,
   currentUserId,
   userRole,
 }: {
   tasks: Task[]
   users: UserRow[]
+  companyOptions: Array<{ id: string; name: string }>
+  dealOptions: Array<{ id: string; name: string }>
   currentUserId: string
   userRole: string
 }) {
@@ -50,6 +55,13 @@ export default function TaskBoard({
   const [pushDate, setPushDate] = useState('')
   const [detailTask, setDetailTask] = useState<Task | null>(null)
   const [assigneeId, setAssigneeId] = useState(currentUserId)
+  const [assignedById, setAssignedById] = useState(currentUserId)
+  const [noDueDate, setNoDueDate] = useState(false)
+  const [dueDate, setDueDate] = useState('')
+  const [showLinkPanel, setShowLinkPanel] = useState(false)
+  const [linkCompanyId, setLinkCompanyId] = useState('')
+  const [linkDealId, setLinkDealId] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
   const [isPending, startTransition] = useTransition()
 
   // View / filters / collapse
@@ -112,15 +124,31 @@ export default function TaskBoard({
     startTransition(async () => { await updateTaskStatus(taskId, newStatus) })
   }
 
+  function resetTaskDraft() {
+    setAssigneeId(currentUserId)
+    setAssignedById(currentUserId)
+    setNoDueDate(false)
+    setDueDate('')
+    setShowLinkPanel(false)
+    setLinkCompanyId('')
+    setLinkDealId('')
+    setLinkUrl('')
+  }
+
+  function closeModal() {
+    setShowModal(false)
+    resetTaskDraft()
+  }
+
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const formData = new FormData(e.currentTarget)
     startTransition(async () => {
       try {
-        await createTask(formData)
+        const newTask = await createTask(formData)
+        setTasks((prev) => [newTask, ...prev])
         setShowModal(false)
-        setAssigneeId(currentUserId)
-        router.refresh()
+        resetTaskDraft()
       } catch (err) { alert(String(err)) }
     })
   }
@@ -156,10 +184,12 @@ export default function TaskBoard({
         )}
         <div className={styles.cardMeta}>
           {task.assignee?.name && <span className={styles.metaTag}>{task.assignee.name}</span>}
-          {due && (
+          {due ? (
             <span className={`${styles.metaTag} ${due.isOverdue ? styles.dueDateOverdue : styles.dueDate}`}>
               {due.isOverdue ? '⚠ ' : ''}{due.label}
             </span>
+          ) : (
+            <span className={styles.metaTag}>Assigned {formatDue(task.created_at).label}</span>
           )}
           {task.pushed_at && (
             <span className={styles.pushedTag} title={`Pushed ${task.push_count}×`}>
@@ -167,8 +197,21 @@ export default function TaskBoard({
             </span>
           )}
         </div>
-        {task.created_by_user?.name && (
-          <div className={styles.assignedBy}>Assigned by {task.created_by_user.name}</div>
+        {(task.company || task.desk_deal || task.link_url) && (
+          <div className={styles.cardMeta}>
+            {task.company && (
+              <Link href={`/companies/${task.company.id}`} className={styles.linkChipTag}>🏢 {task.company.name}</Link>
+            )}
+            {task.desk_deal && (
+              <span className={styles.linkChipTag}>💼 {task.desk_deal.company_name}</span>
+            )}
+            {task.link_url && (
+              <a href={task.link_url} target="_blank" rel="noreferrer" className={styles.linkChipTag}>🔗 Link</a>
+            )}
+          </div>
+        )}
+        {(task.assigned_by_user?.name || task.created_by_user?.name) && (
+          <div className={styles.assignedBy}>Assigned by {task.assigned_by_user?.name ?? task.created_by_user?.name}</div>
         )}
         <div className={styles.cardActions}>
           <select
@@ -285,10 +328,10 @@ export default function TaskBoard({
       )}
 
       {showModal && (
-        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setShowModal(false)}>
-          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
-            <div className={styles.modalTitle}>New Task</div>
-            <form onSubmit={handleSubmit}>
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && closeModal()}>
+          <form className={styles.modalRow} onSubmit={handleSubmit} onMouseDown={(e) => e.stopPropagation()}>
+            <div className={styles.modal}>
+              <div className={styles.modalTitle}>New Task</div>
               <div className={`${styles.field} ${styles.fieldFull}`}>
                 <label className={styles.label}>Title *</label>
                 <input className={styles.input} name="title" required placeholder="Task title…" />
@@ -309,6 +352,16 @@ export default function TaskBoard({
                   />
                 </div>
                 <div className={styles.field}>
+                  <label className={styles.label}>Assigned By</label>
+                  <input type="hidden" name="assigned_by_id" value={assignedById} />
+                  <Combobox
+                    options={assigneeOptions}
+                    value={assignedById}
+                    onChange={setAssignedById}
+                    placeholder="Who assigned this?"
+                  />
+                </div>
+                <div className={styles.field}>
                   <label className={styles.label}>Priority</label>
                   <select className={styles.select} name="priority" defaultValue="Medium">
                     <option value="Low">Low</option>
@@ -318,17 +371,97 @@ export default function TaskBoard({
                 </div>
                 <div className={styles.field}>
                   <label className={styles.label}>Due Date</label>
-                  <input className={styles.input} name="due_date" type="date" />
+                  <input
+                    className={styles.input}
+                    name="due_date"
+                    type="date"
+                    value={noDueDate ? '' : dueDate}
+                    onChange={(e) => setDueDate(e.target.value)}
+                    disabled={noDueDate}
+                  />
+                  <label className={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={noDueDate}
+                      onChange={(e) => { setNoDueDate(e.target.checked); if (e.target.checked) setDueDate('') }}
+                    />
+                    No due date — track from assigned date
+                  </label>
                 </div>
               </div>
+
+              <div className={`${styles.field} ${styles.fieldFull}`}>
+                <label className={styles.label}>Related records</label>
+                <div className={styles.linkChips}>
+                  {linkCompanyId && (
+                    <span className={styles.linkChip}>
+                      🏢 {companyOptions.find((c) => c.id === linkCompanyId)?.name ?? 'Company'}
+                      <button type="button" onClick={() => setLinkCompanyId('')} aria-label="Remove company link">×</button>
+                    </span>
+                  )}
+                  {linkDealId && (
+                    <span className={styles.linkChip}>
+                      💼 {dealOptions.find((d) => d.id === linkDealId)?.name ?? 'Deal'}
+                      <button type="button" onClick={() => setLinkDealId('')} aria-label="Remove deal link">×</button>
+                    </span>
+                  )}
+                  {linkUrl && (
+                    <span className={styles.linkChip}>
+                      🔗 Supporting link
+                      <button type="button" onClick={() => setLinkUrl('')} aria-label="Remove supporting link">×</button>
+                    </span>
+                  )}
+                  <button type="button" className={styles.linkAddBtn} onClick={() => setShowLinkPanel(true)}>
+                    + Link company / deal / URL
+                  </button>
+                </div>
+              </div>
+
               <div className={styles.modalActions}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setShowModal(false)}>Cancel</button>
+                <button type="button" className={styles.cancelBtn} onClick={closeModal}>Cancel</button>
                 <button type="submit" className={styles.submitBtn} disabled={isPending}>
                   {isPending ? 'Creating…' : 'Create Task'}
                 </button>
               </div>
-            </form>
-          </div>
+            </div>
+
+            <div className={`${styles.modal} ${styles.linkPanel}`} style={{ display: showLinkPanel ? 'block' : 'none' }}>
+              <div className={styles.modalTitle}>Link this task</div>
+              <div className={`${styles.field} ${styles.fieldFull}`}>
+                <label className={styles.label}>Company</label>
+                <input type="hidden" name="company_id" value={linkCompanyId} />
+                <Combobox
+                  options={companyOptions.map((c) => ({ id: c.id, label: c.name }))}
+                  value={linkCompanyId}
+                  onChange={setLinkCompanyId}
+                  placeholder="Search a company profile…"
+                />
+              </div>
+              <div className={`${styles.field} ${styles.fieldFull}`}>
+                <label className={styles.label}>Deal</label>
+                <input type="hidden" name="desk_deal_id" value={linkDealId} />
+                <Combobox
+                  options={dealOptions.map((d) => ({ id: d.id, label: d.name }))}
+                  value={linkDealId}
+                  onChange={setLinkDealId}
+                  placeholder="Search a Deal Desk deal…"
+                />
+              </div>
+              <div className={`${styles.field} ${styles.fieldFull}`}>
+                <label className={styles.label}>Supporting link</label>
+                <input
+                  className={styles.input}
+                  name="link_url"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  placeholder="https://…"
+                />
+              </div>
+              <div className={styles.modalActions}>
+                <button type="button" className={styles.submitBtn} onClick={() => setShowLinkPanel(false)}>Done</button>
+              </div>
+            </div>
+          </form>
         </div>
       )}
 

@@ -2,9 +2,11 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
-import type { TaskComment } from '@/lib/types'
+import type { Task, TaskComment } from '@/lib/types'
 
-export async function createTask(formData: FormData) {
+const TASK_SELECT = '*, assignee:assignee_id(name), created_by_user:created_by(name), assigned_by_user:assigned_by_id(name), company:company_id(id, name), desk_deal:desk_deal_id(id, company_name)'
+
+export async function createTask(formData: FormData): Promise<Task> {
   const { supabase, userId, orgId, role } = await requireRole(['founder', 'admin', 'associate'])
 
   const assigneeId = (formData.get('assignee_id') as string) || userId
@@ -26,19 +28,24 @@ export async function createTask(formData: FormData) {
     }
   }
 
-  const { error } = await supabase.from('tasks').insert({
+  const { data, error } = await supabase.from('tasks').insert({
     title: formData.get('title') as string,
     description: (formData.get('description') as string) || null,
     assignee_id: assigneeId,
+    assigned_by_id: (formData.get('assigned_by_id') as string) || userId,
+    company_id: (formData.get('company_id') as string) || null,
+    desk_deal_id: (formData.get('desk_deal_id') as string) || null,
+    link_url: (formData.get('link_url') as string)?.trim() || null,
     due_date: (formData.get('due_date') as string) || null,
     priority: (formData.get('priority') as string) || 'Medium',
     status: 'To Do',
     created_by: userId,
     org_id: orgId,
-  })
+  }).select(TASK_SELECT).single()
 
   if (error) throw error
-  // No revalidatePath — router.refresh() in TaskBoard handles the UI.
+  // No revalidatePath — TaskBoard adds the returned task to local state directly.
+  return data as unknown as Task
 }
 
 export async function updateTaskStatus(taskId: string, status: string) {
