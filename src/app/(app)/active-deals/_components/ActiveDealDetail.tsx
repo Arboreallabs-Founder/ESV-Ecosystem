@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { getEntryAnswers, getEntryStageHistory, getEntryStageAnswers } from '@/app/actions/pipelines'
-import type { ActiveDeal, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
+import type { ActiveDeal, DealState, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
+import { DEAL_STATES, DEAL_STATE_META } from '@/lib/types'
 import DealInvestorsSection from './DealInvestorsSection'
 import styles from '../active-deals.module.css'
 
@@ -31,7 +32,7 @@ function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
-export default function ActiveDealDetail({ deal, onClose, userRole }: { deal: ActiveDeal; onClose: () => void; userRole: string }) {
+export default function ActiveDealDetail({ deal, onClose, userRole, onStateChange }: { deal: ActiveDeal; onClose: () => void; userRole: string; onStateChange?: (state: DealState) => void }) {
   const [answers, setAnswers] = useState<AnswerItem[]>([])
   const [history, setHistory] = useState<PipelineEntryStageHistory[]>([])
   const [stageAnswers, setStageAnswers] = useState<StageAnswerView[]>([])
@@ -76,7 +77,24 @@ export default function ActiveDealDetail({ deal, onClose, userRole }: { deal: Ac
               <span className={styles.partnerChip}>via {deal.entry.sourced_via_partner.name}</span>
             )}
           </div>
-          <button className={styles.detailClose} onClick={onClose}>✕</button>
+          <div className={styles.detailHeadRight}>
+            {onStateChange ? (
+              <select
+                className={styles.stateSelect}
+                value={deal.deal_state}
+                onChange={(e) => onStateChange(e.target.value as DealState)}
+                style={{ color: DEAL_STATE_META[deal.deal_state].color, borderColor: `${DEAL_STATE_META[deal.deal_state].color}55`, background: `${DEAL_STATE_META[deal.deal_state].color}12` }}
+                title="Change deal state"
+              >
+                {DEAL_STATES.map((s) => <option key={s} value={s} style={{ color: 'var(--color-text)' }}>{DEAL_STATE_META[s].label}</option>)}
+              </select>
+            ) : (
+              <span className={styles.stateBadge} style={{ color: DEAL_STATE_META[deal.deal_state].color, borderColor: `${DEAL_STATE_META[deal.deal_state].color}55`, background: `${DEAL_STATE_META[deal.deal_state].color}12` }}>
+                {DEAL_STATE_META[deal.deal_state].label}
+              </span>
+            )}
+            <button className={styles.detailClose} onClick={onClose}>✕</button>
+          </div>
         </div>
 
         <div className={styles.detailBody}>

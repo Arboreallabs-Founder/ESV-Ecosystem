@@ -376,6 +376,17 @@ export type PipelineEntry = {
 
 // ── Active Deals ──────────────────────────────────────────────────────────────
 
+export const DEAL_STATES = ['active', 'dormant', 'closed', 'archived'] as const
+export type DealState = typeof DEAL_STATES[number]
+
+// Label + brand colour for each lifecycle state (used by badges & filters).
+export const DEAL_STATE_META: Record<DealState, { label: string; color: string }> = {
+  active:   { label: 'Active',   color: '#16a34a' },
+  dormant:  { label: 'Dormant',  color: '#8B6245' },
+  closed:   { label: 'Closed',   color: '#745FFD' },
+  archived: { label: 'Archived', color: '#A39B95' },
+}
+
 export type DealCategoryField = {
   id: string
   category_id: string
@@ -403,6 +414,7 @@ export type ActiveDeal = {
   id: string
   pipeline_entry_id: string
   created_at: string
+  deal_state: DealState
   entry: {
     title: string | null
     submitter_name: string | null

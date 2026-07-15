@@ -7,7 +7,7 @@ import {
   getInvestorsForPicker,
   getInternalUsers,
   getFranchisePartners,
-  addInvestorToDeal,
+  addInvestorsToDeal,
   removeInvestorFromDeal,
   updateDealInvestor,
   upsertInvestorFee,
@@ -60,6 +60,7 @@ export default function DealInvestorsSection({ dealId, dealTitle, isReadOnly = f
   const [internalUsers, setInternalUsers] = useState<Array<{ id: string; name: string }>>([])
   const [franchisePartners, setFranchisePartners] = useState<Array<{ id: string; name: string }>>([])
   const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<'detailed' | 'table'>('detailed')
   const [showPicker, setShowPicker] = useState(false)
   const [showCreateInvestor, setShowCreateInvestor] = useState(false)
   const [feeTogglePending, setFeeTogglePending] = useState<{ fee: ActiveDealInvestorFee; investorId: string } | null>(null)
@@ -101,11 +102,11 @@ export default function DealInvestorsSection({ dealId, dealTitle, isReadOnly = f
     mutateInvestor(investorId, (inv) => ({ ...inv, fees: inv.fees.map((f) => f.id === feeId ? updater(f) : f) }))
   }
 
-  function handleAddInvestor(investorId: string) {
+  function handleAddInvestors(investorIds: string[]) {
     startTransition(async () => {
       try {
-        const newInv = await addInvestorToDeal(dealId, investorId)
-        setInvestors((prev) => [...prev, newInv])
+        const newInvs = await addInvestorsToDeal(dealId, investorIds)
+        setInvestors((prev) => [...prev, ...newInvs])
       } catch (err) { alert(String(err)) }
     })
   }
@@ -221,11 +222,62 @@ export default function DealInvestorsSection({ dealId, dealTitle, isReadOnly = f
           <div className={styles.detailSectionTitle}>
             Investors {investors.length > 0 && <span className={styles.tabCount}>{investors.length}</span>}
           </div>
-          {!isReadOnly && <button className={styles.addInvestorBtn} onClick={() => setShowPicker(true)}>+ Add Investor</button>}
+          <div className={styles.investorsHeaderActions}>
+            <div className={styles.viewToggle}>
+              <button className={`${styles.viewToggleBtn} ${view === 'detailed' ? styles.viewToggleActive : ''}`} onClick={() => setView('detailed')}>Detailed</button>
+              <button className={`${styles.viewToggleBtn} ${view === 'table' ? styles.viewToggleActive : ''}`} onClick={() => setView('table')}>Table</button>
+            </div>
+            {!isReadOnly && <button className={styles.addInvestorBtn} onClick={() => setShowPicker(true)}>+ Add</button>}
+          </div>
         </div>
 
         {investors.length === 0 ? (
           <div className={styles.detailEmpty}>No investors added yet.</div>
+        ) : view === 'table' ? (
+          <div className={styles.compactTable}>
+            <div className={styles.compactHead}>
+              <span>Investor</span>
+              <span>Type</span>
+              <span>In?</span>
+              <span>Amount (₹)</span>
+              <span />
+            </div>
+            {investors.map((inv) => (
+              <div key={inv.id} className={styles.compactRow}>
+                <span className={styles.compactName} title={inv.investor?.name}>
+                  {inv.investor?.name}
+                  {inv.is_referral && <span className={styles.referralDot} title="Referral">•</span>}
+                </span>
+                <span className={styles.compactType}>
+                  {(SERVICE_TYPE_LABELS as Record<string, string>)[inv.investor?.service_type] ?? inv.investor?.service_type}
+                </span>
+                <span className={styles.compactInvesting}>
+                  {isReadOnly ? (
+                    <span className={`${styles.investingToggle} ${inv.is_investing ? styles.investingOn : ''}`} style={{ cursor: 'default', opacity: 0.75 }}>{inv.is_investing ? 'Yes' : 'No'}</span>
+                  ) : (
+                    <button className={`${styles.investingToggle} ${inv.is_investing ? styles.investingOn : ''}`} onClick={() => handleToggleInvesting(inv)}>{inv.is_investing ? 'Yes' : 'No'}</button>
+                  )}
+                </span>
+                <span className={styles.compactAmount}>
+                  {isReadOnly ? (
+                    <span>{inv.investment_amount != null ? inv.investment_amount.toLocaleString('en-IN') : '—'}</span>
+                  ) : (
+                    <input
+                      type="number"
+                      className={styles.investorAmountInput}
+                      value={inv.investment_amount ?? ''}
+                      onChange={(e) => handleAmountChange(inv, e.target.value)}
+                      onBlur={() => handleAmountBlur(inv)}
+                      placeholder="—"
+                    />
+                  )}
+                </span>
+                <span className={styles.compactAction}>
+                  {!isReadOnly && <button className={styles.removeInvestorBtn} onClick={() => handleRemoveInvestor(inv.id)} title="Remove">✕</button>}
+                </span>
+              </div>
+            ))}
+          </div>
         ) : (
           <div className={styles.investorTable}>
             {/* Table header */}
@@ -400,7 +452,7 @@ export default function DealInvestorsSection({ dealId, dealTitle, isReadOnly = f
         <InvestorPickerModal
           allInvestors={allInvestors}
           alreadyAdded={investors.map((inv) => inv.investor?.id)}
-          onSelect={handleAddInvestor}
+          onAdd={handleAddInvestors}
           onCreateNew={() => setShowCreateInvestor(true)}
           onClose={() => setShowPicker(false)}
         />

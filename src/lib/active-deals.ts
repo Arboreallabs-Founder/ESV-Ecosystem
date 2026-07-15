@@ -23,6 +23,7 @@ export const fetchActiveDeals = cache(async (): Promise<ActiveDeal[]> => {
       id,
       pipeline_entry_id,
       created_at,
+      deal_state,
       entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
       categories:active_deal_categories(
         category:deal_categories(
@@ -42,6 +43,7 @@ export const fetchActiveDeals = cache(async (): Promise<ActiveDeal[]> => {
       id: row.id,
       pipeline_entry_id: row.pipeline_entry_id,
       created_at: row.created_at,
+      deal_state: (row.deal_state ?? 'active') as import('@/lib/types').DealState,
       entry: (() => {
         const e = Array.isArray(row.entry) ? row.entry[0] : row.entry
         if (!e) return e

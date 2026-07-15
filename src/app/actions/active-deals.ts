@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { findOrCreateCompanyByName } from '@/lib/company-sync'
 import { parseDealsCsv } from '@/lib/active-deals-csv'
-import type { ActiveDealInvestor, DealCategory } from '@/lib/types'
+import { DEAL_STATES } from '@/lib/types'
+import type { ActiveDealInvestor, DealCategory, DealState } from '@/lib/types'
 
 async function requireAdmin() {
   const { supabase, userId, orgId } = await requireRole(['founder', 'admin'])
@@ -107,7 +108,7 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
   const { supabase, role } = await requireInternalOrPartner()
   const [dealsRes, catsRes] = await Promise.all([
     supabase.from('active_deals').select(`
-      id, pipeline_entry_id, created_at,
+      id, pipeline_entry_id, created_at, deal_state,
       entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name))),
       categories:active_deal_categories(category:deal_categories(id, name, description, color, created_at, fields:deal_category_fields(*))),
       field_values:active_deal_field_values(field_id, value)
@@ -120,6 +121,7 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
       id: row.id,
       pipeline_entry_id: row.pipeline_entry_id,
       created_at: row.created_at,
+      deal_state: (row.deal_state ?? 'active') as import('@/lib/types').DealState,
       entry: (() => {
         const e = Array.isArray(row.entry) ? row.entry[0] : row.entry
         if (!e) return e
@@ -209,6 +211,16 @@ export async function acceptDeal(
   if (allValues.length > 0) {
     await supabase.from('active_deal_field_values').insert(allValues)
   }
+}
+
+// ── Deal state (lifecycle) ──────────────────────────────────────────────────────
+
+export async function updateDealState(activeDealId: string, state: DealState) {
+  const { supabase } = await requireInternal()
+  if (!DEAL_STATES.includes(state)) throw new Error('Invalid deal state.')
+  const { error } = await supabase.from('active_deals').update({ deal_state: state }).eq('id', activeDealId)
+  if (error) throw error
+  revalidatePath('/active-deals')
 }
 
 // ── Create / import standalone deals (portfolio & off-pipeline) ─────────────────
@@ -378,6 +390,41 @@ export async function getInvestorsForPicker(): Promise<Array<{
 
 // ── Deal Investors ────────────────────────────────────────────────────────────
 
+const DEAL_INVESTOR_SELECT = `
+  id, active_deal_id, is_investing, investment_amount, is_referral, created_at,
+  investor:investors(id, name, service_type, referred_by_partner_id),
+  fees:active_deal_investor_fees(id, label, rate, source_field_id, is_enabled)
+`
+
+function shapeDealInvestor(row: any): ActiveDealInvestor {
+  return {
+    id: row.id,
+    active_deal_id: row.active_deal_id,
+    is_investing: row.is_investing,
+    investment_amount: row.investment_amount,
+    is_referral: row.is_referral,
+    created_at: row.created_at,
+    investor: Array.isArray(row.investor) ? row.investor[0] : row.investor,
+    fees: row.fees ?? [],
+  }
+}
+
+// The percentage category fields for a deal become auto-populated fee rows on each investor.
+async function pctFieldsForDeal(supabase: any, activeDealId: string): Promise<Array<{ id: string; label: string }>> {
+  const { data: catFields } = await supabase
+    .from('active_deal_categories')
+    .select('category:deal_categories(fields:deal_category_fields(id, label, field_type))')
+    .eq('active_deal_id', activeDealId)
+  const pctFields: Array<{ id: string; label: string }> = []
+  for (const cat of catFields ?? []) {
+    const category = Array.isArray(cat.category) ? cat.category[0] : cat.category
+    for (const field of category?.fields ?? []) {
+      if (field.field_type === 'percentage') pctFields.push({ id: field.id, label: field.label })
+    }
+  }
+  return pctFields
+}
+
 export async function getDealInvestors(activeDealId: string): Promise<{
   investors: ActiveDealInvestor[]
   dealFieldValues: Array<{ field_id: string; value: string | null }>
@@ -386,11 +433,7 @@ export async function getDealInvestors(activeDealId: string): Promise<{
   const [investorsRes, fieldValuesRes] = await Promise.all([
     supabase
       .from('active_deal_investors')
-      .select(`
-        id, active_deal_id, is_investing, investment_amount, is_referral, created_at,
-        investor:investors(id, name, service_type, referred_by_partner_id),
-        fees:active_deal_investor_fees(id, label, rate, source_field_id, is_enabled)
-      `)
+      .select(DEAL_INVESTOR_SELECT)
       .eq('active_deal_id', activeDealId)
       .order('created_at', { ascending: true }),
     supabase
@@ -399,89 +442,65 @@ export async function getDealInvestors(activeDealId: string): Promise<{
       .eq('active_deal_id', activeDealId),
   ])
 
-  const investors: ActiveDealInvestor[] = (investorsRes.data ?? []).map((row: any) => ({
-    id: row.id,
-    active_deal_id: row.active_deal_id,
-    is_investing: row.is_investing,
-    investment_amount: row.investment_amount,
-    is_referral: row.is_referral,
-    created_at: row.created_at,
-    investor: Array.isArray(row.investor) ? row.investor[0] : row.investor,
-    fees: row.fees ?? [],
-  }))
-
   return {
-    investors,
+    investors: (investorsRes.data ?? []).map(shapeDealInvestor),
     dealFieldValues: (fieldValuesRes.data ?? []) as Array<{ field_id: string; value: string | null }>,
   }
 }
 
 export async function addInvestorToDeal(activeDealId: string, investorId: string): Promise<ActiveDealInvestor> {
+  const [created] = await addInvestorsToDeal(activeDealId, [investorId])
+  return created
+}
+
+// Bulk-add: attach several investors to a deal in one go (used by the table view's
+// multi-select picker). Each new row gets fee stubs from the deal's percentage fields.
+export async function addInvestorsToDeal(activeDealId: string, investorIds: string[]): Promise<ActiveDealInvestor[]> {
   const { supabase } = await requireInternal()
+  const ids = [...new Set(investorIds.filter(Boolean))]
+  if (ids.length === 0) return []
 
-  // Check if investor is a referral
-  const { data: inv } = await supabase
+  // Which of these are referrals? One lookup for all.
+  const { data: invRows } = await supabase
     .from('investors')
-    .select('referred_by_partner_id')
-    .eq('id', investorId)
-    .single()
-  const isReferral = !!(inv?.referred_by_partner_id)
+    .select('id, referred_by_partner_id')
+    .in('id', ids)
+  const referralById = new Map<string, boolean>((invRows ?? []).map((r: any) => [r.id, !!r.referred_by_partner_id]))
 
-  const { data: newRow, error } = await supabase
+  const { data: inserted, error } = await supabase
     .from('active_deal_investors')
-    .insert({ active_deal_id: activeDealId, investor_id: investorId, is_referral: isReferral })
+    .insert(ids.map((investorId) => ({
+      active_deal_id: activeDealId,
+      investor_id: investorId,
+      is_referral: referralById.get(investorId) ?? false,
+    })))
     .select('id')
-    .single()
   if (error) throw error
 
-  // Auto-populate fee rows from this deal's percentage-type category fields
-  const { data: catFields } = await supabase
-    .from('active_deal_categories')
-    .select('category:deal_categories(fields:deal_category_fields(id, label, field_type))')
-    .eq('active_deal_id', activeDealId)
+  const newIds = (inserted ?? []).map((r: any) => r.id as string)
 
-  const pctFields: Array<{ id: string; label: string }> = []
-  for (const cat of catFields ?? []) {
-    const category = Array.isArray((cat as any).category) ? (cat as any).category[0] : (cat as any).category
-    for (const field of category?.fields ?? []) {
-      if (field.field_type === 'percentage') pctFields.push({ id: field.id, label: field.label })
-    }
-  }
-
-  if (pctFields.length > 0) {
+  // Auto-populate fee stubs from the deal's percentage category fields.
+  const pctFields = await pctFieldsForDeal(supabase, activeDealId)
+  if (pctFields.length > 0 && newIds.length > 0) {
     await supabase.from('active_deal_investor_fees').insert(
-      pctFields.map((f) => ({
-        active_deal_investor_id: newRow.id,
-        label: f.label,
-        rate: null,
-        source_field_id: f.id,
-        is_enabled: true,
-      }))
+      newIds.flatMap((investorRowId) =>
+        pctFields.map((f) => ({
+          active_deal_investor_id: investorRowId,
+          label: f.label,
+          rate: null,
+          source_field_id: f.id,
+          is_enabled: true,
+        }))
+      )
     )
   }
 
-  // Return the full investor record
   const { data: full } = await supabase
     .from('active_deal_investors')
-    .select(`
-      id, active_deal_id, is_investing, investment_amount, is_referral, created_at,
-      investor:investors(id, name, service_type, referred_by_partner_id),
-      fees:active_deal_investor_fees(id, label, rate, source_field_id, is_enabled)
-    `)
-    .eq('id', newRow.id)
-    .single()
-
-  const row = full as any
-  return {
-    id: row.id,
-    active_deal_id: row.active_deal_id,
-    is_investing: row.is_investing,
-    investment_amount: row.investment_amount,
-    is_referral: row.is_referral,
-    created_at: row.created_at,
-    investor: Array.isArray(row.investor) ? row.investor[0] : row.investor,
-    fees: row.fees ?? [],
-  }
+    .select(DEAL_INVESTOR_SELECT)
+    .in('id', newIds)
+    .order('created_at', { ascending: true })
+  return (full ?? []).map(shapeDealInvestor)
 }
 
 export async function removeInvestorFromDeal(activeDealInvestorId: string) {
