@@ -304,9 +304,7 @@ export default function AppShell({
         <div className={styles.sidebarTop}>
           <Link href="/settings" className={styles.workspace} onClick={() => setMobileOpen(false)}>
             <div className={styles.logoMark}>
-              <svg width="17" height="17" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                <path d="M7.5 1L13 4.25V11.25L7.5 14.5L2 11.25V4.25L7.5 1Z" fill="white" opacity="0.95" />
-              </svg>
+              <img src="/ecosystem-favicon-sapling.png" alt="" width={36} height={36} />
             </div>
             <div className={styles.workspaceText}>
               <span className={styles.logoText}>Ecosystem</span>
@@ -483,9 +481,7 @@ export default function AppShell({
           </button>
           <div className={styles.topbarBrand}>
             <div className={styles.logoMark}>
-              <svg width="14" height="14" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                <path d="M7.5 1L13 4.25V11.25L7.5 14.5L2 11.25V4.25L7.5 1Z" fill="white" opacity="0.95" />
-              </svg>
+              <img src="/ecosystem-favicon-sapling.png" alt="" width={28} height={28} />
             </div>
             <span className={styles.logoText}>Ecosystem</span>
           </div>

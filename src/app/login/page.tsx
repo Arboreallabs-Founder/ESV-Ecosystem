@@ -107,9 +107,7 @@ function LoginContent() {
       <div className={styles.card}>
         <div className={styles.logoBlock}>
           <div className={styles.logoMark}>
-            <svg width="26" height="26" viewBox="0 0 26 26" fill="none" aria-hidden="true">
-              <path d="M13 2L22 7.5V18.5L13 24L4 18.5V7.5L13 2Z" fill="white" opacity="0.95" />
-            </svg>
+            <img src="/ecosystem-favicon-sapling.png" alt="" width={52} height={52} />
           </div>
           <span className={styles.wordmark}>Ecosystem</span>
           <span className={styles.tagline}>by Earlyseed Ventures</span>

@@ -31,13 +31,16 @@
 .logoMark {
   width: 52px;
   height: 52px;
-  background-color: var(--color-primary);
-  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 0.25rem;
-  box-shadow: 0 4px 16px rgba(116, 95, 253, 0.3);
+}
+
+.logoMark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .wordmark {
