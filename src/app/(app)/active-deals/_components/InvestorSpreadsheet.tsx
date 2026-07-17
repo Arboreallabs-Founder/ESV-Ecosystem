@@ -1,12 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import {
-  getDealInvestors,
   getInvestorsForPicker,
-  getInternalUsers,
-  getFranchisePartners,
   addInvestorsToDeal,
   removeInvestorFromDeal,
   updateDealInvestor,
@@ -51,15 +48,28 @@ type Props = {
   dealId: string
   dealTitle: string
   isReadOnly?: boolean
+  initialInvestors: ActiveDealInvestor[]
+  initialDealFieldValues: FieldValue[]
+  initialAllInvestors: PickerInvestor[]
+  initialInternalUsers: Array<{ id: string; name: string }>
+  initialFranchisePartners: Array<{ id: string; name: string }>
 }
 
-export default function InvestorSpreadsheet({ dealId, dealTitle, isReadOnly = false }: Props) {
-  const [investors, setInvestors] = useState<ActiveDealInvestor[]>([])
-  const [dealFieldValues, setDealFieldValues] = useState<FieldValue[]>([])
-  const [allInvestors, setAllInvestors] = useState<PickerInvestor[]>([])
-  const [internalUsers, setInternalUsers] = useState<Array<{ id: string; name: string }>>([])
-  const [franchisePartners, setFranchisePartners] = useState<Array<{ id: string; name: string }>>([])
-  const [loading, setLoading] = useState(true)
+export default function InvestorSpreadsheet({
+  dealId,
+  dealTitle,
+  isReadOnly = false,
+  initialInvestors,
+  initialDealFieldValues,
+  initialAllInvestors,
+  initialInternalUsers,
+  initialFranchisePartners,
+}: Props) {
+  const [investors, setInvestors] = useState<ActiveDealInvestor[]>(initialInvestors)
+  const dealFieldValues = initialDealFieldValues
+  const [allInvestors, setAllInvestors] = useState<PickerInvestor[]>(initialAllInvestors)
+  const internalUsers = initialInternalUsers
+  const franchisePartners = initialFranchisePartners
   const [showPicker, setShowPicker] = useState(false)
   const [showCreateInvestor, setShowCreateInvestor] = useState(false)
   const [showAddFeeColumn, setShowAddFeeColumn] = useState(false)
@@ -69,30 +79,6 @@ export default function InvestorSpreadsheet({ dealId, dealTitle, isReadOnly = fa
   const [editingColumn, setEditingColumn] = useState<{ label: string; draft: string } | null>(null)
   const [feeTogglePending, setFeeTogglePending] = useState<{ fee: ActiveDealInvestorFee; investorId: string } | null>(null)
   const [isPending, startTransition] = useTransition()
-
-  useEffect(() => {
-    if (isReadOnly) {
-      getDealInvestors(dealId).then(({ investors, dealFieldValues }) => {
-        setInvestors(investors)
-        setDealFieldValues(dealFieldValues)
-        setLoading(false)
-      })
-    } else {
-      Promise.all([
-        getDealInvestors(dealId),
-        getInvestorsForPicker(),
-        getInternalUsers(),
-        getFranchisePartners(),
-      ]).then(([{ investors, dealFieldValues }, all, users, partners]) => {
-        setInvestors(investors)
-        setDealFieldValues(dealFieldValues)
-        setAllInvestors(all)
-        setInternalUsers(users)
-        setFranchisePartners(partners)
-        setLoading(false)
-      })
-    }
-  }, [dealId, isReadOnly])
 
   function mutateInvestor(id: string, updater: (inv: ActiveDealInvestor) => ActiveDealInvestor) {
     setInvestors((prev) => prev.map((inv) => inv.id === id ? updater(inv) : inv))
@@ -282,15 +268,6 @@ export default function InvestorSpreadsheet({ dealId, dealTitle, isReadOnly = fa
       return sum + (computeFeeAmount(fee, inv.investment_amount, dealFieldValues) ?? 0)
     }, 0),
   }))
-
-  if (loading) {
-    return (
-      <div className={styles.dealPage}>
-        <Link href={`/active-deals/${dealId}`} className={styles.backLink}>← {dealTitle}</Link>
-        <div className={styles.detailLoading} style={{ padding: '1.25rem 0' }}>Loading…</div>
-      </div>
-    )
-  }
 
   return (
     <div className={styles.dealPage}>

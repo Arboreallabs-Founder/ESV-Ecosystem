@@ -137,6 +137,20 @@ export const fetchActiveDeal = cache(async (id: string): Promise<ActiveDeal | nu
   return data ? shapeActiveDealRow(data as unknown as ActiveDealRow) : null
 })
 
+// Just enough to render a back-link/title — for pages (like the Investors sub-page) that
+// don't need the deal's full category/field/assignee tree that fetchActiveDeal pulls in.
+export const fetchActiveDealSummary = cache(async (id: string): Promise<{ id: string; title: string | null } | null> => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('active_deals')
+    .select('id, entry:pipeline_entries(title)')
+    .eq('id', id)
+    .maybeSingle()
+  if (!data) return null
+  const entry = first((data as { entry: unknown }).entry) as { title: string | null } | null
+  return { id: data.id as string, title: entry?.title ?? null }
+})
+
 // Lightweight investor count + committed total for the deal page's summary card
 // (the full breakdown lives on the dedicated /investors sub-page).
 export const fetchActiveDealInvestorSummary = cache(async (activeDealId: string): Promise<{ count: number; totalCommitted: number }> => {

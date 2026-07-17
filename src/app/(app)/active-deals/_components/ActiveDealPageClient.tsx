@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { getEntryAnswers, getEntryStageHistory, getEntryStageAnswers } from '@/app/actions/pipelines'
 import { createOrLinkCompanyForActiveDeal, linkActiveDealToCompany, updateActiveDealDetails, updateDealState } from '@/app/actions/active-deals'
 import type { ActiveDeal, DealCategory, DealState, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
 import { DEAL_STATES, DEAL_STATE_META } from '@/lib/types'
@@ -54,44 +53,29 @@ export default function ActiveDealPageClient({
   categories,
   companyOptions,
   investorSummary,
+  answers,
+  history,
+  stageAnswers,
 }: {
   deal: ActiveDeal
   userRole: string
   categories: DealCategory[]
   companyOptions: Array<{ id: string; name: string }>
   investorSummary: { count: number; totalCommitted: number }
+  answers: AnswerItem[]
+  history: PipelineEntryStageHistory[]
+  stageAnswers: StageAnswerView[]
 }) {
   const router = useRouter()
   const [dealState, setDealState] = useState<DealState>(deal.deal_state)
   const [showEdit, setShowEdit] = useState(false)
   const [companyId, setCompanyId] = useState(deal.entry?.company_id ?? '')
   const [linkedCompany, setLinkedCompany] = useState(deal.entry?.company ?? null)
-  const [answers, setAnswers] = useState<AnswerItem[]>([])
-  const [history, setHistory] = useState<PipelineEntryStageHistory[]>([])
-  const [stageAnswers, setStageAnswers] = useState<StageAnswerView[]>([])
-  const [loading, setLoading] = useState(true)
-  const [loadError, setLoadError] = useState<string | null>(null)
   const [, startStateTransition] = useTransition()
   const [linkPending, startLinkTransition] = useTransition()
 
   const canEditState = userRole !== 'franchise_partner'
   const canManageDeal = userRole !== 'franchise_partner'
-
-  useEffect(() => {
-    Promise.all([
-      getEntryAnswers(deal.pipeline_entry_id),
-      getEntryStageHistory(deal.pipeline_entry_id),
-      getEntryStageAnswers(deal.pipeline_entry_id),
-    ])
-      .then(([ans, hist, stageAns]) => {
-        setAnswers(ans)
-        setHistory(hist as PipelineEntryStageHistory[])
-        setStageAnswers(stageAns)
-        setLoadError(null)
-      })
-      .catch((err) => setLoadError(String(err)))
-      .finally(() => setLoading(false))
-  }, [deal.pipeline_entry_id])
 
   function handleStateChange(next: DealState) {
     const prev = dealState
@@ -191,12 +175,7 @@ export default function ActiveDealPageClient({
         ))}
       </div>
 
-      {loading ? (
-        <div className={styles.detailLoading} style={{ padding: '1.25rem 0' }}>Loading…</div>
-      ) : loadError ? (
-        <div className={styles.detailError}>Could not load the full deal record. {loadError}</div>
-      ) : (
-        <div className={styles.dealPageGrid}>
+      <div className={styles.dealPageGrid}>
           {/* LEFT — Deal details */}
           <div className={styles.dealPageMain}>
             <div className={styles.detailSection}>
@@ -342,7 +321,6 @@ export default function ActiveDealPageClient({
             <Link href={`/active-deals/${deal.id}/investors`} className={styles.viewInvestorsBtn}>Open investor table →</Link>
           </div>
         </div>
-      )}
       {showEdit && (
         <EditActiveDealModal
           deal={deal}
