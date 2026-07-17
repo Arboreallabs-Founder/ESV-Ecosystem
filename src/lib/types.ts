@@ -160,6 +160,8 @@ export type Investor = {
   country: string | null
   website: string | null
   sectors: string[]
+  business_types: string[]
+  meta_tags: string[]
   service_type: ServiceType
   esv_poc_id: string | null
   ticket_size_min: number | null
@@ -176,6 +178,19 @@ export type Investor = {
   esv_pocs?: Array<{ id: string; name: string }>
   referred_by_partner?: { name: string } | null
   contacts?: InvestorContact[]
+}
+
+// One row per deal an investor is attached to, for the "Investment History" panel —
+// surfaces the linked company's tags so the investor's revealed interests are visible.
+export type InvestorPortfolioItem = {
+  active_deal_id: string
+  deal_title: string | null
+  deal_state: DealState
+  investment_amount: number | null
+  company_id: string | null
+  company_name: string | null
+  company_sectors: string[]
+  company_meta_tags: string[]
 }
 
 export type FranchisePartner = {

@@ -50,6 +50,8 @@ export default function InvestorFormModal({
   const [ticketMin, setTicketMin] = useState(initial?.ticket_size_min?.toString() ?? '')
   const [ticketMax, setTicketMax] = useState(initial?.ticket_size_max?.toString() ?? '')
   const [sectors, setSectors] = useState<string[]>(initial?.sectors ?? [])
+  const [businessTypes, setBusinessTypes] = useState<string[]>(initial?.business_types ?? [])
+  const [metaTags, setMetaTags] = useState<string[]>(initial?.meta_tags ?? [])
   const [referredBy, setReferredBy] = useState(initial?.referred_by_partner_id ?? '')
   const [onboardingDone, setOnboardingDone] = useState(initial?.onboarding_form_completed ?? false)
   const [onboardingUrl, setOnboardingUrl] = useState(initial?.onboarding_form_url ?? '')
@@ -90,6 +92,8 @@ export default function InvestorFormModal({
           country: country.trim() || null,
           website: website.trim() || null,
           sectors,
+          business_types: businessTypes,
+          meta_tags: metaTags,
           service_type: serviceType,
           esv_poc_id: isPartner ? null : (esvPocs[0] ?? null),
           esv_poc_ids: isPartner ? [] : esvPocs,
@@ -109,6 +113,8 @@ export default function InvestorFormModal({
           country: country.trim() || null,
           website: website.trim() || null,
           sectors,
+          business_types: businessTypes,
+          meta_tags: metaTags,
           service_type: serviceType,
           esv_poc_id: esvPocs[0] ?? null,
           esv_poc_ids: esvPocs,
@@ -266,6 +272,18 @@ export default function InvestorFormModal({
           <div className={styles.field}>
             <label className={styles.label}>Sectors</label>
             <SectorTagInput value={sectors} onChange={setSectors} placeholder="Type sector and press Enter or comma…" />
+          </div>
+
+          {/* Business Types + other thesis tags */}
+          <div className={styles.formRow}>
+            <div className={styles.field}>
+              <label className={styles.label}>Business Types</label>
+              <SectorTagInput value={businessTypes} onChange={setBusinessTypes} placeholder="e.g. B2B SaaS, Marketplace, D2C…" />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Other Thesis Tags</label>
+              <SectorTagInput value={metaTags} onChange={setMetaTags} placeholder="e.g. Quick Commerce, AI/ML…" />
+            </div>
           </div>
 
           {/* Referred By — admin/founder only */}

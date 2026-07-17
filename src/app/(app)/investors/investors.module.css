@@ -822,3 +822,94 @@
   transition: color 0.12s;
 }
 .contactDraftRemove:hover { color: #dc2626; }
+
+/* ── Import modal (CSV bulk import) ─────────────────────────────────── */
+.importModal {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-elevated);
+  animation: popIn 0.18s ease;
+}
+
+.importModalHead {
+  display: flex;
+  align-items: center;
+  padding: 1.1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  background: var(--color-card);
+}
+
+.importModalHead .modalTitle {
+  margin: 0;
+  flex: 1;
+  font-size: 1.25rem;
+}
+
+.importModalBody { padding: 1.25rem; }
+
+.importModalFoot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.ghostBtn {
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text);
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+.ghostBtn:hover { background: var(--color-card-raised); }
+
+.sectionText { font-size: 0.8125rem; color: var(--color-muted); line-height: 1.5; }
+.fileName { font-size: 0.8125rem; color: var(--color-muted); }
+
+.instructions {
+  white-space: pre-wrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-text);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.75rem 0.85rem;
+  overflow-y: auto;
+}
+
+.okBox {
+  background: rgba(39,174,96,0.08);
+  border: 1px solid rgba(39,174,96,0.3);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-success, #16a34a);
+  margin-top: 0.5rem;
+}
+
+.errBox {
+  background: rgba(192,57,43,0.08);
+  border: 1px solid rgba(192,57,43,0.3);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-destructive, #c0392b);
+  margin-top: 0.5rem;
+}
+.errRow { margin-top: 0.35rem; }
+.errRow:first-child { margin-top: 0; }

@@ -1,12 +1,16 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { deleteContact } from '@/app/actions/investors'
-import { SERVICE_TYPE_LABELS } from '@/lib/types'
-import type { Investor, InvestorContact, ServiceType } from '@/lib/types'
+import { deleteContact, getInvestorPortfolio } from '@/app/actions/investors'
+import { DEAL_STATE_META, SERVICE_TYPE_LABELS } from '@/lib/types'
+import type { Investor, InvestorContact, InvestorPortfolioItem, ServiceType } from '@/lib/types'
 import ContactFormModal from './ContactFormModal'
 import styles from '../investors.module.css'
+
+function formatINR(amount: number) {
+  return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
+}
 
 function formatTicket(min: number | null, max: number | null): string {
   if (!min && !max) return '—'
@@ -197,6 +201,35 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
             </div>
           )}
 
+          {/* Business Types + other thesis tags */}
+          {(investor.business_types.length > 0 || investor.meta_tags.length > 0) && (
+            <div className={styles.detailSection}>
+              {investor.business_types.length > 0 && (
+                <div style={{ marginBottom: investor.meta_tags.length > 0 ? '0.75rem' : 0 }}>
+                  <div className={styles.detailFieldLabel} style={{ marginBottom: '0.4rem' }}>Business Types</div>
+                  <div className={styles.sectorChipGroup}>
+                    {investor.business_types.map((t) => (
+                      <span key={t} className={styles.sectorChip}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {investor.meta_tags.length > 0 && (
+                <div>
+                  <div className={styles.detailFieldLabel} style={{ marginBottom: '0.4rem' }}>Other Thesis Tags</div>
+                  <div className={styles.sectorChipGroup}>
+                    {investor.meta_tags.map((t) => (
+                      <span key={t} className={styles.sectorChip}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Investment History — deals invested in, with the company's tags */}
+          <InvestorPortfolioSection investorId={investor.id} declaredTags={[...investor.sectors, ...investor.business_types, ...investor.meta_tags]} />
+
           {/* Contacts */}
           {showContacts && (
             <div className={styles.detailSection}>
@@ -262,5 +295,84 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
         />
       )}
     </div>
+  )
+}
+
+// Deals this investor is attached to, with the linked company's tags — doubles as a
+// computed "inferred interests" view (tags seen across their portfolio that aren't yet
+// part of their stated Sectors / Business Types / Other Tags).
+function InvestorPortfolioSection({ investorId, declaredTags }: { investorId: string; declaredTags: string[] }) {
+  const [items, setItems] = useState<InvestorPortfolioItem[] | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getInvestorPortfolio(investorId).then((data) => { if (!cancelled) setItems(data) })
+    return () => { cancelled = true }
+  }, [investorId])
+
+  if (items === null) {
+    return (
+      <div className={styles.detailSection}>
+        <div className={styles.detailSectionTitle}>Investment History</div>
+        <div className={styles.detailEmpty}>Loading…</div>
+      </div>
+    )
+  }
+  if (items.length === 0) return null
+
+  const declaredSet = new Set(declaredTags.map((t) => t.toLowerCase()))
+  const tagCounts = new Map<string, number>()
+  for (const item of items) {
+    for (const tag of [...item.company_sectors, ...item.company_meta_tags]) {
+      tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1)
+    }
+  }
+  const inferredTags = [...tagCounts.entries()]
+    .filter(([tag]) => !declaredSet.has(tag.toLowerCase()))
+    .sort((a, b) => b[1] - a[1])
+
+  return (
+    <>
+      {inferredTags.length > 0 && (
+        <div className={styles.detailSection}>
+          <div className={styles.detailSectionTitle}>
+            Inferred Interests <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(from invested companies, not in stated tags)</span>
+          </div>
+          <div className={styles.sectorChipGroup}>
+            {inferredTags.map(([tag, count]) => (
+              <span key={tag} className={styles.pocChip} title={`Seen in ${count} invested compan${count === 1 ? 'y' : 'ies'}`}>
+                {tag}{count > 1 ? ` ×${count}` : ''}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className={styles.detailSection}>
+        <div className={styles.detailSectionTitle}>Investment History ({items.length})</div>
+        {items.map((item) => (
+          <div key={item.active_deal_id} className={styles.contactRow}>
+            <div className={styles.contactRowMain}>
+              <div className={styles.contactName}>
+                {item.company_id ? (
+                  <a href={`/companies/${item.company_id}`} className={styles.detailLink}>{item.company_name ?? item.deal_title ?? 'Untitled deal'}</a>
+                ) : (item.company_name ?? item.deal_title ?? 'Untitled deal')}
+              </div>
+              <div className={styles.contactMeta}>
+                {item.investment_amount != null && <span>{formatINR(item.investment_amount)}</span>}
+                <span className={styles.referredChip} style={{ color: DEAL_STATE_META[item.deal_state].color, background: `${DEAL_STATE_META[item.deal_state].color}1a` }}>
+                  {DEAL_STATE_META[item.deal_state].label}
+                </span>
+              </div>
+              {(item.company_sectors.length > 0 || item.company_meta_tags.length > 0) && (
+                <div className={styles.sectorChipGroup} style={{ marginTop: '0.4rem' }}>
+                  {[...item.company_sectors, ...item.company_meta_tags].map((t) => <span key={t} className={styles.sectorChip}>{t}</span>)}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   )
 }

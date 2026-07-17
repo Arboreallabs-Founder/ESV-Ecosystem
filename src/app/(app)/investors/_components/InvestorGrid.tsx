@@ -1,11 +1,13 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { SERVICE_TYPE_LABELS } from '@/lib/types'
 import type { Investor, ServiceType } from '@/lib/types'
 import InvestorCard from './InvestorCard'
 import InvestorDetail from './InvestorDetail'
 import InvestorFormModal from './InvestorFormModal'
+import InvestorsImportModal from './InvestorsImportModal'
 import FilterTabs from '@/app/_components/FilterTabs'
 import styles from '../investors.module.css'
 
@@ -21,10 +23,13 @@ const ALL_TABS = ['all', 'vc_fund', 'angel_fund', 'family_office', 'angel_invest
 type Tab = (typeof ALL_TABS)[number]
 
 export default function InvestorGrid({ investors, userRole, canManage = true, internalUsers, franchisePartners }: Props) {
+  const router = useRouter()
+  const isInternal = ['founder', 'admin', 'associate'].includes(userRole)
   const [activeTab, setActiveTab] = useState<Tab>('all')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Investor | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [showImport, setShowImport] = useState(false)
   const [editTarget, setEditTarget] = useState<Investor | null>(null)
 
   const filtered = investors.filter((inv) => {
@@ -65,7 +70,10 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
           <h1 className={styles.pageTitle}>Investors</h1>
           <p className={styles.pageSubtitle}>Fund database and relationship tracking</p>
         </div>
-        {canManage && <button className={styles.addBtn} onClick={openCreate}>+ Add Investor</button>}
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {isInternal && <button className={styles.ghostBtn} onClick={() => setShowImport(true)}>Import CSV</button>}
+          {canManage && <button className={styles.addBtn} onClick={openCreate}>+ Add Investor</button>}
+        </div>
       </div>
 
       {/* Tabs */}
@@ -124,6 +132,14 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
           userRole={userRole}
           onClose={() => setShowForm(false)}
           onSaved={() => setShowForm(false)}
+        />
+      )}
+
+      {/* CSV import */}
+      {showImport && isInternal && (
+        <InvestorsImportModal
+          onClose={() => setShowImport(false)}
+          onImported={() => router.refresh()}
         />
       )}
     </div>

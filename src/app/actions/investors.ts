@@ -2,7 +2,8 @@
 
 import { requireRole } from '@/lib/guards'
 import { createClient } from '@/lib/supabase/server'
-import type { InvestorContact } from '@/lib/types'
+import { parseInvestorsCsv } from '@/lib/investors-csv'
+import type { InvestorContact, InvestorPortfolioItem } from '@/lib/types'
 
 type ContactDraft = {
   name: string
@@ -29,6 +30,8 @@ export async function createInvestor(params: {
   country: string | null
   website: string | null
   sectors: string[]
+  business_types?: string[]
+  meta_tags?: string[]
   service_type: string
   esv_poc_id: string | null
   esv_poc_ids?: string[]
@@ -75,6 +78,8 @@ export async function createInvestor(params: {
       country: fields.country || null,
       website: fields.website || null,
       sectors: fields.sectors,
+      business_types: fields.business_types ?? [],
+      meta_tags: fields.meta_tags ?? [],
       service_type: fields.service_type,
       esv_poc_id: fields.esv_poc_id || null,
       ticket_size_min: fields.ticket_size_min,
@@ -127,6 +132,8 @@ export async function updateInvestor(
     country: string | null
     website: string | null
     sectors: string[]
+    business_types?: string[]
+    meta_tags?: string[]
     service_type: string
     esv_poc_id: string | null
     esv_poc_ids?: string[]
@@ -148,6 +155,8 @@ export async function updateInvestor(
     country: params.country || null,
     website: params.website || null,
     sectors: params.sectors,
+    business_types: params.business_types ?? [],
+    meta_tags: params.meta_tags ?? [],
     service_type: params.service_type,
     ticket_size_min: params.ticket_size_min,
     ticket_size_max: params.ticket_size_max,
@@ -183,6 +192,119 @@ export async function deleteInvestor(id: string): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('investors').delete().eq('id', id)
   if (error) throw error
+}
+
+const one = <T>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null))
+
+// Every deal this investor is attached to, with the linked company's tags — the "Investment
+// History" panel. Doubles as inferred preferences: sectors/meta_tags the investor has actually
+// backed, distinct from (and shown alongside) their self-declared sectors/business_types.
+export async function getInvestorPortfolio(investorId: string): Promise<InvestorPortfolioItem[]> {
+  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'franchise_partner'])
+  const { data } = await supabase
+    .from('active_deal_investors')
+    .select(`
+      active_deal_id,
+      investment_amount,
+      active_deal:active_deals(
+        deal_state,
+        entry:pipeline_entries(title, company:companies(id, name, sectors, meta_tags))
+      )
+    `)
+    .eq('investor_id', investorId)
+
+  return ((data ?? []) as unknown as Array<{
+    active_deal_id: string
+    investment_amount: number | null
+    active_deal: unknown
+  }>).map((row) => {
+    const deal = one(row.active_deal) as { deal_state: string; entry: unknown } | null
+    const entry = one(deal?.entry) as { title: string | null; company: unknown } | null
+    const company = one(entry?.company) as { id: string; name: string; sectors: string[]; meta_tags: string[] } | null
+    return {
+      active_deal_id: row.active_deal_id,
+      deal_title: entry?.title ?? null,
+      deal_state: (deal?.deal_state ?? 'active') as InvestorPortfolioItem['deal_state'],
+      investment_amount: row.investment_amount,
+      company_id: company?.id ?? null,
+      company_name: company?.name ?? null,
+      company_sectors: company?.sectors ?? [],
+      company_meta_tags: company?.meta_tags ?? [],
+    }
+  })
+}
+
+// ── CSV import ────────────────────────────────────────────────────────────────
+
+export type InvestorImportResult = { created: number; updated: number; errors: { row: number; message: string }[] }
+
+/**
+ * Bulk-import investors from an investor-shaped CSV. Deduped by name (case-insensitive,
+ * within the org): a matching profile is UPDATED in place, filling only blank scalar fields
+ * and unioning tag lists (sectors/business_types/meta_tags) — never clobbering existing data.
+ * A new name creates a fresh profile (service_type defaults to vc_fund if left blank).
+ */
+export async function importInvestorsCsv(csvText: string): Promise<InvestorImportResult> {
+  const { supabase, userId, orgId } = await requireInternal()
+  if (!orgId) throw new Error('No organisation in scope.')
+
+  const { rows, errors } = parseInvestorsCsv(csvText)
+  if (rows.length === 0) return { created: 0, updated: 0, errors }
+
+  let created = 0
+  let updated = 0
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]
+    try {
+      const { data: existing } = await supabase
+        .from('investors')
+        .select('id, country, website, stage, sectors, business_types, meta_tags, ticket_size_min, ticket_size_max')
+        .eq('org_id', orgId)
+        .ilike('name', row.name)
+        .maybeSingle()
+
+      if (existing) {
+        const patch: Record<string, unknown> = {}
+        if (!existing.country && row.country) patch.country = row.country
+        if (!existing.website && row.website) patch.website = row.website
+        if (!existing.stage && row.stage) patch.stage = row.stage
+        if (existing.ticket_size_min == null && row.ticket_size_min != null) patch.ticket_size_min = row.ticket_size_min
+        if (existing.ticket_size_max == null && row.ticket_size_max != null) patch.ticket_size_max = row.ticket_size_max
+        const mergedSectors = Array.from(new Set([...(existing.sectors ?? []), ...row.sectors]))
+        if (mergedSectors.length > (existing.sectors?.length ?? 0)) patch.sectors = mergedSectors
+        const mergedBusinessTypes = Array.from(new Set([...(existing.business_types ?? []), ...row.business_types]))
+        if (mergedBusinessTypes.length > (existing.business_types?.length ?? 0)) patch.business_types = mergedBusinessTypes
+        const mergedMetaTags = Array.from(new Set([...(existing.meta_tags ?? []), ...row.meta_tags]))
+        if (mergedMetaTags.length > (existing.meta_tags?.length ?? 0)) patch.meta_tags = mergedMetaTags
+        if (Object.keys(patch).length > 0) {
+          const { error } = await supabase.from('investors').update(patch).eq('id', existing.id)
+          if (error) throw error
+        }
+        updated++
+      } else {
+        const { error } = await supabase.from('investors').insert({
+          org_id: orgId,
+          created_by: userId,
+          name: row.name,
+          service_type: row.service_type ?? 'vc_fund',
+          country: row.country,
+          website: row.website,
+          stage: row.stage,
+          sectors: row.sectors,
+          business_types: row.business_types,
+          meta_tags: row.meta_tags,
+          ticket_size_min: row.ticket_size_min,
+          ticket_size_max: row.ticket_size_max,
+        })
+        if (error) throw error
+        created++
+      }
+    } catch (e) {
+      errors.push({ row: i + 2, message: e instanceof Error ? e.message : 'Failed to import row.' })
+    }
+  }
+
+  return { created, updated, errors }
 }
 
 // ── Contacts ──────────────────────────────────────────────────────────────────
