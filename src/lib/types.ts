@@ -102,6 +102,14 @@ export type RecurringTaskCompletion = {
 export const BULLETIN_POST_TYPES = ['event', 'announcement'] as const
 export type BulletinPostType = typeof BULLETIN_POST_TYPES[number]
 
+export type BulletinEventMedia = {
+  id: string
+  post_id: string
+  label: string | null
+  url: string
+  created_at: string
+}
+
 export type BulletinPost = {
   id: string
   post_type: BulletinPostType
@@ -111,9 +119,24 @@ export type BulletinPost = {
   event_time: string | null
   location: string | null
   pinned: boolean
+  completed: boolean
   created_by: string | null
   created_at: string
   created_by_user?: { name: string } | null
+  attendees: Array<{ user_id: string; name: string }>
+  media: BulletinEventMedia[]
+}
+
+// One row per past/upcoming event for the Bulletin KPI page — who actually showed up.
+export type BulletinEventKpiRow = {
+  id: string
+  title: string
+  event_date: string | null
+  event_time: string | null
+  location: string | null
+  completed: boolean
+  attendees: Array<{ user_id: string; name: string }>
+  media_count: number
 }
 
 export type HrPolicy = {

@@ -11,5 +11,5 @@ export default async function BulletinPage() {
   const posts = await fetchBulletinPosts()
   const isAdmin = ['founder', 'admin'].includes(user.role ?? '')
 
-  return <BulletinBoardView posts={posts} isAdmin={isAdmin} />
+  return <BulletinBoardView posts={posts} isAdmin={isAdmin} currentUserId={user.id} />
 }

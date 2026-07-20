@@ -2,7 +2,11 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { createBulletinPost, updateBulletinPost, deleteBulletinPost, toggleBulletinPin, type BulletinPostInput } from '@/app/actions/bulletin'
+import {
+  createBulletinPost, updateBulletinPost, deleteBulletinPost, toggleBulletinPin,
+  toggleBulletinCompleted, toggleEventAttendance, addEventMediaLink, deleteEventMediaLink,
+  type BulletinPostInput,
+} from '@/app/actions/bulletin'
 import { BULLETIN_POST_TYPES } from '@/lib/types'
 import type { BulletinPost, BulletinPostType } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
@@ -18,11 +22,33 @@ function formatEventDate(dateStr: string, timeStr: string | null) {
 function formatPostedDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
 }
+function hostnameOf(url: string) {
+  try { return new URL(url).hostname.replace('www.', '') } catch { return url }
+}
 
-function PostCard({ post, past, isAdmin, onPin, onEdit, onDelete }: {
-  post: BulletinPost; past: boolean; isAdmin: boolean
+function PostCard({
+  post, past, isAdmin, currentUserId,
+  onPin, onEdit, onDelete, onToggleComplete, onToggleGoing, onAddMedia, onDeleteMedia,
+}: {
+  post: BulletinPost; past: boolean; isAdmin: boolean; currentUserId: string
   onPin: () => void; onEdit: () => void; onDelete: () => void
+  onToggleComplete: () => void
+  onToggleGoing: () => void
+  onAddMedia: (label: string, url: string) => void
+  onDeleteMedia: (id: string) => void
 }) {
+  const [showAddLink, setShowAddLink] = useState(false)
+  const [linkLabel, setLinkLabel] = useState('')
+  const [linkUrl, setLinkUrl] = useState('')
+  const isEvent = post.post_type === 'event'
+  const isGoing = post.attendees.some((a) => a.user_id === currentUserId)
+
+  function submitLink() {
+    if (!linkUrl.trim()) return
+    onAddMedia(linkLabel, linkUrl)
+    setLinkLabel(''); setLinkUrl(''); setShowAddLink(false)
+  }
+
   return (
     <div className={`${styles.card} ${post.pinned ? styles.cardPinned : ''} ${past ? styles.cardPast : ''}`}>
       <div className={styles.cardTop}>
@@ -33,6 +59,7 @@ function PostCard({ post, past, isAdmin, onPin, onEdit, onDelete }: {
               {post.post_type === 'event' ? 'Event' : 'Announcement'}
             </span>
             {post.pinned && <span className={`${styles.badge} ${styles.badgePinned}`}>Pinned</span>}
+            {isEvent && post.completed && <span className={`${styles.badge} ${styles.badgeCompleted}`}>Completed</span>}
           </div>
           {(post.event_date || post.location) && (
             <div className={styles.cardMeta}>
@@ -43,6 +70,11 @@ function PostCard({ post, past, isAdmin, onPin, onEdit, onDelete }: {
         </div>
         {isAdmin && (
           <div className={styles.cardActions}>
+            {isEvent && (
+              <button className={`${styles.iconBtn} ${post.completed ? styles.iconBtnActive : ''}`} onClick={onToggleComplete} title={post.completed ? 'Mark not completed' : 'Mark completed'}>
+                {post.completed ? '✓ Completed' : 'Mark complete'}
+              </button>
+            )}
             <button className={`${styles.iconBtn} ${post.pinned ? styles.iconBtnActive : ''}`} onClick={onPin} title={post.pinned ? 'Unpin' : 'Pin'}>
               {post.pinned ? 'Unpin' : 'Pin'}
             </button>
@@ -52,13 +84,66 @@ function PostCard({ post, past, isAdmin, onPin, onEdit, onDelete }: {
         )}
       </div>
       {post.body && <div className={styles.cardBody}>{post.body}</div>}
+
+      {isEvent && (
+        <div className={styles.goingSection}>
+          <div className={styles.goingHead}>
+            <span className={styles.goingLabel}>
+              {post.attendees.length === 0 ? 'No one going yet' : `${post.attendees.length} going`}
+            </span>
+            <button className={`${styles.goingBtn} ${isGoing ? styles.goingBtnActive : ''}`} onClick={onToggleGoing}>
+              {isGoing ? '✓ Going' : "I'm going"}
+            </button>
+          </div>
+          {post.attendees.length > 0 && (
+            <div className={styles.attendeeChips}>
+              {post.attendees.map((a) => (
+                <span key={a.user_id} className={styles.attendeeChip}>{a.user_id === currentUserId ? 'You' : a.name}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {isEvent && (post.media.length > 0 || isAdmin) && (
+        <div className={styles.mediaSection}>
+          <div className={styles.mediaHead}>
+            <span className={styles.mediaLabel}>Supporting media</span>
+            {isAdmin && !showAddLink && (
+              <button className={styles.mediaAddBtn} onClick={() => setShowAddLink(true)}>+ Add link</button>
+            )}
+          </div>
+          {post.media.length > 0 && (
+            <div className={styles.mediaLinks}>
+              {post.media.map((m) => (
+                <div key={m.id} className={styles.mediaLinkRow}>
+                  <a href={m.url} target="_blank" rel="noopener noreferrer" className={styles.mediaLink}>
+                    {m.label || hostnameOf(m.url)} ↗
+                  </a>
+                  {isAdmin && <button className={styles.mediaRemove} onClick={() => onDeleteMedia(m.id)} title="Remove">×</button>}
+                </div>
+              ))}
+            </div>
+          )}
+          {isAdmin && showAddLink && (
+            <div className={styles.mediaAddRow}>
+              <input className={styles.mediaAddInput} placeholder="Label (optional)" value={linkLabel} onChange={(e) => setLinkLabel(e.target.value)} />
+              <input className={styles.mediaAddInput} placeholder="https://…" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} autoFocus />
+              <button className={styles.mediaAddSave} onClick={submitLink}>Add</button>
+              <button className={styles.mediaAddCancel} onClick={() => { setShowAddLink(false); setLinkLabel(''); setLinkUrl('') }}>Cancel</button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className={styles.cardFoot}>Posted {formatPostedDate(post.created_at)}{post.created_by_user?.name ? ` by ${post.created_by_user.name}` : ''}</div>
     </div>
   )
 }
 
-export default function BulletinBoardView({ posts, isAdmin }: { posts: BulletinPost[]; isAdmin: boolean }) {
+export default function BulletinBoardView({ posts: initialPosts, isAdmin, currentUserId }: { posts: BulletinPost[]; isAdmin: boolean; currentUserId: string }) {
   const router = useRouter()
+  const [posts, setPosts] = useState(initialPosts)
   const [editing, setEditing] = useState<BulletinPost | 'new' | null>(null)
   const [, startTransition] = useTransition()
   const today = todayStr()
@@ -72,19 +157,62 @@ export default function BulletinBoardView({ posts, isAdmin }: { posts: BulletinP
     .filter((p) => !p.pinned && p.post_type === 'event' && p.event_date && p.event_date < today)
     .sort((a, b) => (b.event_date ?? '').localeCompare(a.event_date ?? ''))
 
+  function mutatePost(id: string, updater: (p: BulletinPost) => BulletinPost) {
+    setPosts((prev) => prev.map((p) => p.id === id ? updater(p) : p))
+  }
+
   function handleDelete(id: string) {
     if (!confirm('Delete this post?')) return
+    setPosts((prev) => prev.filter((p) => p.id !== id))
     startTransition(async () => { await deleteBulletinPost(id); router.refresh() })
   }
   function handlePin(post: BulletinPost) {
-    startTransition(async () => { await toggleBulletinPin(post.id, !post.pinned); router.refresh() })
+    const next = !post.pinned
+    mutatePost(post.id, (p) => ({ ...p, pinned: next }))
+    startTransition(async () => { await toggleBulletinPin(post.id, next); router.refresh() })
+  }
+  function handleToggleComplete(post: BulletinPost) {
+    const next = !post.completed
+    mutatePost(post.id, (p) => ({ ...p, completed: next }))
+    startTransition(async () => { await toggleBulletinCompleted(post.id, next); router.refresh() })
+  }
+  function handleToggleGoing(post: BulletinPost) {
+    const isGoing = post.attendees.some((a) => a.user_id === currentUserId)
+    const next = !isGoing
+    mutatePost(post.id, (p) => ({
+      ...p,
+      attendees: next
+        ? [...p.attendees, { user_id: currentUserId, name: 'You' }]
+        : p.attendees.filter((a) => a.user_id !== currentUserId),
+    }))
+    startTransition(async () => {
+      try { await toggleEventAttendance(post.id, next) }
+      catch (err) { alert(String(err)) }
+      router.refresh()
+    })
+  }
+  function handleAddMedia(post: BulletinPost, label: string, url: string) {
+    startTransition(async () => {
+      try {
+        const id = await addEventMediaLink(post.id, label || null, url)
+        mutatePost(post.id, (p) => ({ ...p, media: [...p.media, { id, post_id: post.id, label: label || null, url, created_at: new Date().toISOString() }] }))
+      } catch (err) { alert(String(err)) }
+    })
+  }
+  function handleDeleteMedia(post: BulletinPost, mediaId: string) {
+    mutatePost(post.id, (p) => ({ ...p, media: p.media.filter((m) => m.id !== mediaId) }))
+    startTransition(async () => { await deleteEventMediaLink(mediaId) })
   }
 
   const cardProps = (post: BulletinPost, past = false) => ({
-    post, past, isAdmin,
+    post, past, isAdmin, currentUserId,
     onPin: () => handlePin(post),
     onEdit: () => setEditing(post),
     onDelete: () => handleDelete(post.id),
+    onToggleComplete: () => handleToggleComplete(post),
+    onToggleGoing: () => handleToggleGoing(post),
+    onAddMedia: (label: string, url: string) => handleAddMedia(post, label, url),
+    onDeleteMedia: (mediaId: string) => handleDeleteMedia(post, mediaId),
   })
 
   const hasAnything = posts.length > 0
