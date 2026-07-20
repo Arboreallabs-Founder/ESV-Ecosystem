@@ -29,6 +29,12 @@
   flex-shrink: 0;
 }
 
+.sidebarTopRow {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
 .workspace {
   display: flex;
   align-items: center;
@@ -37,8 +43,59 @@
   border-radius: 12px;
   text-decoration: none;
   transition: background 0.12s;
+  flex: 1;
+  min-width: 0;
 }
 .workspace:hover { background: rgba(116, 95, 253, 0.07); }
+
+/* Alerts bell (new tasks assigned to me) */
+.alertsBtn {
+  position: relative;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.alertsBtn:hover { background: rgba(116, 95, 253, 0.07); color: var(--color-text); }
+
+.alertsBtnMobile {
+  position: relative;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text);
+  padding: 0.375rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.alertsBadge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 9999px;
+  background: var(--color-destructive);
+  color: #fff;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  box-shadow: 0 0 0 2px var(--color-card);
+}
 
 .logoMark {
   width: 36px;

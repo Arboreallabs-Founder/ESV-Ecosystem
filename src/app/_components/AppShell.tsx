@@ -9,7 +9,8 @@ import { useTheme } from '@/app/_components/ThemeProvider'
 import { switchDemoPersona, exitDemoMode } from '@/app/actions/demo'
 import styles from '@/app/app-shell.module.css'
 
-type UserRow = { name: string | null; role: string | null; email: string | null }
+type UserRow = { id: string; name: string | null; role: string | null; email: string | null }
+type TaskAlert = { id: string; title: string; created_at: string }
 
 const ROLE_LABELS: Record<string, string> = {
   founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner', super_admin: 'Platform Admin',
@@ -220,12 +221,14 @@ export default function AppShell({
   fullWidth = false,
   demoMode = false,
   demoPersona = 'founder',
+  myTaskAlerts = [],
 }: {
   user: UserRow
   children: React.ReactNode
   fullWidth?: boolean
   demoMode?: boolean
   demoPersona?: string
+  myTaskAlerts?: TaskAlert[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -241,6 +244,23 @@ export default function AppShell({
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => { setMobileOpen(false) }, [pathname])
+
+  // Alerts bell: "new" = assigned to me and created after the last time I dismissed the bell.
+  // The seen-marker lives in localStorage (per user) since there's no server-side read receipt.
+  const alertsSeenKey = `esv_tasks_alerts_seen_${user.id}`
+  const [alertsSeenAt, setAlertsSeenAt] = useState(0)
+  useEffect(() => {
+    const stored = Number(localStorage.getItem(alertsSeenKey) ?? 0)
+    setAlertsSeenAt(Number.isFinite(stored) ? stored : 0)
+  }, [alertsSeenKey])
+  const newTaskAlerts = myTaskAlerts.filter((t) => new Date(t.created_at).getTime() > alertsSeenAt)
+  function handleAlertsClick() {
+    const now = Date.now()
+    localStorage.setItem(alertsSeenKey, String(now))
+    setAlertsSeenAt(now)
+    setMobileOpen(false)
+    router.push('/my-todos')
+  }
 
   function toggleGroup(label: string) {
     setOpenGroups((prev) => {
@@ -285,6 +305,8 @@ export default function AppShell({
     router.push('/login')
   }
 
+  const canHaveTasks = ['founder', 'admin', 'associate'].includes(role)
+
   const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(role))
   // Section labels (Deal Flow / Team / Database / Admin) are a founder/admin/associate affordance —
   // the partner nav is short enough that grouping it would just add clutter.
@@ -316,18 +338,36 @@ export default function AppShell({
 
         {/* Workspace header */}
         <div className={styles.sidebarTop}>
-          <Link href="/settings" className={styles.workspace} onClick={() => setMobileOpen(false)}>
-            <div className={styles.logoMark}>
-              <img src="/ecosystem-favicon-sapling.png" alt="" width={36} height={36} />
-            </div>
-            <div className={styles.workspaceText}>
-              <span className={styles.logoText}>Ecosystem</span>
-              <span className={styles.workspaceSub}>{demoMode ? 'AA Labs — Demo' : 'Earlyseed Ventures'}</span>
-            </div>
-            <svg className={styles.workspaceChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m9 18 6-6-6-6" />
-            </svg>
-          </Link>
+          <div className={styles.sidebarTopRow}>
+            <Link href="/settings" className={styles.workspace} onClick={() => setMobileOpen(false)}>
+              <div className={styles.logoMark}>
+                <img src="/ecosystem-favicon-sapling.png" alt="" width={36} height={36} />
+              </div>
+              <div className={styles.workspaceText}>
+                <span className={styles.logoText}>Ecosystem</span>
+                <span className={styles.workspaceSub}>{demoMode ? 'AA Labs — Demo' : 'Earlyseed Ventures'}</span>
+              </div>
+              <svg className={styles.workspaceChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m9 18 6-6-6-6" />
+              </svg>
+            </Link>
+            {canHaveTasks && (
+              <button
+                type="button"
+                className={styles.alertsBtn}
+                onClick={handleAlertsClick}
+                title={newTaskAlerts.length > 0 ? `${newTaskAlerts.length} new task${newTaskAlerts.length === 1 ? '' : 's'} assigned to you` : 'No new tasks'}
+                aria-label="Task alerts"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                </svg>
+                {newTaskAlerts.length > 0 && (
+                  <span className={styles.alertsBadge}>{newTaskAlerts.length > 9 ? '9+' : newTaskAlerts.length}</span>
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Nav links */}
@@ -506,6 +546,21 @@ export default function AppShell({
             </div>
             <span className={styles.logoText}>Ecosystem</span>
           </div>
+          {canHaveTasks && (
+            <button
+              className={styles.alertsBtnMobile}
+              onClick={handleAlertsClick}
+              aria-label="Task alerts"
+              title={newTaskAlerts.length > 0 ? `${newTaskAlerts.length} new task${newTaskAlerts.length === 1 ? '' : 's'} assigned to you` : 'No new tasks'}
+            >
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+              </svg>
+              {newTaskAlerts.length > 0 && (
+                <span className={styles.alertsBadge}>{newTaskAlerts.length > 9 ? '9+' : newTaskAlerts.length}</span>
+              )}
+            </button>
+          )}
           <button
             className={styles.topbarTheme}
             onClick={toggleTheme}

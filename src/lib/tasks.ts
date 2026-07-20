@@ -19,3 +19,18 @@ export const fetchOpenTaskCount = cache(async (): Promise<number> => {
     .neq('status', 'Done')
   return count ?? 0
 })
+
+export type TaskAlert = { id: string; title: string; created_at: string }
+
+// Lightweight feed for the sidebar alerts bell — just enough to tell "is this new to me".
+export const fetchMyOpenTaskAlerts = cache(async (userId: string): Promise<TaskAlert[]> => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('tasks')
+    .select('id, title, created_at')
+    .eq('assignee_id', userId)
+    .neq('status', 'Done')
+    .order('created_at', { ascending: false })
+    .limit(50)
+  return (data ?? []) as TaskAlert[]
+})
