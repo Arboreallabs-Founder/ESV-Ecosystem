@@ -69,14 +69,15 @@ export default function TaskBoard({
   const [isPending, startTransition] = useTransition()
 
   // View / filters / collapse
-  const [view, setView] = useState<'board' | 'list' | 'people'>('board')
+  const canSeeTeamView = ['founder', 'admin'].includes(userRole)
+  // Founders/admins land on the team-wide "By Person" view by default; associates get their own board.
+  const [view, setView] = useState<'board' | 'list' | 'people'>(canSeeTeamView ? 'people' : 'board')
   const [search, setSearch] = useState('')
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all') // 'all' | 'mine' | userId
   const [collapsedCols, setCollapsedCols] = useState<Set<Status>>(() => new Set<Status>(['Done']))
   function toggleCollapse(s: Status) {
     setCollapsedCols((prev) => { const n = new Set(prev); if (n.has(s)) n.delete(s); else n.add(s); return n })
   }
-  const canSeeTeamView = ['founder', 'admin'].includes(userRole)
   const [expandedPeople, setExpandedPeople] = useState<Set<string>>(new Set())
   function togglePerson(id: string) {
     setExpandedPeople((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
