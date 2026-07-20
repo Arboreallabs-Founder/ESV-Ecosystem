@@ -414,28 +414,30 @@ export default function AppShell({
                 <Fragment key={entry.label}>
                   {header}
                   <div className={styles.navGroupWrapper}>
-                    <Link
-                      href={visibleChildren[0].href}
-                      className={`${styles.navGroupBtn} ${activeChildHref ? styles.navGroupBtnActive : ''}`}
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      <span className={styles.navIcon}>{entry.icon}</span>
-                      <span className={styles.navLabel}>{entry.label}</span>
-                    </Link>
-                    <button
-                      type="button"
-                      className={styles.navGroupChevronBtn}
-                      onClick={() => toggleGroup(entry.label)}
-                      aria-expanded={open}
-                      aria-label={`${open ? 'Collapse' : 'Expand'} ${entry.label}`}
-                    >
-                      <svg
-                        className={`${styles.navGroupChevron} ${open ? styles.navGroupChevronOpen : ''}`}
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    <div className={styles.navGroupRow}>
+                      <Link
+                        href={visibleChildren[0].href}
+                        className={`${styles.navGroupBtn} ${activeChildHref ? styles.navGroupBtnActive : ''}`}
+                        onClick={() => setMobileOpen(false)}
                       >
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
-                    </button>
+                        <span className={styles.navIcon}>{entry.icon}</span>
+                        <span className={styles.navLabel}>{entry.label}</span>
+                      </Link>
+                      <button
+                        type="button"
+                        className={styles.navGroupChevronBtn}
+                        onClick={() => toggleGroup(entry.label)}
+                        aria-expanded={open}
+                        aria-label={`${open ? 'Collapse' : 'Expand'} ${entry.label}`}
+                      >
+                        <svg
+                          className={`${styles.navGroupChevron} ${open ? styles.navGroupChevronOpen : ''}`}
+                          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                        >
+                          <path d="m9 18 6-6-6-6" />
+                        </svg>
+                      </button>
+                    </div>
                     {open && (
                       <div className={styles.navAccordion}>
                         {visibleChildren.map((child) => (

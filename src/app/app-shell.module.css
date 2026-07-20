@@ -235,9 +235,12 @@
   opacity: 1;
 }
 
-/* Nav group (hover flyout) */
+/* Nav group */
 .navGroupWrapper {
   position: relative;
+}
+
+.navGroupRow {
   display: flex;
   align-items: center;
   gap: 0.15rem;
