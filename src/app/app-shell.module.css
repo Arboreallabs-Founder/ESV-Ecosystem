@@ -181,8 +181,10 @@
 /* Nav group (hover flyout) */
 .navGroupWrapper {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
 }
-
 
 .navGroupBtn {
   display: flex;
@@ -194,13 +196,15 @@
   font-weight: 500;
   color: var(--color-muted);
   cursor: pointer;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   transition: background 0.12s, color 0.12s;
   white-space: nowrap;
   background: none;
   border: none;
   font-family: inherit;
   text-align: left;
+  text-decoration: none;
 }
 
 .navGroupBtn:hover {
@@ -213,6 +217,26 @@
   font-weight: 600;
 }
 .navGroupBtnActive .navIcon { opacity: 1; }
+
+.navGroupChevronBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-muted);
+  transition: background 0.12s, color 0.12s;
+}
+
+.navGroupChevronBtn:hover {
+  background: rgba(116, 95, 253, 0.07);
+  color: var(--color-text);
+}
 
 .navGroupChevron {
   width: 14px;

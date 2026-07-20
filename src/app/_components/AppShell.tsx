@@ -374,14 +374,21 @@ export default function AppShell({
                 <Fragment key={entry.label}>
                   {header}
                   <div className={styles.navGroupWrapper}>
-                    <button
-                      type="button"
+                    <Link
+                      href={visibleChildren[0].href}
                       className={`${styles.navGroupBtn} ${activeChildHref ? styles.navGroupBtnActive : ''}`}
-                      onClick={() => toggleGroup(entry.label)}
-                      aria-expanded={open}
+                      onClick={() => setMobileOpen(false)}
                     >
                       <span className={styles.navIcon}>{entry.icon}</span>
                       <span className={styles.navLabel}>{entry.label}</span>
+                    </Link>
+                    <button
+                      type="button"
+                      className={styles.navGroupChevronBtn}
+                      onClick={() => toggleGroup(entry.label)}
+                      aria-expanded={open}
+                      aria-label={`${open ? 'Collapse' : 'Expand'} ${entry.label}`}
+                    >
                       <svg
                         className={`${styles.navGroupChevron} ${open ? styles.navGroupChevronOpen : ''}`}
                         viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
