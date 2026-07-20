@@ -69,12 +69,17 @@ export default function TaskBoard({
   const [isPending, startTransition] = useTransition()
 
   // View / filters / collapse
-  const [view, setView] = useState<'board' | 'list'>('board')
+  const [view, setView] = useState<'board' | 'list' | 'people'>('board')
   const [search, setSearch] = useState('')
   const [assigneeFilter, setAssigneeFilter] = useState<string>('all') // 'all' | 'mine' | userId
   const [collapsedCols, setCollapsedCols] = useState<Set<Status>>(() => new Set<Status>(['Done']))
   function toggleCollapse(s: Status) {
     setCollapsedCols((prev) => { const n = new Set(prev); if (n.has(s)) n.delete(s); else n.add(s); return n })
+  }
+  const canSeeTeamView = ['founder', 'admin'].includes(userRole)
+  const [expandedPeople, setExpandedPeople] = useState<Set<string>>(new Set())
+  function togglePerson(id: string) {
+    setExpandedPeople((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
   }
 
   const canCreate = ['founder', 'admin', 'associate'].includes(userRole)
@@ -121,6 +126,27 @@ export default function TaskBoard({
   }
 
   const assigneeChoices = assignableUsers.filter((u) => tasks.some((t) => t.assignee_id === u.id))
+
+  // "By Person" grouping — one collapsed row per assignee, expandable to their full task list.
+  const byPerson = (() => {
+    const map = new Map<string, { assigneeId: string; name: string; role: string; tasks: Task[] }>()
+    for (const t of filteredTasks) {
+      const id = t.assignee_id ?? '__unassigned__'
+      if (!map.has(id)) {
+        map.set(id, { assigneeId: id, name: t.assignee?.name ?? 'Unassigned', role: users.find((u) => u.id === id)?.role ?? '', tasks: [] })
+      }
+      map.get(id)!.tasks.push(t)
+    }
+    return Array.from(map.values()).sort((a, b) => {
+      const aOverdue = a.tasks.filter(taskOverdue).length
+      const bOverdue = b.tasks.filter(taskOverdue).length
+      if (aOverdue !== bOverdue) return bOverdue - aOverdue
+      const aOpen = a.tasks.filter((t) => t.status !== 'Done').length
+      const bOpen = b.tasks.filter((t) => t.status !== 'Done').length
+      if (aOpen !== bOpen) return bOpen - aOpen
+      return a.name.localeCompare(b.name)
+    })
+  })()
 
   function handleStatusChange(taskId: string, newStatus: string) {
     setTasks((prev) => prev.map((t) => t.id === taskId
@@ -289,6 +315,9 @@ export default function TaskBoard({
         <div className={styles.viewToggle}>
           <button className={`${styles.viewBtn} ${view === 'board' ? styles.viewBtnActive : ''}`} onClick={() => setView('board')}>Board</button>
           <button className={`${styles.viewBtn} ${view === 'list' ? styles.viewBtnActive : ''}`} onClick={() => setView('list')}>List</button>
+          {canSeeTeamView && (
+            <button className={`${styles.viewBtn} ${view === 'people' ? styles.viewBtnActive : ''}`} onClick={() => setView('people')}>By Person</button>
+          )}
         </div>
       </div>
 
@@ -348,6 +377,58 @@ export default function TaskBoard({
           ))}
           {filteredTasks.length === 0 && (
             <div className={styles.emptyCol} style={{ padding: '3rem' }}>{filtering ? 'No tasks match your filters.' : 'No tasks yet.'}</div>
+          )}
+        </div>
+      )}
+
+      {/* By Person view (founder/admin only) */}
+      {view === 'people' && canSeeTeamView && (
+        <div className={styles.peopleView}>
+          {byPerson.length > 0 && (
+            <div className={styles.peopleViewHead}>
+              <button type="button" className={styles.expandAllBtn} onClick={() => setExpandedPeople(new Set(byPerson.map((p) => p.assigneeId)))}>Expand all</button>
+              <button type="button" className={styles.expandAllBtn} onClick={() => setExpandedPeople(new Set())}>Collapse all</button>
+            </div>
+          )}
+          {byPerson.length === 0 ? (
+            <div className={styles.emptyCol} style={{ padding: '3rem' }}>{filtering ? 'No tasks match your filters.' : 'No tasks yet.'}</div>
+          ) : (
+            byPerson.map((p) => {
+              const open = expandedPeople.has(p.assigneeId)
+              const openCount = p.tasks.filter((t) => t.status !== 'Done').length
+              const overdueCount = p.tasks.filter(taskOverdue).length
+              const doneCount = p.tasks.length - openCount
+              return (
+                <div key={p.assigneeId} className={styles.personGroup}>
+                  <button
+                    type="button"
+                    className={styles.personHead}
+                    onClick={() => togglePerson(p.assigneeId)}
+                    aria-expanded={open}
+                  >
+                    <svg
+                      className={`${styles.personChevron} ${open ? styles.personChevronOpen : ''}`}
+                      viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                    >
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                    <span className={styles.personName}>{p.name}</span>
+                    {p.role && <span className={styles.personRole}>{userRoleLabel(p.role)}</span>}
+                    <div style={{ flex: 1 }} />
+                    <span className={styles.personCounts}>
+                      {overdueCount > 0 && <span className={`${styles.personPill} ${styles.personPillOverdue}`}>{overdueCount} overdue</span>}
+                      <span className={styles.personPill}>{openCount} open</span>
+                      <span className={styles.personPill}>{doneCount} done</span>
+                    </span>
+                  </button>
+                  {open && (
+                    <div className={styles.personBody}>
+                      {p.tasks.map(renderCard)}
+                    </div>
+                  )}
+                </div>
+              )
+            })
           )}
         </div>
       )}
