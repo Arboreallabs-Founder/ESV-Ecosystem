@@ -416,8 +416,7 @@
   display: flex;
   align-items: flex-start;
   gap: 1rem;
-  width: 100%;
-  max-width: 860px;
+  max-width: 100%;
 }
 .modalRow .modal { flex-shrink: 0; }
 

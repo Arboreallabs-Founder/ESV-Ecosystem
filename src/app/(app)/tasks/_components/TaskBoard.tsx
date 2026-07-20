@@ -54,7 +54,11 @@ export default function TaskBoard({
   const [pushTarget, setPushTarget] = useState<Task | null>(null)
   const [pushDate, setPushDate] = useState('')
   const [detailTask, setDetailTask] = useState<Task | null>(null)
-  const [assigneeId, setAssigneeId] = useState(currentUserId)
+  // Associates mostly self-assign or assign peers, so defaulting to "me" is the common
+  // case. Founders/admins are almost always delegating — default blank so they have to
+  // deliberately pick someone instead of silently self-assigning.
+  const defaultAssigneeId = userRole === 'associate' ? currentUserId : ''
+  const [assigneeId, setAssigneeId] = useState(defaultAssigneeId)
   const [assignedById, setAssignedById] = useState(currentUserId)
   const [noDueDate, setNoDueDate] = useState(false)
   const [dueDate, setDueDate] = useState('')
@@ -135,7 +139,7 @@ export default function TaskBoard({
   }
 
   function resetTaskDraft() {
-    setAssigneeId(currentUserId)
+    setAssigneeId(defaultAssigneeId)
     setAssignedById(currentUserId)
     setNoDueDate(false)
     setDueDate('')
@@ -363,7 +367,7 @@ export default function TaskBoard({
               </div>
               <div className={styles.grid2}>
                 <div className={styles.field}>
-                  <label className={styles.label}>Assignee</label>
+                  <label className={styles.label}>Assignee *</label>
                   <input type="hidden" name="assignee_id" value={assigneeId} />
                   <Combobox
                     options={assigneeOptions}
@@ -440,7 +444,7 @@ export default function TaskBoard({
 
               <div className={styles.modalActions}>
                 <button type="button" className={styles.cancelBtn} onClick={closeModal}>Cancel</button>
-                <button type="submit" className={styles.submitBtn} disabled={isPending}>
+                <button type="submit" className={styles.submitBtn} disabled={isPending || !assigneeId}>
                   {isPending ? 'Creating…' : 'Create Task'}
                 </button>
               </div>

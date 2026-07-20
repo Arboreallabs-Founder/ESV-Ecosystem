@@ -9,7 +9,8 @@ const TASK_SELECT = '*, assignee:assignee_id(name), created_by_user:created_by(n
 export async function createTask(formData: FormData): Promise<Task> {
   const { supabase, userId, orgId, role } = await requireRole(['founder', 'admin', 'associate'])
 
-  const assigneeId = (formData.get('assignee_id') as string) || userId
+  const assigneeId = formData.get('assignee_id') as string
+  if (!assigneeId) throw new Error('Please choose who this task is assigned to.')
 
   // Assignment rules: never assign to a partner; associates may only assign to
   // themselves or other associates. (RLS double-guards these.)
