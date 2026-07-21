@@ -26,6 +26,7 @@ type ActiveDealListRow = {
   pipeline_entry_id: string
   created_at: string
   deal_state: DealState | null
+  logo_url: string | null
   entry?: ActiveDealEntryListRow | ActiveDealEntryListRow[] | null
   categories?: Array<{ category?: DealCategoryRow | null }> | null
   field_values?: FieldValueRow[] | null
@@ -146,7 +147,7 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
   const { supabase, role } = await requireInternalOrPartner()
   const [dealsRes, catsRes] = await Promise.all([
     supabase.from('active_deals').select(`
-      id, pipeline_entry_id, created_at, deal_state,
+      id, pipeline_entry_id, created_at, deal_state, logo_url,
       entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name))),
       categories:active_deal_categories(category:deal_categories(id, name, description, color, created_at, fields:deal_category_fields(*))),
       field_values:active_deal_field_values(field_id, value)
@@ -160,6 +161,7 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
       pipeline_entry_id: row.pipeline_entry_id,
       created_at: row.created_at,
       deal_state: (row.deal_state ?? 'active') as import('@/lib/types').DealState,
+      logo_url: row.logo_url ?? null,
       entry: (() => {
         const e = first(row.entry)
         if (!e) {
@@ -274,11 +276,56 @@ export async function updateDealState(activeDealId: string, state: DealState) {
   revalidatePath('/active-deals')
 }
 
+// Full teardown for a test/mistaken deal — removes the active deal record and everything
+// hanging off it, plus the pipeline entry/lead it was accepted from (so it's gone from the
+// Pipelines board too, not just Active Deals). Founder/admin only; deliberately not
+// revalidatePath-scoped to the pipeline since we don't have its id handy — the board
+// refetches on next navigation.
+export async function deleteActiveDeal(activeDealId: string) {
+  const { supabase } = await requireAdmin()
+
+  const { data: deal, error: dealErr } = await supabase
+    .from('active_deals')
+    .select('pipeline_entry_id')
+    .eq('id', activeDealId)
+    .single()
+  if (dealErr || !deal) throw new Error('Active deal not found.')
+
+  const { data: investorRows } = await supabase
+    .from('active_deal_investors')
+    .select('id')
+    .eq('active_deal_id', activeDealId)
+  const investorIds = (investorRows ?? []).map((r: { id: string }) => r.id)
+  if (investorIds.length > 0) {
+    const { error } = await supabase.from('active_deal_investor_fees').delete().in('active_deal_investor_id', investorIds)
+    if (error) throw error
+  }
+
+  let res = await supabase.from('active_deal_investors').delete().eq('active_deal_id', activeDealId)
+  if (res.error) throw res.error
+  res = await supabase.from('active_deal_field_values').delete().eq('active_deal_id', activeDealId)
+  if (res.error) throw res.error
+  res = await supabase.from('active_deal_categories').delete().eq('active_deal_id', activeDealId)
+  if (res.error) throw res.error
+  res = await supabase.from('active_deal_partner_shares').delete().eq('active_deal_id', activeDealId)
+  if (res.error) throw res.error
+
+  const { error: dealDeleteErr } = await supabase.from('active_deals').delete().eq('id', activeDealId)
+  if (dealDeleteErr) throw dealDeleteErr
+
+  // Cascades to pipeline_entry_assignees, stage history, form answers, etc.
+  const { error: entryDeleteErr } = await supabase.from('pipeline_entries').delete().eq('id', deal.pipeline_entry_id)
+  if (entryDeleteErr) throw entryDeleteErr
+
+  revalidatePath('/active-deals')
+}
+
 export async function updateActiveDealDetails(activeDealId: string, input: {
   deal_name: string
   category_id?: string | null
   submitter_name?: string | null
   submitter_email?: string | null
+  logo_url?: string | null
   field_values?: Record<string, string>
 }) {
   const { supabase } = await requireInternal()
@@ -301,6 +348,14 @@ export async function updateActiveDealDetails(activeDealId: string, input: {
     })
     .eq('id', deal.pipeline_entry_id)
   if (entryErr) throw entryErr
+
+  if ('logo_url' in input) {
+    const { error: logoErr } = await supabase
+      .from('active_deals')
+      .update({ logo_url: input.logo_url?.trim() || null })
+      .eq('id', activeDealId)
+    if (logoErr) throw logoErr
+  }
 
   if ('category_id' in input) {
     const categoryId = input.category_id || null

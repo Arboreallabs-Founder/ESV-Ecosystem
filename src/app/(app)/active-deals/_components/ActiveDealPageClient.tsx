@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createOrLinkCompanyForActiveDeal, linkActiveDealToCompany, updateActiveDealDetails, updateDealState } from '@/app/actions/active-deals'
+import { createOrLinkCompanyForActiveDeal, deleteActiveDeal, linkActiveDealToCompany, updateActiveDealDetails, updateDealState } from '@/app/actions/active-deals'
+import { addAssignee, removeAssignee } from '@/app/actions/pipelines'
 import type { ActiveDeal, DealCategory, DealState, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
 import { DEAL_STATES, DEAL_STATE_META } from '@/lib/types'
 import styles from '../active-deals.module.css'
@@ -47,6 +48,10 @@ function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
+function initials(name: string): string {
+  return name.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
 export default function ActiveDealPageClient({
   deal,
   userRole,
@@ -56,6 +61,7 @@ export default function ActiveDealPageClient({
   answers,
   history,
   stageAnswers,
+  teamMembers,
 }: {
   deal: ActiveDeal
   userRole: string
@@ -65,17 +71,54 @@ export default function ActiveDealPageClient({
   answers: AnswerItem[]
   history: PipelineEntryStageHistory[]
   stageAnswers: StageAnswerView[]
+  teamMembers: Array<{ id: string; name: string }>
 }) {
   const router = useRouter()
   const [dealState, setDealState] = useState<DealState>(deal.deal_state)
   const [showEdit, setShowEdit] = useState(false)
   const [companyId, setCompanyId] = useState(deal.entry?.company_id ?? '')
-  const [linkedCompany, setLinkedCompany] = useState(deal.entry?.company ?? null)
+  const [linkedCompany, setLinkedCompany] = useState<{ id: string; name: string } | null>(
+    deal.entry?.company ? { id: deal.entry.company.id, name: deal.entry.company.name } : null,
+  )
+  const [assignees, setAssignees] = useState(deal.entry?.assignees ?? [])
   const [, startStateTransition] = useTransition()
   const [linkPending, startLinkTransition] = useTransition()
+  const [, startAssigneeTransition] = useTransition()
 
   const canEditState = userRole !== 'franchise_partner'
   const canManageDeal = userRole !== 'franchise_partner'
+  const canAssignPeople = ['founder', 'admin'].includes(userRole)
+  const canDeleteDeal = ['founder', 'admin'].includes(userRole)
+  const [deletePending, startDeleteTransition] = useTransition()
+
+  function handleDeleteDeal() {
+    if (!confirm(`Delete "${deal.entry?.title ?? 'this deal'}"? This removes the deal and its original pipeline entry entirely — this cannot be undone.`)) return
+    startDeleteTransition(async () => {
+      try {
+        await deleteActiveDeal(deal.id)
+        router.push('/active-deals')
+      } catch (err) { alert(String(err)) }
+    })
+  }
+
+  function handleAddAssignee(userId: string) {
+    const member = teamMembers.find((m) => m.id === userId)
+    if (!member) return
+    setAssignees((prev) => [...prev, { user_id: userId, name: member.name }])
+    startAssigneeTransition(async () => {
+      try { await addAssignee(deal.pipeline_entry_id, userId) }
+      catch (err) { setAssignees((prev) => prev.filter((a) => a.user_id !== userId)); alert(String(err)) }
+    })
+  }
+
+  function handleRemoveAssignee(userId: string) {
+    const prevAssignees = assignees
+    setAssignees((prev) => prev.filter((a) => a.user_id !== userId))
+    startAssigneeTransition(async () => {
+      try { await removeAssignee(deal.pipeline_entry_id, userId) }
+      catch (err) { setAssignees(prevAssignees); alert(String(err)) }
+    })
+  }
 
   function handleStateChange(next: DealState) {
     const prev = dealState
@@ -109,6 +152,9 @@ export default function ActiveDealPageClient({
     })
   }
 
+  // A logo set directly on the deal wins; otherwise fall back to the linked company's logo.
+  const displayLogoUrl = deal.logo_url || deal.entry?.company?.logo_url || null
+
   const stageAnswerGroups: Array<{ stage_id: string; stage_name: string; items: StageAnswerView[] }> = []
   for (const a of stageAnswers) {
     let g = stageAnswerGroups.find((x) => x.stage_id === a.stage_id)
@@ -116,7 +162,6 @@ export default function ActiveDealPageClient({
     g.items.push(a)
   }
 
-  const assignees = deal.entry?.assignees ?? []
   const meta = DEAL_STATE_META[dealState]
   const categoryNames = deal.categories.map(({ category }) => category.name)
   const visibleAnswers = answers.filter((a) => a.node?.question_text)
@@ -134,17 +179,22 @@ export default function ActiveDealPageClient({
 
       {/* Header */}
       <div className={styles.dealPageHeader}>
-        <div className={styles.dealPageHeaderMain}>
-          <h1 className={styles.dealPageTitle}>{deal.entry?.title ?? 'Untitled'}</h1>
-          <div className={styles.detailMeta}>
-            {deal.entry?.submitter_name && <span>{deal.entry.submitter_name}</span>}
-            {deal.entry?.submitter_email && <span className={styles.dealEmail}>{deal.entry.submitter_email}</span>}
-            <span>Submitted {formatDate(deal.entry?.submitted_at ?? deal.created_at)}</span>
-            <span>Accepted {formatDate(deal.created_at)}</span>
+        <div className={styles.dealPageHeaderLeft}>
+          <div className={`${styles.logoLg} ${displayLogoUrl ? styles.logoImg : ''}`}>
+            {displayLogoUrl ? <img src={displayLogoUrl} alt="" /> : initials(deal.entry?.title ?? '?')}
           </div>
-          {deal.entry?.sourced_via_partner && (
-            <span className={styles.partnerChip}>via {deal.entry.sourced_via_partner.name}</span>
-          )}
+          <div className={styles.dealPageHeaderMain}>
+            <h1 className={styles.dealPageTitle}>{deal.entry?.title ?? 'Untitled'}</h1>
+            <div className={styles.detailMeta}>
+              {deal.entry?.submitter_name && <span>{deal.entry.submitter_name}</span>}
+              {deal.entry?.submitter_email && <span className={styles.dealEmail}>{deal.entry.submitter_email}</span>}
+              <span>Submitted {formatDate(deal.entry?.submitted_at ?? deal.created_at)}</span>
+              <span>Accepted {formatDate(deal.created_at)}</span>
+            </div>
+            {deal.entry?.sourced_via_partner && (
+              <span className={styles.partnerChip}>via {deal.entry.sourced_via_partner.name}</span>
+            )}
+          </div>
         </div>
         {canEditState ? (
           <div className={styles.detailHeadRight}>
@@ -158,6 +208,11 @@ export default function ActiveDealPageClient({
               {DEAL_STATES.map((s) => <option key={s} value={s} style={{ color: 'var(--color-text)' }}>{DEAL_STATE_META[s].label}</option>)}
             </select>
             {canManageDeal && <button className={styles.ghostBtn} onClick={() => setShowEdit(true)}>Edit deal</button>}
+            {canDeleteDeal && (
+              <button className={styles.dangerBtn} onClick={handleDeleteDeal} disabled={deletePending}>
+                {deletePending ? 'Deleting…' : 'Delete deal'}
+              </button>
+            )}
           </div>
         ) : (
           <span className={styles.stateBadge} style={{ color: meta.color, borderColor: `${meta.color}55`, background: `${meta.color}12` }}>
@@ -208,7 +263,31 @@ export default function ActiveDealPageClient({
             {/* Assigned To */}
             <div className={styles.detailSection}>
               <div className={styles.detailSectionTitle}>Assigned To</div>
-              {assignees.length === 0 ? (
+              {canAssignPeople ? (
+                <div className={styles.assigneeChips}>
+                  {assignees.map((a) => (
+                    <span key={a.user_id} className={styles.assigneeChip}>
+                      {a.name}
+                      <button className={styles.assigneeChipRemove} onClick={() => handleRemoveAssignee(a.user_id)} title="Remove">×</button>
+                    </span>
+                  ))}
+                  {(() => {
+                    const assignedIds = new Set(assignees.map((a) => a.user_id))
+                    const available = teamMembers.filter((m) => !assignedIds.has(m.id))
+                    if (available.length === 0) return null
+                    return (
+                      <select
+                        className={styles.assigneeAdd}
+                        value=""
+                        onChange={(e) => { if (e.target.value) handleAddAssignee(e.target.value) }}
+                      >
+                        <option value="">+ Add person</option>
+                        {available.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
+                    )
+                  })()}
+                </div>
+              ) : assignees.length === 0 ? (
                 <div className={styles.detailEmpty}>No one assigned.</div>
               ) : (
                 <div className={styles.assigneeChips}>
@@ -351,6 +430,7 @@ function EditActiveDealModal({
   const [name, setName] = useState(deal.entry?.title ?? '')
   const [submitterName, setSubmitterName] = useState(deal.entry?.submitter_name ?? '')
   const [submitterEmail, setSubmitterEmail] = useState(deal.entry?.submitter_email ?? '')
+  const [logoUrl, setLogoUrl] = useState(deal.logo_url ?? '')
   const [categoryId, setCategoryId] = useState(initialCategoryId)
   const [values, setValues] = useState<Record<string, string>>(() => {
     const out: Record<string, string> = {}
@@ -373,6 +453,7 @@ function EditActiveDealModal({
           category_id: categoryId || null,
           submitter_name: submitterName,
           submitter_email: submitterEmail,
+          logo_url: logoUrl,
           field_values: values,
         })
         onSaved()
@@ -393,6 +474,14 @@ function EditActiveDealModal({
           <div className={styles.formField}>
             <label className={styles.formLabel}>Deal / company name *</label>
             <input className={styles.formInput} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+          </div>
+
+          <div className={styles.formField}>
+            <label className={styles.formLabel}>Logo URL</label>
+            <input className={styles.formInput} value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://…" />
+            {!logoUrl && deal.entry?.company?.logo_url && (
+              <div className={styles.helpText} style={{ marginTop: '0.3rem' }}>Left blank — using the linked company profile&apos;s logo.</div>
+            )}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>

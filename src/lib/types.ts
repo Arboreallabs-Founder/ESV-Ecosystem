@@ -457,6 +457,7 @@ export type ActiveDeal = {
   pipeline_entry_id: string
   created_at: string
   deal_state: DealState
+  logo_url: string | null
   entry: {
     title: string | null
     submitter_name: string | null
@@ -464,7 +465,7 @@ export type ActiveDeal = {
     submitted_at: string
     pipeline_id: string
     company_id?: string | null
-    company?: { id: string; name: string } | null
+    company?: { id: string; name: string; logo_url: string | null } | null
     assignees?: Array<{ user_id: string; name: string }>
     sourced_via_partner?: { id: string; name: string } | null
   }

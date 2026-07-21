@@ -4,7 +4,7 @@ import { useState, useTransition, type KeyboardEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import type { ActiveDeal, DealCategory, DealState } from '@/lib/types'
 import { DEAL_STATES, DEAL_STATE_META } from '@/lib/types'
-import { updateDealState } from '@/app/actions/active-deals'
+import { updateDealState, deleteActiveDeal } from '@/app/actions/active-deals'
 import NewDealModal from './NewDealModal'
 import DealImportModal from './DealImportModal'
 import FilterTabs from '@/app/_components/FilterTabs'
@@ -19,6 +19,10 @@ function delimitNumber(value: string): string {
   const n = Number(raw)
   if (!Number.isFinite(n)) return value
   return n.toLocaleString('en-IN')
+}
+
+function initials(name: string): string {
+  return name.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 }
 
 function formatValue(value: string, fieldType: string) {
@@ -59,11 +63,14 @@ export default function ActiveDealsList({
   // Optimistic state overrides layered over server data — avoids re-seeding a whole
   // deals array (and a setState-in-effect) when the server refreshes after a new deal.
   const [stateOverrides, setStateOverrides] = useState<Record<string, DealState>>({})
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
   const [, startTransition] = useTransition()
   const canManage = userRole === 'founder' || userRole === 'admin'
   const canEditState = userRole !== 'franchise_partner'
 
-  const deals = initialDeals.map((d) => stateOverrides[d.id] ? { ...d, deal_state: stateOverrides[d.id] } : d)
+  const deals = initialDeals
+    .filter((d) => !deletedIds.has(d.id))
+    .map((d) => stateOverrides[d.id] ? { ...d, deal_state: stateOverrides[d.id] } : d)
 
   const usedCategories = categories.filter((cat) => deals.some((d) => d.categories.some((c) => c.category.id === cat.id)))
 
@@ -90,6 +97,18 @@ export default function ActiveDealsList({
         setStateOverrides((prev) => ({ ...prev, [deal.id]: prevState }))
         alert(String(err))
         router.refresh()
+      }
+    })
+  }
+
+  function handleDelete(deal: ActiveDeal) {
+    if (!confirm(`Delete "${deal.entry?.title ?? 'this deal'}"? This removes the deal and its original pipeline entry entirely — this cannot be undone.`)) return
+    setDeletedIds((prev) => new Set(prev).add(deal.id))
+    startTransition(async () => {
+      try { await deleteActiveDeal(deal.id) }
+      catch (err) {
+        setDeletedIds((prev) => { const n = new Set(prev); n.delete(deal.id); return n })
+        alert(String(err))
       }
     })
   }
@@ -157,6 +176,8 @@ export default function ActiveDealsList({
         <div className={styles.grid}>
           {filtered.map((deal) => {
             const meta = DEAL_STATE_META[deal.deal_state]
+            // A logo set directly on the deal wins; otherwise fall back to the linked company's logo.
+            const displayLogoUrl = deal.logo_url || deal.entry?.company?.logo_url || null
             return (
               <article
                 key={deal.id}
@@ -168,27 +189,44 @@ export default function ActiveDealsList({
                 aria-label={`Open ${deal.entry?.title ?? 'deal'}`}
               >
                 <div className={styles.cardHead}>
-                  <div className={styles.cardTitleBlock}>
-                    <div className={styles.dealTitle}>{deal.entry?.title ?? 'Untitled'}</div>
-                    <div className={styles.openHint}>Open record</div>
+                  <div className={styles.cardTitleRow}>
+                    <div className={`${styles.cardLogo} ${displayLogoUrl ? styles.logoImg : ''}`}>
+                      {displayLogoUrl ? <img src={displayLogoUrl} alt="" /> : initials(deal.entry?.title ?? '?')}
+                    </div>
+                    <div className={styles.cardTitleBlock}>
+                      <div className={styles.dealTitle}>{deal.entry?.title ?? 'Untitled'}</div>
+                      <div className={styles.openHint}>Open record</div>
+                    </div>
                   </div>
-                  {canEditState ? (
-                    <select
-                      className={styles.stateSelect}
-                      value={deal.deal_state}
-                      onClick={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => e.stopPropagation()}
-                      onChange={(e) => { e.stopPropagation(); handleStateChange(deal, e.target.value as DealState) }}
-                      style={{ color: meta.color, borderColor: `${meta.color}55`, background: `${meta.color}12` }}
-                      title="Change deal state"
-                    >
-                      {DEAL_STATES.map((s) => <option key={s} value={s} style={{ color: 'var(--color-text)' }}>{DEAL_STATE_META[s].label}</option>)}
-                    </select>
-                  ) : (
-                    <span className={styles.stateBadge} style={{ color: meta.color, borderColor: `${meta.color}55`, background: `${meta.color}12` }}>
-                      {meta.label}
-                    </span>
-                  )}
+                  <div className={styles.cardHeadRight}>
+                    {canEditState ? (
+                      <select
+                        className={styles.stateSelect}
+                        value={deal.deal_state}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                        onChange={(e) => { e.stopPropagation(); handleStateChange(deal, e.target.value as DealState) }}
+                        style={{ color: meta.color, borderColor: `${meta.color}55`, background: `${meta.color}12` }}
+                        title="Change deal state"
+                      >
+                        {DEAL_STATES.map((s) => <option key={s} value={s} style={{ color: 'var(--color-text)' }}>{DEAL_STATE_META[s].label}</option>)}
+                      </select>
+                    ) : (
+                      <span className={styles.stateBadge} style={{ color: meta.color, borderColor: `${meta.color}55`, background: `${meta.color}12` }}>
+                        {meta.label}
+                      </span>
+                    )}
+                    {canManage && (
+                      <button
+                        className={styles.cardDeleteBtn}
+                        onClick={(e) => { e.stopPropagation(); handleDelete(deal) }}
+                        title="Delete deal"
+                        aria-label="Delete deal"
+                      >
+                        🗑
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <div className={styles.dealMeta}>

@@ -41,6 +41,10 @@
 .ghostBtn:hover { background: var(--color-card-raised); }
 .ghostBtn:disabled { opacity: 0.55; cursor: not-allowed; }
 
+.dangerBtn { border: 1px solid var(--color-border); background: var(--color-card); color: var(--color-muted); padding: 0.5rem 0.9rem; border-radius: var(--radius-md); font-size: 0.8125rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.12s, border-color 0.12s, color 0.12s; }
+.dangerBtn:hover { background: rgba(220,38,38,0.08); border-color: rgba(220,38,38,0.4); color: var(--color-destructive); }
+.dangerBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+
 /* Modal form bits (New deal / Import) */
 .modalPanelWide { max-width: 680px; }
 .modalScroll { max-height: 78vh; overflow-y: auto; }
@@ -157,6 +161,48 @@
   gap: 0.625rem;
 }
 
+.cardTitleRow {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.cardLogo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--color-primary-light);
+  color: #3a2c6b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.75rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.cardLogo img { width: 100%; height: 100%; object-fit: contain; }
+
+.logoImg { background: #fff; border: 1px solid var(--color-border); padding: 3px; }
+
+.logoLg {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--color-primary-light);
+  color: #3a2c6b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.2rem;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.logoLg img { width: 100%; height: 100%; object-fit: contain; }
+
 .cardTitleBlock {
   min-width: 0;
   display: flex;
@@ -186,6 +232,28 @@
 .card:focus-visible .openHint { opacity: 1; }
 
 /* ── Deal state badge / dropdown ─────────────────────────────────── */
+.cardHeadRight {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.cardDeleteBtn {
+  flex-shrink: 0;
+  padding: 0.1875rem 0.4rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+.cardDeleteBtn:hover { background: rgba(220,38,38,0.08); border-color: rgba(220,38,38,0.4); color: var(--color-destructive); }
+
 .stateBadge {
   flex-shrink: 0;
   font-size: 0.625rem;
@@ -390,6 +458,14 @@
   padding: 1.25rem 1.35rem;
   margin-bottom: 0.75rem;
   box-shadow: var(--shadow-card);
+}
+
+.dealPageHeaderLeft {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  min-width: 0;
+  flex: 1;
 }
 
 .dealPageHeaderMain { min-width: 0; }
@@ -677,6 +753,46 @@
   font-size: 0.8125rem;
   font-weight: 500;
 }
+
+.assigneeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  background: rgba(116,95,253,0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(116,95,253,0.2);
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.assigneeChipRemove {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.6;
+  transition: opacity 0.12s;
+}
+.assigneeChipRemove:hover { opacity: 1; }
+
+.assigneeAdd {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  background: none;
+  border: 1.5px dashed var(--color-border);
+  border-radius: 9999px;
+  padding: 0.25rem 0.625rem;
+  cursor: pointer;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.12s, color 0.12s;
+}
+.assigneeAdd:focus, .assigneeAdd:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
 .detailCategoryBlock {
   margin-bottom: 1rem;

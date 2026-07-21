@@ -8,6 +8,7 @@ type DealCategoryRow = Omit<DealCategory, 'fields'> & { fields?: DealCategoryFie
 type UserNameRow = { name: string | null }
 type EntryAssigneeRow = { user_id: string; user?: UserNameRow | UserNameRow[] | null }
 type PartnerRow = { id: string; name: string }
+type CompanyRefRow = { id: string; name: string; logo_url: string | null }
 type EntryRow = {
   title: string | null
   submitter_name: string | null
@@ -15,7 +16,7 @@ type EntryRow = {
   submitted_at: string | null
   pipeline_id: string | null
   company_id?: string | null
-  company?: PartnerRow | PartnerRow[] | null
+  company?: CompanyRefRow | CompanyRefRow[] | null
   assignees?: EntryAssigneeRow[] | null
   form_link?: {
     creator?: {
@@ -32,6 +33,7 @@ type ActiveDealRow = {
   pipeline_entry_id: string
   created_at: string
   deal_state: DealState | null
+  logo_url: string | null
   entry?: EntryRow | EntryRow[] | null
   categories?: Array<{ category?: DealCategoryRow | DealCategoryRow[] | null }> | null
   field_values?: FieldValueRow[] | null
@@ -63,7 +65,8 @@ const ACTIVE_DEAL_SELECT = `
   pipeline_entry_id,
   created_at,
   deal_state,
-  entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, company_id, company:companies!company_id(id, name), assignees:pipeline_entry_assignees(user_id, user:users(name)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
+  logo_url,
+  entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, company_id, company:companies!company_id(id, name, logo_url), assignees:pipeline_entry_assignees(user_id, user:users(name)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
   categories:active_deal_categories(
     category:deal_categories(
       id, name, description, color, created_at,
@@ -86,6 +89,7 @@ function shapeActiveDealRow(row: ActiveDealRow): ActiveDeal {
     pipeline_entry_id: row.pipeline_entry_id,
     created_at: row.created_at,
     deal_state: (row.deal_state ?? 'active') as DealState,
+    logo_url: row.logo_url ?? null,
     entry: {
       title: entry?.title ?? null,
       submitter_name: entry?.submitter_name ?? null,
@@ -93,7 +97,7 @@ function shapeActiveDealRow(row: ActiveDealRow): ActiveDeal {
       submitted_at: entry?.submitted_at ?? row.created_at,
       pipeline_id: entry?.pipeline_id ?? '',
       company_id: entry?.company_id ?? null,
-      company: company ? { id: company.id, name: company.name } : null,
+      company: company ? { id: company.id, name: company.name, logo_url: company.logo_url ?? null } : null,
       assignees: (entry?.assignees ?? []).map((a) => {
         const user = first(a.user)
         return { user_id: a.user_id, name: user?.name ?? 'Unknown' }
