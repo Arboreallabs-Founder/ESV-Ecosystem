@@ -88,7 +88,10 @@ export default function CompanyList({ companies }: { companies: CompanyListItem[
             <Link key={c.id} href={`/companies/${c.id}`} className={styles.card}>
               <div className={styles.cardTop}>
                 <div className={`${styles.logo} ${c.logo_url ? styles.logoImg : ''}`}>{c.logo_url ? <img src={c.logo_url} alt="" /> : initials(c.name)}</div>
-                <span className={`${styles.statusPill} ${styles[`status_${c.status}`]}`}>{COMPANY_STATUS_LABELS[c.status]}</span>
+                <div className={styles.cardTopRight}>
+                  <span className={`${styles.statusPill} ${styles[`status_${c.status}`]}`}>{COMPANY_STATUS_LABELS[c.status]}</span>
+                  {c.has_active_deal && <span className={styles.activeDealTag}>Active Deal</span>}
+                </div>
               </div>
               <div className={styles.cardName}>{c.name}</div>
               {c.one_liner && <div className={styles.cardOneLiner}>{c.one_liner}</div>}

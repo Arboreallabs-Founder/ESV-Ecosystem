@@ -828,4 +828,5 @@ export type CompanyListItem = {
   hq_country: string | null
   arr_inr: number | null
   updated_at: string
+  has_active_deal: boolean
 }

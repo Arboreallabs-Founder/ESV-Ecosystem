@@ -7,9 +7,16 @@ export const fetchCompanies = cache(async (): Promise<CompanyListItem[]> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('companies')
-    .select('id, name, logo_url, one_liner, sectors, stage, status, hq_city, hq_country, arr_inr, updated_at')
+    .select('id, name, logo_url, one_liner, sectors, stage, status, hq_city, hq_country, arr_inr, updated_at, pipeline_entries!company_id(active_deals(deal_state))')
     .order('updated_at', { ascending: false })
-  return (data as CompanyListItem[]) ?? []
+  return ((data ?? []) as unknown as Array<CompanyListItem & { pipeline_entries: Array<{ active_deals: { deal_state: DealState } | { deal_state: DealState }[] | null }> }>).map((row) => {
+    const { pipeline_entries, ...rest } = row
+    const has_active_deal = (pipeline_entries ?? []).some((e) => {
+      const deals = Array.isArray(e.active_deals) ? e.active_deals : e.active_deals ? [e.active_deals] : []
+      return deals.some((d) => d.deal_state === 'active')
+    })
+    return { ...rest, has_active_deal }
+  })
 })
 
 const one = <T>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null))
