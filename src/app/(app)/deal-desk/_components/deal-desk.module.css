@@ -512,7 +512,9 @@
   background: var(--color-primary); color: #fff;
   display: flex; align-items: center; justify-content: center;
   font-size: 0.9375rem; font-weight: 700; flex-shrink: 0;
+  overflow: hidden;
 }
+.rosterAvatar img { width: 100%; height: 100%; object-fit: cover; }
 .rosterName { font-size: 0.9375rem; font-weight: 600; color: var(--color-text); }
 .rosterMeta { font-size: 0.75rem; color: var(--color-muted); margin-top: 0.15rem; }
 .rosterUnseen {

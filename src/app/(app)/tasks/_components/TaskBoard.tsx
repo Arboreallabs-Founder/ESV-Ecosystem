@@ -25,6 +25,18 @@ function PriorityBadge({ priority }: { priority: Task['priority'] }) {
   return <span className={`${styles.priority} ${cls}`}>{priority}</span>
 }
 
+function initials(name: string): string {
+  return name.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
+function Avatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
+  return (
+    <span className={styles.avatar}>
+      {photoUrl ? <img src={photoUrl} alt="" /> : initials(name)}
+    </span>
+  )
+}
+
 function formatDue(dateStr: string) {
   const d = new Date(dateStr)
   const now = new Date()
@@ -130,11 +142,11 @@ export default function TaskBoard({
 
   // "By Person" grouping — one collapsed row per assignee, expandable to their full task list.
   const byPerson = (() => {
-    const map = new Map<string, { assigneeId: string; name: string; role: string; tasks: Task[] }>()
+    const map = new Map<string, { assigneeId: string; name: string; photoUrl: string | null; role: string; tasks: Task[] }>()
     for (const t of filteredTasks) {
       const id = t.assignee_id ?? '__unassigned__'
       if (!map.has(id)) {
-        map.set(id, { assigneeId: id, name: t.assignee?.name ?? 'Unassigned', role: users.find((u) => u.id === id)?.role ?? '', tasks: [] })
+        map.set(id, { assigneeId: id, name: t.assignee?.name ?? 'Unassigned', photoUrl: t.assignee?.photo_url ?? null, role: users.find((u) => u.id === id)?.role ?? '', tasks: [] })
       }
       map.get(id)!.tasks.push(t)
     }
@@ -224,7 +236,12 @@ export default function TaskBoard({
           </div>
         )}
         <div className={styles.cardMeta}>
-          {task.assignee?.name && <span className={styles.metaTag}>{task.assignee.name}</span>}
+          {task.assignee?.name && (
+            <span className={styles.metaTag}>
+              <Avatar name={task.assignee.name} photoUrl={task.assignee.photo_url} />
+              {task.assignee.name}
+            </span>
+          )}
           {due ? (
             <span className={`${styles.metaTag} ${due.isOverdue ? styles.dueDateOverdue : styles.dueDate}`}>
               {due.isOverdue ? '⚠ ' : ''}{due.label}
@@ -413,6 +430,7 @@ export default function TaskBoard({
                     >
                       <path d="m9 18 6-6-6-6" />
                     </svg>
+                    <Avatar name={p.name} photoUrl={p.photoUrl} />
                     <span className={styles.personName}>{p.name}</span>
                     {p.role && <span className={styles.personRole}>{userRoleLabel(p.role)}</span>}
                     <div style={{ flex: 1 }} />

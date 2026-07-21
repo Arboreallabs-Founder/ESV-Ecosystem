@@ -39,7 +39,7 @@ export type Task = {
   pushed_date: string | null
   pushed_at: string | null
   push_count: number
-  assignee?: { name: string } | null
+  assignee?: { name: string; photo_url: string | null } | null
   created_by_user?: { name: string } | null
   assigned_by_user?: { name: string } | null
   company?: { id: string; name: string } | null
@@ -193,6 +193,9 @@ export type Investor = {
   referred_by_partner_id: string | null
   created_by: string | null
   created_at: string
+  // Auto-generated at creation from the investor's name, future-proofing for possible
+  // investor login/portal access later — not manually editable.
+  username: string | null
   // Angel-investor only (shown/edited when service_type === 'angel_investor').
   onboarding_form_completed: boolean
   onboarding_form_url: string | null
@@ -260,6 +263,10 @@ export type UserRow = {
   name: string
   franchise_partner_id: string | null
   org_id: string | null  // null only for super_admin
+  phone: string | null
+  designation: string | null
+  location: string | null
+  photo_url: string | null
 }
 
 export type ApprovedUser = {
@@ -636,6 +643,7 @@ export type DeskDeal = {
 export type DeskAssociateSummary = {
   id: string
   name: string
+  photo_url: string | null
   unseen_count: number
   seen_count: number
   starred_count: number

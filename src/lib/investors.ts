@@ -9,7 +9,7 @@ export const fetchAllInvestors = cache(async (): Promise<Investor[]> => {
     .select(`
       id, name, country, website, sectors, business_types, meta_tags, service_type,
       esv_poc_id, ticket_size_min, ticket_size_max, stage,
-      referred_by_partner_id, created_by, created_at,
+      referred_by_partner_id, created_by, created_at, username,
       onboarding_form_completed, onboarding_form_url, kyc_done,
       esv_poc:users!esv_poc_id(name),
       esv_pocs:investor_poc_users(user:users(id, name)),

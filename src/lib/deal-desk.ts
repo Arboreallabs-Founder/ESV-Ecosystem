@@ -62,14 +62,14 @@ const DEAL_SELECT = `
 export const fetchDeskAssociates = cache(async (): Promise<DeskAssociateSummary[]> => {
   const supabase = await createClient()
   const [{ data: users }, { data: deals }] = await Promise.all([
-    supabase.from('users').select('id, name, role').in('role', ['associate', 'admin']).order('name'),
+    supabase.from('users').select('id, name, role, photo_url').in('role', ['associate', 'admin']).order('name'),
     supabase.from('desk_deals').select('associate_id, seen_status, starred'),
   ])
   const roleById = new Map<string, string>()
   const summaries = new Map<string, DeskAssociateSummary>()
   for (const u of users ?? []) {
     roleById.set(u.id, u.role)
-    summaries.set(u.id, { id: u.id, name: u.name ?? 'Unknown', unseen_count: 0, seen_count: 0, starred_count: 0 })
+    summaries.set(u.id, { id: u.id, name: u.name ?? 'Unknown', photo_url: u.photo_url ?? null, unseen_count: 0, seen_count: 0, starred_count: 0 })
   }
   for (const d of deals ?? []) {
     const s = summaries.get(d.associate_id)

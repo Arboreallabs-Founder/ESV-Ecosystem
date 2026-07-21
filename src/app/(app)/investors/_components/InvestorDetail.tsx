@@ -80,6 +80,7 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
         <div className={styles.detailHeader}>
           <div>
             <div className={styles.detailTitle}>{investor.name}</div>
+            {investor.username && <div style={{ fontSize: '0.75rem', color: 'var(--color-muted)', marginBottom: '0.35rem' }}>@{investor.username}</div>}
             <span className={styles.serviceTypeBadge}
               style={{ background: typeColor + '1a', color: typeColor }}>
               {SERVICE_TYPE_LABELS[investor.service_type]}

@@ -1,5 +1,6 @@
 'use server'
 
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireRole } from '@/lib/guards'
 import { createClient } from '@/lib/supabase/server'
 import { parseInvestorsCsv } from '@/lib/investors-csv'
@@ -24,6 +25,24 @@ async function requireInternal() {
 }
 
 // ── Investors ─────────────────────────────────────────────────────────────────
+
+// Auto-generated at creation, future-proofing for possible investor login/portal access
+// later. Not user-editable, so a plain slug-plus-suffix scheme is enough.
+function slugifyUsername(name: string): string {
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'investor'
+}
+
+async function generateUniqueUsername(supabase: SupabaseClient, name: string): Promise<string> {
+  const base = slugifyUsername(name)
+  let candidate = base
+  let suffix = 0
+  for (;;) {
+    const { data } = await supabase.from('investors').select('id').eq('username', candidate).maybeSingle()
+    if (!data) return candidate
+    suffix += 1
+    candidate = `${base}-${suffix}`
+  }
+}
 
 export async function createInvestor(params: {
   name: string
@@ -71,10 +90,13 @@ export async function createInvestor(params: {
     orgId = result.orgId
   }
 
+  const username = await generateUniqueUsername(supabase, fields.name)
+
   const { data: investor, error } = await supabase
     .from('investors')
     .insert({
       name: fields.name,
+      username,
       country: fields.country || null,
       website: fields.website || null,
       sectors: fields.sectors,
@@ -282,10 +304,12 @@ export async function importInvestorsCsv(csvText: string): Promise<InvestorImpor
         }
         updated++
       } else {
+        const username = await generateUniqueUsername(supabase, row.name)
         const { error } = await supabase.from('investors').insert({
           org_id: orgId,
           created_by: userId,
           name: row.name,
+          username,
           service_type: row.service_type ?? 'vc_fund',
           country: row.country,
           website: row.website,

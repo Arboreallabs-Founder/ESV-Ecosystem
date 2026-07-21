@@ -36,7 +36,7 @@ export default function DeskRoster({
         <div className={styles.roster}>
           {associates.map((a) => (
             <Link key={a.id} href={`/deal-desk/${a.id}`} className={styles.rosterCard}>
-              <div className={styles.rosterAvatar}>{initials(a.name)}</div>
+              <div className={styles.rosterAvatar}>{a.photo_url ? <img src={a.photo_url} alt="" /> : initials(a.name)}</div>
               <div>
                 <div className={styles.rosterName}>{a.name}</div>
                 <div className={styles.rosterMeta}>
