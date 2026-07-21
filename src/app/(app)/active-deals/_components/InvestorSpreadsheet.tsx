@@ -16,11 +16,14 @@ import { ACTIVE_DEAL_INVESTOR_STATUSES, ACTIVE_DEAL_INVESTOR_STATUS_META, SERVIC
 import InvestorPickerModal from './InvestorPickerModal'
 import FeeToggleConfirmModal from './FeeToggleConfirmModal'
 import InvestorFormModal from '../../investors/_components/InvestorFormModal'
+import FilterTabs from '@/app/_components/FilterTabs'
 import styles from '../active-deals.module.css'
 
 type PickerInvestor = { id: string; name: string; service_type: string; referred_by_partner_id: string | null }
 type FieldValue = { field_id: string; value: string | null }
 type FeeColumn = { label: string; source_field_id: string | null }
+type CategoryTab = { id: string; name: string; color: string }
+const UNASSIGNED_TAB = 'unassigned'
 
 function formatINR(amount: number) {
   return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
@@ -47,6 +50,7 @@ function getEffectiveRate(fee: ActiveDealInvestorFee, dealFieldValues: FieldValu
 type Props = {
   dealId: string
   dealTitle: string
+  categories: CategoryTab[]
   isReadOnly?: boolean
   initialInvestors: ActiveDealInvestor[]
   initialDealFieldValues: FieldValue[]
@@ -58,6 +62,7 @@ type Props = {
 export default function InvestorSpreadsheet({
   dealId,
   dealTitle,
+  categories,
   isReadOnly = false,
   initialInvestors,
   initialDealFieldValues,
@@ -71,6 +76,21 @@ export default function InvestorSpreadsheet({
   const internalUsers = initialInternalUsers
   const franchisePartners = initialFranchisePartners
   const [showPicker, setShowPicker] = useState(false)
+
+  // Per-category investor tabs — only shown once the deal has 2+ categories; otherwise this
+  // behaves exactly like the old single flat list (activeTab is irrelevant when there's ≤1 tab).
+  const hasUnassigned = investors.some((inv) => !inv.category_id || !categories.some((c) => c.id === inv.category_id))
+  const tabs = [...categories.map((c) => ({ value: c.id, label: c.name, dot: c.color })), ...(hasUnassigned ? [{ value: UNASSIGNED_TAB, label: 'Unassigned' }] : [])]
+  const [activeTab, setActiveTab] = useState<string>(categories[0]?.id ?? UNASSIGNED_TAB)
+  const showTabs = tabs.length > 1
+  const visibleInvestors = useMemo(
+    () => showTabs
+      ? investors.filter((inv) => activeTab === UNASSIGNED_TAB
+          ? !inv.category_id || !categories.some((c) => c.id === inv.category_id)
+          : inv.category_id === activeTab)
+      : investors,
+    [investors, activeTab, showTabs, categories],
+  )
   const [showCreateInvestor, setShowCreateInvestor] = useState(false)
   const [showAddFeeColumn, setShowAddFeeColumn] = useState(false)
   const [newColumnLabel, setNewColumnLabel] = useState('')
@@ -85,9 +105,10 @@ export default function InvestorSpreadsheet({
   }
 
   function handleAddInvestors(investorIds: string[]) {
+    const categoryId = activeTab === UNASSIGNED_TAB ? null : activeTab
     startTransition(async () => {
       try {
-        const newInvs = await addInvestorsToDeal(dealId, investorIds)
+        const newInvs = await addInvestorsToDeal(dealId, investorIds, categoryId)
         setInvestors((prev) => [...prev, ...newInvs])
       } catch (err) { alert(String(err)) }
     })
@@ -191,12 +212,16 @@ export default function InvestorSpreadsheet({
 
   function handleAddFeeColumn() {
     const label = newColumnLabel.trim()
-    if (!label || investors.length === 0) return
+    if (!label || visibleInvestors.length === 0) return
     const rate = newColumnRate === '' ? null : Number(newColumnRate)
     startTransition(async () => {
       try {
-        const ids = await Promise.all(investors.map((inv) => upsertInvestorFee(inv.id, { label, rate, source_field_id: null })))
-        setInvestors((prev) => prev.map((inv, i) => ({ ...inv, fees: [...inv.fees, { id: ids[i]!, label, rate, source_field_id: null, is_enabled: true }] })))
+        const ids = await Promise.all(visibleInvestors.map((inv) => upsertInvestorFee(inv.id, { label, rate, source_field_id: null })))
+        const newFeeByInvestorId = new Map(visibleInvestors.map((inv, i) => [inv.id, { id: ids[i]!, label, rate, source_field_id: null, is_enabled: true }]))
+        setInvestors((prev) => prev.map((inv) => {
+          const newFee = newFeeByInvestorId.get(inv.id)
+          return newFee ? { ...inv, fees: [...inv.fees, newFee] } : inv
+        }))
         setShowAddFeeColumn(false)
         setNewColumnLabel('')
         setNewColumnRate('')
@@ -205,9 +230,10 @@ export default function InvestorSpreadsheet({
   }
 
   function handleDeleteFeeColumn(col: FeeColumn) {
-    if (!confirm(`Remove the "${col.label}" column from every investor on this deal?`)) return
-    const feeIds = investors.flatMap((inv) => inv.fees.filter((f) => f.label === col.label).map((f) => f.id))
-    setInvestors((prev) => prev.map((inv) => ({ ...inv, fees: inv.fees.filter((f) => f.label !== col.label) })))
+    if (!confirm(`Remove the "${col.label}" column from every investor in this list?`)) return
+    const feeIds = visibleInvestors.flatMap((inv) => inv.fees.filter((f) => f.label === col.label).map((f) => f.id))
+    const feeIdSet = new Set(feeIds)
+    setInvestors((prev) => prev.map((inv) => ({ ...inv, fees: inv.fees.filter((f) => !feeIdSet.has(f.id)) })))
     startTransition(async () => {
       try { await Promise.all(feeIds.map((id) => deleteInvestorFee(id))) }
       catch (err) { alert(String(err)) }
@@ -224,12 +250,12 @@ export default function InvestorSpreadsheet({
     const newLabel = draft.trim()
     setEditingColumn(null)
     if (!newLabel || newLabel === oldLabel) return
-    const affected = investors.flatMap((inv) => inv.fees.filter((f) => f.label === oldLabel).map((f) => ({ investorId: inv.id, fee: f })))
+    const affected = visibleInvestors.flatMap((inv) => inv.fees.filter((f) => f.label === oldLabel).map((f) => ({ investorId: inv.id, fee: f })))
     if (affected.length === 0) return
-    setInvestors((prev) => prev.map((inv) => ({
-      ...inv,
-      fees: inv.fees.map((f) => f.label === oldLabel ? { ...f, label: newLabel } : f),
-    })))
+    const affectedIds = new Set(affected.map((a) => a.investorId))
+    setInvestors((prev) => prev.map((inv) => affectedIds.has(inv.id)
+      ? { ...inv, fees: inv.fees.map((f) => f.label === oldLabel ? { ...f, label: newLabel } : f) }
+      : inv))
     startTransition(async () => {
       try {
         await Promise.all(affected.map(({ investorId, fee }) =>
@@ -239,30 +265,30 @@ export default function InvestorSpreadsheet({
     })
   }
 
-  // One column per distinct fee label across all investors, in first-seen order.
+  // One column per distinct fee label across the visible (tab-scoped) investors, in first-seen order.
   const feeColumns = useMemo<FeeColumn[]>(() => {
     const seen = new Map<string, FeeColumn>()
-    for (const inv of investors) {
+    for (const inv of visibleInvestors) {
       for (const fee of inv.fees) {
         if (!seen.has(fee.label)) seen.set(fee.label, { label: fee.label, source_field_id: fee.source_field_id })
       }
     }
     return [...seen.values()]
-  }, [investors])
+  }, [visibleInvestors])
 
   // Running total of commitment amounts in row order — matches the reference sheet.
-  const rows = investors.reduce<Array<{ inv: ActiveDealInvestor; cumulative: number }>>((acc, inv) => {
+  const rows = visibleInvestors.reduce<Array<{ inv: ActiveDealInvestor; cumulative: number }>>((acc, inv) => {
     const prevCumulative = acc.length > 0 ? acc[acc.length - 1].cumulative : 0
     acc.push({ inv, cumulative: prevCumulative + (inv.investment_amount ?? 0) })
     return acc
   }, [])
   const runningTotal = rows.length > 0 ? rows[rows.length - 1].cumulative : 0
 
-  const totalCommitment = investors.reduce((sum, inv) => sum + (inv.investment_amount ?? 0), 0)
-  const totalShares = investors.reduce((sum, inv) => sum + (inv.shares ?? 0), 0)
+  const totalCommitment = visibleInvestors.reduce((sum, inv) => sum + (inv.investment_amount ?? 0), 0)
+  const totalShares = visibleInvestors.reduce((sum, inv) => sum + (inv.shares ?? 0), 0)
   const feeColumnTotals = feeColumns.map((col) => ({
     label: col.label,
-    total: investors.reduce((sum, inv) => {
+    total: visibleInvestors.reduce((sum, inv) => {
       const fee = inv.fees.find((f) => f.label === col.label)
       if (!fee) return sum
       return sum + (computeFeeAmount(fee, inv.investment_amount, dealFieldValues) ?? 0)
@@ -278,20 +304,24 @@ export default function InvestorSpreadsheet({
           <h1 className={styles.dealPageTitle}>Investors</h1>
           <div className={styles.detailMeta}>
             <span>{dealTitle}</span>
-            {investors.length > 0 && <span>{investors.length} investor{investors.length === 1 ? '' : 's'}</span>}
+            {visibleInvestors.length > 0 && <span>{visibleInvestors.length} investor{visibleInvestors.length === 1 ? '' : 's'}</span>}
           </div>
         </div>
         {!isReadOnly && (
           <div className={styles.detailHeadRight}>
-            <button className={styles.ghostBtn} disabled={investors.length === 0} onClick={() => setShowAddFeeColumn(true)}>+ Fee column</button>
+            <button className={styles.ghostBtn} disabled={visibleInvestors.length === 0} onClick={() => setShowAddFeeColumn(true)}>+ Fee column</button>
             <button className={styles.primaryBtn} onClick={() => setShowPicker(true)}>+ Add investors</button>
           </div>
         )}
       </div>
 
-      {investors.length === 0 ? (
+      {showTabs && (
+        <FilterTabs tabs={tabs.map((t) => ({ ...t, count: investors.filter((inv) => (t.value === UNASSIGNED_TAB ? (!inv.category_id || !categories.some((c) => c.id === inv.category_id)) : inv.category_id === t.value)).length }))} value={activeTab} onChange={setActiveTab} />
+      )}
+
+      {visibleInvestors.length === 0 ? (
         <div className={styles.empty}>
-          No investors on this deal yet.{!isReadOnly && ' Add one to start tracking commitments.'}
+          No investors on this list yet.{!isReadOnly && ' Add one to start tracking commitments.'}
         </div>
       ) : (
         <div className={styles.sheetWrap}>
@@ -478,7 +508,7 @@ export default function InvestorSpreadsheet({
       {!isReadOnly && showPicker && (
         <InvestorPickerModal
           allInvestors={allInvestors}
-          alreadyAdded={investors.map((inv) => inv.investor?.id)}
+          alreadyAdded={visibleInvestors.map((inv) => inv.investor?.id)}
           onAdd={handleAddInvestors}
           onCreateNew={() => setShowCreateInvestor(true)}
           onClose={() => setShowPicker(false)}

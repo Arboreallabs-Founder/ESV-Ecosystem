@@ -494,6 +494,7 @@ export const ACTIVE_DEAL_INVESTOR_STATUS_META: Record<ActiveDealInvestorStatus, 
 export type ActiveDealInvestor = {
   id: string
   active_deal_id: string
+  category_id: string | null
   investor: {
     id: string
     name: string

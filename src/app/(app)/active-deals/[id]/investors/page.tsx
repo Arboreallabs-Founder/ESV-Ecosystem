@@ -23,6 +23,7 @@ export default async function ActiveDealInvestorsPage({ params }: { params: Prom
     <InvestorSpreadsheet
       dealId={deal.id}
       dealTitle={deal.title ?? 'Untitled deal'}
+      categories={deal.categories}
       isReadOnly={isReadOnly}
       initialInvestors={investors}
       initialDealFieldValues={dealFieldValues}

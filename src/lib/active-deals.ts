@@ -141,18 +141,27 @@ export const fetchActiveDeal = cache(async (id: string): Promise<ActiveDeal | nu
   return data ? shapeActiveDealRow(data as unknown as ActiveDealRow) : null
 })
 
-// Just enough to render a back-link/title — for pages (like the Investors sub-page) that
-// don't need the deal's full category/field/assignee tree that fetchActiveDeal pulls in.
-export const fetchActiveDealSummary = cache(async (id: string): Promise<{ id: string; title: string | null } | null> => {
+// Just enough to render a back-link/title (plus the deal's categories, for the Investors
+// sub-page's per-category tabs) — for pages that don't need the full field/assignee tree
+// that fetchActiveDeal pulls in.
+export const fetchActiveDealSummary = cache(async (id: string): Promise<{
+  id: string
+  title: string | null
+  categories: Array<{ id: string; name: string; color: string }>
+} | null> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('active_deals')
-    .select('id, entry:pipeline_entries(title)')
+    .select('id, entry:pipeline_entries(title), categories:active_deal_categories(category:deal_categories(id, name, color))')
     .eq('id', id)
     .maybeSingle()
   if (!data) return null
   const entry = first((data as { entry: unknown }).entry) as { title: string | null } | null
-  return { id: data.id as string, title: entry?.title ?? null }
+  const categoryRows = (data as { categories: Array<{ category: { id: string; name: string; color: string } | { id: string; name: string; color: string }[] | null } | null> }).categories ?? []
+  const categories = categoryRows
+    .map((c) => first(c?.category ?? null))
+    .filter((c): c is { id: string; name: string; color: string } => c !== null)
+  return { id: data.id as string, title: entry?.title ?? null, categories }
 })
 
 // Lightweight investor count + committed total for the deal page's summary card
