@@ -92,9 +92,9 @@ function SectionHead({ title, onEdit, action }: { title: string; onEdit?: () => 
 }
 
 export default function CompanyProfileClient({
-  company, fieldDefs, canManage, canAuthorCard, teamMembers, suggestions, dealCategories,
+  company, fieldDefs, canManage, canAuthorCard, canCreateDeal, teamMembers, suggestions, dealCategories,
 }: {
-  company: Company; fieldDefs: CompanyFieldDef[]; canManage: boolean; canAuthorCard: boolean; teamMembers: Team; suggestions: SuggestedInvestor[]
+  company: Company; fieldDefs: CompanyFieldDef[]; canManage: boolean; canAuthorCard: boolean; canCreateDeal: boolean; teamMembers: Team; suggestions: SuggestedInvestor[]
   dealCategories: DealCategory[]
 }) {
   const router = useRouter()
@@ -149,7 +149,7 @@ export default function CompanyProfileClient({
         <div className={styles.headActions}>
           <button className={styles.primaryBtn} onClick={() => setShowCallModal(true)}>Update from call</button>
           {canAuthorCard && <button className={styles.ghostBtn} onClick={handleCreateCard} disabled={cardPending}>{cardPending ? 'Creating…' : 'Create card'}</button>}
-          {canManage && <button className={styles.ghostBtn} onClick={() => setShowDealModal(true)}>Create deal</button>}
+          {canCreateDeal && <button className={styles.ghostBtn} onClick={() => setShowDealModal(true)}>Create deal</button>}
           <button className={styles.ghostBtn} onClick={() => setModal('overview')}>Edit</button>
           {canManage && <button className={styles.dangerBtn} onClick={handleDelete}>Delete</button>}
         </div>

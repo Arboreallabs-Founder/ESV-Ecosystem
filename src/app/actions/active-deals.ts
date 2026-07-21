@@ -590,7 +590,7 @@ export async function createStandaloneDeal(input: {
   field_values?: Record<string, string>
   company_id?: string | null
 }): Promise<string> {
-  const { supabase, userId, orgId } = await requireAdmin()
+  const { supabase, userId, orgId } = await requireInternal()
   if (!orgId) throw new Error('No organisation in scope.')
   const name = input.deal_name.trim()
   if (!name) throw new Error('Deal name is required.')

@@ -22,5 +22,6 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
 
   const canManage = ['founder', 'admin'].includes(user.role ?? '')
   const canAuthorCard = ['associate', 'admin'].includes(user.role ?? '')
-  return <CompanyProfileClient company={company} fieldDefs={fieldDefs} canManage={canManage} canAuthorCard={canAuthorCard} teamMembers={team} suggestions={suggestions} dealCategories={dealCategories} />
+  const canCreateDeal = ['founder', 'admin', 'associate'].includes(user.role ?? '')
+  return <CompanyProfileClient company={company} fieldDefs={fieldDefs} canManage={canManage} canAuthorCard={canAuthorCard} canCreateDeal={canCreateDeal} teamMembers={team} suggestions={suggestions} dealCategories={dealCategories} />
 }
