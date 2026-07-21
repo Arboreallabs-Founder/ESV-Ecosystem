@@ -414,9 +414,20 @@ function FundingRoundsSection({ company, onChanged }: { company: Company; onChan
       setAdding(false); onChanged()
     })
   }
+  // Last raise is derived from the most recent round here — no separate field to keep in sync.
+  const lastRound = [...company.funding_rounds]
+    .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '') || b.sort_order - a.sort_order)[0] ?? null
+
   return (
     <div className={styles.section}>
       <SectionHead title="Funding history" action={<button className={styles.smallBtn} onClick={() => setAdding((v) => !v)}>{adding ? 'Cancel' : '+ Add round'}</button>} />
+      {lastRound && (
+        <div className={styles.lastRaise}>
+          Last raise: <strong>{formatInr(lastRound.amount_inr)}</strong>
+          {lastRound.round_name && ` · ${lastRound.round_name}`}
+          {lastRound.date && ` · ${formatDate(lastRound.date)}`}
+        </div>
+      )}
       {adding && (
         <div className={styles.inlineForm}>
           <input className={styles.input} placeholder="Round (e.g. Seed)" value={form.round_name} onChange={(e) => set('round_name', e.target.value)} />

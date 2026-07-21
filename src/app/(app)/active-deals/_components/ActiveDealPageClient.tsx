@@ -426,22 +426,25 @@ function EditActiveDealModal({
   onClose: () => void
   onSaved: () => void
 }) {
-  const initialCategoryId = deal.categories[0]?.category.id ?? ''
   const [name, setName] = useState(deal.entry?.title ?? '')
   const [submitterName, setSubmitterName] = useState(deal.entry?.submitter_name ?? '')
   const [submitterEmail, setSubmitterEmail] = useState(deal.entry?.submitter_email ?? '')
   const [logoUrl, setLogoUrl] = useState(deal.logo_url ?? '')
-  const [categoryId, setCategoryId] = useState(initialCategoryId)
-  const [values, setValues] = useState<Record<string, string>>(() => {
-    const out: Record<string, string> = {}
+  const [categoryIds, setCategoryIds] = useState<string[]>(deal.categories.map((c) => c.category.id))
+  const [values, setValues] = useState<Record<string, Record<string, string>>>(() => {
+    const out: Record<string, Record<string, string>> = {}
     for (const group of deal.categories) {
-      for (const value of group.field_values) out[value.field_id] = value.value ?? ''
+      out[group.category.id] = {}
+      for (const value of group.field_values) out[group.category.id][value.field_id] = value.value ?? ''
     }
     return out
   })
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
-  const category = categories.find((c) => c.id === categoryId) ?? null
+
+  function toggleCategory(id: string, checked: boolean) {
+    setCategoryIds((prev) => checked ? [...prev, id] : prev.filter((c) => c !== id))
+  }
 
   function submit() {
     setError(null)
@@ -450,11 +453,10 @@ function EditActiveDealModal({
       try {
         await updateActiveDealDetails(deal.id, {
           deal_name: name,
-          category_id: categoryId || null,
+          selections: categoryIds.map((id) => ({ category_id: id, field_values: values[id] ?? {} })),
           submitter_name: submitterName,
           submitter_email: submitterEmail,
           logo_url: logoUrl,
-          field_values: values,
         })
         onSaved()
       } catch (err) {
@@ -495,31 +497,46 @@ function EditActiveDealModal({
             </div>
           </div>
 
-          <div className={styles.formField}>
-            <label className={styles.formLabel}>Category</label>
-            <select className={styles.formSelect} value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setValues({}) }}>
-              <option value="">Uncategorised</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-
-          {category && category.fields.length > 0 && (
-            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.85rem', marginTop: '0.25rem' }}>
-              <div className={styles.formLabel} style={{ color: category.color, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.6875rem', marginBottom: '0.6rem' }}>{category.name}</div>
-              {category.fields.map((field) => (
-                <div key={field.id} className={styles.formField}>
-                  <label className={styles.formLabel}>{field.label}{field.required && ' *'}</label>
-                  <input
-                    className={styles.formInput}
-                    value={values[field.id] ?? ''}
-                    onChange={(e) => setValues((prev) => ({ ...prev, [field.id]: e.target.value }))}
-                    inputMode={field.field_type === 'numeric' || field.field_type === 'percentage' ? 'decimal' : undefined}
-                    placeholder={field.field_type === 'url' ? 'https://' : field.field_type === 'percentage' ? '%' : field.field_type === 'numeric' ? 'Number (no commas)' : ''}
-                  />
-                </div>
-              ))}
+          {categories.length > 0 && (
+            <div className={styles.formField}>
+              <label className={styles.formLabel}>Categories <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(select all that apply)</span></label>
+              <div className={styles.categoryCheckList}>
+                {categories.map((cat) => (
+                  <label key={cat.id} className={styles.categoryCheckRow}>
+                    <input
+                      type="checkbox"
+                      checked={categoryIds.includes(cat.id)}
+                      onChange={(e) => toggleCategory(cat.id, e.target.checked)}
+                    />
+                    <span className={styles.catCheckDot} style={{ background: cat.color }} />
+                    <span>{cat.name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           )}
+
+          {categoryIds.map((catId) => {
+            const cat = categories.find((c) => c.id === catId)
+            if (!cat || cat.fields.length === 0) return null
+            return (
+              <div key={catId} className={styles.acceptFieldGroup}>
+                <div className={styles.acceptFieldGroupLabel} style={{ color: cat.color }}>{cat.name}</div>
+                {cat.fields.map((field) => (
+                  <div key={field.id} className={styles.formField}>
+                    <label className={styles.formLabel}>{field.label}{field.required && ' *'}</label>
+                    <input
+                      className={styles.formInput}
+                      value={values[catId]?.[field.id] ?? ''}
+                      onChange={(e) => setValues((prev) => ({ ...prev, [catId]: { ...prev[catId], [field.id]: e.target.value } }))}
+                      inputMode={field.field_type === 'numeric' || field.field_type === 'percentage' ? 'decimal' : undefined}
+                      placeholder={field.field_type === 'url' ? 'https://' : field.field_type === 'percentage' ? '%' : field.field_type === 'numeric' ? 'Number (no commas)' : ''}
+                    />
+                  </div>
+                ))}
+              </div>
+            )
+          })}
 
           {error && <div className={styles.errBox}>{error}</div>}
         </div>

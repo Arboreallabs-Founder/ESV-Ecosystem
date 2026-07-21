@@ -7,10 +7,9 @@ import type { DealCategory } from '@/lib/types'
 
 export type ParsedDealRow = {
   deal_name: string
-  category_id: string | null
+  categories: Array<{ category_id: string; field_values: Record<string, string> }>
   submitter_name: string | null
   submitter_email: string | null
-  field_values: Record<string, string> // field_id → value
 }
 export type DealCsvRowError = { row: number; message: string }
 export type DealCsvParseResult = { rows: ParsedDealRow[]; errors: DealCsvRowError[] }
@@ -105,10 +104,9 @@ export function parseDealsCsv(text: string, categories: DealCategory[]): DealCsv
 
     rows.push({
       deal_name,
-      category_id: category?.id ?? null,
+      categories: category ? [{ category_id: category.id, field_values }] : [],
       submitter_name: cell('submitter_name') || null,
       submitter_email: cell('submitter_email') || null,
-      field_values,
     })
   }
   return { rows, errors }

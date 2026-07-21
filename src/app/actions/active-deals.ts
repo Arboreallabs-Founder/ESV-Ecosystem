@@ -220,15 +220,19 @@ export async function acceptDeal(
   // Every accepted deal materialises into a Company Profile (create-or-link by name), unless
   // the entry is already linked. org_id comes from the parent pipeline (entries have none).
   const { data: entryRow } = await supabase.from('pipeline_entries').select('title, company_id, pipeline_id').eq('id', entryId).single()
+  let resolvedCompanyId: string | null = entryRow?.company_id ?? null
   if (entryRow && !entryRow.company_id && entryRow.title) {
     const { data: pl } = await supabase.from('pipelines').select('org_id').eq('id', entryRow.pipeline_id).single()
     if (pl?.org_id) {
       try {
         const res = await findOrCreateCompanyByName(supabase, pl.org_id as string, userId, entryRow.title as string)
-        if (res) await supabase.from('pipeline_entries').update({ company_id: res.id }).eq('id', entryId)
+        if (res) { await supabase.from('pipeline_entries').update({ company_id: res.id }).eq('id', entryId); resolvedCompanyId = res.id }
       } catch { /* non-fatal: acceptance shouldn't fail if company sync hiccups */ }
     }
   }
+
+  // Accepting always means the deal is active — percolate that into the linked company profile.
+  await syncCompanyStatusFromDealState(supabase, resolvedCompanyId, 'active')
 
   // If this entry was already accepted before (its active deal lingers after being
   // moved out of Accepted), re-accepting just moves it back — don't create a second
@@ -268,11 +272,31 @@ export async function acceptDeal(
 
 // ── Deal state (lifecycle) ──────────────────────────────────────────────────────
 
+// A deal reaching Active/Closed percolates into the linked company's own profile status —
+// Dormant/Archived don't map cleanly to a lifecycle stage, so they're left untouched. This only
+// ever sets a status forward; founders/admins can still manually override it afterward.
+async function syncCompanyStatusFromDealState(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any, companyId: string | null | undefined, state: DealState,
+) {
+  if (!companyId) return
+  if (state === 'active') await supabase.from('companies').update({ status: 'active' }).eq('id', companyId)
+  else if (state === 'closed') await supabase.from('companies').update({ status: 'portfolio' }).eq('id', companyId)
+}
+
 export async function updateDealState(activeDealId: string, state: DealState) {
   const { supabase } = await requireInternal()
   if (!DEAL_STATES.includes(state)) throw new Error('Invalid deal state.')
   const { error } = await supabase.from('active_deals').update({ deal_state: state }).eq('id', activeDealId)
   if (error) throw error
+
+  const { data: deal } = await supabase
+    .from('active_deals')
+    .select('entry:pipeline_entries(company_id)')
+    .eq('id', activeDealId)
+    .single()
+  await syncCompanyStatusFromDealState(supabase, first(deal?.entry as { company_id: string | null } | { company_id: string | null }[] | null)?.company_id, state)
+
   revalidatePath('/active-deals')
 }
 
@@ -322,11 +346,10 @@ export async function deleteActiveDeal(activeDealId: string) {
 
 export async function updateActiveDealDetails(activeDealId: string, input: {
   deal_name: string
-  category_id?: string | null
+  selections?: Array<{ category_id: string; field_values: Record<string, string> }>
   submitter_name?: string | null
   submitter_email?: string | null
   logo_url?: string | null
-  field_values?: Record<string, string>
 }) {
   const { supabase } = await requireInternal()
   const name = input.deal_name.trim()
@@ -357,10 +380,11 @@ export async function updateActiveDealDetails(activeDealId: string, input: {
     if (logoErr) throw logoErr
   }
 
-  if ('category_id' in input) {
-    const categoryId = input.category_id || null
-    const { data: fields } = categoryId
-      ? await supabase.from('deal_category_fields').select('id, field_type, label').eq('category_id', categoryId)
+  if ('selections' in input) {
+    const selections = input.selections ?? []
+    const categoryIds = selections.map((s) => s.category_id)
+    const { data: fields } = categoryIds.length > 0
+      ? await supabase.from('deal_category_fields').select('id, category_id, field_type, label').in('category_id', categoryIds)
       : { data: [] }
     const allowedFieldIds = new Set((fields ?? []).map((f: { id: string }) => f.id))
 
@@ -369,14 +393,15 @@ export async function updateActiveDealDetails(activeDealId: string, input: {
     res = await supabase.from('active_deal_categories').delete().eq('active_deal_id', activeDealId)
     if (res.error) throw res.error
 
-    if (categoryId) {
+    if (categoryIds.length > 0) {
       const { error } = await supabase
         .from('active_deal_categories')
-        .insert({ active_deal_id: activeDealId, category_id: categoryId })
+        .insert(categoryIds.map((category_id) => ({ active_deal_id: activeDealId, category_id })))
       if (error) throw error
     }
 
-    const rows = Object.entries(input.field_values ?? {})
+    const rows = selections
+      .flatMap((s) => Object.entries(s.field_values))
       .filter(([fieldId, value]) => allowedFieldIds.has(fieldId) && value.trim())
       .map(([field_id, value]) => ({ active_deal_id: activeDealId, field_id, value: value.trim() }))
     if (rows.length > 0) {
@@ -413,29 +438,6 @@ export async function updateActiveDealDetails(activeDealId: string, input: {
         if (feeErr) throw feeErr
       }
     }
-  } else {
-    for (const [fieldId, raw] of Object.entries(input.field_values ?? {})) {
-    const value = raw.trim()
-    if (value) {
-      const { data: existing } = await supabase
-        .from('active_deal_field_values')
-        .select('id')
-        .eq('active_deal_id', activeDealId)
-        .eq('field_id', fieldId)
-        .maybeSingle()
-      const { error } = existing
-        ? await supabase.from('active_deal_field_values').update({ value }).eq('id', existing.id)
-        : await supabase.from('active_deal_field_values').insert({ active_deal_id: activeDealId, field_id: fieldId, value })
-      if (error) throw error
-    } else {
-      const { error } = await supabase
-        .from('active_deal_field_values')
-        .delete()
-        .eq('active_deal_id', activeDealId)
-        .eq('field_id', fieldId)
-      if (error) throw error
-    }
-  }
   }
 
   revalidatePath('/active-deals')
@@ -537,10 +539,9 @@ async function ensureImportPipeline(
 
 type StandaloneDealInput = {
   deal_name: string
-  category_id: string | null
+  categories: Array<{ category_id: string; field_values: Record<string, string> }>
   submitter_name: string | null
   submitter_email: string | null
-  field_values: Record<string, string>
   // Set when the deal is created FROM a company profile — links directly to that company
   // instead of matching by name (avoids any name-drift ambiguity).
   company_id?: string | null
@@ -559,22 +560,29 @@ async function insertStandaloneDeal(
 
   // Link to a company: directly, if one was already chosen (created from its profile); otherwise
   // materialise/find one by name (create-or-link), so every deal has a company profile behind it.
+  let resolvedCompanyId: string | null = row.company_id ?? null
   try {
     if (row.company_id) {
       await supabase.from('pipeline_entries').update({ company_id: row.company_id }).eq('id', entryId)
     } else {
       const res = await findOrCreateCompanyByName(supabase, orgId, userId, row.deal_name)
-      if (res) await supabase.from('pipeline_entries').update({ company_id: res.id }).eq('id', entryId)
+      if (res) { await supabase.from('pipeline_entries').update({ company_id: res.id }).eq('id', entryId); resolvedCompanyId = res.id }
     }
   } catch { /* non-fatal: don't fail the deal if company sync hiccups */ }
+
+  // A freshly created standalone deal always starts active — percolate that into the company.
+  await syncCompanyStatusFromDealState(supabase, resolvedCompanyId, 'active')
 
   const { data: deal, error: dealErr } = await supabase
     .from('active_deals').insert({ pipeline_entry_id: entryId }).select('id').single()
   if (dealErr) throw dealErr
 
-  if (row.category_id) {
-    await supabase.from('active_deal_categories').insert({ active_deal_id: deal.id, category_id: row.category_id })
-    const values = Object.entries(row.field_values)
+  if (row.categories.length > 0) {
+    await supabase.from('active_deal_categories').insert(
+      row.categories.map((c) => ({ active_deal_id: deal.id, category_id: c.category_id }))
+    )
+    const values = row.categories
+      .flatMap((c) => Object.entries(c.field_values))
       .filter(([, v]) => v && v.trim() !== '')
       .map(([field_id, value]) => ({ active_deal_id: deal.id, field_id, value: value.trim() }))
     if (values.length > 0) await supabase.from('active_deal_field_values').insert(values)
@@ -584,10 +592,9 @@ async function insertStandaloneDeal(
 
 export async function createStandaloneDeal(input: {
   deal_name: string
-  category_id?: string | null
+  selections?: Array<{ category_id: string; field_values: Record<string, string> }>
   submitter_name?: string | null
   submitter_email?: string | null
-  field_values?: Record<string, string>
   company_id?: string | null
 }): Promise<string> {
   const { supabase, userId, orgId } = await requireInternal()
@@ -597,10 +604,9 @@ export async function createStandaloneDeal(input: {
   const importPipeline = await ensureImportPipeline(supabase, orgId, userId)
   const id = await insertStandaloneDeal(supabase, importPipeline, orgId, userId, {
     deal_name: name,
-    category_id: input.category_id ?? null,
+    categories: input.selections ?? [],
     submitter_name: input.submitter_name?.trim() || null,
     submitter_email: input.submitter_email?.trim() || null,
-    field_values: input.field_values ?? {},
     company_id: input.company_id ?? null,
   })
   revalidatePath('/active-deals'); revalidatePath('/companies'); revalidatePath(`/pipelines/${importPipeline.pipelineId}`)

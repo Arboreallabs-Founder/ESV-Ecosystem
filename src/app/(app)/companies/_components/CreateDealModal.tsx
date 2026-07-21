@@ -11,13 +11,14 @@ export default function CreateDealModal({ companyId, companyName, categories, on
   companyId: string; companyName: string; categories: DealCategory[]; onClose: () => void
 }) {
   const router = useRouter()
-  const [categoryId, setCategoryId] = useState('')
-  const [values, setValues] = useState<Record<string, string>>({})
+  const [categoryIds, setCategoryIds] = useState<string[]>([])
+  const [values, setValues] = useState<Record<string, Record<string, string>>>({})
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
-  const category = categories.find((c) => c.id === categoryId) ?? null
-  const setValue = (id: string, v: string) => setValues((s) => ({ ...s, [id]: v }))
+  function toggleCategory(id: string, checked: boolean) {
+    setCategoryIds((prev) => checked ? [...prev, id] : prev.filter((c) => c !== id))
+  }
 
   function submit() {
     setError(null)
@@ -25,8 +26,7 @@ export default function CreateDealModal({ companyId, companyName, categories, on
       try {
         await createStandaloneDeal({
           deal_name: companyName,
-          category_id: categoryId || null,
-          field_values: category ? values : {},
+          selections: categoryIds.map((id) => ({ category_id: id, field_values: values[id] ?? {} })),
           company_id: companyId,
         })
         onClose()
@@ -44,31 +44,46 @@ export default function CreateDealModal({ companyId, companyName, categories, on
             Adds {companyName} to Active Deals, linked back to this profile.
           </p>
 
-          <div className={styles.field}>
-            <label className={styles.fieldLabel}>Category</label>
-            <select className={styles.select} value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setValues({}) }}>
-              <option value="">Uncategorised</option>
-              {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </div>
-
-          {category && category.fields.length > 0 && (
-            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: '0.85rem', marginTop: '0.25rem' }}>
-              <div className={styles.fieldLabel} style={{ color: category.color, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '0.6875rem', marginBottom: '0.6rem' }}>{category.name}</div>
-              {category.fields.map((f) => (
-                <div key={f.id} className={styles.field}>
-                  <label className={styles.fieldLabel}>{f.label}{f.required && ' *'}</label>
-                  <input
-                    className={styles.input}
-                    value={values[f.id] ?? ''}
-                    onChange={(e) => setValue(f.id, e.target.value)}
-                    inputMode={f.field_type === 'numeric' || f.field_type === 'percentage' ? 'decimal' : undefined}
-                    placeholder={f.field_type === 'url' ? 'https://' : f.field_type === 'percentage' ? '%' : f.field_type === 'numeric' ? 'Number (no commas)' : ''}
-                  />
-                </div>
-              ))}
+          {categories.length > 0 && (
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Categories <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(select all that apply)</span></label>
+              <div className={styles.categoryCheckList}>
+                {categories.map((cat) => (
+                  <label key={cat.id} className={styles.categoryCheckRow}>
+                    <input
+                      type="checkbox"
+                      checked={categoryIds.includes(cat.id)}
+                      onChange={(e) => toggleCategory(cat.id, e.target.checked)}
+                    />
+                    <span className={styles.catCheckDot} style={{ background: cat.color }} />
+                    <span>{cat.name}</span>
+                  </label>
+                ))}
+              </div>
             </div>
           )}
+
+          {categoryIds.map((catId) => {
+            const cat = categories.find((c) => c.id === catId)
+            if (!cat || cat.fields.length === 0) return null
+            return (
+              <div key={catId} className={styles.acceptFieldGroup}>
+                <div className={styles.acceptFieldGroupLabel} style={{ color: cat.color }}>{cat.name}</div>
+                {cat.fields.map((f) => (
+                  <div key={f.id} className={styles.field}>
+                    <label className={styles.fieldLabel}>{f.label}{f.required && ' *'}</label>
+                    <input
+                      className={styles.input}
+                      value={values[catId]?.[f.id] ?? ''}
+                      onChange={(e) => setValues((prev) => ({ ...prev, [catId]: { ...prev[catId], [f.id]: e.target.value } }))}
+                      inputMode={f.field_type === 'numeric' || f.field_type === 'percentage' ? 'decimal' : undefined}
+                      placeholder={f.field_type === 'url' ? 'https://' : f.field_type === 'percentage' ? '%' : f.field_type === 'numeric' ? 'Number (no commas)' : ''}
+                    />
+                  </div>
+                ))}
+              </div>
+            )
+          })}
 
           {error && <div className={styles.errBox}>{error}</div>}
         </div>
