@@ -125,6 +125,9 @@ export type BulletinPost = {
   created_by_user?: { name: string } | null
   attendees: Array<{ user_id: string; name: string }>
   media: BulletinEventMedia[]
+  // Event-only dedicated links (replacing the old generic media list for events).
+  media_url: string | null
+  scanned_cards_url: string | null
 }
 
 // One row per past/upcoming event for the Bulletin KPI page — who actually showed up.

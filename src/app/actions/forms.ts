@@ -9,8 +9,15 @@ async function requireAdmin() {
   return { supabase, userId, orgId }
 }
 
+// Building/linking forms is also open to associates (RLS on forms/form_nodes/form_edges/
+// form_links already allows them) — only deleting a form or a link stays admin-only.
+async function requireBuilder() {
+  const { supabase, userId, orgId } = await requireRole(['founder', 'admin', 'associate'])
+  return { supabase, userId, orgId }
+}
+
 export async function createForm(title: string, description: string, pipelineId: string | null) {
-  const { supabase, userId, orgId } = await requireAdmin()
+  const { supabase, userId, orgId } = await requireBuilder()
   const { data: form, error } = await supabase
     .from('forms')
     .insert({
@@ -39,7 +46,7 @@ export async function createForm(title: string, description: string, pipelineId:
 }
 
 export async function updateFormMeta(formId: string, title: string, description: string, pipelineId: string | null) {
-  const { supabase } = await requireAdmin()
+  const { supabase } = await requireBuilder()
   const { error } = await supabase
     .from('forms')
     .update({ title: title.trim(), description: description.trim() || null, pipeline_id: pipelineId || null })
@@ -67,7 +74,7 @@ export async function saveFormGraph(
     condition_label: string | null
   }>,
 ) {
-  const { supabase } = await requireAdmin()
+  const { supabase } = await requireBuilder()
 
   // Replace all nodes, edges, and options: delete edges and nodes (CASCADE deletes options)
   await supabase.from('form_edges').delete().eq('form_id', formId)
@@ -103,7 +110,7 @@ export async function saveFormGraph(
 }
 
 export async function publishForm(formId: string, published: boolean) {
-  const { supabase } = await requireAdmin()
+  const { supabase } = await requireBuilder()
   const { error } = await supabase.from('forms').update({ published }).eq('id', formId)
   if (error) throw error
 }
@@ -150,7 +157,7 @@ export async function deleteFormLink(linkId: string) {
 }
 
 export async function linkFormToPipeline(formId: string, pipelineId: string | null) {
-  const { supabase } = await requireAdmin()
+  const { supabase } = await requireBuilder()
   const { error } = await supabase.from('forms').update({ pipeline_id: pipelineId }).eq('id', formId)
   if (error) throw error
 

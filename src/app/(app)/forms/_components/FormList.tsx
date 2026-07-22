@@ -7,7 +7,7 @@ import { createForm, deleteForm, generateFormLink, deleteFormLink } from '@/app/
 import type { Form, Pipeline, FormLinkSummary } from '@/lib/types'
 import styles from '../forms.module.css'
 
-export default function FormList({ forms: initial, pipelines, canManage }: { forms: Form[]; pipelines: Pipeline[]; canManage: boolean }) {
+export default function FormList({ forms: initial, pipelines, canBuild, canDelete }: { forms: Form[]; pipelines: Pipeline[]; canBuild: boolean; canDelete: boolean }) {
   const router = useRouter()
   const [forms, setForms] = useState(initial)
   const [showAdd, setShowAdd] = useState(false)
@@ -88,7 +88,7 @@ export default function FormList({ forms: initial, pipelines, canManage }: { for
           <div className={styles.pageTitle}>Forms</div>
           <div className={styles.pageSub}>{forms.length} form{forms.length !== 1 ? 's' : ''}</div>
         </div>
-        {canManage && (
+        {canBuild && (
           <button className={styles.addBtn} onClick={() => setShowAdd(true)}>+ New Form</button>
         )}
       </div>
@@ -113,11 +113,11 @@ export default function FormList({ forms: initial, pipelines, canManage }: { for
                 </button>
               )}
               <div className={styles.cardActions}>
-                {canManage && <Link href={`/forms/${f.id}/builder`} className={styles.editBtn}>Edit / Build</Link>}
-                {f.published && canManage && (
+                {canBuild && <Link href={`/forms/${f.id}/builder`} className={styles.editBtn}>Edit / Build</Link>}
+                {f.published && canBuild && (
                   <button className={styles.getLinkBtn} onClick={() => openLinkModal(f.id)}>+ Get Link</button>
                 )}
-                {canManage && (
+                {canDelete && (
                   <button className={styles.deleteIconBtn} onClick={() => handleDelete(f.id, f.title)} title="Delete form">✕</button>
                 )}
               </div>
@@ -152,7 +152,7 @@ export default function FormList({ forms: initial, pipelines, canManage }: { for
                         <button className={styles.copyBtn} onClick={() => navigator.clipboard.writeText(url)} title="Copy link">Copy</button>
                       </div>
                     </div>
-                    {canManage && (
+                    {canDelete && (
                       <button
                         className={styles.deleteIconBtn}
                         onClick={() => handleDeleteLink(l.id)}

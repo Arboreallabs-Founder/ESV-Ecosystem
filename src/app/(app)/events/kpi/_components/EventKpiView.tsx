@@ -3,7 +3,7 @@
 import { Fragment, useState } from 'react'
 import type { BulletinEventKpiRow } from '@/lib/types'
 import { WikiButton } from '@/app/_components/WikiPanel'
-import styles from '../../bulletin.module.css'
+import styles from '../../events.module.css'
 
 function formatEventDate(dateStr: string | null) {
   if (!dateStr) return '—'
@@ -19,7 +19,7 @@ function KpiCard({ label, value, accent }: { label: string; value: number | stri
   )
 }
 
-export default function BulletinKpiView({ events }: { events: BulletinEventKpiRow[] }) {
+export default function EventKpiView({ events }: { events: BulletinEventKpiRow[] }) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const today = new Date().toISOString().slice(0, 10)
 
@@ -43,7 +43,7 @@ export default function BulletinKpiView({ events }: { events: BulletinEventKpiRo
       <div className={styles.header}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div className={styles.pageTitle}>Bulletin KPIs</div>
+            <div className={styles.pageTitle}>Event KPIs</div>
             <WikiButton sectionKey="bulletin" />
           </div>
           <div className={styles.pageSub}>Who attended what — {totalEvents} event{totalEvents === 1 ? '' : 's'} tracked</div>
@@ -81,7 +81,7 @@ export default function BulletinKpiView({ events }: { events: BulletinEventKpiRo
                       <td className={styles.kpiName}>{e.title}</td>
                       <td>{formatEventDate(e.event_date)}</td>
                       <td>
-                        <span className={`${styles.badge} ${e.completed ? styles.badgeCompleted : isPast ? styles.badgeAnnouncement : styles.badgeEvent}`}>
+                        <span className={`${styles.badge} ${e.completed ? styles.badgeCompleted : isPast ? styles.badgeEvent : styles.badgeEvent}`}>
                           {e.completed ? 'Completed' : isPast ? 'Past' : 'Upcoming'}
                         </span>
                       </td>

@@ -8,7 +8,7 @@ export default async function FormBuilderPage({ params }: { params: Promise<{ id
   const { id } = await params
   const [user, result, pipelines] = await Promise.all([getUser(), fetchFormForBuilder(id), fetchPipelines()])
 
-  if (!['founder', 'admin'].includes(user?.role ?? '')) notFound()
+  if (!['founder', 'admin', 'associate'].includes(user?.role ?? '')) notFound()
   if (!result) notFound()
 
   return (
