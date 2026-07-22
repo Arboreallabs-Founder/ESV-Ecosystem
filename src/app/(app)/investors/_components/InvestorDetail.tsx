@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { deleteContact, getInvestorPortfolio } from '@/app/actions/investors'
 import { DEAL_STATE_META, SERVICE_TYPE_LABELS } from '@/lib/types'
 import type { Investor, InvestorContact, InvestorPortfolioItem, ServiceType } from '@/lib/types'
+import { countryFlagCode } from '@/lib/countries'
 import ContactFormModal from './ContactFormModal'
 import styles from '../investors.module.css'
 
@@ -121,9 +122,10 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
               {investor.country && (
                 <div className={styles.detailField}>
                   <div className={styles.detailFieldLabel}>Country</div>
-                  <div className={styles.detailFieldValue}>
+                  <div className={styles.detailFieldValue} style={{ display: 'flex', alignItems: 'center', gap: '0.4375rem' }}>
+                    {countryFlagCode(investor.country) && <span className={`fi fi-${countryFlagCode(investor.country)} ${styles.countryFlag}`} />}
                     {investor.country}
-                    {investor.country !== 'India' && <span className={styles.foreignBadge} style={{ marginLeft: '0.5rem' }}>Foreign</span>}
+                    {investor.country !== 'India' && <span className={styles.foreignBadge}>Foreign</span>}
                   </div>
                 </div>
               )}

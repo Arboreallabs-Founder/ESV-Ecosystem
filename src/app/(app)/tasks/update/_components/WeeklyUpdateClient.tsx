@@ -2,21 +2,9 @@
 
 import { useMemo, useState } from 'react'
 import type { Task, ActiveDeal, UserRow } from '@/lib/types'
+import { weekRange } from '@/lib/week'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import styles from '../../tasks.module.css'
-
-function getMonday(d: Date): Date {
-  const date = new Date(d)
-  const day = date.getDay()
-  const diff = day === 0 ? -6 : 1 - day
-  date.setDate(date.getDate() + diff)
-  date.setHours(0, 0, 0, 0)
-  return date
-}
-
-function formatDay(d: Date) {
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
-}
 
 type AssociateReport = {
   id: string
@@ -58,18 +46,7 @@ export default function WeeklyUpdateClient({
   const [founderFilter, setFounderFilter] = useState<string>(currentUserRole === 'founder' ? currentUserId : 'all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  const weekStart = useMemo(() => {
-    const monday = getMonday(new Date())
-    monday.setDate(monday.getDate() + weekOffset * 7)
-    return monday
-  }, [weekOffset])
-  const weekEnd = useMemo(() => {
-    const d = new Date(weekStart)
-    d.setDate(d.getDate() + 6)
-    d.setHours(23, 59, 59, 999)
-    return d
-  }, [weekStart])
-  const weekLabel = `${formatDay(weekStart)} – ${formatDay(weekEnd)}`
+  const { start: weekStart, end: weekEnd, label: weekLabel } = useMemo(() => weekRange(weekOffset), [weekOffset])
 
   const associates = useMemo(() => users.filter((u) => ['associate', 'admin'].includes(u.role)), [users])
 

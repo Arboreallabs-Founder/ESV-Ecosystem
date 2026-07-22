@@ -91,3 +91,13 @@ export const COUNTRIES: CountryEntry[] = [
 export const COUNTRY_OPTIONS = COUNTRIES
   .map((c) => ({ id: c.name, label: c.name, flag: c.code.toLowerCase() }))
   .sort((a, b) => a.id.localeCompare(b.id))
+
+const CODE_BY_NAME = new Map(COUNTRIES.map((c) => [c.name.toLowerCase(), c.code.toLowerCase()]))
+
+// Looks up the flag-icons code for a stored country name (e.g. for rendering a flag next
+// to plain investor.country text). Returns undefined for legacy free-typed values that
+// don't exactly match the canonical list — callers should just omit the flag in that case.
+export function countryFlagCode(name: string | null | undefined): string | undefined {
+  if (!name) return undefined
+  return CODE_BY_NAME.get(name.trim().toLowerCase())
+}

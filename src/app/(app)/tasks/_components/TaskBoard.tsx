@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createTask, updateTaskStatus, pushTask, deleteTask } from '@/app/actions/tasks'
 import type { Task, UserRow } from '@/lib/types'
+import { weekRange } from '@/lib/week'
 import Combobox from '@/app/_components/Combobox'
 import TaskDetailModal from './TaskDetailModal'
 import { WikiButton } from '@/app/_components/WikiPanel'
@@ -95,6 +96,10 @@ export default function TaskBoard({
   function togglePerson(id: string) {
     setExpandedPeople((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
   }
+  // "By Person" done tasks are scoped to this week so completed work doesn't pile up
+  // indefinitely — open tasks always show regardless (still on their plate).
+  const [weekOffset, setWeekOffset] = useState(0)
+  const { start: weekStart, end: weekEnd, label: weekLabel } = weekRange(weekOffset)
 
   const canCreate = ['founder', 'admin', 'associate', 'general'].includes(userRole)
   const canDelete = ['founder', 'admin'].includes(userRole)
@@ -145,6 +150,11 @@ export default function TaskBoard({
   const byPerson = (() => {
     const map = new Map<string, { assigneeId: string; name: string; photoUrl: string | null; role: string; tasks: Task[] }>()
     for (const t of filteredTasks) {
+      if (t.status === 'Done') {
+        if (!t.completed_at) continue
+        const d = new Date(t.completed_at)
+        if (d < weekStart || d > weekEnd) continue
+      }
       const id = t.assignee_id ?? '__unassigned__'
       if (!map.has(id)) {
         map.set(id, { assigneeId: id, name: t.assignee?.name ?? 'Unassigned', photoUrl: t.assignee?.photo_url ?? null, role: users.find((u) => u.id === id)?.role ?? '', tasks: [] })
@@ -225,10 +235,14 @@ export default function TaskBoard({
     const effectiveDue = task.pushed_date ?? task.due_date
     const due = effectiveDue ? formatDue(effectiveDue) : null
     const isAssignee = task.assignee_id === currentUserId
+    const isDone = task.status === 'Done'
     return (
-      <div key={task.id} className={styles.card}>
+      <div key={task.id} className={`${styles.card} ${isDone ? styles.cardDone : ''}`}>
         <div className={styles.cardTop}>
-          <div className={styles.cardTitle}>{task.title}</div>
+          <div className={`${styles.cardTitle} ${isDone ? styles.cardTitleDone : ''}`}>
+            {isDone && <span className={styles.doneCheck}>✓</span>}
+            {task.title}
+          </div>
           <PriorityBadge priority={task.priority} />
         </div>
         {task.description && (
@@ -403,20 +417,42 @@ export default function TaskBoard({
       {/* By Person view (founder/admin only) */}
       {view === 'people' && canSeeTeamView && (
         <div className={styles.peopleView}>
-          {byPerson.length > 0 && (
-            <div className={styles.peopleViewHead}>
-              <button type="button" className={styles.expandAllBtn} onClick={() => setExpandedPeople(new Set(byPerson.map((p) => p.assigneeId)))}>Expand all</button>
-              <button type="button" className={styles.expandAllBtn} onClick={() => setExpandedPeople(new Set())}>Collapse all</button>
+          <div className={styles.peopleViewHead}>
+            <div className={styles.viewToggle}>
+              <button type="button" className={styles.viewBtn} onClick={() => setWeekOffset((w) => w - 1)}>← Prev</button>
+              <span style={{ padding: '0.35rem 0.85rem', fontSize: '0.8125rem', fontWeight: 600 }}>{weekLabel}</span>
+              <button type="button" className={styles.viewBtn} onClick={() => setWeekOffset((w) => w + 1)} disabled={weekOffset >= 0}>Next →</button>
             </div>
-          )}
+            {weekOffset !== 0 && (
+              <button
+                type="button"
+                className={styles.viewBtn}
+                onClick={() => setWeekOffset(0)}
+                style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)' }}
+              >
+                This week
+              </button>
+            )}
+            <div style={{ flex: 1 }} />
+            {byPerson.length > 0 && (
+              <>
+                <button type="button" className={styles.expandAllBtn} onClick={() => setExpandedPeople(new Set(byPerson.map((p) => p.assigneeId)))}>Expand all</button>
+                <button type="button" className={styles.expandAllBtn} onClick={() => setExpandedPeople(new Set())}>Collapse all</button>
+              </>
+            )}
+          </div>
           {byPerson.length === 0 ? (
-            <div className={styles.emptyCol} style={{ padding: '3rem' }}>{filtering ? 'No tasks match your filters.' : 'No tasks yet.'}</div>
+            <div className={styles.emptyCol} style={{ padding: '3rem' }}>
+              {filtering ? 'No tasks match your filters.' : 'Nothing open or completed this week.'}
+            </div>
           ) : (
             byPerson.map((p) => {
               const open = expandedPeople.has(p.assigneeId)
-              const openCount = p.tasks.filter((t) => t.status !== 'Done').length
+              const openTasks = p.tasks.filter((t) => t.status !== 'Done')
+              const doneTasks = p.tasks.filter((t) => t.status === 'Done')
+              const openCount = openTasks.length
               const overdueCount = p.tasks.filter(taskOverdue).length
-              const doneCount = p.tasks.length - openCount
+              const doneCount = doneTasks.length
               return (
                 <div key={p.assigneeId} className={styles.personGroup}>
                   <button
@@ -442,8 +478,20 @@ export default function TaskBoard({
                     </span>
                   </button>
                   {open && (
-                    <div className={styles.personBody}>
-                      {p.tasks.map(renderCard)}
+                    <div className={styles.personBodyWrap}>
+                      {openTasks.length > 0 && (
+                        <div className={styles.personBody}>
+                          {openTasks.map(renderCard)}
+                        </div>
+                      )}
+                      {doneTasks.length > 0 && (
+                        <>
+                          <div className={styles.doneDivider}>Completed this week</div>
+                          <div className={styles.personBody}>
+                            {doneTasks.map(renderCard)}
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
                 </div>
