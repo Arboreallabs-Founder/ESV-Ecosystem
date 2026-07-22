@@ -57,6 +57,8 @@ export type CompanyPatch = Partial<{
   min_ticket_inr: number | null
   total_raised_inr: number | null
   use_of_funds: string | null
+  total_shares: number | null
+  nominal_value_per_share: number | null
   founders: CompanyFounder[]
   team: CompanyTeamMember[]
 }>

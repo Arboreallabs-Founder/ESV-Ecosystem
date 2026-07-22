@@ -44,6 +44,10 @@ export const RAISE_SPECS: Spec[] = [
   { key: 'min_ticket_inr', label: 'Min ticket', type: 'number' }, { key: 'total_raised_inr', label: 'Total raised to date', type: 'number' },
   { key: 'use_of_funds', label: 'Use of funds', type: 'textarea' },
 ]
+export const CAP_TABLE_SPECS: Spec[] = [
+  { key: 'total_shares', label: 'Total number of shares', type: 'number' },
+  { key: 'nominal_value_per_share', label: 'Nominal value (per share)', type: 'number' },
+]
 export const PRODUCT_SPECS: Spec[] = [
   { key: 'product_description', label: 'Product', type: 'textarea' }, { key: 'usp', label: 'USP', type: 'textarea' },
   { key: 'tech_stack', label: 'Tech stack' }, { key: 'product_links', label: 'Product links', type: 'tags' },

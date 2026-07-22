@@ -794,6 +794,9 @@ export type Company = {
   min_ticket_inr: number | null
   total_raised_inr: number | null
   use_of_funds: string | null
+  // Cap table share structure
+  total_shares: number | null
+  nominal_value_per_share: number | null
   // People
   founders: CompanyFounder[]
   team: CompanyTeamMember[]

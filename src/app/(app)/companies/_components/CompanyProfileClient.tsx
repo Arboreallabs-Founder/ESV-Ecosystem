@@ -24,11 +24,20 @@ import type {
 import Spinner from '@/app/_components/Spinner'
 import CreateDealModal from './CreateDealModal'
 import CallUpdateModal from './CallUpdateModal'
-import { SpecField, OVERVIEW_SPECS, TRACTION_SPECS, RAISE_SPECS, PRODUCT_SPECS, initValue, coerce, type Spec } from './field-specs'
+import DonutChart from './DonutChart'
+import { SpecField, OVERVIEW_SPECS, TRACTION_SPECS, RAISE_SPECS, PRODUCT_SPECS, CAP_TABLE_SPECS, initValue, coerce, type Spec } from './field-specs'
 import { formatInr, formatDate, initials, locationLabel } from './format'
 import styles from '../companies.module.css'
 
 type Team = Array<{ id: string; name: string }>
+
+const HOLDER_TYPE_COLORS: Record<string, string> = {
+  founder: '#745FFD', investor: '#16a34a', esop: '#d97706', other: '#A39B95',
+}
+const FUNDING_ROUND_PALETTE = [
+  '#745FFD', '#16a34a', '#2563eb', '#d97706', '#dc2626',
+  '#7c3aed', '#0891b2', '#be185d', '#65a30d', '#ea580c',
+]
 
 // ── Generic scalar-fields edit modal ──────────────────────────────────────────
 function EditFieldsModal({
@@ -100,7 +109,7 @@ export default function CompanyProfileClient({
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [cardPending, startCard] = useTransition()
-  const [modal, setModal] = useState<null | 'overview' | 'traction' | 'raise' | 'product' | 'founders' | 'team'>(null)
+  const [modal, setModal] = useState<null | 'overview' | 'traction' | 'raise' | 'product' | 'founders' | 'team' | 'captable'>(null)
   const [showDealModal, setShowDealModal] = useState(false)
   const [showCallModal, setShowCallModal] = useState(false)
   const refresh = () => startTransition(() => router.refresh())
@@ -122,6 +131,7 @@ export default function CompanyProfileClient({
     traction: { title: 'Traction & metrics', specs: TRACTION_SPECS },
     raise: { title: 'Current raise', specs: RAISE_SPECS },
     product: { title: 'Product', specs: PRODUCT_SPECS },
+    captable: { title: 'Cap Table Settings', specs: CAP_TABLE_SPECS },
   }
 
   return (
@@ -248,7 +258,7 @@ export default function CompanyProfileClient({
       <FundingRoundsSection company={company} onChanged={refresh} />
 
       {/* Cap table */}
-      <CapTableSection company={company} onChanged={refresh} />
+      <CapTableSection company={company} onChanged={refresh} onEditSettings={() => setModal('captable')} />
 
       {/* Documents */}
       <DocumentsSection company={company} onChanged={refresh} />
@@ -399,6 +409,7 @@ function PeopleModal({ title, kind, company, onClose, onSaved }: {
 function FundingRoundsSection({ company, onChanged }: { company: Company; onChanged: () => void }) {
   const [pending, startTransition] = useTransition()
   const [adding, setAdding] = useState(false)
+  const [view, setView] = useState<'table' | 'chart'>('table')
   const [form, setForm] = useState({ round_name: '', date: '', amount_inr: '', valuation_inr: '', instrument: '', lead_investor: '', investors: '' })
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
   function submit() {
@@ -420,7 +431,18 @@ function FundingRoundsSection({ company, onChanged }: { company: Company; onChan
 
   return (
     <div className={styles.section}>
-      <SectionHead title="Funding history" action={<button className={styles.smallBtn} onClick={() => setAdding((v) => !v)}>{adding ? 'Cancel' : '+ Add round'}</button>} />
+      <SectionHead
+        title="Funding history"
+        action={
+          <div className={styles.sectionActions}>
+            <div className={styles.viewToggle}>
+              <button className={`${styles.viewBtn} ${view === 'table' ? styles.viewBtnActive : ''}`} onClick={() => setView('table')}>Table</button>
+              <button className={`${styles.viewBtn} ${view === 'chart' ? styles.viewBtnActive : ''}`} onClick={() => setView('chart')}>Chart</button>
+            </div>
+            <button className={styles.smallBtn} onClick={() => setAdding((v) => !v)}>{adding ? 'Cancel' : '+ Add round'}</button>
+          </div>
+        }
+      />
       {lastRound && (
         <div className={styles.lastRaise}>
           Last raise: <strong>{formatInr(lastRound.amount_inr)}</strong>
@@ -440,7 +462,18 @@ function FundingRoundsSection({ company, onChanged }: { company: Company; onChan
           <button className={styles.primaryBtn} onClick={submit} disabled={pending}>{pending ? 'Adding…' : 'Add'}</button>
         </div>
       )}
-      {company.funding_rounds.length === 0 && !adding ? <div className={styles.muted}>No rounds recorded.</div> : (
+      {company.funding_rounds.length === 0 && !adding ? <div className={styles.muted}>No rounds recorded.</div> : view === 'chart' ? (
+        <DonutChart
+          segments={company.funding_rounds.map((r, i) => ({
+            label: r.round_name ?? `Round ${i + 1}`,
+            value: r.amount_inr ?? 0,
+            color: FUNDING_ROUND_PALETTE[i % FUNDING_ROUND_PALETTE.length],
+            valueLabel: formatInr(r.amount_inr),
+          }))}
+          centerLabel="Total Raised"
+          centerValue={formatInr(company.funding_rounds.reduce((sum, r) => sum + (r.amount_inr ?? 0), 0))}
+        />
+      ) : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>
             <thead><tr><th>Round</th><th>Date</th><th>Amount</th><th>Valuation</th><th>Lead</th><th></th></tr></thead>
@@ -460,46 +493,91 @@ function FundingRoundsSection({ company, onChanged }: { company: Company; onChan
 }
 
 // ── Cap table ─────────────────────────────────────────────────────────────────
-function CapTableSection({ company, onChanged }: { company: Company; onChanged: () => void }) {
+function CapTableSection({ company, onChanged, onEditSettings }: { company: Company; onChanged: () => void; onEditSettings: () => void }) {
   const [pending, startTransition] = useTransition()
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ holder_name: '', holder_type: 'investor', pct: '', notes: '' })
+  const [view, setView] = useState<'table' | 'chart'>('table')
+  const [form, setForm] = useState({ holder_name: '', holder_type: 'investor', pct: '', shares: '', notes: '' })
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
   function submit() {
     if (!form.holder_name.trim()) return
     startTransition(async () => {
       await saveCapTableEntry(company.id, {
         holder_name: form.holder_name.trim(), holder_type: form.holder_type as 'founder' | 'investor' | 'esop' | 'other',
-        pct: form.pct ? Number(form.pct) : null, notes: form.notes.trim() || null, sort_order: company.cap_table.length,
+        pct: form.pct ? Number(form.pct) : null, shares: form.shares ? Number(form.shares) : null,
+        notes: form.notes.trim() || null, sort_order: company.cap_table.length,
       })
-      setForm({ holder_name: '', holder_type: 'investor', pct: '', notes: '' }); setAdding(false); onChanged()
+      setForm({ holder_name: '', holder_type: 'investor', pct: '', shares: '', notes: '' }); setAdding(false); onChanged()
     })
   }
+  // Shares are optional — when a holder has shares and the company's total is set, their %
+  // is calculated from that instead of relying on a manually typed-in number.
+  function effectivePct(r: Company['cap_table'][number]): number | null {
+    if (r.shares != null && company.total_shares) return (r.shares / company.total_shares) * 100
+    return r.pct
+  }
+  const totalPct = company.cap_table.reduce((sum, r) => sum + (effectivePct(r) ?? 0), 0)
   return (
     <div className={styles.section}>
-      <SectionHead title="Cap table" action={<button className={styles.smallBtn} onClick={() => setAdding((v) => !v)}>{adding ? 'Cancel' : '+ Add holder'}</button>} />
+      <SectionHead
+        title="Cap table"
+        onEdit={onEditSettings}
+        action={
+          <div className={styles.sectionActions}>
+            <div className={styles.viewToggle}>
+              <button className={`${styles.viewBtn} ${view === 'table' ? styles.viewBtnActive : ''}`} onClick={() => setView('table')}>Table</button>
+              <button className={`${styles.viewBtn} ${view === 'chart' ? styles.viewBtnActive : ''}`} onClick={() => setView('chart')}>Chart</button>
+            </div>
+            <button className={styles.smallBtn} onClick={() => setAdding((v) => !v)}>{adding ? 'Cancel' : '+ Add holder'}</button>
+          </div>
+        }
+      />
+      <div className={styles.statGrid} style={{ marginBottom: '1rem' }}>
+        <Stat label="Total shares" value={company.total_shares != null ? company.total_shares.toLocaleString('en-IN') : '—'} />
+        <Stat label="Nominal value / share" value={formatInr(company.nominal_value_per_share)} />
+      </div>
       {adding && (
         <div className={styles.inlineForm}>
           <input className={styles.input} placeholder="Holder name" value={form.holder_name} onChange={(e) => set('holder_name', e.target.value)} />
           <select className={styles.select} value={form.holder_type} onChange={(e) => set('holder_type', e.target.value)}>
             <option value="founder">Founder</option><option value="investor">Investor</option><option value="esop">ESOP</option><option value="other">Other</option>
           </select>
-          <input className={styles.input} placeholder="%" inputMode="numeric" value={form.pct} onChange={(e) => set('pct', e.target.value)} />
+          <input className={styles.input} placeholder="Shares (optional)" inputMode="numeric" value={form.shares} onChange={(e) => set('shares', e.target.value)} />
+          <input className={styles.input} placeholder="% (or leave blank if shares set)" inputMode="numeric" value={form.pct} onChange={(e) => set('pct', e.target.value)} />
           <input className={styles.input} placeholder="Notes" value={form.notes} onChange={(e) => set('notes', e.target.value)} />
           <button className={styles.primaryBtn} onClick={submit} disabled={pending}>{pending ? 'Adding…' : 'Add'}</button>
         </div>
       )}
-      {company.cap_table.length === 0 && !adding ? <div className={styles.muted}>No cap table recorded.</div> : (
+      {company.cap_table.length === 0 && !adding ? <div className={styles.muted}>No cap table recorded.</div> : view === 'chart' ? (
+        <DonutChart
+          segments={company.cap_table.map((r) => {
+            const pct = effectivePct(r) ?? 0
+            return {
+              label: r.holder_name,
+              value: pct,
+              color: HOLDER_TYPE_COLORS[r.holder_type ?? 'other'] ?? HOLDER_TYPE_COLORS.other,
+              valueLabel: `${pct.toFixed(1)}%`,
+            }
+          })}
+          centerLabel="Cap Table"
+          centerValue={`${totalPct.toFixed(1)}%`}
+        />
+      ) : (
         <div className={styles.tableWrap}>
           <table className={styles.table}>
-            <thead><tr><th>Holder</th><th>Type</th><th>%</th><th>Notes</th><th></th></tr></thead>
+            <thead><tr><th>Holder</th><th>Type</th><th>Shares</th><th>%</th><th>Notes</th><th></th></tr></thead>
             <tbody>
-              {company.cap_table.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.holder_name}</td><td>{r.holder_type ?? '—'}</td><td>{r.pct != null ? `${r.pct}%` : '—'}</td><td>{r.notes ?? '—'}</td>
-                  <td><button className={styles.rowRemove} onClick={() => startTransition(async () => { await deleteCapTableEntry(r.id, company.id); onChanged() })}>×</button></td>
-                </tr>
-              ))}
+              {company.cap_table.map((r) => {
+                const pct = effectivePct(r)
+                const isCalculated = r.shares != null && !!company.total_shares
+                return (
+                  <tr key={r.id}>
+                    <td>{r.holder_name}</td><td>{r.holder_type ?? '—'}</td><td>{r.shares != null ? r.shares.toLocaleString('en-IN') : '—'}</td>
+                    <td>{pct != null ? `${pct.toFixed(1)}%${isCalculated ? ' (calc)' : ''}` : '—'}</td><td>{r.notes ?? '—'}</td>
+                    <td><button className={styles.rowRemove} onClick={() => startTransition(async () => { await deleteCapTableEntry(r.id, company.id); onChanged() })}>×</button></td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
