@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   createEvent, updateEvent, deleteEvent, toggleEventPin, toggleEventCompleted,
-  toggleEventAttendance, addEventMediaLink, deleteEventMediaLink,
+  toggleEventAttendance, addEventAttendee, removeEventAttendee, addEventMediaLink, deleteEventMediaLink,
   type EventInput,
 } from '@/app/actions/events'
 import type { BulletinPost } from '@/lib/types'
@@ -24,14 +24,57 @@ function hostnameOf(url: string) {
   try { return new URL(url).hostname.replace('www.', '') } catch { return url }
 }
 
+function AttendeeAdd({ options, onAdd }: { options: Array<{ id: string; name: string }>; onAdd: (userId: string) => void }) {
+  const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const q = query.trim().toLowerCase()
+  const filtered = (q ? options.filter((u) => u.name.toLowerCase().includes(q)) : options).slice(0, 8)
+
+  function select(u: { id: string; name: string }) {
+    onAdd(u.id)
+    setQuery('')
+    setOpen(false)
+  }
+
+  return (
+    <div className={styles.attendeeAddWrap}>
+      <input
+        ref={inputRef}
+        type="text"
+        className={styles.attendeeAddInput}
+        placeholder="+ Add attendee…"
+        value={query}
+        onChange={(e) => { setQuery(e.target.value); setOpen(true) }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+      />
+      {open && (
+        <div className={styles.attendeeAddDropdown} onMouseDown={(e) => e.preventDefault()}>
+          {filtered.length === 0 ? (
+            <div className={styles.attendeeAddEmpty}>No matches</div>
+          ) : (
+            filtered.map((u) => (
+              <button key={u.id} type="button" className={styles.attendeeAddItem} onClick={() => select(u)}>{u.name}</button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function EventCard({
-  event, past, isAdmin, currentUserId,
-  onPin, onEdit, onDelete, onToggleComplete, onToggleGoing, onAddMedia, onDeleteMedia,
+  event, past, isAdmin, currentUserId, internalUsers,
+  onPin, onEdit, onDelete, onToggleComplete, onToggleGoing, onAddAttendee, onRemoveAttendee, onAddMedia, onDeleteMedia,
 }: {
   event: BulletinPost; past: boolean; isAdmin: boolean; currentUserId: string
+  internalUsers: Array<{ id: string; name: string }>
   onPin: () => void; onEdit: () => void; onDelete: () => void
   onToggleComplete: () => void
   onToggleGoing: () => void
+  onAddAttendee: (userId: string) => void
+  onRemoveAttendee: (userId: string) => void
   onAddMedia: (label: string, url: string) => void
   onDeleteMedia: (id: string) => void
 }) {
@@ -89,9 +132,25 @@ function EventCard({
         {event.attendees.length > 0 && (
           <div className={styles.attendeeChips}>
             {event.attendees.map((a) => (
-              <span key={a.user_id} className={styles.attendeeChip}>{a.user_id === currentUserId ? 'You' : a.name}</span>
+              <span key={a.user_id} className={styles.attendeeChip}>
+                {a.user_id === currentUserId ? 'You' : a.name}
+                {isAdmin && a.user_id !== currentUserId && (
+                  <button
+                    type="button"
+                    className={styles.attendeeChipRemove}
+                    onMouseDown={(e) => { e.preventDefault(); onRemoveAttendee(a.user_id) }}
+                    aria-label={`Remove ${a.name}`}
+                  >×</button>
+                )}
+              </span>
             ))}
           </div>
+        )}
+        {isAdmin && (
+          <AttendeeAdd
+            options={internalUsers.filter((u) => !event.attendees.some((a) => a.user_id === u.id))}
+            onAdd={onAddAttendee}
+          />
         )}
       </div>
 
@@ -149,9 +208,10 @@ function EventCard({
 }
 
 export default function EventsView({
-  events: initialEvents, isAdmin, currentUserId, mode,
+  events: initialEvents, isAdmin, currentUserId, mode, internalUsers,
 }: {
   events: BulletinPost[]; isAdmin: boolean; currentUserId: string; mode: 'upcoming' | 'past'
+  internalUsers: Array<{ id: string; name: string }>
 }) {
   const router = useRouter()
   const [events, setEvents] = useState(initialEvents)
@@ -205,14 +265,28 @@ export default function EventsView({
     mutateEvent(event.id, (e) => ({ ...e, media: e.media.filter((m) => m.id !== mediaId) }))
     startTransition(async () => { await deleteEventMediaLink(mediaId) })
   }
+  function handleAddAttendee(event: BulletinPost, userId: string) {
+    startTransition(async () => {
+      try {
+        const attendee = await addEventAttendee(event.id, userId)
+        mutateEvent(event.id, (e) => ({ ...e, attendees: [...e.attendees, attendee] }))
+      } catch (err) { alert(String(err)) }
+    })
+  }
+  function handleRemoveAttendee(event: BulletinPost, userId: string) {
+    mutateEvent(event.id, (e) => ({ ...e, attendees: e.attendees.filter((a) => a.user_id !== userId) }))
+    startTransition(async () => { await removeEventAttendee(event.id, userId) })
+  }
 
   const cardProps = (event: BulletinPost) => ({
-    event, past, isAdmin, currentUserId,
+    event, past, isAdmin, currentUserId, internalUsers,
     onPin: () => handlePin(event),
     onEdit: () => setEditing(event),
     onDelete: () => handleDelete(event.id),
     onToggleComplete: () => handleToggleComplete(event),
     onToggleGoing: () => handleToggleGoing(event),
+    onAddAttendee: (userId: string) => handleAddAttendee(event, userId),
+    onRemoveAttendee: (userId: string) => handleRemoveAttendee(event, userId),
     onAddMedia: (label: string, url: string) => handleAddMedia(event, label, url),
     onDeleteMedia: (mediaId: string) => handleDeleteMedia(event, mediaId),
   })
@@ -227,7 +301,7 @@ export default function EventsView({
           </div>
           <div className={styles.pageSub}>{past ? 'Events that have already happened.' : 'What\'s coming up next.'}</div>
         </div>
-        {isAdmin && !past && (
+        {isAdmin && (
           <button className={styles.primaryBtn} onClick={() => setEditing('new')}>+ New Event</button>
         )}
       </div>

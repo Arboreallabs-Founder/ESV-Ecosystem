@@ -121,6 +121,30 @@ export async function toggleEventAttendance(postId: string, going: boolean): Pro
   revalidateEvents()
 }
 
+// Admin-only: log attendance on someone else's behalf (backfilling a past event, or
+// marking who showed up when they didn't RSVP themselves through the app).
+export async function addEventAttendee(postId: string, userId: string): Promise<{ user_id: string; name: string }> {
+  const { supabase, orgId } = await requireAdmin()
+  const { error } = await supabase
+    .from('bulletin_event_attendees')
+    .upsert({ post_id: postId, org_id: orgId, user_id: userId }, { onConflict: 'post_id,user_id' })
+  if (error) throw error
+  const { data: userRow } = await supabase.from('users').select('name').eq('id', userId).single()
+  revalidateEvents()
+  return { user_id: userId, name: userRow?.name ?? 'Unknown' }
+}
+
+export async function removeEventAttendee(postId: string, userId: string): Promise<void> {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase
+    .from('bulletin_event_attendees')
+    .delete()
+    .eq('post_id', postId)
+    .eq('user_id', userId)
+  if (error) throw error
+  revalidateEvents()
+}
+
 // ── Supporting media links (freeform, admin-managed — kept alongside the two dedicated
 // Google/scanned-cards fields for anything else worth attaching) ───────────────────────
 

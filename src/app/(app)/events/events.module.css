@@ -78,6 +78,9 @@
 
 .attendeeChips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.5rem; }
 .attendeeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
   font-size: 0.6875rem;
   font-weight: 600;
   color: var(--color-text);
@@ -86,6 +89,59 @@
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
 }
+.attendeeChipRemove {
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0;
+}
+.attendeeChipRemove:hover { color: var(--color-destructive); }
+
+/* Admin: add someone else as an attendee */
+.attendeeAddWrap { position: relative; margin-top: 0.5rem; max-width: 220px; }
+.attendeeAddInput {
+  width: 100%;
+  padding: 0.3rem 0.55rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-raised);
+  color: var(--color-text);
+  font-size: 0.75rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.attendeeAddInput:focus { outline: none; border-color: var(--color-primary); }
+.attendeeAddDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+  z-index: 50;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.attendeeAddItem {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.65rem;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.attendeeAddItem:hover { background: var(--color-hover, rgba(116,95,253,0.07)); }
+.attendeeAddEmpty { padding: 0.4rem 0.65rem; font-size: 0.75rem; color: var(--color-muted); }
 
 /* ── Dedicated event links (Google media link + scanned-cards Drive link) ──────── */
 .linksSection { margin-top: 0.65rem; padding-top: 0.65rem; border-top: 1px dashed var(--color-border); display: flex; flex-direction: column; gap: 0.3rem; }
