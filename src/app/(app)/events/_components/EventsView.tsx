@@ -65,10 +65,10 @@ function AttendeeAdd({ options, onAdd }: { options: Array<{ id: string; name: st
 }
 
 function EventCard({
-  event, past, isAdmin, currentUserId, internalUsers,
+  event, past, canEdit, canManage, currentUserId, internalUsers,
   onPin, onEdit, onDelete, onToggleComplete, onToggleGoing, onAddAttendee, onRemoveAttendee, onAddMedia, onDeleteMedia,
 }: {
-  event: BulletinPost; past: boolean; isAdmin: boolean; currentUserId: string
+  event: BulletinPost; past: boolean; canEdit: boolean; canManage: boolean; currentUserId: string
   internalUsers: Array<{ id: string; name: string }>
   onPin: () => void; onEdit: () => void; onDelete: () => void
   onToggleComplete: () => void
@@ -105,16 +105,20 @@ function EventCard({
             </div>
           )}
         </div>
-        {isAdmin && (
+        {(canEdit || canManage) && (
           <div className={styles.cardActions}>
-            <button className={`${styles.iconBtn} ${event.completed ? styles.iconBtnActive : ''}`} onClick={onToggleComplete} title={event.completed ? 'Mark not completed' : 'Mark completed'}>
-              {event.completed ? '✓ Completed' : 'Mark complete'}
-            </button>
-            <button className={`${styles.iconBtn} ${event.pinned ? styles.iconBtnActive : ''}`} onClick={onPin} title={event.pinned ? 'Unpin' : 'Pin'}>
-              {event.pinned ? 'Unpin' : 'Pin'}
-            </button>
-            <button className={styles.iconBtn} onClick={onEdit} title="Edit">Edit</button>
-            <button className={styles.iconBtn} onClick={onDelete} title="Delete">Delete</button>
+            {canManage && (
+              <button className={`${styles.iconBtn} ${event.completed ? styles.iconBtnActive : ''}`} onClick={onToggleComplete} title={event.completed ? 'Mark not completed' : 'Mark completed'}>
+                {event.completed ? '✓ Completed' : 'Mark complete'}
+              </button>
+            )}
+            {canManage && (
+              <button className={`${styles.iconBtn} ${event.pinned ? styles.iconBtnActive : ''}`} onClick={onPin} title={event.pinned ? 'Unpin' : 'Pin'}>
+                {event.pinned ? 'Unpin' : 'Pin'}
+              </button>
+            )}
+            {canEdit && <button className={styles.iconBtn} onClick={onEdit} title="Edit">Edit</button>}
+            {canManage && <button className={styles.iconBtn} onClick={onDelete} title="Delete">Delete</button>}
           </div>
         )}
       </div>
@@ -134,7 +138,7 @@ function EventCard({
             {event.attendees.map((a) => (
               <span key={a.user_id} className={styles.attendeeChip}>
                 {a.user_id === currentUserId ? 'You' : a.name}
-                {isAdmin && a.user_id !== currentUserId && (
+                {canManage && a.user_id !== currentUserId && (
                   <button
                     type="button"
                     className={styles.attendeeChipRemove}
@@ -146,7 +150,7 @@ function EventCard({
             ))}
           </div>
         )}
-        {isAdmin && (
+        {canManage && (
           <AttendeeAdd
             options={internalUsers.filter((u) => !event.attendees.some((a) => a.user_id === u.id))}
             onAdd={onAddAttendee}
@@ -171,11 +175,11 @@ function EventCard({
         </div>
       )}
 
-      {(event.media.length > 0 || isAdmin) && (
+      {(event.media.length > 0 || canManage) && (
         <div className={styles.mediaSection}>
           <div className={styles.mediaHead}>
             <span className={styles.mediaLabel}>Other links</span>
-            {isAdmin && !showAddLink && (
+            {canManage && !showAddLink && (
               <button className={styles.mediaAddBtn} onClick={() => setShowAddLink(true)}>+ Add link</button>
             )}
           </div>
@@ -186,12 +190,12 @@ function EventCard({
                   <a href={m.url} target="_blank" rel="noopener noreferrer" className={styles.mediaLink}>
                     {m.label || hostnameOf(m.url)} ↗
                   </a>
-                  {isAdmin && <button className={styles.mediaRemove} onClick={() => onDeleteMedia(m.id)} title="Remove">×</button>}
+                  {canManage && <button className={styles.mediaRemove} onClick={() => onDeleteMedia(m.id)} title="Remove">×</button>}
                 </div>
               ))}
             </div>
           )}
-          {isAdmin && showAddLink && (
+          {canManage && showAddLink && (
             <div className={styles.mediaAddRow}>
               <input className={styles.mediaAddInput} placeholder="Label (optional)" value={linkLabel} onChange={(e) => setLinkLabel(e.target.value)} />
               <input className={styles.mediaAddInput} placeholder="https://…" value={linkUrl} onChange={(e) => setLinkUrl(e.target.value)} autoFocus />
@@ -208,9 +212,9 @@ function EventCard({
 }
 
 export default function EventsView({
-  events: initialEvents, isAdmin, currentUserId, mode, internalUsers,
+  events: initialEvents, canEdit, canManage, currentUserId, mode, internalUsers,
 }: {
-  events: BulletinPost[]; isAdmin: boolean; currentUserId: string; mode: 'upcoming' | 'past'
+  events: BulletinPost[]; canEdit: boolean; canManage: boolean; currentUserId: string; mode: 'upcoming' | 'past'
   internalUsers: Array<{ id: string; name: string }>
 }) {
   const router = useRouter()
@@ -279,7 +283,7 @@ export default function EventsView({
   }
 
   const cardProps = (event: BulletinPost) => ({
-    event, past, isAdmin, currentUserId, internalUsers,
+    event, past, canEdit, canManage, currentUserId, internalUsers,
     onPin: () => handlePin(event),
     onEdit: () => setEditing(event),
     onDelete: () => handleDelete(event.id),
@@ -301,7 +305,7 @@ export default function EventsView({
           </div>
           <div className={styles.pageSub}>{past ? 'Events that have already happened.' : 'What\'s coming up next.'}</div>
         </div>
-        {isAdmin && (
+        {canEdit && (
           <button className={styles.primaryBtn} onClick={() => setEditing('new')}>+ New Event</button>
         )}
       </div>

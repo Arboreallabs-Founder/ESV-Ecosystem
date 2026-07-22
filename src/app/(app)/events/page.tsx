@@ -9,11 +9,12 @@ export default async function UpcomingEventsPage() {
   if (!user) redirect('/login')
   if (!['founder', 'admin', 'associate', 'general'].includes(user.role ?? '')) redirect('/dashboard')
 
-  const isAdmin = ['founder', 'admin'].includes(user.role ?? '')
+  const canManage = ['founder', 'admin'].includes(user.role ?? '')
+  const canEdit = canManage || user.role === 'general'
   const supabase = await createClient()
   const [events, { data: internalUsers }] = await Promise.all([
     fetchEvents(),
-    isAdmin
+    canManage
       ? supabase.from('users').select('id, name').in('role', ['founder', 'admin', 'associate', 'general']).order('name')
       : Promise.resolve({ data: [] }),
   ])
@@ -23,7 +24,8 @@ export default async function UpcomingEventsPage() {
   return (
     <EventsView
       events={upcoming}
-      isAdmin={isAdmin}
+      canEdit={canEdit}
+      canManage={canManage}
       currentUserId={user.id}
       mode="upcoming"
       internalUsers={(internalUsers ?? []) as Array<{ id: string; name: string }>}

@@ -230,6 +230,39 @@ export type InvestorEditLogEntry = {
   created_at: string
 }
 
+// Audit-trail row for an HR policy edit — founder/admin only (see fetchHrPolicyEditLog).
+export type HrPolicyEditLogEntry = {
+  id: string
+  policy_id: string | null
+  policy_title: string
+  edited_by_name: string | null
+  action: 'created' | 'updated'
+  changes: string
+  created_at: string
+}
+
+// Audit-trail row for an event edit — founder/admin only (see fetchEventEditLog).
+export type EventEditLogEntry = {
+  id: string
+  event_id: string | null
+  event_title: string
+  edited_by_name: string | null
+  action: 'created' | 'updated'
+  changes: string
+  created_at: string
+}
+
+// Unified feed for the admin Activity Log page — merges investor/HR-policy/event edit logs.
+export type ActivityLogEntry = {
+  id: string
+  entity_type: 'investor' | 'hr_policy' | 'event'
+  entity_name: string
+  edited_by_name: string | null
+  action: 'created' | 'updated'
+  changes: string
+  created_at: string
+}
+
 // One row per deal an investor is attached to, for the "Investment History" panel —
 // surfaces the linked company's tags so the investor's revealed interests are visible.
 export type InvestorPortfolioItem = {

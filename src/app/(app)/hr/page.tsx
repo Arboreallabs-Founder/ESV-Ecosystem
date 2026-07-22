@@ -9,7 +9,8 @@ export default async function HrZonePage() {
   if (!['founder', 'admin', 'associate', 'general'].includes(user.role ?? '')) redirect('/dashboard')
 
   const policies = await fetchHrPolicies()
-  const isAdmin = ['founder', 'admin'].includes(user.role ?? '')
+  const canEdit = ['founder', 'admin', 'general'].includes(user.role ?? '')
+  const canDelete = ['founder', 'admin'].includes(user.role ?? '')
 
-  return <HrZoneView policies={policies} isAdmin={isAdmin} />
+  return <HrZoneView policies={policies} canEdit={canEdit} canDelete={canDelete} />
 }

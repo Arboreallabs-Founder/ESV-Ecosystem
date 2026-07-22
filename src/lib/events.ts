@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { BulletinEventKpiRow, BulletinPost } from './types'
+import type { BulletinEventKpiRow, BulletinPost, EventEditLogEntry } from './types'
 
 const one = <T>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null))
 
@@ -61,4 +61,15 @@ export const fetchEventKpi = cache(async (): Promise<BulletinEventKpiRow[]> => {
     attendees: (row.attendees ?? []).map((a: any) => ({ user_id: a.user_id, name: one(a.user)?.name ?? 'Unknown' })),
     media_count: (row.media ?? []).length,
   }))
+})
+
+// Founder/admin-only audit trail of event edits (RLS restricts the SELECT to those roles).
+export const fetchEventEditLog = cache(async (): Promise<EventEditLogEntry[]> => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('event_edit_log')
+    .select('id, event_id, event_title, edited_by_name, action, changes, created_at')
+    .order('created_at', { ascending: false })
+    .limit(500)
+  return (data ?? []) as EventEditLogEntry[]
 })

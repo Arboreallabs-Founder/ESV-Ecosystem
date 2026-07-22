@@ -1,9 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import type { InvestorEditLogEntry } from '@/lib/types'
+import type { ActivityLogEntry } from '@/lib/types'
 import styles from '../../admin.module.css'
+
+const ENTITY_LABELS: Record<ActivityLogEntry['entity_type'], string> = {
+  investor: 'Investor',
+  hr_policy: 'HR Policy',
+  event: 'Event',
+}
 
 function formatTimestamp(iso: string): string {
   return new Date(iso).toLocaleString('en-IN', {
@@ -11,13 +16,15 @@ function formatTimestamp(iso: string): string {
   })
 }
 
-function buildLine(e: InvestorEditLogEntry): string {
+function buildLine(e: ActivityLogEntry): string {
   const who = e.edited_by_name ?? 'Unknown'
-  return `[${formatTimestamp(e.created_at)}] ${who} — ${e.investor_name}: ${e.changes}`
+  const label = ENTITY_LABELS[e.entity_type]
+  return `[${formatTimestamp(e.created_at)}] ${who} — ${label}: ${e.entity_name}: ${e.changes}`
 }
 
-export default function InvestorEditLogClient({ entries }: { entries: InvestorEditLogEntry[] }) {
+export default function ActivityLogClient({ entries }: { entries: ActivityLogEntry[] }) {
   const [copied, setCopied] = useState(false)
+
   const fullText = entries.map(buildLine).join('\n')
 
   async function handleCopy() {
@@ -33,7 +40,7 @@ export default function InvestorEditLogClient({ entries }: { entries: InvestorEd
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `investor-edit-log-${new Date().toISOString().slice(0, 10)}.txt`
+    a.download = `activity-log-${new Date().toISOString().slice(0, 10)}.txt`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -42,9 +49,9 @@ export default function InvestorEditLogClient({ entries }: { entries: InvestorEd
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <div className={styles.pageTitle}>Investor Edit Log</div>
+          <div className={styles.pageTitle}>Activity Log</div>
           <div className={styles.pageSub}>
-            Timestamped record of every investor-detail edit. <Link href="/investors">← Back to Investors</Link>
+            Timestamped record of investor, HR policy, and event edits.
           </div>
         </div>
         {entries.length > 0 && (
@@ -56,7 +63,7 @@ export default function InvestorEditLogClient({ entries }: { entries: InvestorEd
       </div>
 
       {entries.length === 0 ? (
-        <div className={styles.empty}>No investor edits recorded yet.</div>
+        <div className={styles.empty}>No edits recorded yet.</div>
       ) : (
         <div style={{
           background: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)',

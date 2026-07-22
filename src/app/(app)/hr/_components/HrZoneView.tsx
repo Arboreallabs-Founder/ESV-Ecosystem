@@ -12,8 +12,8 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function PolicyRow({ policy, expanded, isAdmin, onToggle, onEdit, onDelete }: {
-  policy: HrPolicy; expanded: boolean; isAdmin: boolean
+function PolicyRow({ policy, expanded, canEdit, canDelete, onToggle, onEdit, onDelete }: {
+  policy: HrPolicy; expanded: boolean; canEdit: boolean; canDelete: boolean
   onToggle: () => void; onEdit: () => void; onDelete: () => void
 }) {
   return (
@@ -22,10 +22,10 @@ function PolicyRow({ policy, expanded, isAdmin, onToggle, onEdit, onDelete }: {
         <span className={`${styles.chevron} ${expanded ? styles.chevronOpen : ''}`}>›</span>
         <span className={styles.policyTitle}>{policy.title}</span>
         {policy.category && <span className={styles.policyCategory}>{policy.category}</span>}
-        {isAdmin && (
+        {(canEdit || canDelete) && (
           <div className={styles.policyActions} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.iconBtn} onClick={onEdit} title="Edit">Edit</button>
-            <button className={styles.iconBtn} onClick={onDelete} title="Delete">Delete</button>
+            {canEdit && <button className={styles.iconBtn} onClick={onEdit} title="Edit">Edit</button>}
+            {canDelete && <button className={styles.iconBtn} onClick={onDelete} title="Delete">Delete</button>}
           </div>
         )}
       </div>
@@ -41,7 +41,7 @@ function PolicyRow({ policy, expanded, isAdmin, onToggle, onEdit, onDelete }: {
   )
 }
 
-export default function HrZoneView({ policies, isAdmin }: { policies: HrPolicy[]; isAdmin: boolean }) {
+export default function HrZoneView({ policies, canEdit, canDelete }: { policies: HrPolicy[]; canEdit: boolean; canDelete: boolean }) {
   const router = useRouter()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editing, setEditing] = useState<HrPolicy | 'new' | null>(null)
@@ -62,7 +62,7 @@ export default function HrZoneView({ policies, isAdmin }: { policies: HrPolicy[]
           </div>
           <div className={styles.pageSub}>Company policies</div>
         </div>
-        {isAdmin && <button className={styles.primaryBtn} onClick={() => setEditing('new')}>+ New policy</button>}
+        {canEdit && <button className={styles.primaryBtn} onClick={() => setEditing('new')}>+ New policy</button>}
       </div>
 
       <div className={styles.content}>
@@ -75,7 +75,8 @@ export default function HrZoneView({ policies, isAdmin }: { policies: HrPolicy[]
                 key={p.id}
                 policy={p}
                 expanded={expandedId === p.id}
-                isAdmin={isAdmin}
+                canEdit={canEdit}
+                canDelete={canDelete}
                 onToggle={() => setExpandedId((cur) => (cur === p.id ? null : p.id))}
                 onEdit={() => setEditing(p)}
                 onDelete={() => handleDelete(p.id)}
