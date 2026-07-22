@@ -5,7 +5,7 @@ import { requireRole } from '@/lib/guards'
 import type { PersonalTodo } from '@/lib/types'
 
 async function requireInternal() {
-  return requireRole(['founder', 'admin', 'associate'])
+  return requireRole(['founder', 'admin', 'associate', 'general'])
 }
 
 export async function getMyTodos(): Promise<PersonalTodo[]> {

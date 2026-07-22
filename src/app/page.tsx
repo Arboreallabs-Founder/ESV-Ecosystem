@@ -9,6 +9,8 @@ export default async function RootPage() {
     redirect('/submissions')
   } else if (user.role === 'associate') {
     redirect('/pipelines')
+  } else if (user.role === 'general') {
+    redirect('/tasks')
   } else {
     redirect('/dashboard')
   }

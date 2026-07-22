@@ -17,6 +17,7 @@ function userRoleLabel(role: string) {
   if (role === 'founder') return 'Founder'
   if (role === 'admin') return 'Admin'
   if (role === 'associate') return 'Associate'
+  if (role === 'general') return 'General'
   return role
 }
 
@@ -95,13 +96,13 @@ export default function TaskBoard({
     setExpandedPeople((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n })
   }
 
-  const canCreate = ['founder', 'admin', 'associate'].includes(userRole)
+  const canCreate = ['founder', 'admin', 'associate', 'general'].includes(userRole)
   const canDelete = ['founder', 'admin'].includes(userRole)
 
-  // Assignment rules: never partners; associates only to themselves or other associates.
+  // Assignment rules: never partners; associates/general only to themselves, associates, or general.
   const assignableUsers = users.filter((u) => {
     if (u.role === 'franchise_partner' || u.role === 'super_admin') return false
-    if (userRole === 'associate') return u.role === 'associate' || u.id === currentUserId
+    if (userRole === 'associate' || userRole === 'general') return u.role === 'associate' || u.role === 'general' || u.id === currentUserId
     return true
   })
 

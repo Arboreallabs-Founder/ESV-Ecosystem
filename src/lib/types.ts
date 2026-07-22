@@ -206,6 +206,16 @@ export type Investor = {
   contacts?: InvestorContact[]
 }
 
+// Audit-trail row for an investor edit — founder/admin only (see fetchInvestorEditLog).
+export type InvestorEditLogEntry = {
+  id: string
+  investor_id: string | null
+  investor_name: string
+  edited_by_name: string | null
+  changes: string
+  created_at: string
+}
+
 // One row per deal an investor is attached to, for the "Investment History" panel —
 // surfaces the linked company's tags so the investor's revealed interests are visible.
 export type InvestorPortfolioItem = {
@@ -254,7 +264,7 @@ export type MyDealEarning = {
   share_amount: number
 }
 
-export type UserRole = 'founder' | 'admin' | 'associate' | 'franchise_partner' | 'super_admin'
+export type UserRole = 'founder' | 'admin' | 'associate' | 'franchise_partner' | 'super_admin' | 'general'
 
 export type UserRow = {
   id: string

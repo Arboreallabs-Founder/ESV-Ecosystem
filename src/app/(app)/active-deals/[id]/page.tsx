@@ -16,9 +16,9 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
     fetchCategories(),
     fetchCompanyOptions(),
     fetchActiveDealInvestorSummary(id),
-    supabase.from('users').select('id, name').neq('role', 'franchise_partner').order('name'),
+    supabase.from('users').select('id, name').not('role', 'in', '(franchise_partner,general)').order('name'),
   ])
-  if (!user || !['founder', 'admin', 'associate', 'franchise_partner'].includes(user.role ?? '')) redirect('/login')
+  if (!user || !['founder', 'admin', 'associate', 'franchise_partner', 'general'].includes(user.role ?? '')) redirect('/login')
   if (!deal) notFound()
 
   const [answers, history, stageAnswers] = await Promise.all([

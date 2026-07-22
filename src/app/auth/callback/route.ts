@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
     role === 'super_admin'       ? '/super-admin/orgs'
     : role === 'franchise_partner' ? '/submissions'
     : role === 'associate'         ? '/pipelines'
+    : role === 'general'           ? '/tasks'
     : '/dashboard'
 
   return NextResponse.redirect(new URL(destination, origin))

@@ -7,7 +7,7 @@ import InvestorGrid from './_components/InvestorGrid'
 export default async function InvestorsPage() {
   const [user, investors] = await Promise.all([getUser(), fetchAllInvestors()])
   if (!user) redirect('/login')
-  if (!['founder', 'admin', 'associate', 'franchise_partner'].includes(user.role ?? '')) redirect('/login')
+  if (!['founder', 'admin', 'associate', 'franchise_partner', 'general'].includes(user.role ?? '')) redirect('/login')
 
   // Internal users manage everything; partners may add/edit their own referrals (POC stays locked).
   const isInternal = ['founder', 'admin', 'associate'].includes(user.role ?? '')

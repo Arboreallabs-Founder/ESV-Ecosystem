@@ -9,7 +9,7 @@ import { useTheme } from '@/app/_components/ThemeProvider'
 import styles from './settings.module.css'
 
 const ROLE_LABELS: Record<string, string> = {
-  founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner',
+  founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner', general: 'General',
 }
 
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024

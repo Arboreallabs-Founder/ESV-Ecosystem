@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { Investor } from './types'
+import type { Investor, InvestorEditLogEntry } from './types'
 
 export const fetchAllInvestors = cache(async (): Promise<Investor[]> => {
   const supabase = await createClient()
@@ -39,4 +39,15 @@ export const fetchAllInvestors = cache(async (): Promise<Investor[]> => {
       : (row.referred_by_partner ?? null),
     contacts: (row.contacts ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order),
   })) as Investor[]
+})
+
+// Founder/admin-only audit trail of investor edits (RLS restricts the SELECT to those roles).
+export const fetchInvestorEditLog = cache(async (): Promise<InvestorEditLogEntry[]> => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('investor_edit_log')
+    .select('id, investor_id, investor_name, edited_by_name, changes, created_at')
+    .order('created_at', { ascending: false })
+    .limit(500)
+  return (data ?? []) as InvestorEditLogEntry[]
 })

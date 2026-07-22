@@ -94,6 +94,7 @@ export default async function DashboardPage() {
   if (!user) redirect('/login')
   if (user.role === 'associate') redirect('/pipelines')
   if (user.role === 'franchise_partner') redirect('/portal')
+  if (user.role === 'general') redirect('/tasks')
 
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'

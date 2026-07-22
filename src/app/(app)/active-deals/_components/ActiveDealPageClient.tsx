@@ -85,10 +85,11 @@ export default function ActiveDealPageClient({
   const [linkPending, startLinkTransition] = useTransition()
   const [, startAssigneeTransition] = useTransition()
 
-  const canEditState = userRole !== 'franchise_partner'
-  const canManageDeal = userRole !== 'franchise_partner'
+  const canEditState = !['franchise_partner', 'general'].includes(userRole)
+  const canManageDeal = !['franchise_partner', 'general'].includes(userRole)
   const canAssignPeople = ['founder', 'admin'].includes(userRole)
   const canDeleteDeal = ['founder', 'admin'].includes(userRole)
+  const canViewInvestors = userRole !== 'general'
   const [deletePending, startDeleteTransition] = useTransition()
 
   function handleDeleteDeal() {
@@ -390,15 +391,17 @@ export default function ActiveDealPageClient({
           </div>
 
           {/* RIGHT — Investors summary */}
-          <div className={styles.dealPageAside}>
-            <div className={styles.detailSectionTitle}>Investors</div>
-            <div className={styles.investorSummaryStat}>
-              <span className={styles.investorSummaryCount}>{investorSummary.count}</span>
-              <span className={styles.investorSummaryLabel}>investor{investorSummary.count === 1 ? '' : 's'}</span>
+          {canViewInvestors && (
+            <div className={styles.dealPageAside}>
+              <div className={styles.detailSectionTitle}>Investors</div>
+              <div className={styles.investorSummaryStat}>
+                <span className={styles.investorSummaryCount}>{investorSummary.count}</span>
+                <span className={styles.investorSummaryLabel}>investor{investorSummary.count === 1 ? '' : 's'}</span>
+              </div>
+              <div className={styles.investorSummaryTotal}>{formatINR(investorSummary.totalCommitted)} committed</div>
+              <Link href={`/active-deals/${deal.id}/investors`} className={styles.viewInvestorsBtn}>Open investor table →</Link>
             </div>
-            <div className={styles.investorSummaryTotal}>{formatINR(investorSummary.totalCommitted)} committed</div>
-            <Link href={`/active-deals/${deal.id}/investors`} className={styles.viewInvestorsBtn}>Open investor table →</Link>
-          </div>
+          )}
         </div>
       {showEdit && (
         <EditActiveDealModal

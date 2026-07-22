@@ -13,7 +13,7 @@ type UserRow = { id: string; name: string | null; role: string | null; email: st
 type TaskAlert = { id: string; title: string; created_at: string }
 
 const ROLE_LABELS: Record<string, string> = {
-  founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner', super_admin: 'Platform Admin',
+  founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner', super_admin: 'Platform Admin', general: 'General',
 }
 
 function Icon({ d, d2 }: { d: string; d2?: string }) {
@@ -39,33 +39,39 @@ const NAV_ITEMS: NavEntry[] = [
   {
     group: true,
     label: 'Tasks',
-    roles: ['founder', 'admin', 'associate'],
+    roles: ['founder', 'admin', 'associate', 'general'],
     section: 'Team',
     icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
     children: [
       {
         href: '/tasks',
         label: 'Board',
-        roles: ['founder', 'admin', 'associate'],
+        roles: ['founder', 'admin', 'associate', 'general'],
         icon: <Icon d="M9 17V7m0 10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m0 10a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m0 10V7m0 10a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2" />,
       },
       {
         href: '/my-todos',
         label: 'My To-Dos',
-        roles: ['founder', 'admin', 'associate'],
+        roles: ['founder', 'admin', 'associate', 'general'],
         icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
       },
       {
         href: '/tasks/recurring',
         label: 'Recurring',
-        roles: ['founder', 'admin', 'associate'],
+        roles: ['founder', 'admin', 'associate', 'general'],
         icon: <Icon d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />,
       },
       {
         href: '/tasks/kpi',
         label: 'KPI',
-        roles: ['founder', 'admin', 'associate'],
+        roles: ['founder', 'admin', 'associate', 'general'],
         icon: <Icon d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />,
+      },
+      {
+        href: '/tasks/update',
+        label: 'Weekly Update',
+        roles: ['founder', 'admin', 'general'],
+        icon: <Icon d="M6 12 3.269 3.126A59.768 59.768 0 0 1 21.485 12 59.77 59.77 0 0 1 3.27 20.876L5.999 12Zm0 0h7.5" />,
       },
     ],
   },
@@ -107,14 +113,14 @@ const NAV_ITEMS: NavEntry[] = [
   {
     group: true,
     label: 'Active Deals',
-    roles: ['founder', 'admin', 'associate', 'franchise_partner'],
+    roles: ['founder', 'admin', 'associate', 'franchise_partner', 'general'],
     section: 'Deal Flow',
     icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
     children: [
       {
         href: '/active-deals',
         label: 'Deals',
-        roles: ['founder', 'admin', 'associate', 'franchise_partner'],
+        roles: ['founder', 'admin', 'associate', 'franchise_partner', 'general'],
         icon: <Icon d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />,
       },
       {
@@ -135,7 +141,7 @@ const NAV_ITEMS: NavEntry[] = [
   {
     href: '/pipelines',
     label: 'Pipelines',
-    roles: ['founder', 'admin', 'associate'],
+    roles: ['founder', 'admin', 'associate', 'general'],
     section: 'Deal Flow',
     icon: <Icon d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h6v6h-6zM9 6h6M6 9v6M18 9v6" />,
   },
@@ -155,14 +161,14 @@ const NAV_ITEMS: NavEntry[] = [
   {
     href: '/companies',
     label: 'Companies',
-    roles: ['founder', 'admin', 'associate'],
+    roles: ['founder', 'admin', 'associate', 'general'],
     section: 'Database',
     icon: <Icon d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />,
   },
   {
     href: '/investors',
     label: 'Investors',
-    roles: ['founder', 'admin', 'associate', 'franchise_partner'],
+    roles: ['founder', 'admin', 'associate', 'franchise_partner', 'general'],
     section: 'Database',
     icon: <Icon d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />,
   },
@@ -178,6 +184,13 @@ const NAV_ITEMS: NavEntry[] = [
     roles: ['founder', 'admin'],
     section: 'Database',
     icon: <Icon d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />,
+  },
+  {
+    href: '/admin/investor-log',
+    label: 'Investor Log',
+    roles: ['founder', 'admin'],
+    section: 'Admin',
+    icon: <Icon d="M12 6.75a5.25 5.25 0 0 1 5.25 5.25v9m-10.5 0v-9a5.25 5.25 0 0 1 5.25-5.25M3.75 21h16.5M9 12h.008v.008H9V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 0h.008v.008H13.5V12Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM9 15h.008v.008H9V15Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 0h.008v.008H13.5V15Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0ZM9 18h.008v.008H9V18Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 0h.008v.008H13.5V18Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />,
   },
   {
     href: '/admin/users',
@@ -213,6 +226,7 @@ const DEMO_PERSONAS = [
   { value: 'admin', label: 'Admin' },
   { value: 'associate', label: 'Associate' },
   { value: 'franchise_partner', label: 'Partner' },
+  { value: 'general', label: 'General' },
 ]
 
 export default function AppShell({

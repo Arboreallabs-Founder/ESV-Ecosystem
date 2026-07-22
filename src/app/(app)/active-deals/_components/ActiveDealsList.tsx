@@ -66,7 +66,7 @@ export default function ActiveDealsList({
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
   const [, startTransition] = useTransition()
   const canManage = userRole === 'founder' || userRole === 'admin'
-  const canEditState = userRole !== 'franchise_partner'
+  const canEditState = !['franchise_partner', 'general'].includes(userRole)
 
   const deals = initialDeals
     .filter((d) => !deletedIds.has(d.id))

@@ -8,7 +8,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
   const { id } = await params
   const user = await getUser()
   if (!user) redirect('/login')
-  if (!['founder', 'admin', 'associate', 'super_admin'].includes(user.role ?? '')) redirect('/dashboard')
+  if (!['founder', 'admin', 'associate', 'super_admin', 'general'].includes(user.role ?? '')) redirect('/dashboard')
 
   const company = await fetchCompany(id)
   if (!company) notFound()

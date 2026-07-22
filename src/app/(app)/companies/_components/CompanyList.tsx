@@ -13,7 +13,7 @@ import CompaniesImportModal from './CompaniesImportModal'
 import { formatInr, initials, locationLabel } from './format'
 import styles from '../companies.module.css'
 
-export default function CompanyList({ companies }: { companies: CompanyListItem[] }) {
+export default function CompanyList({ companies, canManage }: { companies: CompanyListItem[]; canManage: boolean }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState<string>('all')
@@ -61,13 +61,15 @@ export default function CompanyList({ companies }: { companies: CompanyListItem[
           </div>
           <p className={styles.pageSubtitle}>Startup database — the full profile behind each deal.</p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <button className={styles.ghostBtn} onClick={handleSync} disabled={syncing} title="Backfill profiles from Deal Desk cards & active deals">
-            {syncing ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><Spinner size={14} /> Syncing…</span> : '↻ Sync'}
-          </button>
-          <button className={styles.ghostBtn} onClick={() => setShowImport(true)}>Import CSV</button>
-          <button className={styles.primaryBtn} onClick={() => setShowNew(true)}>+ New company</button>
-        </div>
+        {canManage && (
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className={styles.ghostBtn} onClick={handleSync} disabled={syncing} title="Backfill profiles from Deal Desk cards & active deals">
+              {syncing ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><Spinner size={14} /> Syncing…</span> : '↻ Sync'}
+            </button>
+            <button className={styles.ghostBtn} onClick={() => setShowImport(true)}>Import CSV</button>
+            <button className={styles.primaryBtn} onClick={() => setShowNew(true)}>+ New company</button>
+          </div>
+        )}
       </div>
 
       {syncMsg && <div className={styles.syncMsg}>{syncMsg}</div>}

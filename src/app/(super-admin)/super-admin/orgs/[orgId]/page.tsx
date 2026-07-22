@@ -9,6 +9,7 @@ const ROLE_LABELS: Record<string, string> = {
   associate: 'Associate',
   franchise_partner: 'Partner',
   super_admin: 'Platform Admin',
+  general: 'General',
 }
 
 const ROLE_BADGE_CLASS: Record<string, string> = {
@@ -16,6 +17,7 @@ const ROLE_BADGE_CLASS: Record<string, string> = {
   admin: styles.roleBadgeAdmin,
   associate: styles.roleBadgeAssociate,
   franchise_partner: styles.roleBadgePartner,
+  general: styles.roleBadgeGeneral,
 }
 
 export default async function OrgDetailPage({ params }: { params: Promise<{ orgId: string }> }) {

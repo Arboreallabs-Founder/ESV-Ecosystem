@@ -9,7 +9,7 @@ async function requireAdmin() {
   return requireRole(['founder', 'admin'])
 }
 async function requireInternal() {
-  return requireRole(['founder', 'admin', 'associate'])
+  return requireRole(['founder', 'admin', 'associate', 'general'])
 }
 
 export type RecurringTaskInput = {

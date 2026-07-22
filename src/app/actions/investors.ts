@@ -147,6 +147,30 @@ export async function createInvestor(params: {
   return { id: investor.id }
 }
 
+const LOGGED_FIELD_LABELS: Record<string, string> = {
+  name: 'Name', country: 'Country', website: 'Website', sectors: 'Sectors',
+  business_types: 'Business types', meta_tags: 'Meta-tags', service_type: 'Type',
+  ticket_size_min: 'Ticket min', ticket_size_max: 'Ticket max', stage: 'Stage',
+  referred_by_partner_id: 'Referred by partner', onboarding_form_completed: 'Onboarding completed',
+  onboarding_form_url: 'Onboarding form URL', kyc_done: 'KYC done',
+}
+
+function displayValue(v: unknown): string {
+  if (v == null || v === '') return '—'
+  if (Array.isArray(v)) return v.length > 0 ? v.join(', ') : '—'
+  return String(v)
+}
+
+function describeChanges(before: Record<string, unknown>, after: Record<string, unknown>): string {
+  const lines: string[] = []
+  for (const [key, label] of Object.entries(LOGGED_FIELD_LABELS)) {
+    const a = JSON.stringify(before[key] ?? null)
+    const b = JSON.stringify(after[key] ?? null)
+    if (a !== b) lines.push(`${label}: ${displayValue(before[key])} → ${displayValue(after[key])}`)
+  }
+  return lines.join('; ')
+}
+
 export async function updateInvestor(
   id: string,
   params: {
@@ -169,7 +193,7 @@ export async function updateInvestor(
   }
 ): Promise<void> {
   // Partners may edit their own referrals, but never the ESV POC or referral attribution.
-  const { supabase, role } = await requireRole(['founder', 'admin', 'franchise_partner'])
+  const { supabase, role, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'franchise_partner'])
   const isPartner = role === 'franchise_partner'
 
   const baseFields = {
@@ -187,14 +211,17 @@ export async function updateInvestor(
     onboarding_form_url: params.onboarding_form_url || null,
     kyc_done: params.kyc_done ?? false,
   }
+  const nextFields = isPartner ? baseFields : { ...baseFields, referred_by_partner_id: params.referred_by_partner_id || null }
+
+  const { data: before } = await supabase
+    .from('investors')
+    .select(Object.keys(LOGGED_FIELD_LABELS).join(', '))
+    .eq('id', id)
+    .single()
 
   const { error } = await supabase
     .from('investors')
-    .update(
-      isPartner
-        ? baseFields
-        : { ...baseFields, referred_by_partner_id: params.referred_by_partner_id || null }
-    )
+    .update(nextFields)
     .eq('id', id)
   if (error) throw error
 
@@ -208,6 +235,22 @@ export async function updateInvestor(
       )
     }
   }
+
+  // Best-effort audit log — never fail the save if logging hiccups.
+  try {
+    const changes = before ? describeChanges(before as unknown as Record<string, unknown>, nextFields) : ''
+    if (changes) {
+      const { data: editor } = await supabase.from('users').select('name').eq('id', userId).single()
+      await supabase.from('investor_edit_log').insert({
+        investor_id: id,
+        org_id: orgId,
+        edited_by: userId,
+        edited_by_name: editor?.name ?? null,
+        investor_name: params.name,
+        changes,
+      })
+    }
+  } catch { /* non-fatal: don't block the save if the audit log insert fails */ }
 }
 
 export async function deleteInvestor(id: string): Promise<void> {

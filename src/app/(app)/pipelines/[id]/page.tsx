@@ -13,7 +13,7 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
     getUser(),
     fetchPipeline(id),
     fetchPipelineEntries(id),
-    supabase.from('users').select('id, name').neq('role', 'franchise_partner').order('name'),
+    supabase.from('users').select('id, name').not('role', 'in', '(franchise_partner,general)').order('name'),
     supabase.from('forms').select('id, title, published, pipeline_id').order('created_at', { ascending: false }),
     fetchCompanyOptions(),
   ])
