@@ -71,7 +71,7 @@ export default function WeeklyUpdateClient({
   }, [weekStart])
   const weekLabel = `${formatDay(weekStart)} – ${formatDay(weekEnd)}`
 
-  const associates = useMemo(() => users.filter((u) => u.role === 'associate'), [users])
+  const associates = useMemo(() => users.filter((u) => ['associate', 'admin'].includes(u.role)), [users])
 
   const reports = useMemo<AssociateReport[]>(() => {
     const inWeek = (dateStr: string) => {
@@ -120,7 +120,7 @@ export default function WeeklyUpdateClient({
             <div className={styles.pageTitle}>Weekly Update</div>
             <WikiButton sectionKey="tasks" />
           </div>
-          <div className={styles.pageSub}>A copyable WhatsApp-ready summary of each associate&apos;s week.</div>
+          <div className={styles.pageSub}>A copyable WhatsApp-ready summary of each associate&apos;s and admin&apos;s week.</div>
         </div>
         {reports.length > 0 && (
           <button className={styles.addBtn} onClick={copyAll}>
