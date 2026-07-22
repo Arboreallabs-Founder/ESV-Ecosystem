@@ -150,13 +150,24 @@ export type HrPolicy = {
   created_by_user?: { name: string } | null
 }
 
-export type ServiceType = 'vc_fund' | 'angel_fund' | 'family_office' | 'angel_investor'
+export type ServiceType =
+  | 'vc_fund' | 'angel_fund' | 'family_office' | 'angel_investor'
+  | 'debt_fund' | 'corporate_vc' | 'private_equity' | 'growth_equity'
+  | 'fund_of_funds' | 'accelerator' | 'sovereign_wealth' | 'merchant_bank'
 
 export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   vc_fund: 'VC Fund',
   angel_fund: 'Angel Fund',
   family_office: 'Family Office',
   angel_investor: 'Angel Investor',
+  debt_fund: 'Debt Fund',
+  corporate_vc: 'Corporate VC Arm',
+  private_equity: 'Private Equity Fund',
+  growth_equity: 'Growth Equity Fund',
+  fund_of_funds: 'Fund of Funds',
+  accelerator: 'Accelerator / Incubator',
+  sovereign_wealth: 'Sovereign Wealth Fund',
+  merchant_bank: 'Merchant Bank / Investment Bank',
 }
 
 export const LINKEDIN_STATUS_OPTIONS = [

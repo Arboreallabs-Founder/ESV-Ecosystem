@@ -4,10 +4,14 @@
 import type { Company } from '@/lib/types'
 import { COMPANY_STATUSES, COMPANY_STATUS_LABELS } from '@/lib/types'
 import type { CompanyPatch } from '@/app/actions/companies'
+import { COUNTRY_OPTIONS } from '@/lib/countries'
+import { SECTOR_OPTIONS, THESIS_TAG_OPTIONS } from '@/lib/taxonomies'
+import Combobox from '@/app/_components/Combobox'
+import TagSelect from '@/app/_components/TagSelect'
 import styles from '../companies.module.css'
 
-export type FieldType = 'text' | 'number' | 'percent' | 'textarea' | 'date' | 'tags' | 'status' | 'user'
-export type Spec = { key: keyof CompanyPatch; label: string; type?: FieldType }
+export type FieldType = 'text' | 'number' | 'percent' | 'textarea' | 'date' | 'tags' | 'status' | 'user' | 'country'
+export type Spec = { key: keyof CompanyPatch; label: string; type?: FieldType; tagOptions?: string[] }
 
 export function initValue(company: Company, spec: Spec): string {
   const v = (company as Record<string, unknown>)[spec.key as string]
@@ -26,11 +30,11 @@ export function coerce(raw: string, type?: FieldType): unknown {
 export const OVERVIEW_SPECS: Spec[] = [
   { key: 'name', label: 'Name' }, { key: 'legal_name', label: 'Legal name' }, { key: 'website', label: 'Website' },
   { key: 'logo_url', label: 'Logo URL' }, { key: 'one_liner', label: 'One-liner' }, { key: 'description', label: 'Description', type: 'textarea' },
-  { key: 'hq_city', label: 'HQ city' }, { key: 'hq_country', label: 'HQ country' }, { key: 'founded_date', label: 'Founded', type: 'date' },
+  { key: 'hq_city', label: 'HQ city' }, { key: 'hq_country', label: 'HQ country', type: 'country' }, { key: 'founded_date', label: 'Founded', type: 'date' },
   { key: 'incorporation_type', label: 'Incorporation type' }, { key: 'incorporation_no', label: 'Incorporation / CIN' },
-  { key: 'sectors', label: 'Sectors', type: 'tags' }, { key: 'stage', label: 'Stage' }, { key: 'business_model', label: 'Business model' },
+  { key: 'sectors', label: 'Sectors', type: 'tags', tagOptions: SECTOR_OPTIONS }, { key: 'stage', label: 'Stage' }, { key: 'business_model', label: 'Business model' },
   { key: 'status', label: 'Status', type: 'status' }, { key: 'tags', label: 'Tags', type: 'tags' },
-  { key: 'meta_tags', label: 'Meta-tags (themes for investor matching)', type: 'tags' },
+  { key: 'meta_tags', label: 'Meta-tags (themes for investor matching)', type: 'tags', tagOptions: THESIS_TAG_OPTIONS },
   { key: 'esv_poc_id', label: 'ESV point of contact', type: 'user' },
 ]
 export const TRACTION_SPECS: Spec[] = [
@@ -75,6 +79,20 @@ export function SpecInput({ spec, value, onChange, team }: { spec: Spec; value: 
       </select>
     )
   }
+  if (spec.type === 'country') {
+    return <Combobox options={COUNTRY_OPTIONS} value={value} onChange={onChange} placeholder="Search country…" />
+  }
+  if (spec.type === 'tags' && spec.tagOptions) {
+    const arr = value ? value.split(',').map((s) => s.trim()).filter(Boolean) : []
+    return (
+      <TagSelect
+        options={spec.tagOptions}
+        value={arr}
+        onChange={(vals) => onChange(vals.join(', '))}
+        placeholder={`Search ${spec.label.toLowerCase()}…`}
+      />
+    )
+  }
   return (
     <input
       className={styles.input}
@@ -90,7 +108,7 @@ export function SpecInput({ spec, value, onChange, team }: { spec: Spec; value: 
 export function SpecField({ spec, value, onChange, team }: { spec: Spec; value: string; onChange: (v: string) => void; team: Team }) {
   return (
     <div className={styles.field}>
-      <label className={styles.fieldLabel}>{spec.label}{spec.type === 'percent' ? ' (%)' : spec.type === 'tags' ? ' (comma-separated)' : ''}</label>
+      <label className={styles.fieldLabel}>{spec.label}{spec.type === 'percent' ? ' (%)' : spec.type === 'tags' && !spec.tagOptions ? ' (comma-separated)' : ''}</label>
       <SpecInput spec={spec} value={value} onChange={onChange} team={team} />
     </div>
   )

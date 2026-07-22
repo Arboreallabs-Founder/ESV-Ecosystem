@@ -5,7 +5,9 @@ import { useRouter } from 'next/navigation'
 import { createInvestor, updateInvestor } from '@/app/actions/investors'
 import { SERVICE_TYPE_LABELS } from '@/lib/types'
 import type { Investor, ServiceType } from '@/lib/types'
-import SectorTagInput from './SectorTagInput'
+import { COUNTRY_OPTIONS } from '@/lib/countries'
+import { STAGE_OPTIONS, SECTOR_OPTIONS, BUSINESS_TYPE_OPTIONS, THESIS_TAG_OPTIONS } from '@/lib/taxonomies'
+import TagSelect from '@/app/_components/TagSelect'
 import Combobox from '@/app/_components/Combobox'
 import styles from '../investors.module.css'
 
@@ -40,7 +42,7 @@ export default function InvestorFormModal({
 
   const [name, setName] = useState(initial?.name ?? '')
   const [serviceType, setServiceType] = useState<ServiceType>(initial?.service_type ?? 'vc_fund')
-  const [country, setCountry] = useState(initial?.country ?? '')
+  const [country, setCountry] = useState(initial?.country ?? (mode === 'create' ? 'India' : ''))
   const [website, setWebsite] = useState(initial?.website ?? '')
   const [stage, setStage] = useState(initial?.stage ?? '')
   const [esvPocs, setEsvPocs] = useState<string[]>(initial?.esv_pocs?.map((p) => p.id) ?? (initial?.esv_poc_id ? [initial.esv_poc_id] : []))
@@ -60,6 +62,7 @@ export default function InvestorFormModal({
     mode === 'create' ? [] : []  // contacts managed live in detail drawer on edit
   )
 
+  const stageList = stage ? stage.split(',').map((s) => s.trim()).filter(Boolean) : []
   const isPartner = userRole === 'franchise_partner'
   const canSetReferredBy = ['founder', 'admin'].includes(userRole)
   const showContacts = serviceType !== 'angel_investor'
@@ -139,7 +142,7 @@ export default function InvestorFormModal({
           {mode === 'create' ? 'Add Investor' : 'Edit Investor'}
         </div>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           {/* Row 1: Name + Service Type */}
           <div className={styles.formRow}>
             <div className={styles.field} style={{ flex: 2 }}>
@@ -160,7 +163,7 @@ export default function InvestorFormModal({
           <div className={styles.formRow}>
             <div className={styles.field}>
               <label className={styles.label}>Country</label>
-              <input className={styles.input} value={country} onChange={(e) => setCountry(e.target.value)} placeholder="India, UAE, US…" />
+              <Combobox options={COUNTRY_OPTIONS} value={country} onChange={setCountry} placeholder="Search country…" />
             </div>
             <div className={styles.field}>
               <label className={styles.label}>Website</label>
@@ -172,7 +175,12 @@ export default function InvestorFormModal({
           <div className={styles.formRow}>
             <div className={styles.field}>
               <label className={styles.label}>Stage Preference</label>
-              <input className={styles.input} value={stage} onChange={(e) => setStage(e.target.value)} placeholder="Pre-Seed, Seed, Series A…" />
+              <TagSelect
+                options={STAGE_OPTIONS}
+                value={stageList}
+                onChange={(vals) => setStage(vals.join(', '))}
+                placeholder="Select stages…"
+              />
             </div>
             {!isPartner && (
             <div className={styles.field}>
@@ -236,11 +244,11 @@ export default function InvestorFormModal({
           <div className={styles.formRow}>
             <div className={styles.field}>
               <label className={styles.label}>Ticket Min (₹)</label>
-              <input className={styles.input} type="number" min={0} value={ticketMin} onChange={(e) => setTicketMin(e.target.value)} placeholder="e.g. 500000" />
+              <input className={styles.input} type="number" min={0} step={100000} value={ticketMin} onChange={(e) => setTicketMin(e.target.value)} placeholder="e.g. 500000" />
             </div>
             <div className={styles.field}>
               <label className={styles.label}>Ticket Max (₹)</label>
-              <input className={styles.input} type="number" min={0} value={ticketMax} onChange={(e) => setTicketMax(e.target.value)} placeholder="e.g. 50000000" />
+              <input className={styles.input} type="number" min={0} step={5000000} value={ticketMax} onChange={(e) => setTicketMax(e.target.value)} placeholder="e.g. 50000000" />
             </div>
           </div>
 
@@ -271,18 +279,18 @@ export default function InvestorFormModal({
           {/* Sectors */}
           <div className={styles.field}>
             <label className={styles.label}>Sectors</label>
-            <SectorTagInput value={sectors} onChange={setSectors} placeholder="Type sector and press Enter or comma…" />
+            <TagSelect options={SECTOR_OPTIONS} value={sectors} onChange={setSectors} placeholder="Search sectors…" />
           </div>
 
           {/* Business Types + other thesis tags */}
           <div className={styles.formRow}>
             <div className={styles.field}>
               <label className={styles.label}>Business Types</label>
-              <SectorTagInput value={businessTypes} onChange={setBusinessTypes} placeholder="e.g. B2B SaaS, Marketplace, D2C…" />
+              <TagSelect options={BUSINESS_TYPE_OPTIONS} value={businessTypes} onChange={setBusinessTypes} placeholder="Search business types…" />
             </div>
             <div className={styles.field}>
               <label className={styles.label}>Other Thesis Tags</label>
-              <SectorTagInput value={metaTags} onChange={setMetaTags} placeholder="e.g. Quick Commerce, AI/ML…" />
+              <TagSelect options={THESIS_TAG_OPTIONS} value={metaTags} onChange={setMetaTags} placeholder="Search thesis tags…" />
             </div>
           </div>
 

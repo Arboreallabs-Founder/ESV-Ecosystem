@@ -3,7 +3,7 @@
 import { useRef, useState } from 'react'
 import styles from './Combobox.module.css'
 
-export type ComboOption = { id: string; label: string; hint?: string }
+export type ComboOption = { id: string; label: string; hint?: string; flag?: string }
 
 // Type-ahead single-select: typing filters to the closest matches; picking one
 // commits it; if nothing is picked the value stays blank. Shared across the app.
@@ -24,10 +24,12 @@ export default function Combobox({
   const [query, setQuery] = useState('')
   const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const selectedLabel = options.find((o) => o.id === value)?.label ?? ''
+  const selectedOption = options.find((o) => o.id === value)
+  const selectedLabel = selectedOption?.label ?? ''
   const text = open ? query : selectedLabel
   const q = query.trim().toLowerCase()
   const filtered = (open && q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options).slice(0, 8)
+  const showFlag = !open && !!selectedOption?.flag
 
   function select(opt: ComboOption) {
     onChange(opt.id)
@@ -37,8 +39,9 @@ export default function Combobox({
 
   return (
     <div className={styles.combo}>
+      {showFlag && <span className={`fi fi-${selectedOption!.flag} ${styles.inputFlag}`} />}
       <input
-        className={styles.input}
+        className={`${styles.input} ${showFlag ? styles.inputWithFlag : ''}`}
         value={text}
         placeholder={placeholder}
         disabled={disabled}
@@ -57,6 +60,7 @@ export default function Combobox({
           ) : (
             filtered.map((o) => (
               <button key={o.id} type="button" className={styles.item} onClick={() => select(o)}>
+                {o.flag && <span className={`fi fi-${o.flag}`} />}
                 <span className={styles.itemLabel}>{o.label}</span>
                 {o.hint && <span className={styles.hint}>{o.hint}</span>}
               </button>

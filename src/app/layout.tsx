@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Arapey } from "next/font/google";
+import "flag-icons/css/flag-icons.min.css";
 import "./globals.css";
 import { ThemeProvider } from './_components/ThemeProvider'
 

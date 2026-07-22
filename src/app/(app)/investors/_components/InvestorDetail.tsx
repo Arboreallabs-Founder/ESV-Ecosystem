@@ -30,6 +30,14 @@ const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
   angel_fund: '#e07b39',
   family_office: '#2d8c6e',
   angel_investor: '#7b5ea7',
+  debt_fund: '#b03a2e',
+  corporate_vc: '#2e6f95',
+  private_equity: '#5c4a72',
+  growth_equity: '#3f7d4f',
+  fund_of_funds: '#8a6d3b',
+  accelerator: '#c77d2e',
+  sovereign_wealth: '#4a5a75',
+  merchant_bank: '#6b4226',
 }
 
 type Props = {
@@ -113,7 +121,10 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
               {investor.country && (
                 <div className={styles.detailField}>
                   <div className={styles.detailFieldLabel}>Country</div>
-                  <div className={styles.detailFieldValue}>{investor.country}</div>
+                  <div className={styles.detailFieldValue}>
+                    {investor.country}
+                    {investor.country !== 'India' && <span className={styles.foreignBadge} style={{ marginLeft: '0.5rem' }}>Foreign</span>}
+                  </div>
                 </div>
               )}
               {investor.website && (

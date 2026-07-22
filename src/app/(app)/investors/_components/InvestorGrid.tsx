@@ -39,6 +39,7 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
     return (
       inv.name.toLowerCase().includes(q) ||
       (inv.country ?? '').toLowerCase().includes(q) ||
+      (inv.country && inv.country !== 'India' && 'foreign'.includes(q)) ||
       (inv.stage ?? '').toLowerCase().includes(q) ||
       inv.sectors.join(' ').toLowerCase().includes(q) ||
       (inv.esv_pocs ?? []).some((p) => p.name.toLowerCase().includes(q)) ||

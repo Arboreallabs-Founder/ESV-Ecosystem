@@ -21,6 +21,14 @@ const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
   angel_fund: '#e07b39',
   family_office: '#2d8c6e',
   angel_investor: '#7b5ea7',
+  debt_fund: '#b03a2e',
+  corporate_vc: '#2e6f95',
+  private_equity: '#5c4a72',
+  growth_equity: '#3f7d4f',
+  fund_of_funds: '#8a6d3b',
+  accelerator: '#c77d2e',
+  sovereign_wealth: '#4a5a75',
+  merchant_bank: '#6b4226',
 }
 
 export default function InvestorCard({ investor, onClick }: { investor: Investor; onClick: () => void }) {
@@ -47,6 +55,7 @@ export default function InvestorCard({ investor, onClick }: { investor: Investor
       {(investor.country || investor.stage) && (
         <div className={styles.cardMeta}>
           {investor.country && <span>{investor.country}</span>}
+          {investor.country && investor.country !== 'India' && <span className={styles.foreignBadge}>Foreign</span>}
           {investor.country && investor.stage && <span>·</span>}
           {investor.stage && <span>{investor.stage}</span>}
         </div>
