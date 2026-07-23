@@ -97,6 +97,68 @@
   box-shadow: 0 0 0 2px var(--color-card);
 }
 
+.alertsWrap { position: relative; flex-shrink: 0; }
+
+.alertsDropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: 280px;
+  max-height: 340px;
+  overflow-y: auto;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+  z-index: 60;
+  padding: 0.25rem;
+}
+
+.alertsDropdownHead {
+  padding: 0.5rem 0.625rem 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+.alertsDropdownEmpty {
+  padding: 0.5rem 0.625rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+.alertsDropdownItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.625rem;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s;
+}
+.alertsDropdownItem:hover { background: rgba(116, 95, 253, 0.07); }
+
+.alertsDropdownItemTitle {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.alertsDropdownItemMeta {
+  font-size: 0.6875rem;
+  color: var(--color-muted);
+}
+
 .logoMark {
   width: 36px;
   height: 36px;

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useTransition } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createTask, updateTaskStatus, pushTask, deleteTask } from '@/app/actions/tasks'
 import type { Task, UserRow } from '@/lib/types'
@@ -63,11 +63,22 @@ export default function TaskBoard({
   userRole: string
 }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [tasks, setTasks] = useState(initialTasks)
   const [showModal, setShowModal] = useState(false)
   const [pushTarget, setPushTarget] = useState<Task | null>(null)
   const [pushDate, setPushDate] = useState('')
   const [detailTask, setDetailTask] = useState<Task | null>(null)
+
+  // Opened via the alerts bell (?open=<taskId>) — jump straight to that task's detail modal.
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (!openId) return
+    const target = tasks.find((t) => t.id === openId)
+    if (target) setDetailTask(target)
+    router.replace('/tasks')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
   // Associates mostly self-assign or assign peers, so defaulting to "me" is the common
   // case. Founders/admins are almost always delegating — default blank so they have to
   // deliberately pick someone instead of silently self-assigning.

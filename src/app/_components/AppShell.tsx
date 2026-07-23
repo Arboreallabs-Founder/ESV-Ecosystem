@@ -10,7 +10,7 @@ import { switchDemoPersona, exitDemoMode } from '@/app/actions/demo'
 import styles from '@/app/app-shell.module.css'
 
 type UserRow = { id: string; name: string | null; role: string | null; email: string | null }
-type TaskAlert = { id: string; title: string; created_at: string }
+type TaskAlert = { id: string; title: string; created_at: string; kind: 'assigned' | 'comment'; by?: string }
 
 const ROLE_LABELS: Record<string, string> = {
   founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner', super_admin: 'Platform Admin', general: 'General',
@@ -22,6 +22,31 @@ function Icon({ d, d2 }: { d: string; d2?: string }) {
       <path d={d} />
       {d2 && <path d={d2} />}
     </svg>
+  )
+}
+
+function AlertsDropdown({ alerts, onSelect }: { alerts: TaskAlert[]; onSelect: (taskId: string) => void }) {
+  return (
+    <div className={styles.alertsDropdown} onMouseDown={(e) => e.preventDefault()}>
+      <div className={styles.alertsDropdownHead}>Task alerts</div>
+      {alerts.length === 0 ? (
+        <div className={styles.alertsDropdownEmpty}>No new activity</div>
+      ) : (
+        alerts.map((a) => (
+          <button
+            key={`${a.kind}-${a.id}-${a.created_at}`}
+            type="button"
+            className={styles.alertsDropdownItem}
+            onClick={() => onSelect(a.id)}
+          >
+            <span className={styles.alertsDropdownItemTitle}>{a.title}</span>
+            <span className={styles.alertsDropdownItemMeta}>
+              {a.kind === 'comment' ? `${a.by} commented` : 'Assigned to you'}
+            </span>
+          </button>
+        ))
+      )}
+    </div>
   )
 }
 
@@ -272,21 +297,33 @@ export default function AppShell({
   // Close the mobile drawer whenever the route changes.
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
-  // Alerts bell: "new" = assigned to me and created after the last time I dismissed the bell.
-  // The seen-marker lives in localStorage (per user) since there's no server-side read receipt.
+  // Alerts bell: "new" = assigned to me (or someone commented on my task) after the last
+  // time I dismissed the bell. The seen-marker lives in localStorage (per user) since
+  // there's no server-side read receipt.
   const alertsSeenKey = `esv_tasks_alerts_seen_${user.id}`
   const [alertsSeenAt, setAlertsSeenAt] = useState(0)
+  const [alertsOpen, setAlertsOpen] = useState(false)
   useEffect(() => {
     const stored = Number(localStorage.getItem(alertsSeenKey) ?? 0)
     setAlertsSeenAt(Number.isFinite(stored) ? stored : 0)
   }, [alertsSeenKey])
   const newTaskAlerts = myTaskAlerts.filter((t) => new Date(t.created_at).getTime() > alertsSeenAt)
-  function handleAlertsClick() {
-    const now = Date.now()
-    localStorage.setItem(alertsSeenKey, String(now))
-    setAlertsSeenAt(now)
+  function closeAlerts() {
+    if (alertsOpen) {
+      const now = Date.now()
+      localStorage.setItem(alertsSeenKey, String(now))
+      setAlertsSeenAt(now)
+    }
+    setAlertsOpen(false)
+  }
+  function toggleAlerts() {
+    if (alertsOpen) closeAlerts()
+    else setAlertsOpen(true)
+  }
+  function openAlertTask(taskId: string) {
+    closeAlerts()
     setMobileOpen(false)
-    router.push('/my-todos')
+    router.push(`/tasks?open=${taskId}`)
   }
 
   function toggleGroup(label: string) {
@@ -332,7 +369,7 @@ export default function AppShell({
     router.push('/login')
   }
 
-  const canHaveTasks = ['founder', 'admin', 'associate'].includes(role)
+  const canHaveTasks = ['founder', 'admin', 'associate', 'general'].includes(role)
 
   const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(role))
   // Section labels (Deal Flow / Team / Database / Admin) are a founder/admin/associate affordance —
@@ -379,20 +416,24 @@ export default function AppShell({
               </svg>
             </Link>
             {canHaveTasks && (
-              <button
-                type="button"
-                className={styles.alertsBtn}
-                onClick={handleAlertsClick}
-                title={newTaskAlerts.length > 0 ? `${newTaskAlerts.length} new task${newTaskAlerts.length === 1 ? '' : 's'} assigned to you` : 'No new tasks'}
-                aria-label="Task alerts"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                </svg>
-                {newTaskAlerts.length > 0 && (
-                  <span className={styles.alertsBadge}>{newTaskAlerts.length > 9 ? '9+' : newTaskAlerts.length}</span>
-                )}
-              </button>
+              <div className={styles.alertsWrap}>
+                <button
+                  type="button"
+                  className={styles.alertsBtn}
+                  onClick={toggleAlerts}
+                  onBlur={() => setTimeout(closeAlerts, 150)}
+                  title={newTaskAlerts.length > 0 ? `${newTaskAlerts.length} new task${newTaskAlerts.length === 1 ? '' : 's'} assigned to you` : 'No new tasks'}
+                  aria-label="Task alerts"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                  </svg>
+                  {newTaskAlerts.length > 0 && (
+                    <span className={styles.alertsBadge}>{newTaskAlerts.length > 9 ? '9+' : newTaskAlerts.length}</span>
+                  )}
+                </button>
+                {alertsOpen && <AlertsDropdown alerts={newTaskAlerts} onSelect={openAlertTask} />}
+              </div>
             )}
           </div>
         </div>
@@ -576,19 +617,23 @@ export default function AppShell({
             <span className={styles.logoText}>Ecosystem</span>
           </div>
           {canHaveTasks && (
-            <button
-              className={styles.alertsBtnMobile}
-              onClick={handleAlertsClick}
-              aria-label="Task alerts"
-              title={newTaskAlerts.length > 0 ? `${newTaskAlerts.length} new task${newTaskAlerts.length === 1 ? '' : 's'} assigned to you` : 'No new tasks'}
-            >
-              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-              </svg>
-              {newTaskAlerts.length > 0 && (
-                <span className={styles.alertsBadge}>{newTaskAlerts.length > 9 ? '9+' : newTaskAlerts.length}</span>
-              )}
-            </button>
+            <div className={styles.alertsWrap}>
+              <button
+                className={styles.alertsBtnMobile}
+                onClick={toggleAlerts}
+                onBlur={() => setTimeout(closeAlerts, 150)}
+                aria-label="Task alerts"
+                title={newTaskAlerts.length > 0 ? `${newTaskAlerts.length} new task${newTaskAlerts.length === 1 ? '' : 's'} assigned to you` : 'No new tasks'}
+              >
+                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+                </svg>
+                {newTaskAlerts.length > 0 && (
+                  <span className={styles.alertsBadge}>{newTaskAlerts.length > 9 ? '9+' : newTaskAlerts.length}</span>
+                )}
+              </button>
+              {alertsOpen && <AlertsDropdown alerts={newTaskAlerts} onSelect={openAlertTask} />}
+            </div>
           )}
           <button
             className={styles.topbarTheme}

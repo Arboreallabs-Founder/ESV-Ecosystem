@@ -12,7 +12,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const demoMode = store.get('demo_mode')?.value === '1' && user.email === 'demo@aalabs-demo.com'
   const demoPersona = store.get('demo_persona')?.value ?? 'founder'
 
-  const canHaveTasks = ['founder', 'admin', 'associate'].includes(user.role ?? '')
+  const canHaveTasks = ['founder', 'admin', 'associate', 'general'].includes(user.role ?? '')
   const myTaskAlerts = canHaveTasks ? await fetchMyOpenTaskAlerts(user.id) : []
 
   return (
