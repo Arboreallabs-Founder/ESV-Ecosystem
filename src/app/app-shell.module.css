@@ -97,20 +97,19 @@
   box-shadow: 0 0 0 2px var(--color-card);
 }
 
-.alertsWrap { position: relative; flex-shrink: 0; }
+.alertsWrap { flex-shrink: 0; }
 
-.alertsDropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  width: 280px;
-  max-height: 340px;
+/* Sub-bar under the sidebar header (see AlertsPanel in AppShell.tsx), not a floating
+   dropdown — the sidebar column is only ~230-270px wide with overflow-x:hidden, so
+   anything anchored outside the normal flow there gets clipped. Staying in-flow avoids
+   that entirely; it just pushes the nav list down while open. */
+.alertsPanel {
+  margin-top: 0.5rem;
+  max-height: 260px;
   overflow-y: auto;
-  background: var(--color-card);
+  background: var(--color-bg);
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
-  box-shadow: var(--shadow-elevated);
-  z-index: 60;
   padding: 0.25rem;
 }
 

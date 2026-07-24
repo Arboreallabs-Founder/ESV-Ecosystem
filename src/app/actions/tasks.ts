@@ -49,6 +49,60 @@ export async function createTask(formData: FormData): Promise<Task> {
   return data as unknown as Task
 }
 
+export async function updateTask(taskId: string, formData: FormData): Promise<Task> {
+  const { supabase, userId, role } = await requireRole(['founder', 'admin', 'associate', 'general'])
+
+  const { data: existing } = await supabase
+    .from('tasks')
+    .select('created_by, assigned_by_id, assignee_id')
+    .eq('id', taskId)
+    .single()
+  if (!existing) throw new Error('Task not found.')
+
+  // Editable by whoever has a stake in the task, not just its assignee (contrast pushTask).
+  const canEdit = ['founder', 'admin'].includes(role)
+    || existing.created_by === userId
+    || existing.assigned_by_id === userId
+    || existing.assignee_id === userId
+  if (!canEdit) throw new Error('You can only edit tasks you created, assigned, or are assigned to.')
+
+  const assigneeId = formData.get('assignee_id') as string
+  if (!assigneeId) throw new Error('Please choose who this task is assigned to.')
+
+  // Same assignment rules as createTask. (RLS double-guards these.)
+  if (assigneeId !== userId) {
+    const { data: assignee } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', assigneeId)
+      .single()
+    const assigneeRole = assignee?.role
+    if (assigneeRole === 'franchise_partner') {
+      throw new Error('Tasks cannot be assigned to partners.')
+    }
+    if ((role === 'associate' || role === 'general') && assigneeRole !== 'associate' && assigneeRole !== 'general') {
+      throw new Error('Associates can only assign tasks to themselves or other associates.')
+    }
+  }
+
+  const { data, error } = await supabase.from('tasks').update({
+    title: formData.get('title') as string,
+    description: (formData.get('description') as string) || null,
+    assignee_id: assigneeId,
+    company_id: (formData.get('company_id') as string) || null,
+    desk_deal_id: (formData.get('desk_deal_id') as string) || null,
+    link_url: (formData.get('link_url') as string)?.trim() || null,
+    due_date: (formData.get('due_date') as string) || null,
+    priority: (formData.get('priority') as string) || 'Medium',
+  }).eq('id', taskId).select(TASK_SELECT).single()
+
+  if (error) throw error
+  revalidatePath('/tasks')
+  revalidatePath('/dashboard')
+  revalidatePath('/my-todos')
+  return data as unknown as Task
+}
+
 export async function updateTaskStatus(taskId: string, status: string) {
   const { supabase } = await requireRole(['founder', 'admin', 'associate', 'general'])
 

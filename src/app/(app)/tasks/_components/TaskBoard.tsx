@@ -190,6 +190,11 @@ export default function TaskBoard({
     startTransition(async () => { await updateTaskStatus(taskId, newStatus) })
   }
 
+  function handleTaskUpdated(updated: Task) {
+    setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
+    setDetailTask(updated)
+  }
+
   function handleDelete(task: Task) {
     if (!confirm(`Delete task "${task.title}"? This cannot be undone.`)) return
     setTasks((prev) => prev.filter((t) => t.id !== task.id))
@@ -677,7 +682,18 @@ export default function TaskBoard({
         </div>
       )}
 
-      {detailTask && <TaskDetailModal task={detailTask} onClose={() => setDetailTask(null)} />}
+      {detailTask && (
+        <TaskDetailModal
+          task={detailTask}
+          onClose={() => setDetailTask(null)}
+          onUpdated={handleTaskUpdated}
+          users={users}
+          companyOptions={companyOptions}
+          dealOptions={dealOptions}
+          currentUserId={currentUserId}
+          userRole={userRole}
+        />
+      )}
     </div>
   )
 }

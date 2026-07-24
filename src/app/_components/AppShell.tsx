@@ -25,9 +25,13 @@ function Icon({ d, d2 }: { d: string; d2?: string }) {
   )
 }
 
-function AlertsDropdown({ alerts, onSelect }: { alerts: TaskAlert[]; onSelect: (taskId: string) => void }) {
+// Rendered in normal document flow as a sub-bar under the sidebar header, rather than a
+// floating/absolute dropdown — the sidebar column is only ~230-270px wide with
+// overflow-x:hidden, so anything wide enough to be legible and positioned outside the
+// flow gets clipped no matter what. Staying in-flow sidesteps that entirely.
+function AlertsPanel({ alerts, onSelect }: { alerts: TaskAlert[]; onSelect: (taskId: string) => void }) {
   return (
-    <div className={styles.alertsDropdown} onMouseDown={(e) => e.preventDefault()}>
+    <div className={styles.alertsPanel}>
       <div className={styles.alertsDropdownHead}>Task alerts</div>
       {alerts.length === 0 ? (
         <div className={styles.alertsDropdownEmpty}>No new activity</div>
@@ -432,10 +436,10 @@ export default function AppShell({
                     <span className={styles.alertsBadge}>{newTaskAlerts.length > 9 ? '9+' : newTaskAlerts.length}</span>
                   )}
                 </button>
-                {alertsOpen && <AlertsDropdown alerts={newTaskAlerts} onSelect={openAlertTask} />}
               </div>
             )}
           </div>
+          {alertsOpen && <AlertsPanel alerts={newTaskAlerts} onSelect={openAlertTask} />}
         </div>
 
         {/* Nav links */}
@@ -620,8 +624,7 @@ export default function AppShell({
             <div className={styles.alertsWrap}>
               <button
                 className={styles.alertsBtnMobile}
-                onClick={toggleAlerts}
-                onBlur={() => setTimeout(closeAlerts, 150)}
+                onClick={() => { setMobileOpen(true); setAlertsOpen(true) }}
                 aria-label="Task alerts"
                 title={newTaskAlerts.length > 0 ? `${newTaskAlerts.length} new task${newTaskAlerts.length === 1 ? '' : 's'} assigned to you` : 'No new tasks'}
               >
@@ -632,7 +635,6 @@ export default function AppShell({
                   <span className={styles.alertsBadge}>{newTaskAlerts.length > 9 ? '9+' : newTaskAlerts.length}</span>
                 )}
               </button>
-              {alertsOpen && <AlertsDropdown alerts={newTaskAlerts} onSelect={openAlertTask} />}
             </div>
           )}
           <button
