@@ -3,6 +3,17 @@
 ## Project Overview
 Ecosystem is the unified deal pipeline and CRM platform for Earlyseed Ventures, covering the full IB workflow. It replaces Google Sheets, WhatsApp, and Docs.
 
+## Documentation
+This file is deliberately a short orientation doc, not the full picture — it has drifted stale
+before (the "What's Built" list below undersells the app significantly). For anything beyond a
+quick orientation, read:
+- **[docs/FUNCTIONALITY.md](docs/FUNCTIONALITY.md)** — accurate, current, module-by-module rundown
+- **[docs/ROLES.md](docs/ROLES.md)** — the authoritative role/permission reference, including the
+  `general` role (not covered below)
+- **[docs/MIGRATIONS.md](docs/MIGRATIONS.md)** — schema history and phase labeling
+- **[docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)** — local env setup
+- **[docs/](docs/)** — everything else (brand guidelines, original PRD)
+
 ## Current Status (June 2026)
 - **Live:** Deployed to Vercel at `https://ecosystem-liart.vercel.app`
 - **Repo:** `https://github.com/Arboreallabs-Founder/ESV-Ecosystem` (main branch)

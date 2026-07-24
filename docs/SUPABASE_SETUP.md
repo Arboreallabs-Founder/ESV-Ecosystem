@@ -29,6 +29,19 @@ You need two values from the Supabase dashboard. Here's exactly where to find th
 1. Same page: https://supabase.com/dashboard/project/hsabrzwsetjeaqutjrjb/settings/api
 2. Under **Project API Keys**, copy the `anon` `public` key (long string starting with `eyJ...`)
 
+### 2c. `SUPABASE_SERVICE_ROLE_KEY` (needed for admin-only server actions)
+
+1. Same page: https://supabase.com/dashboard/project/hsabrzwsetjeaqutjrjb/settings/api
+2. Under **Project API Keys**, copy the `service_role` `secret` key (also starts with `eyJ...`)
+3. This bypasses RLS — used server-side only (`src/lib/supabase/admin.ts`) for user add/revoke and
+   anonymous public form submissions. Without it, everything else works fine; only those specific
+   actions will fail.
+
+### 2d. `DEMO_PASSWORD` (optional)
+
+Only needed to test demo-mode login/persona switching (`src/app/actions/demo.ts`). Skip unless
+you're working on that feature.
+
 ---
 
 ## 3. Create Your `.env.local` File
@@ -38,9 +51,11 @@ In the root of this repo, create a file called `.env.local` (it is git-ignored):
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://hsabrzwsetjeaqutjrjb.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<paste the anon key here>
+SUPABASE_SERVICE_ROLE_KEY=<paste the service_role key here>
+DEMO_PASSWORD=<optional, only for demo-mode login>
 ```
 
-Replace `<paste the anon key here>` with the key you copied in step 2b.
+Replace the placeholders with the keys you copied in steps 2b–2c.
 
 ---
 

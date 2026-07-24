@@ -1,6 +1,6 @@
 # ESV Ecosystem — Roles & Permissions
 
-> Last updated: 2026-06-18.
+> Last updated: 2026-07-24 (added the `general` role).
 > This is the authoritative reference for what each role can and cannot do.
 > Enforcement happens at **two layers**: server-action guards (`requireRole` / `requireAdmin` /
 > `requireInternal`) and Postgres **RLS policies** (`get_user_role()`, `get_user_org_id()`,
@@ -8,7 +8,7 @@
 
 ---
 
-## The five roles
+## The six roles
 
 | Role | Type | Scope |
 |------|------|-------|
@@ -16,10 +16,11 @@
 | **founder** | Internal | Full access within their org. |
 | **admin** | Internal | Full access within their org (functionally equal to founder). |
 | **associate** | Internal | Day-to-day operator with limited admin/edit rights; tasks scoped to self. |
+| **general** | Internal | Narrow operator added 2026-08-05. Read-only on the deal pipeline (pipelines/active deals/companies/investors); full task access (same as associate); can create/edit — not delete — HR policies and Bulletin/Events posts. |
 | **franchise_partner** | External | Referral partner. Read-mostly; scoped to their **own** links & referrals. |
 
-"Internal" = founder, admin, associate. Everything is **org-scoped**: a user only ever sees data
-in their own organization (super_admin excepted).
+"Internal" = founder, admin, associate, general. Everything is **org-scoped**: a user only ever
+sees data in their own organization (super_admin excepted).
 
 ---
 
@@ -27,34 +28,43 @@ in their own organization (super_admin excepted).
 
 Legend: ✅ full · 🟡 limited/conditional · 👁 read-only · ❌ none
 
-| Capability | Founder | Admin | Associate | Partner | Super admin |
-|---|---|---|---|---|---|
-| Dashboard | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Pipelines board (view/move/assign) | ✅ | ✅ | 🟡 assigned | ❌ | ❌ |
-| Build / edit forms | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Generate submission links | ✅ | ✅ | ✅ | ✅ | ❌ |
-| My Submissions (own sourced entries) | — | — | — | 👁 | ❌ |
-| Active Deals — view | ✅ all org | ✅ all org | ✅ all org | 👁 all org¹ | ❌ |
-| Active Deals — edit investors/fees | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Partner deal shares — set base + split | ✅ | ✅ | 👁 | ❌ | ❌ |
-| Partner earnings — view | ✅ per partner³ | ✅ per partner³ | 👁 | 👁 own only⁴ | ❌ |
-| Accept a deal (entry → Accepted) | ✅ | ✅ | 🟡 if assigned | ❌ | ❌ |
-| Deal categories (CRUD) | ✅ | ✅ | 👁 | 👁 | ❌ |
-| Investors — create | ✅ | ✅ | ✅ | 🟡 referrals | ❌ |
-| Investors — edit | ✅ | ✅ | ❌ | 🟡 own referrals² | ❌ |
-| Investors — delete | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Set ESV POC on investor | ✅ | ✅ | 🟡 on create | ❌ | ❌ |
-| Tasks — view | ✅ all | ✅ all | 🟡 own assigned | ❌ | ❌ |
-| Tasks — create/assign | ✅ non-partners | ✅ non-partners | 🟡 self/associates | ❌ | ❌ |
-| Tasks — push (new date) | 🟡 own | 🟡 own | 🟡 own | ❌ | ❌ |
-| Tasks — KPI view | ✅ everyone | ✅ everyone | 🟡 own | ❌ | ❌ |
-| Escalations — view | ✅ all | ✅ all | 🟡 own raised | 🟡 sent to them | ❌ |
-| Escalations — raise | ❌ | ✅ | ✅ | ❌ | ❌ |
-| Escalations — set status | ✅ | ✅ | 🟡 own raised | 🟡 received | ❌ |
-| User management (`/admin/users`) | ✅ | ✅ | ❌ | ❌ | ✅ cross-org |
-| Partner management (`/admin/partners`) | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Manage organizations | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Wiki | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Capability | Founder | Admin | Associate | General | Partner | Super admin |
+|---|---|---|---|---|---|---|
+| Dashboard | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Pipelines board (view/move/assign) | ✅ | ✅ | 🟡 assigned | 👁 | ❌ | ❌ |
+| Build / edit forms | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Generate submission links | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
+| My Submissions (own sourced entries) | — | — | — | — | 👁 | ❌ |
+| Active Deals — view | ✅ all org | ✅ all org | ✅ all org | 👁 all org | 👁 all org¹ | ❌ |
+| Active Deals — edit investors/fees | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Partner deal shares — set base + split | ✅ | ✅ | 👁 | ❌ | ❌ | ❌ |
+| Partner earnings — view | ✅ per partner³ | ✅ per partner³ | 👁 | ❌ | 👁 own only⁴ | ❌ |
+| Accept a deal (entry → Accepted) | ✅ | ✅ | 🟡 if assigned | ❌ | ❌ | ❌ |
+| Deal categories (CRUD) | ✅ | ✅ | 👁 | ❌ | 👁 | ❌ |
+| Investors — create | ✅ | ✅ | ✅ | ❌ | 🟡 referrals | ❌ |
+| Investors — edit | ✅ | ✅ | ❌ | ❌ | 🟡 own referrals² | ❌ |
+| Investors — delete | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Investors — view | ✅ | ✅ | ✅ | 👁 | 🟡 own referrals | ❌ |
+| Set ESV POC on investor | ✅ | ✅ | 🟡 on create | ❌ | ❌ | ❌ |
+| Tasks — view | ✅ all | ✅ all | 🟡 own assigned | 🟡 own assigned | ❌ | ❌ |
+| Tasks — create/assign | ✅ non-partners | ✅ non-partners | 🟡 self/associates/general | 🟡 self/associates/general | ❌ | ❌ |
+| Tasks — push (new date) | 🟡 own | 🟡 own | 🟡 own | 🟡 own | ❌ | ❌ |
+| Tasks — KPI view | ✅ everyone | ✅ everyone | 🟡 own | 🟡 own | ❌ | ❌ |
+| Escalations — view | ✅ all | ✅ all | 🟡 own raised | ❌ | 🟡 sent to them | ❌ |
+| Escalations — raise | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Escalations — set status | ✅ | ✅ | 🟡 own raised | ❌ | 🟡 received | ❌ |
+| HR policies — create/edit (not delete) | ✅ | ✅ | ❌ | 🟡 | 👁 | ❌ |
+| Bulletin / Events — create/edit (not delete) | ✅ | ✅ | ❌ | 🟡 | 👁 | ❌ |
+| User management (`/admin/users`) | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ cross-org |
+| Partner management (`/admin/partners`) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Manage organizations | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Wiki | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+**General role note:** added 2026-08-05 (`20260805000000_add_general_role.sql` onward), purpose-built
+as a narrower operator than associate — read-only into the deal/investor pipeline, but full task
+parity with associate, plus (added 2026-08-12) write access to HR policies and Bulletin/Events posts
+(create/edit, not delete — matches founder/admin there, unlike everywhere else in this table). See
+[FUNCTIONALITY.md](FUNCTIONALITY.md) for the full module rundown.
 
 ¹ Partners see all active deals **in their org**, but inside each deal only their **own referred
 investors** are listed and the Investment/Earnings totals are computed from those only. Everything in
