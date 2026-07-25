@@ -10,7 +10,7 @@ const ROLES = [
   { value: 'founder', label: 'Founder' },
   { value: 'admin', label: 'Admin' },
   { value: 'associate', label: 'Associate' },
-  { value: 'franchise_partner', label: 'Franchise Partner' },
+  { value: 'franchise_partner', label: 'SGP' },
   { value: 'general', label: 'General' },
 ]
 

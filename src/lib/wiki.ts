@@ -48,7 +48,7 @@ export const WIKI: Record<string, WikiSection> = {
     items: [
       { heading: 'Board Columns', body: 'To Do → Done. Move tasks by changing the status dropdown on each card. Moving a task to Done stamps its completion time; moving it back to To Do clears it.' },
       { heading: 'Creating a Task', body: 'Click "+ New Task". Set a title, optional description, assignee, linked deal, due date, and priority (Low / Medium / High). Every card shows who it was assigned by.' },
-      { heading: 'Who can be assigned', body: 'Founders/admins can assign any internal team member. Associates can only assign to themselves or other associates. Franchise partners can never be assigned tasks.' },
+      { heading: 'Who can be assigned', body: 'Founders/admins can assign any internal team member. Associates can only assign to themselves or other associates. SGPs can never be assigned tasks.' },
       { heading: 'Visibility', body: 'Founders and admins see all tasks in the organisation. Associates see only the tasks assigned to them. Partners have no task access.' },
       { heading: 'Pushing a task', body: 'Only the assignee can push their own task to a new target date. Pushing records the new date and increments the push count — the original due date is retained for reporting.' },
       { heading: 'Priority Levels', body: 'High = blocks progress or has a hard deadline. Medium = standard work. Low = nice-to-have or whenever. Overdue tasks show a ⚠ warning.' },
@@ -106,7 +106,7 @@ export const WIKI: Record<string, WikiSection> = {
       { heading: 'Enabling / disabling a fee', body: 'Click the ● / ○ toggle next to a fee to enable or disable it. You will be asked to type the deal name to confirm — this prevents accidental changes. Disabled fees are excluded from the totals.' },
       { heading: 'Custom fees', body: 'Click "+ Add Fee" under any investor to add a fee that isn\'t part of the category (e.g. a separately negotiated charge). Custom fees have a label and a rate % and can be deleted.' },
       { heading: 'Fee calculations', body: 'For each fee, the system shows the rate % and the calculated earning (rate × investment amount). The totals bar sums all enabled fee earnings across all investors.' },
-      { heading: 'Referral investors', body: 'If an investor was referred by a franchise partner, a Referral badge appears on their row automatically.' },
+      { heading: 'Referral investors', body: 'If an investor was referred by an SGP, a Referral badge appears on their row automatically.' },
       { heading: 'Adding a deal directly', body: 'Not every deal comes through a pipeline — click "+ New deal" (founder/admin) to add a portfolio or off-pipeline deal straight into Active Deals. It creates or links a company profile by name automatically.' },
       { heading: 'Importing deals from CSV', body: 'Click "Import CSV" (founder/admin) for a bulk path: copy the AI-agent prompt (columns are generated from your org\'s deal categories), have an AI agent turn your source list into a CSV, then upload it. Each row becomes an active deal.' },
       { heading: 'Creating a deal from a company profile', body: 'On any Company Profile, founders/admins can click "Create deal" to add that company straight to Active Deals — linked directly to the profile rather than matched by name.' },
@@ -132,7 +132,7 @@ export const WIKI: Record<string, WikiSection> = {
     items: [
       { heading: 'Adding an Investor', body: 'Click "+ Add Investor". Fill in the name, type (VC Fund, Angel Fund, Family Office, or Angel Investor), country, website, stage preference, ticket size range (₹), and sectors.' },
       { heading: 'ESV POC', body: 'Select one or more internal team members as the Point of Contact for this investor. Type a name to search and click to select. Multiple POCs are supported — each appears as a chip.' },
-      { heading: 'Referred by Partner', body: 'If this investor was introduced by a franchise partner, select the partner here (admin/founder only). The investor will show a Referral badge when added to any deal.' },
+      { heading: 'Referred by Partner', body: 'If this investor was introduced by an SGP, select the partner here (admin/founder only). The investor will show a Referral badge when added to any deal.' },
       { heading: 'Contacts', body: 'For funds (not angel investors), you can add individual contacts — name, role, email, phone, and LinkedIn URL. Contacts are managed from the investor detail drawer after creation.' },
       { heading: 'Search', body: 'The search bar filters by name, country, sector, stage, or ESV POC name. No need to scroll.' },
       { heading: 'Cheque Range', body: 'Amounts are in Indian Rupees. The system auto-formats large amounts (e.g. ₹50L, ₹2.5Cr) for display.' },
@@ -141,14 +141,14 @@ export const WIKI: Record<string, WikiSection> = {
   },
 
   partners: {
-    title: 'Franchise Partners',
-    summary: 'Manage ESV\'s external franchise partner network. Partners refer deals and earn a share of the resulting fees.',
+    title: 'Strategic Growth Partners',
+    summary: 'Manage ESV\'s external Strategic Growth Partner (SGP) network. Partners refer deals and earn a share of the resulting fees.',
     items: [
       { heading: 'Partner details', body: 'In the Partners tab, fill in or edit a partner\'s firm name, contact, agreement type, Standard Fee Split %, and contract link. The Standard Fee Split is the default percentage a partner earns of the relevant deal earning.' },
       { heading: 'Deals & earnings', body: 'Click "Deals & earnings" on a partner to open their per-partner page. It lists every deal they are tied to — deals sourced via their link, or deals where one of their referred investors appears — with the org total earning, the earning via their referred investors, and their computed share.' },
       { heading: 'Share base', body: 'For each deal, choose where the partner\'s share is calculated from: "Referred earning" (just their referred investors\' fees) or "Total earning" (the deal\'s whole org earning). Defaults to referred.' },
       { heading: 'Per-deal split override', body: 'Each deal uses the partner\'s Standard Fee Split by default. Override the split % on any individual deal — leave the field blank to fall back to the standard. The partner\'s share recalculates immediately.' },
-      { heading: 'Linking to a Portal Account', body: 'A partner record is linked to a franchise_partner user account from User Management. This gives them access to their scoped views (Active Deals, Investors, My Submissions, My Earnings, My Links).' },
+      { heading: 'Linking to a Portal Account', body: 'A partner record is linked to an SGP user account from User Management. This gives them access to their scoped views (Active Deals, Investors, My Submissions, My Earnings, My Links).' },
     ],
   },
 
@@ -166,7 +166,7 @@ export const WIKI: Record<string, WikiSection> = {
     title: 'Admin',
     summary: 'User management for Earlyseed Ventures\' internal team. Visible to the Admin role only.',
     items: [
-      { heading: 'Roles', body: 'Founder: full access including financials. Admin: full access + user management. Associate: pipeline, tasks, investors (no financials). Franchise Partner: portal only.' },
+      { heading: 'Roles', body: 'Founder: full access including financials. Admin: full access + user management. Associate: pipeline, tasks, investors (no financials). SGP: portal only.' },
       { heading: 'Changing a Role', body: 'Use the dropdown in the Role column to change any user\'s role. Takes effect immediately on their next page load.' },
       { heading: 'Creating Accounts', body: 'Click "+ Create Account" to add a new team member. Set their email, name, temporary password, and role. They can change their password after logging in.' },
       { heading: 'Your Own Account', body: 'You cannot change your own role (to prevent accidental lock-out). Contact another admin if needed.' },
@@ -211,14 +211,14 @@ export const WIKI: Record<string, WikiSection> = {
       { heading: 'Deal cards', body: 'Each card shows the company name, submitter, assignees, and the link creator chip. Drag cards between columns to move stages. Click a card to open the full entry detail.' },
       { heading: 'Entry detail', body: 'The entry panel shows all Q&A answers from the form submission, which link was used ("via [Name]\'s link"), assigned team members (add/remove), and the rejection reason if applicable.' },
       { heading: 'Rejection flow', body: 'Moving a deal to the Rejected column triggers a prompt for a reason (optional). The reason is stored on the entry and shown in the detail panel.' },
-      { heading: 'Assigning team members', body: 'Open the entry detail and use the assignee picker to add or remove team members. Franchise partners are excluded from assignment. Multiple people can own the same deal.' },
+      { heading: 'Assigning team members', body: 'Open the entry detail and use the assignee picker to add or remove team members. SGPs are excluded from assignment. Multiple people can own the same deal.' },
       { heading: 'Linking forms', body: 'Use the "Forms" button in the board header to link or unlink intake forms. Multiple forms can feed the same pipeline. Submissions from all linked forms appear in the Lead column.' },
     ],
   },
 
   portal: {
-    title: 'Franchise Partner Portal',
-    summary: 'The view for external franchise partners. Submit deals and track their progress.',
+    title: 'SGP Portal',
+    summary: 'The view for external SGPs. Submit deals and track their progress.',
     items: [
       { heading: 'Submitting a Deal', body: 'Click "+ Submit Deal". Fill in the company name, sector, and funding stage. ESV\'s team will pick it up and move it through the pipeline.' },
       { heading: 'Tracking Referrals', body: 'The table shows all deals you\'ve referred and their current stage. Stages auto-update as the ESV team moves them.' },
@@ -229,7 +229,7 @@ export const WIKI: Record<string, WikiSection> = {
 
   bulletin: {
     title: 'Bulletin Board',
-    summary: 'A company-wide board for upcoming events and announcements. Internal team only (founder/admin/associate) — franchise partners don\'t see it.',
+    summary: 'A company-wide board for upcoming events and announcements. Internal team only (founder/admin/associate) — SGPs don\'t see it.',
     items: [
       { heading: 'Reading it', body: 'Posts are grouped into Pinned, Upcoming events, and Announcements, with a collapsed "Past events" section at the bottom so old events don\'t clutter the board.' },
       { heading: 'Posting', body: 'Founders/admins click "+ New post", choose Event or Announcement, and fill in a title and details. Events also take a date, optional time, and location.' },

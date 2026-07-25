@@ -33,7 +33,7 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <div className={styles.pageTitle}>Franchise Partners</div>
+          <div className={styles.pageTitle}>Strategic Growth Partners</div>
           <div className={styles.pageSub}>
             {partnerUsers.length} partner{partnerUsers.length !== 1 ? 's' : ''}
             {' — '}create partner accounts in User Management
