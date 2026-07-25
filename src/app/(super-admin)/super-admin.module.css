@@ -189,7 +189,7 @@
   color: var(--color-muted);
 }
 
-.roleBadgeFounder  { background: rgba(116,95,253,0.12); color: var(--color-primary); border-color: rgba(116,95,253,0.25); }
+.roleBadgeFounder  { background: rgba(var(--color-hover-rgb),0.12); color: var(--color-primary); border-color: rgba(var(--color-hover-rgb),0.25); }
 .roleBadgeAdmin    { background: rgba(213,174,143,0.18); color: #9b6a3c; border-color: rgba(213,174,143,0.4); }
 .roleBadgeAssociate { background: var(--color-bg); color: var(--color-muted); border-color: var(--color-border); }
 .roleBadgePartner  { background: rgba(213,174,143,0.18); color: #8b5e2e; border-color: rgba(213,174,143,0.4); }

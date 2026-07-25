@@ -1,6 +1,7 @@
 'use client'
 
-import { Fragment, useEffect, useState, useTransition } from 'react'
+import { Fragment, useEffect, useRef, useState, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -29,9 +30,12 @@ function Icon({ d, d2 }: { d: string; d2?: string }) {
 // floating/absolute dropdown — the sidebar column is only ~230-270px wide with
 // overflow-x:hidden, so anything wide enough to be legible and positioned outside the
 // flow gets clipped no matter what. Staying in-flow sidesteps that entirely.
-function AlertsPanel({ alerts, onSelect }: { alerts: TaskAlert[]; onSelect: (taskId: string) => void }) {
-  return (
-    <div className={styles.alertsPanel}>
+// `bare` skips the outer box styling for reuse inside <NavFlyout>, which already provides
+// its own box (needed when the sidebar is collapsed to an icon rail — there's no column
+// width left to render this in-flow at all).
+function AlertsPanel({ alerts, onSelect, bare }: { alerts: TaskAlert[]; onSelect: (taskId: string) => void; bare?: boolean }) {
+  const content = (
+    <>
       <div className={styles.alertsDropdownHead}>Task alerts</div>
       {alerts.length === 0 ? (
         <div className={styles.alertsDropdownEmpty}>No new activity</div>
@@ -50,11 +54,45 @@ function AlertsPanel({ alerts, onSelect }: { alerts: TaskAlert[]; onSelect: (tas
           </button>
         ))
       )}
-    </div>
+    </>
+  )
+  return bare ? content : <div className={styles.alertsPanel}>{content}</div>
+}
+
+// Portaled to <body> and positioned from the anchor's own screen coordinates. Used for the
+// collapsed icon rail, where a submenu genuinely has to render outside the ~64px column —
+// unlike AlertsPanel's in-flow fix above, there's no "stay in the column" option here at all.
+function NavFlyout({ anchor, onClose, children }: { anchor: HTMLElement; onClose: () => void; children: React.ReactNode }) {
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
+  const flyoutRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const rect = anchor.getBoundingClientRect()
+    setPos({ top: rect.top, left: rect.right + 8 })
+  }, [anchor])
+
+  useEffect(() => {
+    function handleMouseDown(e: MouseEvent) {
+      const target = e.target as Node
+      if (flyoutRef.current?.contains(target)) return
+      if (anchor.contains(target)) return
+      onClose()
+    }
+    document.addEventListener('mousedown', handleMouseDown)
+    return () => document.removeEventListener('mousedown', handleMouseDown)
+  }, [anchor, onClose])
+
+  if (!pos) return null
+
+  return createPortal(
+    <div ref={flyoutRef} className={styles.navFlyout} style={{ position: 'fixed', top: pos.top, left: pos.left }}>
+      {children}
+    </div>,
+    document.body,
   )
 }
 
-type NavItem = { href: string; label: string; roles: string[]; icon: React.ReactNode; section?: string }
+type NavItem = { href: string; label: string; roles: string[]; icon: React.ReactNode; section?: string; badgeColor?: string }
 type NavGroup = { group: true; label: string; roles: string[]; icon: React.ReactNode; children: NavItem[]; section?: string }
 type NavEntry = NavItem | NavGroup
 
@@ -77,30 +115,35 @@ const NAV_ITEMS: NavEntry[] = [
         label: 'Board',
         roles: ['founder', 'admin', 'associate', 'general'],
         icon: <Icon d="M9 17V7m0 10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m0 10a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m0 10V7m0 10a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2" />,
+        badgeColor: 'var(--color-primary)',
       },
       {
         href: '/my-todos',
         label: 'My To-Dos',
         roles: ['founder', 'admin', 'associate', 'general'],
         icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
+        badgeColor: 'var(--color-accent)',
       },
       {
         href: '/tasks/recurring',
         label: 'Recurring',
         roles: ['founder', 'admin', 'associate', 'general'],
         icon: <Icon d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />,
+        badgeColor: 'var(--color-warning)',
       },
       {
         href: '/tasks/kpi',
         label: 'KPI',
         roles: ['founder', 'admin', 'associate', 'general'],
         icon: <Icon d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />,
+        badgeColor: 'var(--color-success)',
       },
       {
         href: '/tasks/update',
         label: 'Weekly Update',
         roles: ['founder', 'admin', 'general'],
         icon: <Icon d="M6 12 3.269 3.126A59.768 59.768 0 0 1 21.485 12 59.77 59.77 0 0 1 3.27 20.876L5.999 12Zm0 0h7.5" />,
+        badgeColor: 'var(--color-primary-light)',
       },
     ],
   },
@@ -130,18 +173,21 @@ const NAV_ITEMS: NavEntry[] = [
         label: 'Upcoming Events',
         roles: ['founder', 'admin', 'associate', 'general'],
         icon: <Icon d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />,
+        badgeColor: 'var(--color-success)',
       },
       {
         href: '/events/past',
         label: 'Past Events',
         roles: ['founder', 'admin', 'associate', 'general'],
         icon: <Icon d="M12 6v6l4 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
+        badgeColor: 'var(--color-accent)',
       },
       {
         href: '/events/kpi',
         label: 'Event KPIs',
         roles: ['founder', 'admin', 'associate', 'general'],
         icon: <Icon d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />,
+        badgeColor: 'var(--color-warning)',
       },
     ],
   },
@@ -164,12 +210,14 @@ const NAV_ITEMS: NavEntry[] = [
         label: 'Deals',
         roles: ['founder', 'admin', 'associate', 'franchise_partner', 'general'],
         icon: <Icon d="M3.75 9.776c.112-.017.227-.026.344-.026h15.812c.117 0 .232.009.344.026m-16.5 0a2.25 2.25 0 0 0-1.883 2.542l.857 6a2.25 2.25 0 0 0 2.227 1.932H19.05a2.25 2.25 0 0 0 2.227-1.932l.857-6a2.25 2.25 0 0 0-1.883-2.542m-16.5 0V6A2.25 2.25 0 0 1 6 3.75h3.879a1.5 1.5 0 0 1 1.06.44l2.122 2.12a1.5 1.5 0 0 0 1.06.44H18A2.25 2.25 0 0 1 20.25 9v.776" />,
+        badgeColor: 'var(--color-primary)',
       },
       {
         href: '/admin/categories',
         label: 'Categories',
         roles: ['founder', 'admin'],
         icon: <Icon d="M9.568 3H5.25A2.25 2.25 0 0 0 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 0 0 5.223-5.223c.542-.827.369-1.908-.33-2.607L9.568 3Z" d2="M6 6h.008v.008H6V6Z" />,
+        badgeColor: 'var(--color-accent)',
       },
     ],
   },
@@ -301,6 +349,30 @@ export default function AppShell({
   // Close the mobile drawer whenever the route changes.
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
+  // Collapsible icon-only rail (desktop only — the mobile drawer ignores this, see CSS).
+  // Pure UI preference, not user-specific, so no id suffix on the storage key.
+  const sidebarCollapsedKey = 'esv_sidebar_collapsed'
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  useEffect(() => { setSidebarCollapsed(localStorage.getItem(sidebarCollapsedKey) === '1') }, [])
+  function toggleSidebarCollapsed() {
+    setSidebarCollapsed((prev) => {
+      const next = !prev
+      localStorage.setItem(sidebarCollapsedKey, next ? '1' : '0')
+      return next
+    })
+  }
+
+  // Nav-item filter — pure client-side label match, no backend. Hidden while collapsed
+  // (no room in a 64px rail).
+  const [navFilter, setNavFilter] = useState('')
+  const filterActive = navFilter.trim().length > 0
+  const filterLower = navFilter.trim().toLowerCase()
+
+  // Single flyout slot shared by collapsed nav groups and the alerts bell (only one open at
+  // a time) — portaled via NavFlyout since a 64px rail has no in-column room for either.
+  type FlyoutState = { kind: 'group'; label: string; anchor: HTMLElement } | { kind: 'alerts'; anchor: HTMLElement } | null
+  const [flyout, setFlyout] = useState<FlyoutState>(null)
+
   // Alerts bell: "new" = assigned to me (or someone commented on my task) after the last
   // time I dismissed the bell. The seen-marker lives in localStorage (per user) since
   // there's no server-side read receipt.
@@ -312,20 +384,34 @@ export default function AppShell({
     setAlertsSeenAt(Number.isFinite(stored) ? stored : 0)
   }, [alertsSeenKey])
   const newTaskAlerts = myTaskAlerts.filter((t) => new Date(t.created_at).getTime() > alertsSeenAt)
+  function markAlertsSeen() {
+    const now = Date.now()
+    localStorage.setItem(alertsSeenKey, String(now))
+    setAlertsSeenAt(now)
+  }
   function closeAlerts() {
-    if (alertsOpen) {
-      const now = Date.now()
-      localStorage.setItem(alertsSeenKey, String(now))
-      setAlertsSeenAt(now)
-    }
+    if (alertsOpen) markAlertsSeen()
     setAlertsOpen(false)
   }
   function toggleAlerts() {
     if (alertsOpen) closeAlerts()
     else setAlertsOpen(true)
   }
+  function closeFlyout() {
+    if (flyout?.kind === 'alerts') markAlertsSeen()
+    setFlyout(null)
+  }
+  function toggleAlertsFlyout(e: React.MouseEvent<HTMLButtonElement>) {
+    if (flyout?.kind === 'alerts') closeFlyout()
+    else setFlyout({ kind: 'alerts', anchor: e.currentTarget })
+  }
+  function toggleGroupFlyout(label: string, e: React.MouseEvent<HTMLButtonElement>) {
+    if (flyout?.kind === 'group' && flyout.label === label) setFlyout(null)
+    else setFlyout({ kind: 'group', label, anchor: e.currentTarget })
+  }
   function openAlertTask(taskId: string) {
     closeAlerts()
+    closeFlyout()
     setMobileOpen(false)
     router.push(`/tasks?open=${taskId}`)
   }
@@ -381,6 +467,15 @@ export default function AppShell({
   const showSections = role !== 'franchise_partner'
   const navRows = visibleNav.map((entry) => ({ entry, section: showSections ? entry.section : undefined }))
 
+  // Nav search filter — a row survives if its own label matches, or (for a group) if the
+  // group label or any child label matches.
+  function entryMatchesFilter(entry: NavEntry): boolean {
+    if (!filterActive) return true
+    if (entry.label.toLowerCase().includes(filterLower)) return true
+    return 'group' in entry && entry.children.some((c) => c.label.toLowerCase().includes(filterLower))
+  }
+  const displayRows = filterActive ? navRows.filter((r) => entryMatchesFilter(r.entry)) : navRows
+
   function entryHrefs(entry: NavEntry): string[] {
     return 'group' in entry ? entry.children.map((c) => c.href) : [entry.href]
   }
@@ -395,7 +490,7 @@ export default function AppShell({
   return (
     <div className={styles.shell}>
       {mobileOpen && <div className={styles.backdrop} onClick={() => setMobileOpen(false)} />}
-      <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ''}`}>
+      <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ''} ${sidebarCollapsed ? styles.sidebarCollapsed : ''}`}>
         {/* Demo mode banner */}
         {demoMode && (
           <div className={styles.demoBanner}>
@@ -407,25 +502,16 @@ export default function AppShell({
         {/* Workspace header */}
         <div className={styles.sidebarTop}>
           <div className={styles.sidebarTopRow}>
-            <Link href="/settings" className={styles.workspace} onClick={() => setMobileOpen(false)}>
-              <div className={styles.logoMark}>
-                <img src="/ecosystem-favicon-sapling.png" alt="" width={36} height={36} />
-              </div>
-              <div className={styles.workspaceText}>
-                <span className={styles.logoText}>Ecosystem</span>
-                <span className={styles.workspaceSub}>{demoMode ? 'AA Labs — Demo' : 'Earlyseed Ventures'}</span>
-              </div>
-              <svg className={styles.workspaceChevron} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m9 18 6-6-6-6" />
-              </svg>
+            <Link href="/settings" className={styles.workspace} onClick={() => setMobileOpen(false)} title={demoMode ? 'AA Labs — Demo' : 'Earlyseed Ventures'} aria-label="Settings">
+              <span className={styles.logoText}>Ecosystem</span>
             </Link>
             {canHaveTasks && (
               <div className={styles.alertsWrap}>
                 <button
                   type="button"
                   className={styles.alertsBtn}
-                  onClick={toggleAlerts}
-                  onBlur={() => setTimeout(closeAlerts, 150)}
+                  onClick={(e) => { if (sidebarCollapsed) toggleAlertsFlyout(e); else toggleAlerts() }}
+                  onBlur={() => { if (!sidebarCollapsed) setTimeout(closeAlerts, 150) }}
                   title={newTaskAlerts.length > 0 ? `${newTaskAlerts.length} new task${newTaskAlerts.length === 1 ? '' : 's'} assigned to you` : 'No new tasks'}
                   aria-label="Task alerts"
                 >
@@ -439,14 +525,31 @@ export default function AppShell({
               </div>
             )}
           </div>
-          {alertsOpen && <AlertsPanel alerts={newTaskAlerts} onSelect={openAlertTask} />}
+          {!sidebarCollapsed && alertsOpen && <AlertsPanel alerts={newTaskAlerts} onSelect={openAlertTask} />}
         </div>
 
         {/* Nav links */}
         <nav className={styles.sidebarNav}>
-          {navRows.map(({ entry, section }, i) => {
-            const isSectionStart = !!section && navRows[i - 1]?.section !== section
-            const sectionOpen = !section || !collapsedSections.has(section) || activeSections.has(section)
+          {!sidebarCollapsed && (
+            <div className={styles.navSearchWrap}>
+              <svg className={styles.navSearchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" />
+              </svg>
+              <input
+                className={styles.navSearchInput}
+                type="text"
+                placeholder="Search…"
+                value={navFilter}
+                onChange={(e) => setNavFilter(e.target.value)}
+              />
+              {navFilter && (
+                <button type="button" className={styles.navSearchClear} onClick={() => setNavFilter('')} aria-label="Clear search">×</button>
+              )}
+            </div>
+          )}
+          {displayRows.map(({ entry, section }, i) => {
+            const isSectionStart = !!section && displayRows[i - 1]?.section !== section
+            const sectionOpen = sidebarCollapsed || filterActive || !section || !collapsedSections.has(section) || activeSections.has(section)
             // Non-header rows of a collapsed section are skipped entirely.
             if (section && !isSectionStart && !sectionOpen) return null
 
@@ -480,8 +583,35 @@ export default function AppShell({
                 .map((c) => c.href)
                 .filter((h) => pathname === h || pathname.startsWith(h + '/'))
                 .sort((a, b) => b.length - a.length)[0] ?? null
-              // Open if toggled open, or auto-open because it holds the active route.
-              const open = openGroups.has(entry.label) || activeChildHref !== null
+
+              // Collapsed rail: no room for the label+chevron row, so the whole group is one
+              // icon button that opens a flyout instead of navigating straight to a child.
+              if (sidebarCollapsed) {
+                const flyoutOpenForThis = flyout?.kind === 'group' && flyout.label === entry.label
+                return (
+                  <Fragment key={entry.label}>
+                    {header}
+                    <button
+                      type="button"
+                      className={`${styles.navGroupBtn} ${activeChildHref ? styles.navGroupBtnActive : ''}`}
+                      onClick={(e) => toggleGroupFlyout(entry.label, e)}
+                      aria-expanded={flyoutOpenForThis}
+                      aria-label={entry.label}
+                    >
+                      <span className={styles.navIcon}>{entry.icon}</span>
+                      <span className={styles.navLabel}>{entry.label}</span>
+                    </button>
+                  </Fragment>
+                )
+              }
+
+              // Expanded: unchanged inline accordion, plus (while searching) only the
+              // matching children when the group itself didn't match by name.
+              const childrenToShow = filterActive && !entry.label.toLowerCase().includes(filterLower)
+                ? visibleChildren.filter((c) => c.label.toLowerCase().includes(filterLower))
+                : visibleChildren
+              // Open if toggled open, or auto-open because it holds the active route, or a search is active.
+              const open = filterActive || openGroups.has(entry.label) || activeChildHref !== null
               return (
                 <Fragment key={entry.label}>
                   {header}
@@ -512,14 +642,15 @@ export default function AppShell({
                     </div>
                     {open && (
                       <div className={styles.navAccordion}>
-                        {visibleChildren.map((child) => (
+                        {childrenToShow.map((child) => (
                           <Link
                             key={child.href}
                             href={child.href}
                             className={`${styles.navSubItem} ${child.href === activeChildHref ? styles.navSubItemActive : ''}`}
                             onClick={() => setMobileOpen(false)}
                           >
-                            {child.label}
+                            <span className={styles.navBadge} style={{ background: child.badgeColor }}>{child.icon}</span>
+                            <span className={styles.navSubItemLabel}>{child.label}</span>
                           </Link>
                         ))}
                       </div>
@@ -593,7 +724,12 @@ export default function AppShell({
             </svg>
           </Link>
           <div className={styles.footerControls}>
-            <button className={styles.signOutBtn} onClick={handleSignOut} style={{ flex: 1 }}>Sign out</button>
+            <button className={`${styles.signOutBtn} ${styles.signOutBtnMain}`} onClick={handleSignOut}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15M18 12H9m9 0-3-3m3 3-3 3" />
+              </svg>
+              <span className={styles.footerBtnLabel}>Sign out</span>
+            </button>
             <button
               className={styles.signOutBtn}
               onClick={toggleTheme}
@@ -602,9 +738,53 @@ export default function AppShell({
             >
               {theme === 'dark' ? '☀' : '🌙'}
             </button>
+            <button
+              className={styles.signOutBtn}
+              onClick={toggleSidebarCollapsed}
+              title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+              style={{ width: 36, padding: 0, flexShrink: 0 }}
+            >
+              {sidebarCollapsed ? (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              ) : (
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="16" rx="2" /><line x1="9" y1="4" x2="9" y2="20" />
+                </svg>
+              )}
+            </button>
           </div>
         </div>
       </aside>
+
+      {flyout?.kind === 'alerts' && (
+        <NavFlyout anchor={flyout.anchor} onClose={closeFlyout}>
+          <AlertsPanel alerts={newTaskAlerts} onSelect={openAlertTask} bare />
+        </NavFlyout>
+      )}
+      {flyout?.kind === 'group' && (() => {
+        const groupEntry = NAV_ITEMS.find((e): e is NavGroup => 'group' in e && e.label === flyout.label)
+        if (!groupEntry) return null
+        const visibleChildren = groupEntry.children.filter((c) => c.roles.includes(role))
+        return (
+          <NavFlyout anchor={flyout.anchor} onClose={closeFlyout}>
+            <div className={styles.alertsDropdownHead}>{groupEntry.label}</div>
+            {visibleChildren.map((child) => (
+              <Link
+                key={child.href}
+                href={child.href}
+                className={styles.navFlyoutItem}
+                onClick={() => { closeFlyout(); setMobileOpen(false) }}
+              >
+                <span className={styles.navBadge} style={{ background: child.badgeColor }}>{child.icon}</span>
+                <span>{child.label}</span>
+              </Link>
+            ))}
+          </NavFlyout>
+        )
+      })()}
 
       <div className={styles.contentCol}>
         {/* Mobile top bar — hidden on desktop via CSS */}

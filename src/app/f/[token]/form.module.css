@@ -143,7 +143,7 @@
 }
 .input:focus {
   border-color: #745FFD;
-  box-shadow: 0 0 0 3px rgba(116,95,253,0.1);
+  box-shadow: 0 0 0 3px rgba(var(--color-hover-rgb),0.1);
   background: #fff;
 }
 
@@ -164,7 +164,7 @@
 }
 .textarea:focus {
   border-color: #745FFD;
-  box-shadow: 0 0 0 3px rgba(116,95,253,0.1);
+  box-shadow: 0 0 0 3px rgba(var(--color-hover-rgb),0.1);
   background: #fff;
 }
 
@@ -194,7 +194,7 @@
 }
 .mcqOption:hover {
   border-color: #745FFD;
-  background: rgba(116,95,253,0.03);
+  background: rgba(var(--color-hover-rgb),0.03);
   transform: translateX(2px);
 }
 
@@ -210,7 +210,7 @@
 
 .mcqOptionSelected {
   border-color: #745FFD;
-  background: rgba(116,95,253,0.06);
+  background: rgba(var(--color-hover-rgb),0.06);
   color: #745FFD;
   font-weight: 500;
 }

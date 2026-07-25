@@ -82,7 +82,7 @@
   gap: 0.75rem;
 }
 .activityRow:last-child { border-bottom: none; }
-.activityRow:hover { background: rgba(116, 95, 253, 0.025); }
+.activityRow:hover { background: rgba(var(--color-hover-rgb), 0.025); }
 
 .activityDot {
   width: 7px;
@@ -199,7 +199,7 @@
   transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
 }
 .actionCard:hover {
-  border-color: rgba(116, 95, 253, 0.35);
+  border-color: rgba(var(--color-hover-rgb), 0.35);
   box-shadow: var(--shadow-elevated);
   transform: translateY(-1px);
 }
@@ -222,7 +222,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(116, 95, 253, 0.1);
+  background: rgba(var(--color-hover-rgb), 0.1);
   color: var(--color-primary);
 }
 
@@ -277,7 +277,7 @@
   transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
 }
 .statCard:hover {
-  border-color: rgba(116, 95, 253, 0.35);
+  border-color: rgba(var(--color-hover-rgb), 0.35);
   box-shadow: var(--shadow-elevated);
   transform: translateY(-1px);
 }

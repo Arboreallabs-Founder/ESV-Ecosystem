@@ -95,7 +95,7 @@
   cursor: pointer;
   transition: background 0.12s;
 }
-.addNodeBtn:hover { background: rgba(116,95,253,0.08); }
+.addNodeBtn:hover { background: rgba(var(--color-hover-rgb),0.08); }
 
 .addEndSuccessBtn {
   padding: 0.375rem 0.875rem;
@@ -262,7 +262,7 @@
 
 .questionNodeSelected {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(116,95,253,0.12), var(--shadow-card);
+  box-shadow: 0 0 0 3px rgba(var(--color-hover-rgb),0.12), var(--shadow-card);
 }
 
 .qBadge {
@@ -271,7 +271,7 @@
   font-weight: 700;
   padding: 0.1875rem 0.5rem;
   border-radius: 9999px;
-  background: rgba(116,95,253,0.1);
+  background: rgba(var(--color-hover-rgb),0.1);
   color: var(--color-primary);
   margin-bottom: 0.5rem;
   text-transform: uppercase;
@@ -498,7 +498,7 @@
   font-size: 0.8125rem;
   color: var(--color-primary);
   background: none;
-  border: 1.5px dashed rgba(116,95,253,0.4);
+  border: 1.5px dashed rgba(var(--color-hover-rgb),0.4);
   border-radius: var(--radius-sm);
   padding: 0.375rem 0.75rem;
   cursor: pointer;
@@ -508,7 +508,7 @@
 }
 .addOptionBtn:hover {
   border-color: var(--color-primary);
-  background: rgba(116,95,253,0.05);
+  background: rgba(var(--color-hover-rgb),0.05);
 }
 
 /* ── Link modal ────────────────────────────────────────────────────── */

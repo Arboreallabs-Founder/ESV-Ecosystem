@@ -171,7 +171,7 @@
   border-radius: 20px;
   padding: 2px;
   background: linear-gradient(110deg,
-    rgba(116, 95, 253, 0.75) 0%,
+    rgba(var(--color-hover-rgb), 0.75) 0%,
     rgba(206, 170, 253, 0.5) 32%,
     rgba(213, 174, 143, 0.55) 62%,
     rgba(255, 255, 255, 0.85) 100%);
@@ -282,7 +282,7 @@
 .unseenDot {
   width: 7px; height: 7px; border-radius: 50%;
   background: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(116, 95, 253, 0.16);
+  box-shadow: 0 0 0 3px rgba(var(--color-hover-rgb), 0.16);
   flex-shrink: 0;
   margin-right: 0.15rem;
 }
@@ -457,7 +457,7 @@
   color: #2e2358;
   display: flex; align-items: center; justify-content: center;
   font-size: 0.6875rem; font-weight: 700; flex-shrink: 0;
-  box-shadow: 0 0 0 1px rgba(116, 95, 253, 0.18);
+  box-shadow: 0 0 0 1px rgba(var(--color-hover-rgb), 0.18);
 }
 .founderName { font-size: 0.8125rem; font-weight: 600; color: var(--color-text); line-height: 1.25; }
 .founderAff { font-size: 0.75rem; color: var(--color-muted); line-height: 1.3; }
@@ -608,7 +608,7 @@
   display: flex;
   gap: 0.5rem;
   align-items: flex-start;
-  background: rgba(116, 95, 253, 0.07);
+  background: rgba(var(--color-hover-rgb), 0.07);
   border-left: 3px solid var(--color-primary);
   border-radius: 0 8px 8px 0;
   padding: 0.5rem 0.7rem;

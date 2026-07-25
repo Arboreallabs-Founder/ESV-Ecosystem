@@ -46,7 +46,7 @@
   letter-spacing: 0.05em;
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
-  background: rgba(116,95,253,0.1);
+  background: rgba(var(--color-hover-rgb),0.1);
   color: var(--color-primary);
   white-space: nowrap;
   flex-shrink: 0;

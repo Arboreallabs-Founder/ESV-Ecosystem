@@ -60,7 +60,7 @@
   overflow: hidden;
   transition: border-color 0.12s;
 }
-.row:hover { border-color: rgba(116,95,253,0.3); }
+.row:hover { border-color: rgba(var(--color-hover-rgb),0.3); }
 
 .rowMain { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.7rem 0.85rem; }
 
@@ -93,10 +93,10 @@
   font-size: 0.6875rem;
   font-weight: 600;
   color: var(--color-primary);
-  background: rgba(116,95,253,0.1);
+  background: rgba(var(--color-hover-rgb),0.1);
   padding: 0.125rem 0.4375rem;
   border-radius: 9999px;
-  border: 1px solid rgba(116,95,253,0.25);
+  border: 1px solid rgba(var(--color-hover-rgb),0.25);
   white-space: nowrap;
 }
 .dueChip {
@@ -180,7 +180,7 @@
   width: 100%;
 }
 .pickerRow:last-child { border-bottom: none; }
-.pickerRow:hover { background: rgba(116,95,253,0.05); }
+.pickerRow:hover { background: rgba(var(--color-hover-rgb),0.05); }
 .pickerRow:disabled { opacity: 0.5; cursor: not-allowed; }
 .pickerTitle { font-size: 0.875rem; font-weight: 500; color: var(--color-text); }
 .pickerStatus { font-size: 0.75rem; color: var(--color-muted); flex-shrink: 0; }

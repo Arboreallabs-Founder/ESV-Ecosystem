@@ -14,6 +14,11 @@
   --color-warning:       #CB8C7C;
   --color-destructive:   #C0392B;
   --color-success:       #2E7D32;
+  /* R,G,B triplet (no alpha) for the app-wide hover tint, consumed as
+     rgba(var(--color-hover-rgb), ALPHA) so each site keeps its own hand-tuned alpha while the
+     color itself stays theme-aware — matches --color-text so hovering reads as a neutral ink
+     wash rather than a purple flash. */
+  --color-hover-rgb:     44, 44, 58;
 
   --scrollbar-size:         10px;
   --scrollbar-track:        rgba(247, 236, 226, 0.72);
@@ -47,6 +52,7 @@
   --color-warning:       #CB8C7C;
   --color-destructive:   #E74C3C;
   --color-success:       #66BB6A;
+  --color-hover-rgb:     240, 237, 232;
 
   --scrollbar-track:        rgba(34, 34, 58, 0.72);
   --scrollbar-thumb:        #A39B95;
@@ -55,6 +61,34 @@
 
   --shadow-card:     0 2px 12px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
   --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* ─── ESV Brand Tokens — OLED Mode ──────────────────────────────────── */
+/* True near-black neutrals for OLED power savings; accent hues match dark mode exactly —
+   only the backdrop changes. Reachable only from Settings > Appearance, not the quick-toggle
+   buttons (see ThemeProvider.tsx). */
+[data-theme="oled"] {
+  --color-bg:            #000000;
+  --color-card:          #050505;
+  --color-card-raised:   #0F0F0F;
+  --color-text:          #F0EDE8;
+  --color-muted:         #A39B95;
+  --color-border:        #1C1C1C;
+  --color-primary:       #745FFD;
+  --color-primary-light: #CEAAFD;
+  --color-accent:        #D5AE8F;
+  --color-warning:       #CB8C7C;
+  --color-destructive:   #E74C3C;
+  --color-success:       #66BB6A;
+  --color-hover-rgb:     240, 237, 232;
+
+  --scrollbar-track:        rgba(5, 5, 5, 0.72);
+  --scrollbar-thumb:        #A39B95;
+  --scrollbar-thumb-hover:  #D5AE8F;
+  --scrollbar-thumb-active: #745FFD;
+
+  --shadow-card:     0 2px 12px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 

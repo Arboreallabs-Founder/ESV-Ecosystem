@@ -80,7 +80,7 @@
 }
 
 .table tr:last-child td { border-bottom: none; }
-.table tr:hover td { background: rgba(116,95,253,0.02); }
+.table tr:hover td { background: rgba(var(--color-hover-rgb),0.02); }
 
 .name { font-weight: 600; }
 
@@ -103,7 +103,7 @@
   text-transform: uppercase;
 }
 
-.roleFounder, .roleAdmin { background: rgba(116,95,253,0.1); color: var(--color-primary); }
+.roleFounder, .roleAdmin { background: rgba(var(--color-hover-rgb),0.1); color: var(--color-primary); }
 .roleAssociate             { background: rgba(213,174,143,0.18); color: #8B6245; }
 .roleFranchise             { background: rgba(203,140,124,0.12); color: var(--color-warning); }
 .roleGeneral               { background: rgba(163,155,149,0.18); color: var(--color-muted); }

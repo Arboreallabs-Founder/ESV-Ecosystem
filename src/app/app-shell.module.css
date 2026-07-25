@@ -20,6 +20,53 @@
   border-right: 1px solid var(--color-border);
   overflow-y: auto;
   overflow-x: hidden;
+  transition: width 0.18s ease, min-width 0.18s ease;
+}
+
+/* Collapsed icon-only rail — desktop only. The whole ruleset is scoped inside this media
+   query (rather than set unconditionally and "reset" back inside the mobile breakpoint)
+   so it structurally cannot affect the mobile drawer at all: that drawer is a temporary
+   overlay, not persistent chrome, and always shows full labels regardless of this
+   desktop preference. */
+@media (min-width: 861px) {
+  .sidebarCollapsed {
+    width: 64px;
+    min-width: 64px;
+  }
+  .sidebarCollapsed .navLabel,
+  .sidebarCollapsed .navSection,
+  .sidebarCollapsed .navGroupChevronBtn,
+  .sidebarCollapsed .navSearchWrap,
+  .sidebarCollapsed .userDetails,
+  .sidebarCollapsed .userChevron,
+  .sidebarCollapsed .footerBtnLabel {
+    display: none;
+  }
+  .sidebarCollapsed .workspace,
+  .sidebarCollapsed .userRow {
+    justify-content: center;
+    padding: 0.55rem;
+  }
+  .sidebarCollapsed .navItem,
+  .sidebarCollapsed .navGroupBtn {
+    justify-content: center;
+    padding: 0.55rem;
+  }
+  .sidebarCollapsed .navGroupRow { justify-content: center; }
+  .sidebarCollapsed .sidebarTopRow {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .sidebarCollapsed .footerControls {
+    flex-direction: column;
+  }
+  .sidebarCollapsed .signOutBtnMain,
+  .sidebarCollapsed .signOutBtn {
+    width: 36px;
+    padding: 0;
+    flex: none;
+    align-self: center;
+  }
 }
 
 /* Workspace header */
@@ -46,7 +93,7 @@
   flex: 1;
   min-width: 0;
 }
-.workspace:hover { background: rgba(116, 95, 253, 0.07); }
+.workspace:hover { background: rgba(var(--color-hover-rgb), 0.07); }
 
 /* Alerts bell (new tasks assigned to me) */
 .alertsBtn {
@@ -64,7 +111,7 @@
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
 }
-.alertsBtn:hover { background: rgba(116, 95, 253, 0.07); color: var(--color-text); }
+.alertsBtn:hover { background: rgba(var(--color-hover-rgb), 0.07); color: var(--color-text); }
 
 .alertsBtnMobile {
   position: relative;
@@ -142,7 +189,7 @@
   font-family: inherit;
   transition: background 0.1s;
 }
-.alertsDropdownItem:hover { background: rgba(116, 95, 253, 0.07); }
+.alertsDropdownItem:hover { background: rgba(var(--color-hover-rgb), 0.07); }
 
 .alertsDropdownItemTitle {
   font-size: 0.8125rem;
@@ -156,6 +203,38 @@
 .alertsDropdownItemMeta {
   font-size: 0.6875rem;
   color: var(--color-muted);
+}
+
+/* Portaled popover (see NavFlyout in AppShell.tsx) used for collapsed-rail group submenus
+   and the alerts bell when collapsed — position:fixed top/left set inline per instance.
+   z-index above the mobile drawer (300) and its backdrop (250). */
+.navFlyout {
+  width: 220px;
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+  z-index: 320;
+  padding: 0.25rem;
+}
+
+.navFlyoutItem {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-muted);
+  text-decoration: none;
+  transition: background 0.12s, color 0.12s;
+}
+.navFlyoutItem:hover {
+  background: rgba(var(--color-hover-rgb), 0.07);
+  color: var(--color-text);
 }
 
 .logoMark {
@@ -174,14 +253,6 @@
   object-fit: contain;
 }
 
-.workspaceText {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  line-height: 1.2;
-}
-
 .logoText {
   font-size: 0.9375rem;
   font-weight: 700;
@@ -192,19 +263,6 @@
   white-space: nowrap;
 }
 
-.workspaceSub {
-  font-size: 0.6875rem;
-  color: var(--color-muted);
-  letter-spacing: 0.02em;
-  margin-top: 0.05rem;
-}
-
-.workspaceChevron {
-  color: var(--color-muted);
-  opacity: 0.6;
-  flex-shrink: 0;
-}
-
 /* Nav */
 .sidebarNav {
   flex: 1;
@@ -213,6 +271,52 @@
   flex-direction: column;
   gap: 0.125rem;
 }
+
+.navSearchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 0 0.125rem 0.5rem;
+}
+.navSearchIcon {
+  position: absolute;
+  left: 0.6rem;
+  color: var(--color-muted);
+  pointer-events: none;
+}
+.navSearchInput {
+  width: 100%;
+  padding: 0.4375rem 1.75rem 0.4375rem 1.9rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  /* --color-bg sits too close to the sidebar's own --color-card in light mode (nearly
+     invisible) — --color-card-raised is the token this app already uses for a surface that
+     needs to read as distinct from the card behind it. */
+  background: var(--color-card-raised);
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-family: inherit;
+}
+.navSearchInput::placeholder { color: var(--color-muted); opacity: 1; }
+.navSearchInput:focus { outline: none; border-color: var(--color-primary); }
+.navSearchClear {
+  position: absolute;
+  right: 0.4rem;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+}
+.navSearchClear:hover { background: rgba(var(--color-hover-rgb), 0.1); color: var(--color-text); }
 
 .navSection {
   display: flex;
@@ -272,13 +376,13 @@
 .navLabel { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 
 .navItem:hover {
-  background: rgba(116, 95, 253, 0.07);
+  background: rgba(var(--color-hover-rgb), 0.07);
   color: var(--color-text);
 }
 
 .navItemActive {
-  background: var(--color-primary-light) !important;
-  color: #2e2358 !important;
+  background: var(--color-card-raised) !important;
+  color: var(--color-text) !important;
   font-weight: 600;
 }
 
@@ -329,7 +433,7 @@
 }
 
 .navGroupBtn:hover {
-  background: rgba(116, 95, 253, 0.07);
+  background: rgba(var(--color-hover-rgb), 0.07);
   color: var(--color-text);
 }
 
@@ -355,7 +459,7 @@
 }
 
 .navGroupChevronBtn:hover {
-  background: rgba(116, 95, 253, 0.07);
+  background: rgba(var(--color-hover-rgb), 0.07);
   color: var(--color-text);
 }
 
@@ -388,7 +492,10 @@
 }
 
 .navSubItem {
-  display: block;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
   padding: 0.45rem 0.7rem;
   border-radius: 8px;
   font-size: 0.8125rem;
@@ -398,17 +505,42 @@
   transition: background 0.12s, color 0.12s;
   white-space: nowrap;
 }
+/* Branch tick connecting each row to the vertical line in .navAccordion::before */
+.navSubItem::before {
+  content: '';
+  position: absolute;
+  left: -0.55rem;
+  top: 50%;
+  width: 0.55rem;
+  height: 1px;
+  background: var(--color-border);
+}
+
+.navSubItemLabel { overflow: hidden; text-overflow: ellipsis; }
 
 .navSubItem:hover {
-  background: rgba(116, 95, 253, 0.07);
+  background: rgba(var(--color-hover-rgb), 0.07);
   color: var(--color-text);
 }
 
 .navSubItemActive {
-  color: #2e2358 !important;
-  background: var(--color-primary-light) !important;
+  color: var(--color-text) !important;
+  background: var(--color-card-raised) !important;
   font-weight: 600;
 }
+
+/* Small colored icon badge used on both accordion sub-items and flyout items */
+.navBadge {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+}
+.navBadge svg { width: 12px; height: 12px; }
 
 /* Footer */
 .sidebarFooter {
@@ -429,13 +561,13 @@
   text-decoration: none;
   transition: background 0.12s;
 }
-.userRow:hover { background: rgba(116, 95, 253, 0.07); }
+.userRow:hover { background: rgba(var(--color-hover-rgb), 0.07); }
 
 .userAvatar {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: rgba(116, 95, 253, 0.15);
+  background: rgba(var(--color-hover-rgb), 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -481,6 +613,10 @@
 }
 
 .signOutBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
   width: 100%;
   padding: 0.4375rem 0.75rem;
   background: none;
@@ -494,6 +630,8 @@
   transition: border-color 0.15s, color 0.15s;
   font-family: inherit;
 }
+
+.signOutBtnMain { flex: 1; }
 
 .signOutBtn:hover {
   border-color: var(--color-text);
@@ -559,7 +697,7 @@
 }
 .personaBtnActive {
   border-color: var(--color-primary) !important;
-  background: rgba(116, 95, 253, 0.1) !important;
+  background: rgba(var(--color-hover-rgb), 0.1) !important;
   color: var(--color-primary) !important;
   font-weight: 600;
 }
@@ -652,7 +790,7 @@
   width: 64px;
   height: 64px;
   border-radius: var(--radius-lg);
-  background-color: rgba(116, 95, 253, 0.1);
+  background-color: rgba(var(--color-hover-rgb), 0.1);
   display: flex;
   align-items: center;
   justify-content: center;

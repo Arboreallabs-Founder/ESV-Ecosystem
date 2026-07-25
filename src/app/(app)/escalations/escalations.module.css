@@ -109,7 +109,7 @@
   box-shadow: var(--shadow-card);
   transition: border-color 0.12s;
 }
-.card:hover { border-color: rgba(116,95,253,0.3); }
+.card:hover { border-color: rgba(var(--color-hover-rgb),0.3); }
 
 .cardMain { min-width: 0; flex: 1; }
 
@@ -166,7 +166,7 @@
   border-radius: 9999px;
   white-space: nowrap;
 }
-.statusOpen         { background: rgba(116,95,253,0.12); color: var(--color-primary); }
+.statusOpen         { background: rgba(var(--color-hover-rgb),0.12); color: var(--color-primary); }
 .statusAcknowledged { background: rgba(213,174,143,0.22); color: #8B6245; }
 .statusResolved     { background: rgba(45,140,110,0.15); color: #2d8c6e; }
 

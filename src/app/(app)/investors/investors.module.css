@@ -250,7 +250,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-primary);
-  background: rgba(116, 95, 253, 0.1);
+  background: rgba(var(--color-hover-rgb), 0.1);
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
 }
@@ -288,7 +288,7 @@
   font-size: 0.78rem;
   font-weight: 600;
   color: var(--color-primary);
-  background: rgba(116, 95, 253, 0.1);
+  background: rgba(var(--color-hover-rgb), 0.1);
   border-radius: 9999px;
   padding: 0.125rem 0.5rem 0.125rem 0.625rem;
 }
@@ -345,7 +345,7 @@
 }
 
 .pocDropdownItem:hover {
-  background: var(--color-hover, rgba(116, 95, 253, 0.07));
+  background: var(--color-hover, rgba(var(--color-hover-rgb), 0.07));
 }
 
 .pocDropdownEmpty {
@@ -782,7 +782,7 @@
   font-weight: 500;
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
-  background: rgba(116, 95, 253, 0.1);
+  background: rgba(var(--color-hover-rgb), 0.1);
   color: var(--color-primary);
 }
 

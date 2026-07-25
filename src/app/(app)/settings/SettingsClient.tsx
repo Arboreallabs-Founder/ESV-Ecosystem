@@ -31,7 +31,7 @@ export default function SettingsClient({
   photoUrl: string | null
 }) {
   const router = useRouter()
-  const { theme, toggle: toggleTheme } = useTheme()
+  const { theme, setTheme } = useTheme()
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [profileName, setProfileName] = useState(name)
@@ -190,11 +190,33 @@ export default function SettingsClient({
           <div className={styles.themeRow}>
             <div>
               <div className={styles.themeLabel}>Theme</div>
-              <div className={styles.themeSub}>Currently: {theme === 'dark' ? 'Dark' : 'Light'}</div>
+              <div className={styles.themeSub}>
+                {theme === 'oled' ? 'OLED — true black, for OLED screens' : theme === 'dark' ? 'Dark' : 'Light'}
+              </div>
             </div>
-            <button className={styles.themeBtn} onClick={toggleTheme}>
-              {theme === 'dark' ? '☀ Switch to Light' : '🌙 Switch to Dark'}
-            </button>
+            <div className={styles.themeOptions}>
+              <button
+                type="button"
+                className={`${styles.themeOption} ${theme === 'light' ? styles.themeOptionActive : ''}`}
+                onClick={() => setTheme('light')}
+              >
+                ☀ Light
+              </button>
+              <button
+                type="button"
+                className={`${styles.themeOption} ${theme === 'dark' ? styles.themeOptionActive : ''}`}
+                onClick={() => setTheme('dark')}
+              >
+                🌙 Dark
+              </button>
+              <button
+                type="button"
+                className={`${styles.themeOption} ${theme === 'oled' ? styles.themeOptionActive : ''}`}
+                onClick={() => setTheme('oled')}
+              >
+                ⬛ OLED
+              </button>
+            </div>
           </div>
         </div>
 

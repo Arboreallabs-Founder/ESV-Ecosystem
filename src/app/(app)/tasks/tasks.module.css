@@ -85,7 +85,7 @@
 .columnCount {
   font-size: 0.6875rem;
   font-weight: 700;
-  background: rgba(116,95,253,0.1);
+  background: rgba(var(--color-hover-rgb),0.1);
   color: var(--color-primary);
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
@@ -115,8 +115,8 @@
   transition: border-color 0.12s, box-shadow 0.12s;
 }
 .card:hover {
-  border-color: rgba(116,95,253,0.35);
-  box-shadow: 0 2px 8px rgba(116,95,253,0.06);
+  border-color: rgba(var(--color-hover-rgb),0.35);
+  box-shadow: 0 2px 8px rgba(var(--color-hover-rgb),0.06);
 }
 
 .cardDone {
@@ -216,10 +216,10 @@
   font-size: 0.6875rem;
   font-weight: 600;
   color: var(--color-primary);
-  background: rgba(116,95,253,0.1);
+  background: rgba(var(--color-hover-rgb),0.1);
   padding: 0.125rem 0.4375rem;
   border-radius: 9999px;
-  border: 1px solid rgba(116,95,253,0.25);
+  border: 1px solid rgba(var(--color-hover-rgb),0.25);
 }
 
 .assignedBy {
@@ -267,7 +267,7 @@
   font-family: inherit;
   transition: background 0.12s, border-color 0.12s;
 }
-.pushBtn:hover { background: rgba(116,95,253,0.08); border-color: rgba(116,95,253,0.35); }
+.pushBtn:hover { background: rgba(var(--color-hover-rgb),0.08); border-color: rgba(var(--color-hover-rgb),0.35); }
 .pushBtn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .commentsBtn {
@@ -283,7 +283,7 @@
   font-family: inherit;
   transition: background 0.12s, border-color 0.12s, color 0.12s;
 }
-.commentsBtn:hover { background: rgba(116,95,253,0.08); border-color: rgba(116,95,253,0.35); color: var(--color-primary); }
+.commentsBtn:hover { background: rgba(var(--color-hover-rgb),0.08); border-color: rgba(var(--color-hover-rgb),0.35); color: var(--color-primary); }
 
 .deleteBtn {
   flex-shrink: 0;
@@ -495,8 +495,8 @@
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-primary);
-  background: rgba(116,95,253,0.08);
-  border: 1px solid rgba(116,95,253,0.25);
+  background: rgba(var(--color-hover-rgb),0.08);
+  border: 1px solid rgba(var(--color-hover-rgb),0.25);
   border-radius: 9999px;
   padding: 0.25rem 0.375rem 0.25rem 0.625rem;
 }
@@ -530,14 +530,14 @@
   font-size: 0.6875rem;
   font-weight: 600;
   color: var(--color-primary);
-  background: rgba(116,95,253,0.08);
+  background: rgba(var(--color-hover-rgb),0.08);
   padding: 0.125rem 0.4375rem;
   border-radius: 9999px;
-  border: 1px solid rgba(116,95,253,0.2);
+  border: 1px solid rgba(var(--color-hover-rgb),0.2);
   text-decoration: none;
   white-space: nowrap;
 }
-a.linkChipTag:hover { background: rgba(116,95,253,0.16); }
+a.linkChipTag:hover { background: rgba(var(--color-hover-rgb),0.16); }
 
 .field {
   display: flex;
@@ -703,7 +703,7 @@ a.linkChipTag:hover { background: rgba(116,95,253,0.16); }
 .railCount {
   font-size: 0.6875rem;
   font-weight: 700;
-  background: rgba(116,95,253,0.1);
+  background: rgba(var(--color-hover-rgb),0.1);
   color: var(--color-primary);
   padding: 0.05rem 0.45rem;
   border-radius: 9999px;
@@ -811,7 +811,7 @@ a.linkChipTag:hover { background: rgba(116,95,253,0.16); }
 .personPill {
   font-size: 0.6875rem;
   font-weight: 700;
-  background: rgba(116,95,253,0.1);
+  background: rgba(var(--color-hover-rgb),0.1);
   color: var(--color-primary);
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
@@ -857,7 +857,7 @@ a.linkChipTag:hover { background: rgba(116,95,253,0.16); }
   gap: 0.75rem;
   transition: border-color 0.12s;
 }
-.recRow:hover { border-color: rgba(116,95,253,0.3); }
+.recRow:hover { border-color: rgba(var(--color-hover-rgb),0.3); }
 .recRowOverdue { border-color: rgba(220,38,38,0.4); background: rgba(220,38,38,0.04); }
 .recRowInactive { opacity: 0.6; }
 
@@ -877,7 +877,7 @@ a.linkChipTag:hover { background: rgba(116,95,253,0.16); }
   margin-top: 0.1rem;
   transition: background 0.12s, border-color 0.12s;
 }
-.recCheckbox:hover { border-color: var(--color-primary); background: rgba(116,95,253,0.08); }
+.recCheckbox:hover { border-color: var(--color-primary); background: rgba(var(--color-hover-rgb),0.08); }
 .recCheckbox:disabled { cursor: not-allowed; opacity: 0.5; }
 
 .recBody { flex: 1; min-width: 0; }
@@ -906,14 +906,14 @@ a.linkChipTag:hover { background: rgba(116,95,253,0.16); }
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-primary);
-  background: rgba(116,95,253,0.08);
-  border: 1px solid rgba(116,95,253,0.25);
+  background: rgba(var(--color-hover-rgb),0.08);
+  border: 1px solid rgba(var(--color-hover-rgb),0.25);
   border-radius: 9999px;
   padding: 0.125rem 0.625rem;
   text-decoration: none;
   white-space: nowrap;
 }
-.recLinkBtn:hover { background: rgba(116,95,253,0.14); }
+.recLinkBtn:hover { background: rgba(var(--color-hover-rgb),0.14); }
 
 .recActions { display: flex; align-items: center; gap: 0.2rem; flex-shrink: 0; margin-left: auto; }
 .recIconBtn {

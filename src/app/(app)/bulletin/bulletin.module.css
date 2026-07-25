@@ -33,8 +33,8 @@
   box-shadow: var(--shadow-card);
   transition: border-color 0.12s;
 }
-.card:hover { border-color: rgba(116,95,253,0.3); }
-.cardPinned { border-color: rgba(116,95,253,0.45); background: rgba(116,95,253,0.04); }
+.card:hover { border-color: rgba(var(--color-hover-rgb),0.3); }
+.cardPinned { border-color: rgba(var(--color-hover-rgb),0.45); background: rgba(var(--color-hover-rgb),0.04); }
 
 .cardTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
 .cardTitleRow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
