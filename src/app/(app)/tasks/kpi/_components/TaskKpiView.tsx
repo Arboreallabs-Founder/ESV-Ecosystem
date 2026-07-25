@@ -81,7 +81,7 @@ export default function TaskKpiView({
   }
 
   // Founders / admins: per-person breakdown + org total.
-  const internalUsers = users.filter((u) => ['founder', 'admin', 'associate'].includes(u.role))
+  const internalUsers = users.filter((u) => ['founder', 'admin', 'associate', 'general'].includes(u.role))
   const rows = internalUsers
     .map((u) => ({ user: u, k: computeKpis(tasks.filter((t) => t.assignee_id === u.id)) }))
     .filter((r) => r.k.total > 0)
