@@ -1746,3 +1746,228 @@
   transition: opacity 0.12s;
 }
 .pickerCreateBtn:hover { opacity: 0.75; }
+
+/* ── Deal dashboard (detail page) ─────────────────────────────────── */
+.statRow {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.statTile {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.statLabel {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-muted);
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.statValueHero {
+  font-family: var(--font-serif);
+  font-size: 2.1rem;
+  font-weight: 400;
+  color: var(--color-text);
+  line-height: 1.05;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.chartRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.dashCard {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1.15rem 1.25rem;
+  box-shadow: var(--shadow-card);
+  min-width: 0;
+  margin-bottom: 0.75rem;
+}
+
+.chartEmpty {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  text-align: center;
+  padding: 2.5rem 1rem;
+}
+
+.supportGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
+.supportGrid > .dashCard { margin-bottom: 0; }
+
+/* Gauge */
+.gaugeWrap { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+.gaugeChart { position: relative; width: 240px; max-width: 100%; }
+.gaugeSvg { width: 100%; height: auto; display: block; }
+.gaugeCenter {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+.gaugeCenterValue {
+  font-family: var(--font-serif);
+  font-size: 1.9rem;
+  font-weight: 400;
+  color: var(--color-text);
+  line-height: 1;
+}
+.gaugeCenterLabel {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+/* Donut */
+.donutWrap {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.donutRing {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.donutHole {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--color-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  text-align: center;
+}
+.donutValue {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.donutLabel {
+  font-size: 0.625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+/* Shared chart legend (gauge + donut) */
+.chartLegend {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 140px;
+}
+.legendRow { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; }
+.legendDot { width: 0.6rem; height: 0.6rem; border-radius: 3px; flex-shrink: 0; }
+.legendLabel { color: var(--color-muted); flex: 1; min-width: 0; }
+.legendVal { color: var(--color-text); font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Top investors table */
+.topTable { display: flex; flex-direction: column; }
+.topHead,
+.topRow {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr 0.9fr;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.6rem 0.25rem;
+}
+.topHead {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  border-bottom: 1.5px solid var(--color-border);
+}
+.topRow { border-bottom: 1px solid var(--color-border); font-size: 0.8125rem; }
+.topRow:last-child { border-bottom: none; }
+.topName { display: flex; align-items: center; gap: 0.4rem; min-width: 0; }
+.topNameText {
+  font-weight: 600;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topType {
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.topNum {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.statusPill {
+  display: inline-block;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem;
+  border-radius: 9999px;
+  border: 1.5px solid;
+  white-space: nowrap;
+}
+
+@media (max-width: 860px) {
+  .statRow { grid-template-columns: 1fr 1fr; }
+  .chartRow { grid-template-columns: 1fr; }
+  .supportGrid { grid-template-columns: 1fr; }
+}
+@media (max-width: 560px) {
+  .statRow { grid-template-columns: 1fr; }
+}

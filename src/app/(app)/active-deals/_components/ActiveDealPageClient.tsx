@@ -5,12 +5,21 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createOrLinkCompanyForActiveDeal, deleteActiveDeal, linkActiveDealToCompany, updateActiveDealDetails, updateDealState } from '@/app/actions/active-deals'
 import { addAssignee, removeAssignee } from '@/app/actions/pipelines'
-import type { ActiveDeal, DealCategory, DealState, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
-import { DEAL_STATES, DEAL_STATE_META } from '@/lib/types'
+import type { ActiveDeal, ActiveDealInvestor, ActiveDealInvestorStatus, DealCategory, DealState, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
+import { ACTIVE_DEAL_INVESTOR_STATUSES, ACTIVE_DEAL_INVESTOR_STATUS_META, DEAL_STATES, DEAL_STATE_META, SERVICE_TYPE_LABELS } from '@/lib/types'
+import { computeFeeAmount } from '@/lib/deal-fees'
+import { StatusGauge, StatusDonut, type DonutSegment } from './DealCharts'
 import styles from '../active-deals.module.css'
 
 function formatINR(amount: number) {
   return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
+}
+
+// Compact INR for tight spots (donut centre, legends): Cr / L for Indian magnitudes.
+function formatINRShort(n: number): string {
+  if (n >= 1e7) return `₹${(n / 1e7).toFixed(n >= 1e8 ? 1 : 2)} Cr`
+  if (n >= 1e5) return `₹${(n / 1e5).toFixed(n >= 1e6 ? 1 : 2)} L`
+  return formatINR(n)
 }
 
 type AnswerItem = {
@@ -18,6 +27,8 @@ type AnswerItem = {
   answer_text: string | null
   node: { question_text: string | null; answer_type: string | null } | null
 }
+
+type FieldValue = { field_id: string; value: string | null }
 
 function delimitNumber(value: string): string {
   const raw = value.replace(/,/g, '').trim()
@@ -52,12 +63,18 @@ function initials(name: string): string {
   return name.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 }
 
+function serviceLabel(type: string | undefined): string {
+  if (!type) return '—'
+  return (SERVICE_TYPE_LABELS as Record<string, string>)[type] ?? type
+}
+
 export default function ActiveDealPageClient({
   deal,
   userRole,
   categories,
   companyOptions,
-  investorSummary,
+  investors,
+  dealFieldValues,
   answers,
   history,
   stageAnswers,
@@ -67,7 +84,8 @@ export default function ActiveDealPageClient({
   userRole: string
   categories: DealCategory[]
   companyOptions: Array<{ id: string; name: string }>
-  investorSummary: { count: number; totalCommitted: number }
+  investors: ActiveDealInvestor[]
+  dealFieldValues: FieldValue[]
   answers: AnswerItem[]
   history: PipelineEntryStageHistory[]
   stageAnswers: StageAnswerView[]
@@ -164,14 +182,27 @@ export default function ActiveDealPageClient({
   }
 
   const meta = DEAL_STATE_META[dealState]
-  const categoryNames = deal.categories.map(({ category }) => category.name)
   const visibleAnswers = answers.filter((a) => a.node?.question_text)
-  const summaryItems = [
-    { label: 'Submitter', value: deal.entry?.submitter_name ?? 'Not recorded' },
-    { label: 'Assigned', value: assignees.length > 0 ? `${assignees.length} owner${assignees.length === 1 ? '' : 's'}` : 'Unassigned' },
-    { label: 'Categories', value: categoryNames.length > 0 ? categoryNames.join(', ') : 'Uncategorised' },
-    { label: 'Accepted', value: formatDate(deal.created_at) },
-  ]
+
+  // ── Investor aggregates (all current-state; RLS scopes rows for partners) ──────
+  const totalCommitted = investors.reduce((s, i) => s + (i.investment_amount ?? 0), 0)
+  const totalShares = investors.reduce((s, i) => s + (i.shares ?? 0), 0)
+  const totalEarnings = investors.reduce(
+    (s, i) => s + i.fees.reduce((fs, f) => fs + (computeFeeAmount(f, i.investment_amount, dealFieldValues) ?? 0), 0),
+    0,
+  )
+  const statusCounts = ACTIVE_DEAL_INVESTOR_STATUSES.reduce((acc, st) => {
+    acc[st] = investors.filter((i) => i.status === st).length
+    return acc
+  }, {} as Record<ActiveDealInvestorStatus, number>)
+  const committedByStatus: DonutSegment[] = ACTIVE_DEAL_INVESTOR_STATUSES.map((st) => {
+    const m = ACTIVE_DEAL_INVESTOR_STATUS_META[st]
+    const value = investors.filter((i) => i.status === st).reduce((s, i) => s + (i.investment_amount ?? 0), 0)
+    return { label: m.label, value, color: m.color, valueLabel: formatINRShort(value) }
+  })
+  const topInvestors = [...investors]
+    .sort((a, b) => (b.investment_amount ?? 0) - (a.investment_amount ?? 0))
+    .slice(0, 6)
 
   return (
     <div className={styles.dealPage}>
@@ -222,187 +253,241 @@ export default function ActiveDealPageClient({
         )}
       </div>
 
-      <div className={styles.summaryRail}>
-        {summaryItems.map((item) => (
-          <div key={item.label} className={styles.summaryItem}>
-            <span className={styles.summaryLabel}>{item.label}</span>
-            <span className={styles.summaryValue}>{item.value}</span>
+      {/* ── Investor dashboard (hidden from general) ─────────────────────────── */}
+      {canViewInvestors && (
+        <>
+          <div className={styles.statRow}>
+            <div className={`${styles.statTile} ${styles.statTileHero}`}>
+              <span className={styles.statLabel}>Total Committed</span>
+              <span className={styles.statValueHero}>{formatINR(totalCommitted)}</span>
+            </div>
+            <div className={styles.statTile}>
+              <span className={styles.statLabel}>Investors</span>
+              <span className={styles.statValue}>{investors.length}</span>
+            </div>
+            <div className={styles.statTile}>
+              <span className={styles.statLabel}>Total Shares</span>
+              <span className={styles.statValue}>{totalShares.toLocaleString('en-IN')}</span>
+            </div>
+            <div className={styles.statTile}>
+              <span className={styles.statLabel}>ESV Earnings</span>
+              <span className={styles.statValue}>{formatINR(totalEarnings)}</span>
+            </div>
           </div>
-        ))}
-      </div>
 
-      <div className={styles.dealPageGrid}>
-          {/* LEFT — Deal details */}
-          <div className={styles.dealPageMain}>
-            <div className={styles.detailSection}>
-              <div className={styles.detailSectionHead}>
-                <div className={styles.detailSectionTitle}>Company Profile</div>
-                {linkedCompany && <Link href={`/companies/${linkedCompany.id}`} className={styles.inlineLink}>View profile</Link>}
+          <div className={styles.chartRow}>
+            <div className={styles.dashCard}>
+              <div className={styles.detailSectionTitle}>Investor Status</div>
+              {investors.length === 0 ? (
+                <div className={styles.chartEmpty}>No investors added yet.</div>
+              ) : (
+                <StatusGauge counts={statusCounts} total={investors.length} />
+              )}
+            </div>
+            <div className={styles.dashCard}>
+              <div className={styles.detailSectionTitle}>Committed by Status</div>
+              <StatusDonut segments={committedByStatus} centerValue={formatINRShort(totalCommitted)} centerLabel="Committed" />
+            </div>
+          </div>
+
+          <div className={styles.dashCard}>
+            <div className={styles.detailSectionHead}>
+              <div className={styles.detailSectionTitle}>Top Investors</div>
+              <Link href={`/active-deals/${deal.id}/investors`} className={styles.inlineLink}>Open full investor table →</Link>
+            </div>
+            {topInvestors.length === 0 ? (
+              <div className={styles.detailEmpty}>No investors on this deal yet.</div>
+            ) : (
+              <div className={styles.topTable}>
+                <div className={styles.topHead}>
+                  <span>Investor</span>
+                  <span>Type</span>
+                  <span>Status</span>
+                  <span className={styles.topNum}>Commitment</span>
+                </div>
+                {topInvestors.map((inv) => {
+                  const m = ACTIVE_DEAL_INVESTOR_STATUS_META[inv.status]
+                  return (
+                    <div key={inv.id} className={styles.topRow}>
+                      <span className={styles.topName}>
+                        <span className={styles.topNameText}>{inv.investor?.name}</span>
+                        {inv.is_referral && <span className={styles.referralChip}>Referral</span>}
+                      </span>
+                      <span className={styles.topType}>{serviceLabel(inv.investor?.service_type)}</span>
+                      <span>
+                        <span className={styles.statusPill} style={{ color: m.color, borderColor: `${m.color}55`, background: `${m.color}12` }}>
+                          {m.label}
+                        </span>
+                      </span>
+                      <span className={styles.topNum}>{inv.investment_amount != null ? formatINR(inv.investment_amount) : '—'}</span>
+                    </div>
+                  )
+                })}
               </div>
-              {canManageDeal ? (
-                <div className={styles.companyLinkBox}>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ── Deal detail cards ────────────────────────────────────────────────── */}
+      <div className={styles.supportGrid}>
+        {/* Company Profile */}
+        <div className={styles.dashCard}>
+          <div className={styles.detailSectionHead}>
+            <div className={styles.detailSectionTitle}>Company Profile</div>
+            {linkedCompany && <Link href={`/companies/${linkedCompany.id}`} className={styles.inlineLink}>View profile</Link>}
+          </div>
+          {canManageDeal ? (
+            <div className={styles.companyLinkBox}>
+              <select
+                className={styles.formSelect}
+                value={companyId}
+                disabled={linkPending}
+                onChange={(e) => handleCompanyLink(e.target.value || null)}
+              >
+                <option value="">No linked company profile</option>
+                {companyOptions.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}
+              </select>
+              <button className={styles.ghostBtn} disabled={linkPending} onClick={handleCreateCompanyProfile}>
+                {linkedCompany ? 'Relink by name' : 'Create/link by name'}
+              </button>
+            </div>
+          ) : linkedCompany ? (
+            <div className={styles.detailEmpty}>{linkedCompany.name}</div>
+          ) : (
+            <div className={styles.detailEmpty}>No company profile linked.</div>
+          )}
+        </div>
+
+        {/* Assigned To */}
+        <div className={styles.dashCard}>
+          <div className={styles.detailSectionTitle}>Assigned To</div>
+          {canAssignPeople ? (
+            <div className={styles.assigneeChips}>
+              {assignees.map((a) => (
+                <span key={a.user_id} className={styles.assigneeChip}>
+                  {a.name}
+                  <button className={styles.assigneeChipRemove} onClick={() => handleRemoveAssignee(a.user_id)} title="Remove">×</button>
+                </span>
+              ))}
+              {(() => {
+                const assignedIds = new Set(assignees.map((a) => a.user_id))
+                const available = teamMembers.filter((m) => !assignedIds.has(m.id))
+                if (available.length === 0) return null
+                return (
                   <select
-                    className={styles.formSelect}
-                    value={companyId}
-                    disabled={linkPending}
-                    onChange={(e) => handleCompanyLink(e.target.value || null)}
+                    className={styles.assigneeAdd}
+                    value=""
+                    onChange={(e) => { if (e.target.value) handleAddAssignee(e.target.value) }}
                   >
-                    <option value="">No linked company profile</option>
-                    {companyOptions.map((company) => <option key={company.id} value={company.id}>{company.name}</option>)}
+                    <option value="">+ Add person</option>
+                    {available.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                   </select>
-                  <button className={styles.ghostBtn} disabled={linkPending} onClick={handleCreateCompanyProfile}>
-                    {linkedCompany ? 'Relink by name' : 'Create/link by name'}
-                  </button>
-                </div>
-              ) : linkedCompany ? (
-                <div className={styles.detailEmpty}>{linkedCompany.name}</div>
-              ) : (
-                <div className={styles.detailEmpty}>No company profile linked.</div>
-              )}
+                )
+              })()}
             </div>
-
-            {/* Assigned To */}
-            <div className={styles.detailSection}>
-              <div className={styles.detailSectionTitle}>Assigned To</div>
-              {canAssignPeople ? (
-                <div className={styles.assigneeChips}>
-                  {assignees.map((a) => (
-                    <span key={a.user_id} className={styles.assigneeChip}>
-                      {a.name}
-                      <button className={styles.assigneeChipRemove} onClick={() => handleRemoveAssignee(a.user_id)} title="Remove">×</button>
-                    </span>
-                  ))}
-                  {(() => {
-                    const assignedIds = new Set(assignees.map((a) => a.user_id))
-                    const available = teamMembers.filter((m) => !assignedIds.has(m.id))
-                    if (available.length === 0) return null
-                    return (
-                      <select
-                        className={styles.assigneeAdd}
-                        value=""
-                        onChange={(e) => { if (e.target.value) handleAddAssignee(e.target.value) }}
-                      >
-                        <option value="">+ Add person</option>
-                        {available.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                      </select>
-                    )
-                  })()}
-                </div>
-              ) : assignees.length === 0 ? (
-                <div className={styles.detailEmpty}>No one assigned.</div>
-              ) : (
-                <div className={styles.assigneeChips}>
-                  {assignees.map((a) => (
-                    <span key={a.user_id} className={styles.detailAssigneeChip}>{a.name}</span>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Category fields */}
-            {deal.categories.length > 0 && (
-              <div className={styles.detailSection}>
-                <div className={styles.detailSectionTitle}>Category Details</div>
-                {deal.categories.map(({ category, field_values }) => (
-                  <div key={category.id} className={styles.detailCategoryBlock}>
-                    <div className={styles.detailCategoryName} style={{ color: category.color }}>
-                      <span className={styles.catDot} style={{ background: category.color }} />
-                      {category.name}
-                    </div>
-                    {category.fields.length === 0 ? (
-                      <div className={styles.detailEmpty}>No fields defined.</div>
-                    ) : (
-                      category.fields.map((field) => {
-                        const fv = field_values.find((v) => v.field_id === field.id)
-                        return (
-                          <div key={field.id} className={styles.fieldValueRow}>
-                            <span className={styles.fieldKey}>{field.label}</span>
-                            <span className={styles.fieldVal}>
-                              {fv?.value ? formatValue(fv.value, field.field_type) : <span style={{ color: 'var(--color-muted)' }}>—</span>}
-                            </span>
-                          </div>
-                        )
-                      })
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Stage inputs */}
-            {stageAnswerGroups.length > 0 && (
-              <div className={styles.detailSection}>
-                <div className={styles.detailSectionTitle}>Stage Inputs</div>
-                {stageAnswerGroups.map((g) => (
-                  <div key={g.stage_id} className={styles.detailCategoryBlock}>
-                    <div className={styles.detailCategoryName}>{g.stage_name}</div>
-                    {g.items.map((a) => (
-                      <div key={a.question_id} className={styles.fieldValueRow}>
-                        <span className={styles.fieldKey}>{a.label}</span>
-                        <span className={styles.fieldVal}>
-                          {a.value ? formatValue(a.value, a.field_type) : <span style={{ color: 'var(--color-muted)' }}>—</span>}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Stage history */}
-            <div className={styles.detailSection}>
-              <div className={styles.detailSectionTitle}>Stage History</div>
-              {history.length === 0 ? (
-                <div className={styles.detailEmpty}>No history recorded.</div>
-              ) : (
-                <div className={styles.stageHistory}>
-                  {history.map((h, i) => (
-                    <div key={h.id} className={styles.stageHistoryRow}>
-                      <div className={styles.stageHistoryDot} />
-                      {i < history.length - 1 && <div className={styles.stageHistoryLine} />}
-                      <div className={styles.stageHistoryContent}>
-                        <span className={styles.stageHistoryLabel}>
-                          {h.from_stage ? h.from_stage.name : 'Unsorted'} → {h.to_stage ? h.to_stage.name : 'Unsorted'}
-                        </span>
-                        <span className={styles.stageHistoryDate}>{formatDateTime(h.moved_at)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Form Q&A */}
-            <div className={styles.detailSection}>
-              <div className={styles.detailSectionTitle}>Form Responses</div>
-              {visibleAnswers.length === 0 ? (
-                <div className={styles.detailEmpty}>No form answers recorded.</div>
-              ) : (
-                <div className={styles.answerList}>
-                  {visibleAnswers.map((a) => (
-                    <div key={a.id} className={styles.answerRow}>
-                      <div className={styles.answerQuestion}>{a.node!.question_text}</div>
-                      <div className={styles.answerText}>{a.answer_text || '—'}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* RIGHT — Investors summary */}
-          {canViewInvestors && (
-            <div className={styles.dealPageAside}>
-              <div className={styles.detailSectionTitle}>Investors</div>
-              <div className={styles.investorSummaryStat}>
-                <span className={styles.investorSummaryCount}>{investorSummary.count}</span>
-                <span className={styles.investorSummaryLabel}>investor{investorSummary.count === 1 ? '' : 's'}</span>
-              </div>
-              <div className={styles.investorSummaryTotal}>{formatINR(investorSummary.totalCommitted)} committed</div>
-              <Link href={`/active-deals/${deal.id}/investors`} className={styles.viewInvestorsBtn}>Open investor table →</Link>
+          ) : assignees.length === 0 ? (
+            <div className={styles.detailEmpty}>No one assigned.</div>
+          ) : (
+            <div className={styles.assigneeChips}>
+              {assignees.map((a) => (
+                <span key={a.user_id} className={styles.detailAssigneeChip}>{a.name}</span>
+              ))}
             </div>
           )}
         </div>
+
+        {/* Category fields */}
+        {deal.categories.length > 0 && (
+          <div className={styles.dashCard}>
+            <div className={styles.detailSectionTitle}>Category Details</div>
+            {deal.categories.map(({ category, field_values }) => (
+              <div key={category.id} className={styles.detailCategoryBlock}>
+                <div className={styles.detailCategoryName} style={{ color: category.color }}>
+                  <span className={styles.catDot} style={{ background: category.color }} />
+                  {category.name}
+                </div>
+                {category.fields.length === 0 ? (
+                  <div className={styles.detailEmpty}>No fields defined.</div>
+                ) : (
+                  category.fields.map((field) => {
+                    const fv = field_values.find((v) => v.field_id === field.id)
+                    return (
+                      <div key={field.id} className={styles.fieldValueRow}>
+                        <span className={styles.fieldKey}>{field.label}</span>
+                        <span className={styles.fieldVal}>
+                          {fv?.value ? formatValue(fv.value, field.field_type) : <span style={{ color: 'var(--color-muted)' }}>—</span>}
+                        </span>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Stage inputs */}
+        {stageAnswerGroups.length > 0 && (
+          <div className={styles.dashCard}>
+            <div className={styles.detailSectionTitle}>Stage Inputs</div>
+            {stageAnswerGroups.map((g) => (
+              <div key={g.stage_id} className={styles.detailCategoryBlock}>
+                <div className={styles.detailCategoryName}>{g.stage_name}</div>
+                {g.items.map((a) => (
+                  <div key={a.question_id} className={styles.fieldValueRow}>
+                    <span className={styles.fieldKey}>{a.label}</span>
+                    <span className={styles.fieldVal}>
+                      {a.value ? formatValue(a.value, a.field_type) : <span style={{ color: 'var(--color-muted)' }}>—</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Stage history */}
+        <div className={styles.dashCard}>
+          <div className={styles.detailSectionTitle}>Stage History</div>
+          {history.length === 0 ? (
+            <div className={styles.detailEmpty}>No history recorded.</div>
+          ) : (
+            <div className={styles.stageHistory}>
+              {history.map((h, i) => (
+                <div key={h.id} className={styles.stageHistoryRow}>
+                  <div className={styles.stageHistoryDot} />
+                  {i < history.length - 1 && <div className={styles.stageHistoryLine} />}
+                  <div className={styles.stageHistoryContent}>
+                    <span className={styles.stageHistoryLabel}>
+                      {h.from_stage ? h.from_stage.name : 'Unsorted'} → {h.to_stage ? h.to_stage.name : 'Unsorted'}
+                    </span>
+                    <span className={styles.stageHistoryDate}>{formatDateTime(h.moved_at)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Form Q&A */}
+        <div className={styles.dashCard}>
+          <div className={styles.detailSectionTitle}>Form Responses</div>
+          {visibleAnswers.length === 0 ? (
+            <div className={styles.detailEmpty}>No form answers recorded.</div>
+          ) : (
+            <div className={styles.answerList}>
+              {visibleAnswers.map((a) => (
+                <div key={a.id} className={styles.answerRow}>
+                  <div className={styles.answerQuestion}>{a.node!.question_text}</div>
+                  <div className={styles.answerText}>{a.answer_text || '—'}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
       {showEdit && (
         <EditActiveDealModal
           deal={deal}

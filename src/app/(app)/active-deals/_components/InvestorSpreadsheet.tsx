@@ -13,6 +13,7 @@ import {
 } from '@/app/actions/active-deals'
 import type { ActiveDealInvestor, ActiveDealInvestorFee, ActiveDealInvestorStatus } from '@/lib/types'
 import { ACTIVE_DEAL_INVESTOR_STATUSES, ACTIVE_DEAL_INVESTOR_STATUS_META, SERVICE_TYPE_LABELS } from '@/lib/types'
+import { computeFeeAmount, getEffectiveRate } from '@/lib/deal-fees'
 import InvestorPickerModal from './InvestorPickerModal'
 import FeeToggleConfirmModal from './FeeToggleConfirmModal'
 import InvestorFormModal from '../../investors/_components/InvestorFormModal'
@@ -27,24 +28,6 @@ const UNASSIGNED_TAB = 'unassigned'
 
 function formatINR(amount: number) {
   return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
-}
-
-function computeFeeAmount(fee: ActiveDealInvestorFee, investmentAmount: number | null, dealFieldValues: FieldValue[]) {
-  if (!fee.is_enabled || investmentAmount == null) return null
-  const effectiveRate = fee.rate ?? (() => {
-    if (!fee.source_field_id) return null
-    const fv = dealFieldValues.find((v) => v.field_id === fee.source_field_id)
-    return fv?.value ? Number(fv.value) : null
-  })()
-  if (effectiveRate == null) return null
-  return (effectiveRate / 100) * investmentAmount
-}
-
-function getEffectiveRate(fee: ActiveDealInvestorFee, dealFieldValues: FieldValue[]) {
-  if (fee.rate != null) return fee.rate
-  if (!fee.source_field_id) return null
-  const fv = dealFieldValues.find((v) => v.field_id === fee.source_field_id)
-  return fv?.value ? Number(fv.value) : null
 }
 
 type Props = {
