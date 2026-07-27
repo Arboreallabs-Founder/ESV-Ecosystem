@@ -8,7 +8,7 @@ import WeeklyUpdateClient from './_components/WeeklyUpdateClient'
 export default async function TasksUpdatePage() {
   const user = await getUser()
   if (!user) redirect('/login')
-  if (!['founder', 'admin', 'general'].includes(user.role ?? '')) redirect('/tasks')
+  if (!['founder', 'admin', 'general', 'hr'].includes(user.role ?? '')) redirect('/tasks')
 
   const [tasks, activeDeals, users] = await Promise.all([
     fetchAllTasks(),

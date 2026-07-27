@@ -25,6 +25,8 @@ const LINK_TYPE_LABEL: Record<EscalationLinkedType, string> = {
   pipeline_entry: 'Entry',
   task: 'Task',
   investor: 'Investor',
+  leave_request: 'Leave request',
+  expense_request: 'Expense request',
 }
 
 function roleLabel(role: string) {

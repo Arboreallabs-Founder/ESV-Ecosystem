@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
     : role === 'franchise_partner' ? '/submissions'
     : role === 'associate'         ? '/pipelines'
     : role === 'general'           ? '/tasks'
+    : role === 'hr'                ? '/tasks'
     : '/dashboard'
 
   return NextResponse.redirect(new URL(destination, origin))

@@ -7,15 +7,15 @@ async function requireAdmin() {
   return requireRole(['founder', 'admin'])
 }
 
-// General can create/edit events too (not delete/pin/complete/attendee-manage) — see the
-// audit log this writes to.
+// HR can create/edit events too (not delete/pin/complete/attendee-manage) — see the
+// audit log this writes to. General lost this tier when HR was introduced.
 async function requireEditor() {
-  return requireRole(['founder', 'admin', 'general'])
+  return requireRole(['founder', 'admin', 'hr'])
 }
 
-// Any internal user (including general) may RSVP themselves — never on someone else's behalf.
+// Any internal user may RSVP themselves — never on someone else's behalf.
 async function requireInternal() {
-  return requireRole(['founder', 'admin', 'associate', 'general'])
+  return requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
 }
 
 function revalidateEvents() {

@@ -1,6 +1,6 @@
 # ESV Ecosystem — Roles & Permissions
 
-> Last updated: 2026-07-24 (added the `general` role).
+> Last updated: 2026-08-14 (added the `hr` role, Engage/Kudos, Leave & Expense approvals).
 > This is the authoritative reference for what each role can and cannot do.
 > Enforcement happens at **two layers**: server-action guards (`requireRole` / `requireAdmin` /
 > `requireInternal`) and Postgres **RLS policies** (`get_user_role()`, `get_user_org_id()`,
@@ -8,7 +8,7 @@
 
 ---
 
-## The six roles
+## The seven roles
 
 | Role | Type | Scope |
 |------|------|-------|
@@ -16,10 +16,11 @@
 | **founder** | Internal | Full access within their org. |
 | **admin** | Internal | Full access within their org (functionally equal to founder). |
 | **associate** | Internal | Day-to-day operator with limited admin/edit rights; tasks scoped to self. |
-| **general** | Internal | Narrow operator added 2026-08-05. Read-only on the deal pipeline (pipelines/active deals/companies/investors); full task access (same as associate); can create/edit — not delete — HR policies and Bulletin/Events posts. |
+| **general** | Internal | Narrow operator added 2026-08-05. Read-only on the deal pipeline (pipelines/active deals/companies/investors); full task access (same as associate). Lost HR policies/Bulletin/Events edit rights on 2026-08-14 when `hr` took over that tier — now read-only there too, same as associate. |
+| **hr** | Internal | Narrow HR-operator role added 2026-08-14. Nav access limited to the Team section only (Tasks, Bulletin, Events, HR Zone, Approvals, Engage) — no Dashboard, Deal Flow, Database, or Admin section access. Can create/edit (not delete) HR Zone policies, Bulletin posts, and Events; full task parity with general; sole role (with founder/admin) that can see/adjust the HR clock-in/out widget and manage birthdays; one of three leave/expense approvers. |
 | **franchise_partner** | External | Referral partner. Read-mostly; scoped to their **own** links & referrals. |
 
-"Internal" = founder, admin, associate, general. Everything is **org-scoped**: a user only ever
+"Internal" = founder, admin, associate, general, hr. Everything is **org-scoped**: a user only ever
 sees data in their own organization (super_admin excepted).
 
 ---
@@ -28,43 +29,57 @@ sees data in their own organization (super_admin excepted).
 
 Legend: ✅ full · 🟡 limited/conditional · 👁 read-only · ❌ none
 
-| Capability | Founder | Admin | Associate | General | Partner | Super admin |
-|---|---|---|---|---|---|---|
-| Dashboard | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Pipelines board (view/move/assign) | ✅ | ✅ | 🟡 assigned | 👁 | ❌ | ❌ |
-| Build / edit forms | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Generate submission links | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ |
-| My Submissions (own sourced entries) | — | — | — | — | 👁 | ❌ |
-| Active Deals — view | ✅ all org | ✅ all org | ✅ all org | 👁 all org | 👁 all org¹ | ❌ |
-| Active Deals — edit investors/fees | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Partner deal shares — set base + split | ✅ | ✅ | 👁 | ❌ | ❌ | ❌ |
-| Partner earnings — view | ✅ per partner³ | ✅ per partner³ | 👁 | ❌ | 👁 own only⁴ | ❌ |
-| Accept a deal (entry → Accepted) | ✅ | ✅ | 🟡 if assigned | ❌ | ❌ | ❌ |
-| Deal categories (CRUD) | ✅ | ✅ | 👁 | ❌ | 👁 | ❌ |
-| Investors — create | ✅ | ✅ | ✅ | ❌ | 🟡 referrals | ❌ |
-| Investors — edit | ✅ | ✅ | ❌ | ❌ | 🟡 own referrals² | ❌ |
-| Investors — delete | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Investors — view | ✅ | ✅ | ✅ | 👁 | 🟡 own referrals | ❌ |
-| Set ESV POC on investor | ✅ | ✅ | 🟡 on create | ❌ | ❌ | ❌ |
-| Tasks — view | ✅ all | ✅ all | 🟡 own assigned | 🟡 own assigned | ❌ | ❌ |
-| Tasks — create/assign | ✅ non-partners | ✅ non-partners | 🟡 self/associates/general | 🟡 self/associates/general | ❌ | ❌ |
-| Tasks — push (new date) | 🟡 own | 🟡 own | 🟡 own | 🟡 own | ❌ | ❌ |
-| Tasks — KPI view | ✅ everyone | ✅ everyone | 🟡 own | 🟡 own | ❌ | ❌ |
-| Escalations — view | ✅ all | ✅ all | 🟡 own raised | ❌ | 🟡 sent to them | ❌ |
-| Escalations — raise | ❌ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Escalations — set status | ✅ | ✅ | 🟡 own raised | ❌ | 🟡 received | ❌ |
-| HR policies — create/edit (not delete) | ✅ | ✅ | ❌ | 🟡 | 👁 | ❌ |
-| Bulletin / Events — create/edit (not delete) | ✅ | ✅ | ❌ | 🟡 | 👁 | ❌ |
-| User management (`/admin/users`) | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ cross-org |
-| Partner management (`/admin/partners`) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| Manage organizations | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| Wiki | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Capability | Founder | Admin | Associate | General | HR | Partner | Super admin |
+|---|---|---|---|---|---|---|---|
+| Dashboard | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Pipelines board (view/move/assign) | ✅ | ✅ | 🟡 assigned | 👁 | ❌ | ❌ | ❌ |
+| Build / edit forms | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Generate submission links | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
+| My Submissions (own sourced entries) | — | — | — | — | — | 👁 | ❌ |
+| Active Deals — view | ✅ all org | ✅ all org | ✅ all org | 👁 all org | ❌ | 👁 all org¹ | ❌ |
+| Active Deals — edit investors/fees | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Partner deal shares — set base + split | ✅ | ✅ | 👁 | ❌ | ❌ | ❌ | ❌ |
+| Partner earnings — view | ✅ per partner³ | ✅ per partner³ | 👁 | ❌ | ❌ | 👁 own only⁴ | ❌ |
+| Accept a deal (entry → Accepted) | ✅ | ✅ | 🟡 if assigned | ❌ | ❌ | ❌ | ❌ |
+| Deal categories (CRUD) | ✅ | ✅ | 👁 | ❌ | ❌ | 👁 | ❌ |
+| Investors — create | ✅ | ✅ | ✅ | ❌ | ❌ | 🟡 referrals | ❌ |
+| Investors — edit | ✅ | ✅ | ❌ | ❌ | ❌ | 🟡 own referrals² | ❌ |
+| Investors — delete | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Investors — view | ✅ | ✅ | ✅ | 👁 | ❌ | 🟡 own referrals | ❌ |
+| Set ESV POC on investor | ✅ | ✅ | 🟡 on create | ❌ | ❌ | ❌ | ❌ |
+| Tasks — view | ✅ all | ✅ all | 🟡 own assigned | 🟡 own assigned | 🟡 own assigned | ❌ | ❌ |
+| Tasks — create/assign | ✅ non-partners | ✅ non-partners | 🟡 self/associates/general/hr | 🟡 self/associates/general/hr | 🟡 self/associates/general/hr | ❌ | ❌ |
+| Tasks — push (new date) | 🟡 own | 🟡 own | 🟡 own | 🟡 own | 🟡 own | ❌ | ❌ |
+| Tasks — KPI view | ✅ everyone | ✅ everyone | 🟡 own | 🟡 own | 🟡 own | ❌ | ❌ |
+| Escalations — view | ✅ all | ✅ all | 🟡 own raised | ❌ | ❌ | 🟡 sent to them | ❌ |
+| Escalations — raise | ❌ | ✅ | ✅ | ❌ | ❌⁵ | ❌ | ❌ |
+| Escalations — set status | ✅ | ✅ | 🟡 own raised | ❌ | ❌⁵ | 🟡 received | ❌ |
+| HR clock widget & birthdays | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| HR policies — create/edit (not delete) | ✅ | ✅ | ❌ | 👁 | ✅ | 👁 | ❌ |
+| Bulletin / Events — create/edit (not delete) | ✅ | ✅ | ❌ | 👁 | ✅ | 👁 | ❌ |
+| Engage — give kudos | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Engage — delete a kudos | ✅ | ✅ | 🟡 own given | 🟡 own given | ✅ | ❌ | ❌ |
+| Leave requests — submit | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Leave / Expense requests — approve | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Approvals page (`/approvals`) | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| User management (`/admin/users`) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ cross-org |
+| Partner management (`/admin/partners`) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Manage organizations | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| Wiki | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 **General role note:** added 2026-08-05 (`20260805000000_add_general_role.sql` onward), purpose-built
 as a narrower operator than associate — read-only into the deal/investor pipeline, but full task
-parity with associate, plus (added 2026-08-12) write access to HR policies and Bulletin/Events posts
-(create/edit, not delete — matches founder/admin there, unlike everywhere else in this table). See
-[FUNCTIONALITY.md](FUNCTIONALITY.md) for the full module rundown.
+parity with associate. Briefly (2026-08-12 to 2026-08-14) also had write access to HR policies and
+Bulletin/Events posts; that tier moved to the new `hr` role on 2026-08-14 and general is read-only
+there again. See [FUNCTIONALITY.md](FUNCTIONALITY.md) for the full module rundown.
+
+**HR role note:** added 2026-08-14 alongside the HR clock widget, Engage/Kudos, and Leave & Expense
+approvals. Nav-visible only in the Team section (Tasks, Bulletin, Events, HR Zone, Approvals,
+Engage) — no Dashboard, Deal Flow, Database, or Admin section. Owns the create/edit (not delete)
+tier on HR Zone policies, Bulletin, and Events (taking that over from `general`), is the only
+non-founder/admin role that can see or adjust the top-right HR clock-in/out widget and manage
+birthdays, and is one of three leave/expense approvers (with founder and admin) — see the Leave &
+Expense / Approvals module section below for the founder-notify-on-admin/HR-approval rule.
 
 ¹ Partners see all active deals **in their org**, but inside each deal only their **own referred
 investors** are listed and the Investment/Earnings totals are computed from those only. Everything in
@@ -76,6 +91,11 @@ to, with org total earning, referred earning, a base selector, an editable split
 share. Associates can read it but not change the share config.
 ⁴ Partners see a **My Earnings** page with only their **own** final share per deal (₹) — never org
 totals or other investors. Computed server-side via the `get_partner_earnings` SECURITY DEFINER function.
+⁵ HR cannot raise or act on an escalation through the UI (`updateEscalationStatus`'s app-layer guard
+doesn't include `hr`, and only founders/partners are valid recipients). The `"Escalations insert"`
+RLS policy was widened to include `hr` purely so the backend can auto-insert a founder-notify row
+attributed to an HR approver when they approve a leave/expense request — see Leave & Expense /
+Approvals below. This is not a user-facing escalations capability.
 
 ---
 
@@ -194,6 +214,48 @@ totals or other investors. Computed server-side via the `get_partner_earnings` S
   the ones **they raised**; partners see only the ones **addressed to them**. Other orgs are hidden.
 - **Delete**: the raiser or a founder/admin.
 
+### HR Zone, Bulletin & Events (`/hr`, `/bulletin`, `/events`)
+- **View**: Founder/Admin/Associate/General/HR see HR policies, Bulletin posts, and Events;
+  partners have no access.
+- **Create/edit (not delete)**: Founder/Admin/HR only. `general` had this tier from 2026-08-12 to
+  2026-08-14; it's now read-only there, same as associate.
+- **Delete/pin (Bulletin) / delete/pin/complete/attendee-manage (Events)**: Founder/Admin only —
+  HR does not get this tier, matching the "create/edit, not delete" pattern used everywhere else.
+- **RSVP to an event**: any internal role, including HR — self only, never on someone else's behalf.
+- **HR clock widget & birthdays**: the top-right India-time clock (with Clock In/Clock Out reminder
+  windows) and the birthday list are visible/editable to **Founder/Admin/HR only** — narrower than
+  the rest of the HR Zone page. Associate/General see neither the widget nor the admin card at all
+  (not even read-only) when they visit `/hr` — they see policies (read-only) and their own leave/
+  expense requests instead.
+
+### Engage — Kudos (`/engage`)
+- **Give kudos**: any internal role (Founder/Admin/Associate/General/HR) can give a short
+  recognition message to any other internal org member (never themselves). Partners have no access.
+- **Feed**: public to the same internal-role set — everyone sees everyone's kudos, newest first.
+- **Delete**: the giver, or Founder/Admin/HR (moderation) — mirrors Escalations' "raiser or
+  founder/admin" delete pattern.
+- No edit — kudos are immutable once given.
+
+### Leave & Expense requests / Approvals (`/hr`, `/approvals`)
+- **Submit**: any internal role (Founder/Admin/Associate/General/HR) can submit a leave request
+  (Earned / Sick / My Day / Compensatory / Unpaid, date range, optional reason) or an expense
+  reimbursement request (fixed type — Travel/Meals/Software/Office Supplies/Other — amount,
+  description, a **required** invoice attachment) from the "My Leaves" / "My Expenses" section of
+  `/hr`. This is a **simple request/approval log — no balance or accrual tracking**.
+- **Withdraw**: the requester, only while their own request is still pending.
+- **Approve/reject**: Founder, Admin, or HR — via the dedicated `/approvals` page (not buried
+  inside HR Zone), which lists every pending request org-wide plus a recent-decisions view for
+  context.
+- **Founder notification on admin/HR approval**: when an **admin or HR** approves (not on reject,
+  and never when a founder approves) every founder in the org is notified. This reuses the
+  **Escalations** table rather than a separate notifications system — one escalation row is
+  auto-inserted per founder, `raised_by` the approving admin/HR user, `linked_type`
+  `leave_request`/`expense_request`. Founders see it the same way they see any other escalation
+  (the `/escalations` list and the dashboard's open-count), not a separate inbox.
+- **Invoices**: stored in a private `expenses` Storage bucket (same org-prefixed-path pattern as the
+  Deal Desk bucket), resolved to a time-limited signed URL server-side whenever a request is
+  fetched — never a public URL.
+
 ### Partner Portal (`/portal` — "My Links")
 - **Partner** only: generate submission links, copy/open them, view their own issued links, and
   refer investors (auto-attributed to them).
@@ -217,3 +279,13 @@ totals or other investors. Computed server-side via the `get_partner_earnings` S
 - The migration history for these rules lives in `supabase/migrations/` — most recently
   `20260720000000_tasks_kpi_and_partner_investor_edit.sql` and
   `20260720100000_partners_see_all_active_deals.sql`.
+- The `hr` role (`20260814000000_add_hr_role.sql` onward) followed the same enum-then-RLS pattern
+  as `general`: a standalone `ALTER TYPE ... ADD VALUE` migration, then separate migrations widening
+  task/HR-Zone/Bulletin/Events policies to add `hr` (and, for HR Zone/Bulletin/Events, swap `general`
+  out of the create/update policies rather than just adding `hr` alongside it). The
+  `hr_clock_settings`/`hr_birthdays` policies were **narrowed** (associate/general dropped) rather
+  than widened — the only role-RLS change this session that removed access instead of granting it.
+- `escalations.linked_type`'s CHECK constraint was widened (`20260814700000_approvals_notify_founders.sql`)
+  to accept `leave_request`/`expense_request`, and its `"Escalations insert"` policy gained `hr` —
+  both purely to support the founder-notify-on-approval mechanism described above, not a general
+  escalations capability for HR.

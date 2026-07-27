@@ -7,6 +7,11 @@ async function requireAdmin() {
   return requireRole(['founder', 'admin'])
 }
 
+// HR can create/edit announcements too (not delete/pin) — mirrors hr-zone.ts/events.ts.
+async function requireEditor() {
+  return requireRole(['founder', 'admin', 'hr'])
+}
+
 // Bulletin Board is announcements-only now — events moved to @/app/actions/events.
 
 export type BulletinPostInput = {
@@ -16,7 +21,7 @@ export type BulletinPostInput = {
 }
 
 export async function createBulletinPost(input: BulletinPostInput): Promise<string> {
-  const { supabase, userId, orgId } = await requireAdmin()
+  const { supabase, userId, orgId } = await requireEditor()
   const title = input.title.trim()
   if (!title) throw new Error('Title is required.')
 
@@ -38,7 +43,7 @@ export async function createBulletinPost(input: BulletinPostInput): Promise<stri
 }
 
 export async function updateBulletinPost(id: string, input: BulletinPostInput): Promise<void> {
-  const { supabase } = await requireAdmin()
+  const { supabase } = await requireEditor()
   const title = input.title.trim()
   if (!title) throw new Error('Title is required.')
 

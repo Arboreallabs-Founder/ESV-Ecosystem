@@ -1,6 +1,6 @@
 export type EscalationStatus = 'Open' | 'Acknowledged' | 'Resolved'
 
-export type EscalationLinkedType = 'active_deal' | 'pipeline_entry' | 'task' | 'investor'
+export type EscalationLinkedType = 'active_deal' | 'pipeline_entry' | 'task' | 'investor' | 'leave_request' | 'expense_request'
 
 export type Escalation = {
   id: string
@@ -151,6 +151,94 @@ export type HrPolicy = {
   created_by: string | null
   updated_at: string
   created_by_user?: { name: string } | null
+}
+
+// India-time clock-in/out reminder windows, HR-adjustable — one row per org. Times are
+// 'HH:MM:SS' strings as returned by Postgres for a TIME column.
+export type HrClockSettings = {
+  id: string
+  clock_in_start: string
+  clock_in_end: string
+  clock_out_start: string
+  clock_out_end: string
+  updated_at: string
+}
+
+// 'YYYY-MM-DD' as returned by Postgres for a DATE column — matched against today's IST
+// date by month/day only (the year is stored but not used for the "is today" check).
+export type HrBirthday = {
+  id: string
+  name: string
+  birth_date: string
+  created_by: string | null
+  created_at: string
+}
+
+export type LeaveType = 'earned' | 'sick' | 'my_day' | 'compensatory' | 'unpaid'
+export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
+
+export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
+  earned: 'Earned Leave',
+  sick: 'Sick Leave',
+  my_day: 'My Day Leave',
+  compensatory: 'Compensatory Leave',
+  unpaid: 'Unpaid Leave',
+}
+
+export type LeaveRequest = {
+  id: string
+  requester_id: string
+  leave_type: LeaveType
+  start_date: string
+  end_date: string
+  reason: string | null
+  status: ApprovalStatus
+  decided_by: string | null
+  decided_at: string | null
+  decision_note: string | null
+  created_at: string
+  requester?: { name: string | null; email: string | null } | null
+  decided_by_user?: { name: string | null } | null
+}
+
+export type ExpenseType = 'travel' | 'meals' | 'software' | 'office_supplies' | 'other'
+
+export const EXPENSE_TYPE_LABELS: Record<ExpenseType, string> = {
+  travel: 'Travel',
+  meals: 'Meals',
+  software: 'Software',
+  office_supplies: 'Office Supplies',
+  other: 'Other',
+}
+
+export type ExpenseRequest = {
+  id: string
+  requester_id: string
+  expense_type: ExpenseType
+  amount: number
+  description: string | null
+  invoice_path: string
+  status: ApprovalStatus
+  decided_by: string | null
+  decided_at: string | null
+  decision_note: string | null
+  created_at: string
+  requester?: { name: string | null; email: string | null } | null
+  decided_by_user?: { name: string | null } | null
+  invoice_signed_url?: string | null
+}
+
+export type KudosCategory = 'Teamwork' | 'Leadership' | 'Innovation' | 'Above & Beyond' | 'Customer Focus' | 'Other'
+
+export type Kudos = {
+  id: string
+  giver_id: string
+  recipient_id: string
+  message: string
+  category: KudosCategory | null
+  created_at: string
+  giver?: { name: string | null } | null
+  recipient?: { name: string | null } | null
 }
 
 export type ServiceType =
@@ -311,7 +399,7 @@ export type MyDealEarning = {
   share_amount: number
 }
 
-export type UserRole = 'founder' | 'admin' | 'associate' | 'franchise_partner' | 'super_admin' | 'general'
+export type UserRole = 'founder' | 'admin' | 'associate' | 'franchise_partner' | 'super_admin' | 'general' | 'hr'
 
 export type UserRow = {
   id: string

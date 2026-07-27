@@ -6,10 +6,11 @@ import BulletinBoardView from './_components/BulletinBoardView'
 export default async function BulletinPage() {
   const user = await getUser()
   if (!user) redirect('/login')
-  if (!['founder', 'admin', 'associate', 'general'].includes(user.role ?? '')) redirect('/dashboard')
+  if (!['founder', 'admin', 'associate', 'general', 'hr'].includes(user.role ?? '')) redirect('/dashboard')
 
   const posts = await fetchBulletinPosts()
-  const isAdmin = ['founder', 'admin'].includes(user.role ?? '')
+  const canEdit = ['founder', 'admin', 'hr'].includes(user.role ?? '')
+  const canDelete = ['founder', 'admin'].includes(user.role ?? '')
 
-  return <BulletinBoardView posts={posts} isAdmin={isAdmin} />
+  return <BulletinBoardView posts={posts} canEdit={canEdit} canDelete={canDelete} />
 }

@@ -8,13 +8,18 @@ import { createClient } from '@/lib/supabase/client'
 import { WikiSidebarButton } from '@/app/_components/WikiPanel'
 import { useTheme } from '@/app/_components/ThemeProvider'
 import { switchDemoPersona, exitDemoMode } from '@/app/actions/demo'
+import HrClockWidget from '@/app/_components/HrClockWidget'
+import type { HrClockSettings, HrBirthday } from '@/lib/types'
 import styles from '@/app/app-shell.module.css'
 
 type UserRow = { id: string; name: string | null; role: string | null; email: string | null }
 type TaskAlert = { id: string; title: string; created_at: string; kind: 'assigned' | 'comment'; by?: string }
 
+// The HR clock widget is narrower than general task access — founder/admin/hr only.
+const CLOCK_WIDGET_ROLES = ['founder', 'admin', 'hr']
+
 const ROLE_LABELS: Record<string, string> = {
-  founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner', super_admin: 'Platform Admin', general: 'General',
+  founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner', super_admin: 'Platform Admin', general: 'General', hr: 'HR',
 }
 
 function Icon({ d, d2 }: { d: string; d2?: string }) {
@@ -106,42 +111,42 @@ const NAV_ITEMS: NavEntry[] = [
   {
     group: true,
     label: 'Tasks',
-    roles: ['founder', 'admin', 'associate', 'general'],
+    roles: ['founder', 'admin', 'associate', 'general', 'hr'],
     section: 'Team',
     icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
     children: [
       {
         href: '/tasks',
         label: 'Board',
-        roles: ['founder', 'admin', 'associate', 'general'],
+        roles: ['founder', 'admin', 'associate', 'general', 'hr'],
         icon: <Icon d="M9 17V7m0 10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m0 10a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 7a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2m0 10V7m0 10a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2" />,
         badgeColor: 'var(--color-primary)',
       },
       {
         href: '/my-todos',
         label: 'My To-Dos',
-        roles: ['founder', 'admin', 'associate', 'general'],
+        roles: ['founder', 'admin', 'associate', 'general', 'hr'],
         icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
         badgeColor: 'var(--color-accent)',
       },
       {
         href: '/tasks/recurring',
         label: 'Recurring',
-        roles: ['founder', 'admin', 'associate', 'general'],
+        roles: ['founder', 'admin', 'associate', 'general', 'hr'],
         icon: <Icon d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />,
         badgeColor: 'var(--color-warning)',
       },
       {
         href: '/tasks/kpi',
         label: 'KPI',
-        roles: ['founder', 'admin', 'associate', 'general'],
+        roles: ['founder', 'admin', 'associate', 'general', 'hr'],
         icon: <Icon d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />,
         badgeColor: 'var(--color-success)',
       },
       {
         href: '/tasks/update',
         label: 'Weekly Update',
-        roles: ['founder', 'admin', 'general'],
+        roles: ['founder', 'admin', 'general', 'hr'],
         icon: <Icon d="M6 12 3.269 3.126A59.768 59.768 0 0 1 21.485 12 59.77 59.77 0 0 1 3.27 20.876L5.999 12Zm0 0h7.5" />,
         badgeColor: 'var(--color-primary-light)',
       },
@@ -157,35 +162,35 @@ const NAV_ITEMS: NavEntry[] = [
   {
     href: '/bulletin',
     label: 'Bulletin Board',
-    roles: ['founder', 'admin', 'associate', 'general'],
+    roles: ['founder', 'admin', 'associate', 'general', 'hr'],
     section: 'Team',
     icon: <Icon d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.65a25.05 25.05 0 0 1 4.66-.594m-4.66.594a20.7 20.7 0 0 1-1.62-.463m6.28-4.03a2.25 2.25 0 0 0 0-4.5m0 4.5v-4.5m0 4.5a25.05 25.05 0 0 1-4.66.594m4.66-5.094a25.05 25.05 0 0 0-4.66-.594m0 0V5.85m0 .001v3.9m0-3.9a2.25 2.25 0 0 0-4.66-.001" />,
   },
   {
     group: true,
     label: 'Events',
-    roles: ['founder', 'admin', 'associate', 'general'],
+    roles: ['founder', 'admin', 'associate', 'general', 'hr'],
     section: 'Team',
     icon: <Icon d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />,
     children: [
       {
         href: '/events',
         label: 'Upcoming Events',
-        roles: ['founder', 'admin', 'associate', 'general'],
+        roles: ['founder', 'admin', 'associate', 'general', 'hr'],
         icon: <Icon d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />,
         badgeColor: 'var(--color-success)',
       },
       {
         href: '/events/past',
         label: 'Past Events',
-        roles: ['founder', 'admin', 'associate', 'general'],
+        roles: ['founder', 'admin', 'associate', 'general', 'hr'],
         icon: <Icon d="M12 6v6l4 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
         badgeColor: 'var(--color-accent)',
       },
       {
         href: '/events/kpi',
         label: 'Event KPIs',
-        roles: ['founder', 'admin', 'associate', 'general'],
+        roles: ['founder', 'admin', 'associate', 'general', 'hr'],
         icon: <Icon d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z" />,
         badgeColor: 'var(--color-warning)',
       },
@@ -194,9 +199,23 @@ const NAV_ITEMS: NavEntry[] = [
   {
     href: '/hr',
     label: 'HR Zone',
-    roles: ['founder', 'admin', 'associate', 'general'],
+    roles: ['founder', 'admin', 'associate', 'general', 'hr'],
     section: 'Team',
     icon: <Icon d="M12 4.5v15m7.5-7.5h-15" d2="M3.75 20.25h16.5a1.5 1.5 0 0 0 1.5-1.5V5.25a1.5 1.5 0 0 0-1.5-1.5H3.75a1.5 1.5 0 0 0-1.5 1.5v13.5a1.5 1.5 0 0 0 1.5 1.5Z" />,
+  },
+  {
+    href: '/approvals',
+    label: 'Approvals',
+    roles: ['founder', 'admin', 'hr'],
+    section: 'Team',
+    icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
+  },
+  {
+    href: '/engage',
+    label: 'Engage',
+    roles: ['founder', 'admin', 'associate', 'general', 'hr'],
+    section: 'Team',
+    icon: <Icon d="M21 11.25v8.25a1.5 1.5 0 0 1-1.5 1.5H5.25a1.5 1.5 0 0 1-1.5-1.5v-8.25M12 4.875A2.625 2.625 0 1 0 9.375 7.5H12m0-2.625V7.5m0-2.625A2.625 2.625 0 1 1 14.625 7.5H12m0 0V21m-8.625-9.75h18c.621 0 1.125-.504 1.125-1.125v-2.25c0-.621-.504-1.125-1.125-1.125h-18c-.621 0-1.125.504-1.125 1.125v2.25c0 .621.504 1.125 1.125 1.125Z" />,
   },
   {
     group: true,
@@ -317,6 +336,7 @@ const DEMO_PERSONAS = [
   { value: 'associate', label: 'Associate' },
   { value: 'franchise_partner', label: 'Partner' },
   { value: 'general', label: 'General' },
+  { value: 'hr', label: 'HR' },
 ]
 
 export default function AppShell({
@@ -326,6 +346,8 @@ export default function AppShell({
   demoMode = false,
   demoPersona = 'founder',
   myTaskAlerts = [],
+  clockSettings = null,
+  birthdaysToday = [],
 }: {
   user: UserRow
   children: React.ReactNode
@@ -333,6 +355,8 @@ export default function AppShell({
   demoMode?: boolean
   demoPersona?: string
   myTaskAlerts?: TaskAlert[]
+  clockSettings?: HrClockSettings | null
+  birthdaysToday?: HrBirthday[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -459,7 +483,9 @@ export default function AppShell({
     router.push('/login')
   }
 
-  const canHaveTasks = ['founder', 'admin', 'associate', 'general'].includes(role)
+  const canHaveTasks = ['founder', 'admin', 'associate', 'general', 'hr'].includes(role)
+  // Decoupled from canHaveTasks — narrowed to founder/admin/hr only, unlike the task-alerts bell.
+  const showClockWidget = CLOCK_WIDGET_ROLES.includes(role) && !!clockSettings
 
   const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(role))
   // Section labels (Deal Flow / Team / Database / Admin) are a founder/admin/associate affordance —
@@ -759,6 +785,10 @@ export default function AppShell({
         </div>
       </aside>
 
+      {showClockWidget && clockSettings && (
+        <HrClockWidget settings={clockSettings} birthdaysToday={birthdaysToday} />
+      )}
+
       {flyout?.kind === 'alerts' && (
         <NavFlyout anchor={flyout.anchor} onClose={closeFlyout}>
           <AlertsPanel alerts={newTaskAlerts} onSelect={openAlertTask} bare />
@@ -825,7 +855,13 @@ export default function AppShell({
             {theme === 'dark' ? '☀' : '🌙'}
           </button>
         </header>
-        <main className={fullWidth ? styles.mainFull : styles.main}>
+        <main
+          className={
+            fullWidth
+              ? `${styles.mainFull} ${showClockWidget ? styles.mainFullWithClock : ''}`
+              : `${styles.main} ${showClockWidget ? styles.mainWithClock : ''}`
+          }
+        >
           {children}
         </main>
       </div>

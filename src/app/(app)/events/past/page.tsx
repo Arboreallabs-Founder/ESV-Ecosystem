@@ -7,15 +7,15 @@ import EventsView from '../_components/EventsView'
 export default async function PastEventsPage() {
   const user = await getUser()
   if (!user) redirect('/login')
-  if (!['founder', 'admin', 'associate', 'general'].includes(user.role ?? '')) redirect('/dashboard')
+  if (!['founder', 'admin', 'associate', 'general', 'hr'].includes(user.role ?? '')) redirect('/dashboard')
 
   const canManage = ['founder', 'admin'].includes(user.role ?? '')
-  const canEdit = canManage || user.role === 'general'
+  const canEdit = canManage || user.role === 'hr'
   const supabase = await createClient()
   const [events, { data: internalUsers }] = await Promise.all([
     fetchEvents(),
     canManage
-      ? supabase.from('users').select('id, name').in('role', ['founder', 'admin', 'associate', 'general']).order('name')
+      ? supabase.from('users').select('id, name').in('role', ['founder', 'admin', 'associate', 'general', 'hr']).order('name')
       : Promise.resolve({ data: [] }),
   ])
   const today = new Date().toISOString().slice(0, 10)

@@ -7,7 +7,7 @@ import type { Task, TaskComment } from '@/lib/types'
 const TASK_SELECT = '*, assignee:assignee_id(name), created_by_user:created_by(name), assigned_by_user:assigned_by_id(name), company:company_id(id, name), desk_deal:desk_deal_id(id, company_name)'
 
 export async function createTask(formData: FormData): Promise<Task> {
-  const { supabase, userId, orgId, role } = await requireRole(['founder', 'admin', 'associate', 'general'])
+  const { supabase, userId, orgId, role } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
 
   const assigneeId = formData.get('assignee_id') as string
   if (!assigneeId) throw new Error('Please choose who this task is assigned to.')
@@ -24,7 +24,10 @@ export async function createTask(formData: FormData): Promise<Task> {
     if (assigneeRole === 'franchise_partner') {
       throw new Error('Tasks cannot be assigned to partners.')
     }
-    if ((role === 'associate' || role === 'general') && assigneeRole !== 'associate' && assigneeRole !== 'general') {
+    if (
+      (role === 'associate' || role === 'general' || role === 'hr')
+      && assigneeRole !== 'associate' && assigneeRole !== 'general' && assigneeRole !== 'hr'
+    ) {
       throw new Error('Associates can only assign tasks to themselves or other associates.')
     }
   }
@@ -50,7 +53,7 @@ export async function createTask(formData: FormData): Promise<Task> {
 }
 
 export async function updateTask(taskId: string, formData: FormData): Promise<Task> {
-  const { supabase, userId, role } = await requireRole(['founder', 'admin', 'associate', 'general'])
+  const { supabase, userId, role } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
 
   const { data: existing } = await supabase
     .from('tasks')
@@ -80,7 +83,10 @@ export async function updateTask(taskId: string, formData: FormData): Promise<Ta
     if (assigneeRole === 'franchise_partner') {
       throw new Error('Tasks cannot be assigned to partners.')
     }
-    if ((role === 'associate' || role === 'general') && assigneeRole !== 'associate' && assigneeRole !== 'general') {
+    if (
+      (role === 'associate' || role === 'general' || role === 'hr')
+      && assigneeRole !== 'associate' && assigneeRole !== 'general' && assigneeRole !== 'hr'
+    ) {
       throw new Error('Associates can only assign tasks to themselves or other associates.')
     }
   }
@@ -104,7 +110,7 @@ export async function updateTask(taskId: string, formData: FormData): Promise<Ta
 }
 
 export async function updateTaskStatus(taskId: string, status: string) {
-  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'general'])
+  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
 
   // Stamp completion time on Done; clear it when reopened.
   const completed_at = status === 'Done' ? new Date().toISOString() : null
@@ -119,7 +125,7 @@ export async function updateTaskStatus(taskId: string, status: string) {
 }
 
 export async function pushTask(taskId: string, newDate: string) {
-  const { supabase, userId } = await requireRole(['founder', 'admin', 'associate', 'general'])
+  const { supabase, userId } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
 
   // Only the assignee may push their own task.
   const { data: task } = await supabase
@@ -154,7 +160,7 @@ export async function deleteTask(taskId: string) {
 // ── Comment thread ───────────────────────────────────────────────────────────
 
 export async function getTaskComments(taskId: string): Promise<TaskComment[]> {
-  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'general'])
+  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
   const { data } = await supabase
     .from('task_comments')
     .select('*, author:author_id(name)')
@@ -164,7 +170,7 @@ export async function getTaskComments(taskId: string): Promise<TaskComment[]> {
 }
 
 export async function addTaskComment(taskId: string, body: string) {
-  const { supabase, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'general'])
+  const { supabase, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
   const text = body.trim()
   if (!text) throw new Error('Comment cannot be empty.')
   const { error } = await supabase.from('task_comments').insert({ task_id: taskId, org_id: orgId, body: text, author_id: userId })
@@ -173,7 +179,7 @@ export async function addTaskComment(taskId: string, body: string) {
 }
 
 export async function deleteTaskComment(id: string) {
-  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'general'])
+  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
   const { error } = await supabase.from('task_comments').delete().eq('id', id)
   if (error) throw error
   revalidatePath('/tasks')

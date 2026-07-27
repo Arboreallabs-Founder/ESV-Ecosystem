@@ -12,6 +12,7 @@ const ROLES = [
   { value: 'associate', label: 'Associate' },
   { value: 'franchise_partner', label: 'SGP' },
   { value: 'general', label: 'General' },
+  { value: 'hr', label: 'HR' },
 ]
 
 export default function AddOrgUserPage() {

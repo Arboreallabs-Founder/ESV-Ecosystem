@@ -2,10 +2,13 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createHrPolicy, updateHrPolicy, deleteHrPolicy, type HrPolicyInput } from '@/app/actions/hr-zone'
-import type { HrPolicy } from '@/lib/types'
+import type { HrPolicy, HrClockSettings, HrBirthday, LeaveRequest, ExpenseRequest } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
+import HrClockAdmin from './HrClockAdmin'
+import MyRequests from './MyRequests'
 import styles from '../hr-zone.module.css'
 
 function formatDate(iso: string) {
@@ -41,7 +44,16 @@ function PolicyRow({ policy, expanded, canEdit, canDelete, onToggle, onEdit, onD
   )
 }
 
-export default function HrZoneView({ policies, canEdit, canDelete }: { policies: HrPolicy[]; canEdit: boolean; canDelete: boolean }) {
+export default function HrZoneView({
+  policies, clockSettings, birthdays, canEditPolicies, canDeletePolicies, showClockAdmin,
+  isApprover, pendingApprovalsCount, myLeaveRequests, myExpenseRequests, orgId, userId,
+}: {
+  policies: HrPolicy[]; clockSettings: HrClockSettings | null; birthdays: HrBirthday[]
+  canEditPolicies: boolean; canDeletePolicies: boolean; showClockAdmin: boolean
+  isApprover: boolean; pendingApprovalsCount: number
+  myLeaveRequests: LeaveRequest[]; myExpenseRequests: ExpenseRequest[]
+  orgId: string; userId: string
+}) {
   const router = useRouter()
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [editing, setEditing] = useState<HrPolicy | 'new' | null>(null)
@@ -62,10 +74,23 @@ export default function HrZoneView({ policies, canEdit, canDelete }: { policies:
           </div>
           <div className={styles.pageSub}>Company policies</div>
         </div>
-        {canEdit && <button className={styles.primaryBtn} onClick={() => setEditing('new')}>+ New policy</button>}
+        {canEditPolicies && <button className={styles.primaryBtn} onClick={() => setEditing('new')}>+ New policy</button>}
       </div>
 
       <div className={styles.content}>
+        {isApprover && (
+          <Link href="/approvals" className={styles.clockCard} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+            <span className={styles.clockCardHead} style={{ marginBottom: 0 }}>Approvals</span>
+            <span className={styles.pageSub} style={{ marginTop: 0 }}>
+              {pendingApprovalsCount === 0 ? 'Nothing pending' : `${pendingApprovalsCount} pending request${pendingApprovalsCount === 1 ? '' : 's'}`}
+            </span>
+            <span style={{ marginLeft: 'auto', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.8125rem' }}>Review →</span>
+          </Link>
+        )}
+        {showClockAdmin && clockSettings && (
+          <HrClockAdmin settings={clockSettings} birthdays={birthdays} canEdit={canEditPolicies} canDelete={canDeletePolicies} />
+        )}
+        <MyRequests leaveRequests={myLeaveRequests} expenseRequests={myExpenseRequests} orgId={orgId} userId={userId} />
         {policies.length === 0 ? (
           <div className={styles.empty}>No policies published yet.</div>
         ) : (
@@ -75,8 +100,8 @@ export default function HrZoneView({ policies, canEdit, canDelete }: { policies:
                 key={p.id}
                 policy={p}
                 expanded={expandedId === p.id}
-                canEdit={canEdit}
-                canDelete={canDelete}
+                canEdit={canEditPolicies}
+                canDelete={canDeletePolicies}
                 onToggle={() => setExpandedId((cur) => (cur === p.id ? null : p.id))}
                 onEdit={() => setEditing(p)}
                 onDelete={() => handleDelete(p.id)}

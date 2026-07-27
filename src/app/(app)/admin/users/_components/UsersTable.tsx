@@ -6,10 +6,10 @@ import { addApprovedUser, updateApprovedUser, revokeUser } from '@/app/actions/a
 import type { ApprovedUser } from '@/lib/types'
 import styles from '../../admin.module.css'
 
-const ROLES = ['founder', 'admin', 'associate', 'franchise_partner', 'general'] as const
+const ROLES = ['founder', 'admin', 'associate', 'franchise_partner', 'general', 'hr'] as const
 
 const ROLE_LABELS: Record<string, string> = {
-  founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner', general: 'General',
+  founder: 'Founder', admin: 'Admin', associate: 'Associate', franchise_partner: 'Partner', general: 'General', hr: 'HR',
 }
 
 const ROLE_CLASS: Record<string, string> = {
@@ -18,6 +18,7 @@ const ROLE_CLASS: Record<string, string> = {
   associate: styles.roleAssociate,
   franchise_partner: styles.roleFranchise,
   general: styles.roleGeneral,
+  hr: styles.roleHr,
 }
 
 function PencilIcon() {

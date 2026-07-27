@@ -13,9 +13,9 @@ function formatPostedDate(iso: string) {
 }
 
 function PostCard({
-  post, isAdmin, onPin, onEdit, onDelete,
+  post, canEdit, canDelete, onPin, onEdit, onDelete,
 }: {
-  post: BulletinPost; isAdmin: boolean
+  post: BulletinPost; canEdit: boolean; canDelete: boolean
   onPin: () => void; onEdit: () => void; onDelete: () => void
 }) {
   return (
@@ -27,13 +27,15 @@ function PostCard({
             {post.pinned && <span className={`${styles.badge} ${styles.badgePinned}`}>Pinned</span>}
           </div>
         </div>
-        {isAdmin && (
+        {(canEdit || canDelete) && (
           <div className={styles.cardActions}>
-            <button className={`${styles.iconBtn} ${post.pinned ? styles.iconBtnActive : ''}`} onClick={onPin} title={post.pinned ? 'Unpin' : 'Pin'}>
-              {post.pinned ? 'Unpin' : 'Pin'}
-            </button>
-            <button className={styles.iconBtn} onClick={onEdit} title="Edit">Edit</button>
-            <button className={styles.iconBtn} onClick={onDelete} title="Delete">Delete</button>
+            {canDelete && (
+              <button className={`${styles.iconBtn} ${post.pinned ? styles.iconBtnActive : ''}`} onClick={onPin} title={post.pinned ? 'Unpin' : 'Pin'}>
+                {post.pinned ? 'Unpin' : 'Pin'}
+              </button>
+            )}
+            {canEdit && <button className={styles.iconBtn} onClick={onEdit} title="Edit">Edit</button>}
+            {canDelete && <button className={styles.iconBtn} onClick={onDelete} title="Delete">Delete</button>}
           </div>
         )}
       </div>
@@ -43,7 +45,7 @@ function PostCard({
   )
 }
 
-export default function BulletinBoardView({ posts: initialPosts, isAdmin }: { posts: BulletinPost[]; isAdmin: boolean }) {
+export default function BulletinBoardView({ posts: initialPosts, canEdit, canDelete }: { posts: BulletinPost[]; canEdit: boolean; canDelete: boolean }) {
   const router = useRouter()
   const [posts, setPosts] = useState(initialPosts)
   const [editing, setEditing] = useState<BulletinPost | 'new' | null>(null)
@@ -68,7 +70,7 @@ export default function BulletinBoardView({ posts: initialPosts, isAdmin }: { po
   }
 
   const cardProps = (post: BulletinPost) => ({
-    post, isAdmin,
+    post, canEdit, canDelete,
     onPin: () => handlePin(post),
     onEdit: () => setEditing(post),
     onDelete: () => handleDelete(post.id),
@@ -84,7 +86,7 @@ export default function BulletinBoardView({ posts: initialPosts, isAdmin }: { po
           </div>
           <div className={styles.pageSub}>Company-wide announcements</div>
         </div>
-        {isAdmin && <button className={styles.primaryBtn} onClick={() => setEditing('new')}>+ New post</button>}
+        {canEdit && <button className={styles.primaryBtn} onClick={() => setEditing('new')}>+ New post</button>}
       </div>
 
       <div className={styles.content}>

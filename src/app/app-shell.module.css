@@ -237,6 +237,94 @@
   color: var(--color-text);
 }
 
+/* ─── HR clock widget (top-right, India time) ────────────────────────────
+   position:fixed anchors to the viewport regardless of where it's mounted in
+   the tree — .shell has no transform/filter, so no containing-block issues.
+   z-index sits below the nav flyout (320) and mobile drawer (300), well
+   above ordinary page content (unstyled, effectively 0/auto). */
+.hrClockWidget {
+  position: fixed;
+  top: 0.875rem;
+  right: 1.25rem;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.375rem;
+  pointer-events: none;
+}
+
+.hrClockTime {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.375rem 0.75rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  box-shadow: var(--shadow-elevated);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  pointer-events: auto;
+}
+
+.hrClockDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-success);
+  flex-shrink: 0;
+}
+
+.hrClockTz {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-muted);
+}
+
+/* Row + wrap (not a column stack) so the widget's height stays as close to
+   one extra line as possible — clock-in/out and a birthday rarely collide,
+   but when they do this keeps growth horizontal, not vertical, which is
+   what .mainWithClock below reserves space for. */
+.hrClockNotices {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 260px;
+  gap: 0.3rem;
+}
+
+.hrClockNotice {
+  padding: 0.3rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  box-shadow: var(--shadow-elevated);
+  pointer-events: auto;
+  white-space: nowrap;
+}
+
+.hrClockNoticeGreen {
+  background: rgba(46, 125, 50, 0.12);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+.hrClockNoticeRed {
+  background: rgba(192, 57, 43, 0.12);
+  color: var(--color-destructive);
+  border: 1px solid var(--color-destructive);
+}
+
+.hrClockNoticeBirthday {
+  background: rgba(213, 174, 143, 0.16);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+
 .logoMark {
   width: 36px;
   height: 36px;
@@ -742,6 +830,14 @@
   overflow: hidden;
 }
 
+/* Reserves room for the fixed top-right HrClockWidget so it never overlaps
+   in-page controls (e.g. Tasks' "+ New Task" button sits exactly where the
+   widget floats). Only applied when the widget actually renders — see
+   AppShell.tsx — so roles that never see it (SGP/franchise_partner) keep
+   the tighter default padding. */
+.mainWithClock { padding-top: 4.75rem; }
+.mainFullWithClock { padding-top: 4.75rem; }
+
 /* ─── Mobile top bar + drawer (hidden on desktop) ─────────────────────── */
 .topbar { display: none; }
 .backdrop { display: none; }
@@ -853,4 +949,15 @@
   .main {
     padding: 1.25rem 1rem;
   }
+
+  /* Sits below the mobile topbar (56px) instead of overlapping the hamburger/bell. */
+  .hrClockWidget {
+    top: 64px;
+    right: 0.75rem;
+  }
+
+  /* Same reservation as desktop's .mainWithClock, sized for the widget's
+     lower starting point (below the 56px topbar) on small screens. */
+  .mainWithClock { padding-top: 5.5rem; }
+  .mainFullWithClock { padding-top: 5.5rem; }
 }

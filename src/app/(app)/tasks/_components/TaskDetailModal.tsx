@@ -56,7 +56,7 @@ export default function TaskDetailModal({
   // may only assign to themselves, other associates, or general.
   const assignableUsers = users.filter((u) => {
     if (u.role === 'franchise_partner' || u.role === 'super_admin') return false
-    if (userRole === 'associate' || userRole === 'general') return u.role === 'associate' || u.role === 'general' || u.id === currentUserId
+    if (userRole === 'associate' || userRole === 'general' || userRole === 'hr') return u.role === 'associate' || u.role === 'general' || u.role === 'hr' || u.id === currentUserId
     return true
   })
   const assigneeOptions = assignableUsers.map((u) => ({

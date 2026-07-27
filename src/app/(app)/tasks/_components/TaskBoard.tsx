@@ -19,6 +19,7 @@ function userRoleLabel(role: string) {
   if (role === 'admin') return 'Admin'
   if (role === 'associate') return 'Associate'
   if (role === 'general') return 'General'
+  if (role === 'hr') return 'HR'
   return role
 }
 
@@ -112,13 +113,13 @@ export default function TaskBoard({
   const [weekOffset, setWeekOffset] = useState(0)
   const { start: weekStart, end: weekEnd, label: weekLabel } = weekRange(weekOffset)
 
-  const canCreate = ['founder', 'admin', 'associate', 'general'].includes(userRole)
+  const canCreate = ['founder', 'admin', 'associate', 'general', 'hr'].includes(userRole)
   const canDelete = ['founder', 'admin'].includes(userRole)
 
   // Assignment rules: never partners; associates/general only to themselves, associates, or general.
   const assignableUsers = users.filter((u) => {
     if (u.role === 'franchise_partner' || u.role === 'super_admin') return false
-    if (userRole === 'associate' || userRole === 'general') return u.role === 'associate' || u.role === 'general' || u.id === currentUserId
+    if (userRole === 'associate' || userRole === 'general' || userRole === 'hr') return u.role === 'associate' || u.role === 'general' || u.role === 'hr' || u.id === currentUserId
     return true
   })
 

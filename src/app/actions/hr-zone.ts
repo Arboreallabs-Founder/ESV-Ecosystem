@@ -7,9 +7,10 @@ async function requireAdmin() {
   return requireRole(['founder', 'admin'])
 }
 
-// General can create/edit HR policies too (not delete) — see the audit log this writes to.
+// HR can create/edit HR policies too (not delete) — see the audit log this writes to.
+// General lost this tier when HR was introduced.
 async function requireEditor() {
-  return requireRole(['founder', 'admin', 'general'])
+  return requireRole(['founder', 'admin', 'hr'])
 }
 
 export type HrPolicyInput = {

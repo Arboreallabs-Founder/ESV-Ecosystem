@@ -1,0 +1,88 @@
+'use server'
+
+import { revalidatePath } from 'next/cache'
+import { requireRole } from '@/lib/guards'
+import { notifyFoundersOfApproval } from '@/lib/notify-founders'
+import type { LeaveType } from '@/lib/types'
+
+async function requireRequester() {
+  return requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
+}
+
+async function requireApprover() {
+  return requireRole(['founder', 'admin', 'hr'])
+}
+
+export type LeaveRequestInput = {
+  leave_type: LeaveType
+  start_date: string
+  end_date: string
+  reason?: string | null
+}
+
+export async function createLeaveRequest(input: LeaveRequestInput): Promise<void> {
+  const { supabase, userId, orgId } = await requireRequester()
+  if (!input.start_date || !input.end_date) throw new Error('Start and end dates are required.')
+  if (input.end_date < input.start_date) throw new Error('End date cannot be before the start date.')
+
+  const { error } = await supabase.from('leave_requests').insert({
+    org_id: orgId,
+    requester_id: userId,
+    leave_type: input.leave_type,
+    start_date: input.start_date,
+    end_date: input.end_date,
+    reason: input.reason?.trim() || null,
+  })
+  if (error) throw error
+  revalidatePath('/hr')
+}
+
+export async function withdrawLeaveRequest(id: string): Promise<void> {
+  const { supabase, userId } = await requireRequester()
+  const { data: existing } = await supabase.from('leave_requests').select('requester_id, status').eq('id', id).single()
+  if (!existing) throw new Error('Leave request not found.')
+  if (existing.requester_id !== userId || existing.status !== 'pending') {
+    throw new Error('You can only withdraw your own pending requests.')
+  }
+  const { error } = await supabase.from('leave_requests').delete().eq('id', id)
+  if (error) throw error
+  revalidatePath('/hr')
+}
+
+export async function decideLeaveRequest(id: string, decision: 'approved' | 'rejected', note?: string | null): Promise<void> {
+  const { supabase, userId, orgId, role } = await requireApprover()
+  if (!orgId) throw new Error('No organization found for this account.')
+
+  const { data: existing } = await supabase
+    .from('leave_requests')
+    .select('id, requester_id, leave_type, start_date, end_date, status')
+    .eq('id', id)
+    .single()
+  if (!existing) throw new Error('Leave request not found.')
+  if (existing.status !== 'pending') throw new Error('This request has already been decided.')
+
+  const { error } = await supabase
+    .from('leave_requests')
+    .update({ status: decision, decided_by: userId, decided_at: new Date().toISOString(), decision_note: note?.trim() || null })
+    .eq('id', id)
+  if (error) throw error
+
+  // Only when an admin or hr approves (never founder, never on reject) does every founder
+  // get notified — see src/lib/notify-founders.ts.
+  if (decision === 'approved' && (role === 'admin' || role === 'hr')) {
+    const { data: requester } = await supabase.from('users').select('name').eq('id', existing.requester_id).single()
+    await notifyFoundersOfApproval(supabase, {
+      orgId,
+      actorId: userId,
+      subject: `Leave approved: ${requester?.name ?? 'A team member'}`,
+      body: `${existing.leave_type} leave, ${existing.start_date} to ${existing.end_date}, approved by ${role}.`,
+      linkedType: 'leave_request',
+      linkedId: existing.id,
+      linkedTitle: `${requester?.name ?? 'Leave request'} — ${existing.leave_type}`,
+    })
+  }
+
+  revalidatePath('/approvals')
+  revalidatePath('/hr')
+  revalidatePath('/escalations')
+}
