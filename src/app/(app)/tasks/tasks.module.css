@@ -944,3 +944,7 @@ a.linkChipTag:hover { background: rgba(var(--color-hover-rgb),0.16); }
    board cards at once is the main performance risk, and a blurred element samples the wrong
    backdrop while being dragged, which tears visibly. */
 .card { background: var(--color-card-solid); }
+
+/* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
+   the content out to grey. Still frosted (see the backdrop-filter above). */
+.modal { background: var(--glass-panel); }

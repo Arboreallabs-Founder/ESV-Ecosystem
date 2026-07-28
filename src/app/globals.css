@@ -11,6 +11,10 @@
   --color-card:          rgba(255, 255, 255, 0.55);
   --color-card-raised:   rgba(255, 255, 255, 0.72);
   --color-card-solid:    #F4F4F4;
+  /* Floating panels (modals, flyouts, dropdowns) sit over the dark scrim, not over the page.
+     At card-level alpha the scrim bleeds through and washes the content out to grey, so these
+     get their own near-opaque surface — still frosted, but readable. */
+  --glass-panel:         rgba(252, 250, 248, 0.94);
   --glass-blur:          16px;
   --glass-border:        rgba(255, 255, 255, 0.55);
   --color-text:          #2C2C3A;
@@ -52,6 +56,7 @@
   --color-card:          rgba(42, 42, 68, 0.55);
   --color-card-raised:   rgba(52, 52, 82, 0.68);
   --color-card-solid:    #22223A;
+  --glass-panel:         rgba(38, 38, 62, 0.94);
   --glass-border:        rgba(255, 255, 255, 0.10);
   --color-text:          #F0EDE8;
   --color-muted:         #A39B95;
@@ -84,6 +89,7 @@
   --color-card:          rgba(28, 28, 30, 0.55);
   --color-card-raised:   rgba(38, 38, 42, 0.68);
   --color-card-solid:    #050505;
+  --glass-panel:         rgba(20, 20, 22, 0.95);
   --glass-border:        rgba(255, 255, 255, 0.07);
   --color-text:          #F0EDE8;
   --color-muted:         #A39B95;

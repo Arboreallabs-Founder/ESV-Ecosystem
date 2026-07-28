@@ -94,3 +94,7 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   border-color: var(--glass-border);
 }
+
+/* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
+   the content out to grey. Still frosted (see the backdrop-filter above). */
+.dropdown { background: var(--glass-panel); }

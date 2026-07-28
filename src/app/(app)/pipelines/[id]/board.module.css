@@ -1120,3 +1120,7 @@
 
 /* Drag cards stay opaque — same reasoning as the task board (see tasks.module.css). */
 .entryCard { background: var(--color-card-solid); }
+
+/* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
+   the content out to grey. Still frosted (see the backdrop-filter above). */
+.modal { background: var(--glass-panel); }
