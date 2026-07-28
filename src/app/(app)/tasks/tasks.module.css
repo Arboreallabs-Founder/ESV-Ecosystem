@@ -422,7 +422,7 @@
   justify-content: center;
   z-index: 100;
   padding: 1rem;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(8px);
 }
 
 .modal {
@@ -929,3 +929,18 @@ a.linkChipTag:hover { background: rgba(var(--color-hover-rgb),0.16); }
   font-family: inherit;
 }
 .recIconBtn:hover { background: var(--color-card-raised); color: var(--color-text); }
+
+/* ─── Frosted glass ────────────────────────────────────────────────────
+   Backgrounds already come through as translucent from --color-card in globals.css;
+   these rules add the blur + light edge that turn translucency into frosted glass.
+   Appended rather than edited inline so the treatment is easy to see and revert. */
+.column, .kpiCard, .kpiTableWrap, .modal, .personGroup, .recRow {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-color: var(--glass-border);
+}
+
+/* Drag cards deliberately stay opaque — see globals.css --color-card-solid. Blurring dozens of
+   board cards at once is the main performance risk, and a blurred element samples the wrong
+   backdrop while being dragged, which tears visibly. */
+.card { background: var(--color-card-solid); }

@@ -63,3 +63,13 @@
 
 .empty { text-align: center; padding: 2rem 1.5rem; color: var(--color-muted); font-size: 0.875rem; line-height: 1.6; border: 1.5px dashed var(--color-border); border-radius: var(--radius-lg); }
 .errBox { background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.3); border-radius: var(--radius-md); padding: 0.6rem 0.75rem; font-size: 0.8125rem; color: var(--color-destructive); margin-top: 0.5rem; }
+
+/* ─── Frosted glass ────────────────────────────────────────────────────
+   Backgrounds already come through as translucent from --color-card in globals.css;
+   these rules add the blur + light edge that turn translucency into frosted glass.
+   Appended rather than edited inline so the treatment is easy to see and revert. */
+.card {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-color: var(--glass-border);
+}

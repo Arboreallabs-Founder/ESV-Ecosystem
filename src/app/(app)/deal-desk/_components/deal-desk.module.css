@@ -714,3 +714,20 @@
   .actions { flex-wrap: wrap; }
   .actionBtn { flex-basis: calc(50% - 0.25rem); }
 }
+
+/* ─── Frosted glass ────────────────────────────────────────────────────
+   Backgrounds already come through as translucent from --color-card in globals.css;
+   these rules add the blur + light edge that turn translucency into frosted glass.
+   Appended rather than edited inline so the treatment is easy to see and revert. */
+.card, .stats, .rosterCard, .kpi, .threadItem {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-color: var(--glass-border);
+}
+
+/* Sticky header — keep it occluding via its own blur now that the panel behind is translucent. */
+.modalHead {
+  background: var(--color-card-raised);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}

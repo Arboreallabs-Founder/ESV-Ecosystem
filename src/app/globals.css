@@ -3,8 +3,16 @@
 /* ─── ESV Brand Tokens — Light Mode ─────────────────────────────────── */
 :root {
   --color-bg:            #F7ECE2;
-  --color-card:          #F4F4F4;
-  --color-card-raised:   #FFFFFF;
+  /* Frosted glass: --color-card / --color-card-raised are deliberately TRANSLUCENT so every
+     existing `background: var(--color-card)` site (175 of them across 26 modules) inherits the
+     glass look without per-file edits. The blur itself must be set per-surface via
+     `backdrop-filter` — a custom property can't carry it. --color-card-solid is the opaque
+     escape hatch for surfaces that must stay flat (drag cards, dense boards). */
+  --color-card:          rgba(255, 255, 255, 0.55);
+  --color-card-raised:   rgba(255, 255, 255, 0.72);
+  --color-card-solid:    #F4F4F4;
+  --glass-blur:          16px;
+  --glass-border:        rgba(255, 255, 255, 0.55);
   --color-text:          #2C2C3A;
   --color-muted:         #A39B95;
   --color-border:        #D3C1A9;
@@ -41,8 +49,10 @@
 /* Explicit toggle via data-theme="dark" on <html>                       */
 [data-theme="dark"] {
   --color-bg:            #1A1A2E;
-  --color-card:          #22223A;
-  --color-card-raised:   #2A2A44;
+  --color-card:          rgba(42, 42, 68, 0.55);
+  --color-card-raised:   rgba(52, 52, 82, 0.68);
+  --color-card-solid:    #22223A;
+  --glass-border:        rgba(255, 255, 255, 0.10);
   --color-text:          #F0EDE8;
   --color-muted:         #A39B95;
   --color-border:        #3A3A5C;
@@ -69,8 +79,12 @@
    buttons (see ThemeProvider.tsx). */
 [data-theme="oled"] {
   --color-bg:            #000000;
-  --color-card:          #050505;
-  --color-card-raised:   #0F0F0F;
+  /* Glass needs *some* lift off pure black or there is nothing to blur and the panels vanish.
+     These are the faintest values that still read as frosted; the page background stays #000. */
+  --color-card:          rgba(28, 28, 30, 0.55);
+  --color-card-raised:   rgba(38, 38, 42, 0.68);
+  --color-card-solid:    #050505;
+  --glass-border:        rgba(255, 255, 255, 0.07);
   --color-text:          #F0EDE8;
   --color-muted:         #A39B95;
   --color-border:        #1C1C1C;
@@ -112,6 +126,39 @@ body {
   font-family: var(--font-geist-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif);
   line-height: 1.5;
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* ─── Ambient backdrop (enables the frosted-glass effect) ───────────────
+   backdrop-filter: blur() over a FLAT colour renders nothing — there has to be tonal variation
+   behind a panel for the blur to sample. These soft brand-palette blobs provide it.
+   Deliberately a fixed sibling layer at z-index -1, NOT a wrapper element: an ancestor with a
+   filter/backdrop-filter would become the containing block for every `position: fixed`
+   descendant and break the modal overlays, the clock widget and the nav flyouts. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px circle at 12% 18%, rgba(206, 170, 253, 0.20), transparent 60%),
+    radial-gradient(820px circle at 88% 10%, rgba(213, 174, 143, 0.26), transparent 58%),
+    radial-gradient(1000px circle at 72% 88%, rgba(116, 95, 253, 0.10), transparent 62%);
+}
+
+[data-theme="dark"] body::before {
+  background:
+    radial-gradient(900px circle at 12% 18%, rgba(116, 95, 253, 0.20), transparent 60%),
+    radial-gradient(820px circle at 88% 10%, rgba(213, 174, 143, 0.10), transparent 58%),
+    radial-gradient(1000px circle at 72% 88%, rgba(206, 170, 253, 0.09), transparent 62%);
+}
+
+/* Faintest of the three — OLED should still read as near-black. */
+[data-theme="oled"] body::before {
+  background:
+    radial-gradient(900px circle at 12% 18%, rgba(116, 95, 253, 0.10), transparent 60%),
+    radial-gradient(820px circle at 88% 10%, rgba(213, 174, 143, 0.05), transparent 58%),
+    radial-gradient(1000px circle at 72% 88%, rgba(206, 170, 253, 0.05), transparent 62%);
 }
 
 a {

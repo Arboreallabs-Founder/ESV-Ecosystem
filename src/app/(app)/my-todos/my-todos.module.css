@@ -188,3 +188,28 @@
 @media (max-width: 560px) {
   .addRow { flex-direction: column; align-items: stretch; }
 }
+
+/* ─── Frosted glass ────────────────────────────────────────────────────
+   Backgrounds already come through as translucent from --color-card in globals.css;
+   these rules add the blur + light edge that turn translucency into frosted glass.
+   Appended rather than edited inline so the treatment is easy to see and revert. */
+.row, .pickerList {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-color: var(--glass-border);
+}
+
+/* .modal/.modalHead were built against the opaque --color-bg; repoint them at the translucent
+   raised token so they match the rest of the glass system. .modalHead is position:sticky, so it
+   keeps its own backdrop-filter — that preserves occlusion of content scrolling underneath it. */
+.modal {
+  background: var(--color-card-raised);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-color: var(--glass-border);
+}
+.modalHead {
+  background: var(--color-card-raised);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}

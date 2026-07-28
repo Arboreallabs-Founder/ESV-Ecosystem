@@ -295,7 +295,7 @@
   justify-content: center;
   z-index: 50;
   padding: 1rem;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(8px);
 }
 
 .modal {
@@ -419,3 +419,13 @@
 }
 .submitBtn:disabled { opacity: 0.55; cursor: not-allowed; }
 .submitBtn:not(:disabled):hover { opacity: 0.88; }
+
+/* ─── Frosted glass ────────────────────────────────────────────────────
+   Backgrounds already come through as translucent from --color-card in globals.css;
+   these rules add the blur + light edge that turn translucency into frosted glass.
+   Appended rather than edited inline so the treatment is easy to see and revert. */
+.card, .modal {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-color: var(--glass-border);
+}

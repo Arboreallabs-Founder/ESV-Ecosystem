@@ -624,7 +624,7 @@
   justify-content: center;
   z-index: 400;
   padding: 1rem;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(8px);
 }
 
 .modal {
@@ -954,3 +954,19 @@
 }
 .errRow { margin-top: 0.35rem; }
 .errRow:first-child { margin-top: 0; }
+
+/* ─── Frosted glass ────────────────────────────────────────────────────
+   Backgrounds already come through as translucent from --color-card in globals.css;
+   these rules add the blur + light edge that turn translucency into frosted glass.
+   Appended rather than edited inline so the treatment is easy to see and revert. */
+.card, .detailPanel, .modal, .modalLarge, .importModal, .pocDropdown {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-color: var(--glass-border);
+}
+
+/* Sticky modal header — own blur so it keeps occluding scrolled content. */
+.importModalHead {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}

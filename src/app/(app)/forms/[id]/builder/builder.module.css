@@ -521,7 +521,7 @@
   justify-content: center;
   z-index: 100;
   padding: 1rem;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(8px);
 }
 
 .modal {

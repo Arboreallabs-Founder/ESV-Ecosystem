@@ -288,7 +288,7 @@
   justify-content: center;
   z-index: 400;
   padding: 1rem;
-  backdrop-filter: blur(2px);
+  backdrop-filter: blur(8px);
 }
 
 .referModal {
@@ -448,3 +448,13 @@
   transition: border-color 0.15s, color 0.15s;
 }
 .cancelBtn:hover { border-color: var(--color-text); color: var(--color-text); }
+
+/* ─── Frosted glass ────────────────────────────────────────────────────
+   Backgrounds already come through as translucent from --color-card in globals.css;
+   these rules add the blur + light edge that turn translucency into frosted glass.
+   Appended rather than edited inline so the treatment is easy to see and revert. */
+.generateCard, .linkRow, .setupNotice, .referModal {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-color: var(--glass-border);
+}

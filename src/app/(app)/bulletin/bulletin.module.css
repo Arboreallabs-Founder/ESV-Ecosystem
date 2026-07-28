@@ -71,3 +71,28 @@
 .checkboxRow { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--color-text); margin-bottom: 0.85rem; }
 
 .errBox { background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.3); border-radius: var(--radius-md); padding: 0.6rem 0.75rem; font-size: 0.8125rem; color: var(--color-destructive); margin-top: 0.5rem; }
+
+/* ─── Frosted glass ────────────────────────────────────────────────────
+   Backgrounds already come through as translucent from --color-card in globals.css;
+   these rules add the blur + light edge that turn translucency into frosted glass.
+   Appended rather than edited inline so the treatment is easy to see and revert. */
+.card {
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-color: var(--glass-border);
+}
+
+/* .modal/.modalHead were built against the opaque --color-bg; repoint them at the translucent
+   raised token so they match the rest of the glass system. .modalHead is position:sticky, so it
+   keeps its own backdrop-filter — that preserves occlusion of content scrolling underneath it. */
+.modal {
+  background: var(--color-card-raised);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-color: var(--glass-border);
+}
+.modalHead {
+  background: var(--color-card-raised);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}

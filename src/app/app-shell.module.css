@@ -1,11 +1,15 @@
 /* ─── App shell: sidebar + main ───────────────────────────────────────── */
 
+/* Transparent, not --color-bg: the ambient gradient layer lives on body::before and an opaque
+   shell would paint straight over it, leaving nothing for the glass surfaces to blur.
+   Never give this element backdrop-filter/filter — it would become the containing block for
+   every position:fixed descendant (modal overlays, clock widget, nav flyouts). */
 .shell {
   display: flex;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  background-color: var(--color-bg);
+  background-color: transparent;
 }
 
 /* ─── Sidebar ─────────────────────────────────────────────────────────── */
@@ -17,7 +21,9 @@
   display: flex;
   flex-direction: column;
   background-color: var(--color-card);
-  border-right: 1px solid var(--color-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-right: 1px solid var(--glass-border);
   overflow-y: auto;
   overflow-x: hidden;
   transition: width 0.18s ease, min-width 0.18s ease;
@@ -154,8 +160,10 @@
   margin-top: 0.5rem;
   max-height: 260px;
   overflow-y: auto;
-  background: var(--color-bg);
-  border: 1.5px solid var(--color-border);
+  background: var(--color-card-raised);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   padding: 0.25rem;
 }
@@ -212,8 +220,10 @@
   width: 220px;
   max-height: 320px;
   overflow-y: auto;
-  background: var(--color-card);
-  border: 1.5px solid var(--color-border);
+  background: var(--color-card-raised);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-elevated);
   z-index: 320;
@@ -259,8 +269,10 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.375rem 0.75rem;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
+  background: var(--color-card-raised);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border: 1px solid var(--glass-border);
   border-radius: 999px;
   box-shadow: var(--shadow-elevated);
   font-size: 0.8125rem;
@@ -943,7 +955,9 @@
     flex-shrink: 0;
     padding: 0 0.875rem;
     background: var(--color-card);
-    border-bottom: 1px solid var(--color-border);
+    backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+    border-bottom: 1px solid var(--glass-border);
   }
 
   .main {
