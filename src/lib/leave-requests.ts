@@ -34,3 +34,14 @@ export const fetchRecentLeaveDecisions = cache(async (): Promise<LeaveRequest[]>
     .limit(30)
   return (data ?? []) as unknown as LeaveRequest[]
 })
+
+// Full org-wide roster, every status, no cap — backs the "Team leaves" management view on
+// /approvals (founder/admin/hr only, enforced by RLS + the page's own role gate).
+export const fetchAllLeaveRequests = cache(async (): Promise<LeaveRequest[]> => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('leave_requests')
+    .select(LEAVE_SELECT)
+    .order('start_date', { ascending: false })
+  return (data ?? []) as unknown as LeaveRequest[]
+})

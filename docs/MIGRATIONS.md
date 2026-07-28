@@ -51,3 +51,7 @@ marks it.
 - `20260814700000_approvals_notify_founders.sql` — widens `escalations.linked_type` to accept
   `leave_request`/`expense_request` and adds `hr` to `"Escalations insert"`, so an admin/HR
   approving a leave/expense request can auto-notify every founder by reusing the escalations table.
+- `20260814800000_leave_balances.sql` — `leave_balances` (per-person entitled days + a manual
+  "already used" baseline for Earned/Sick/My Day/Compensatory only — Unpaid is uncapped).
+  Informational only, nothing blocks a request that exceeds the remaining balance. Managed by
+  founder/admin/hr on the new "Balances" tab on `/approvals`.

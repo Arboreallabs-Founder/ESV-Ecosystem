@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { withdrawLeaveRequest } from '@/app/actions/leave-requests'
 import { withdrawExpenseRequest } from '@/app/actions/expense-requests'
 import { LEAVE_TYPE_LABELS, EXPENSE_TYPE_LABELS } from '@/lib/types'
-import type { LeaveRequest, ExpenseRequest } from '@/lib/types'
+import type { LeaveRequest, ExpenseRequest, LeaveBalance } from '@/lib/types'
 import LeaveRequestModal from './LeaveRequestModal'
 import ExpenseRequestModal from './ExpenseRequestModal'
 import styles from '../hr-zone.module.css'
@@ -19,8 +19,9 @@ function StatusPill({ status }: { status: 'pending' | 'approved' | 'rejected' })
   return <span className={`${styles.statusPill} ${cls}`}>{status}</span>
 }
 
-export default function MyRequests({ leaveRequests, expenseRequests, orgId, userId }: {
-  leaveRequests: LeaveRequest[]; expenseRequests: ExpenseRequest[]; orgId: string; userId: string
+export default function MyRequests({ leaveRequests, expenseRequests, leaveBalances, orgId, userId }: {
+  leaveRequests: LeaveRequest[]; expenseRequests: ExpenseRequest[]; leaveBalances: Record<string, LeaveBalance> | null
+  orgId: string; userId: string
 }) {
   const router = useRouter()
   const [tab, setTab] = useState<'leave' | 'expense'>('leave')
@@ -89,7 +90,7 @@ export default function MyRequests({ leaveRequests, expenseRequests, orgId, user
       )}
 
       {showLeaveModal && (
-        <LeaveRequestModal onClose={() => setShowLeaveModal(false)} onSaved={() => { setShowLeaveModal(false); router.refresh() }} />
+        <LeaveRequestModal balances={leaveBalances} onClose={() => setShowLeaveModal(false)} onSaved={() => { setShowLeaveModal(false); router.refresh() }} />
       )}
       {showExpenseModal && (
         <ExpenseRequestModal

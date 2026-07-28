@@ -201,6 +201,27 @@ export type LeaveRequest = {
   decided_by_user?: { name: string | null } | null
 }
 
+// Leave types that carry an entitlement balance — Unpaid is deliberately excluded (uncapped).
+export const BALANCE_LEAVE_TYPES: LeaveType[] = ['earned', 'sick', 'my_day', 'compensatory']
+
+// One row per person+type; "remaining" is computed at read time (entitled - manual_used - sum
+// of approved leave_requests days), never stored, so it can't drift out of sync with approvals.
+export type LeaveBalance = {
+  id: string | null
+  user_id: string
+  leave_type: LeaveType
+  entitled_days: number
+  manual_used_days: number
+  used_from_requests: number
+  remaining: number
+}
+
+export type LeaveBalanceRow = {
+  user_id: string
+  user_name: string
+  balances: Record<string, LeaveBalance>
+}
+
 export type ExpenseType = 'travel' | 'meals' | 'software' | 'office_supplies' | 'other'
 
 export const EXPENSE_TYPE_LABELS: Record<ExpenseType, string> = {

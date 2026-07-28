@@ -1,5 +1,5 @@
 .page { width: 100%; }
-.content { max-width: 780px; }
+.content { width: 100%; }
 
 .header {
   display: flex;

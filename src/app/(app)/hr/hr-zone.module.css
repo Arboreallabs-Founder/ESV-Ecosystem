@@ -1,5 +1,10 @@
 .page { width: 100%; }
-.content { max-width: 780px; }
+.content { width: 100%; }
+
+/* Scoped to just the policy list/empty-state — long-form policy text stays at a readable line
+   width even though the widget cards above it (Approvals link, clock/birthdays, My Leaves/
+   Expenses) now fill the page. */
+.policyListWrap { max-width: 780px; }
 
 .header {
   display: flex;

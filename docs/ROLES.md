@@ -62,6 +62,8 @@ Legend: ✅ full · 🟡 limited/conditional · 👁 read-only · ❌ none
 | Leave requests — submit | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Leave / Expense requests — approve | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Approvals page (`/approvals`) | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Leave balances — set entitlement/used | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Leave balances — view own remaining | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | User management (`/admin/users`) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ cross-org |
 | Partner management (`/admin/partners`) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Manage organizations | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
@@ -255,6 +257,15 @@ Approvals below. This is not a user-facing escalations capability.
 - **Invoices**: stored in a private `expenses` Storage bucket (same org-prefixed-path pattern as the
   Deal Desk bucket), resolved to a time-limited signed URL server-side whenever a request is
   fetched — never a public URL.
+- **Leave balances**: Founder/Admin/HR can set a per-person entitled-days total and a manual
+  "already used" baseline for Earned/Sick/My Day/Compensatory leave (Unpaid is uncapped, no
+  balance) on the "Balances" tab on `/approvals`. **Informational only** — "remaining" is computed
+  live (entitled − manual baseline − days from approved requests) and shown to the requester on
+  the leave request form and to approvers on the "Team leaves" roster, but nothing blocks a
+  request or approval that would take someone past zero remaining.
+- **Team leaves roster**: the "Team leaves" tab on `/approvals` (Founder/Admin/HR) lists every
+  leave request org-wide, any status, filterable by person — with the ability to re-decide
+  (change approve/reject after the fact) or cancel any request, not just pending ones.
 
 ### Partner Portal (`/portal` — "My Links")
 - **Partner** only: generate submission links, copy/open them, view their own issued links, and

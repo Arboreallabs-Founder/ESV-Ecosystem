@@ -2,13 +2,15 @@
 
 import { useState, useTransition } from 'react'
 import { createLeaveRequest, type LeaveRequestInput } from '@/app/actions/leave-requests'
-import { LEAVE_TYPE_LABELS, type LeaveType } from '@/lib/types'
+import { LEAVE_TYPE_LABELS, type LeaveType, type LeaveBalance } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import styles from '../hr-zone.module.css'
 
 const LEAVE_TYPES = Object.keys(LEAVE_TYPE_LABELS) as LeaveType[]
 
-export default function LeaveRequestModal({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) {
+export default function LeaveRequestModal({ balances, onClose, onSaved }: {
+  balances: Record<string, LeaveBalance> | null; onClose: () => void; onSaved: () => void
+}) {
   const [leaveType, setLeaveType] = useState<LeaveType>('earned')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -42,6 +44,13 @@ export default function LeaveRequestModal({ onClose, onSaved }: { onClose: () =>
             <select className={styles.input} value={leaveType} onChange={(e) => setLeaveType(e.target.value as LeaveType)}>
               {LEAVE_TYPES.map((t) => <option key={t} value={t}>{LEAVE_TYPE_LABELS[t]}</option>)}
             </select>
+            {/* Only shown once HR has actually configured a balance for this type — avoids a
+                misleading "0 of 0" for anyone (e.g. founders) with no balance tracked at all. */}
+            {balances?.[leaveType] && balances[leaveType].entitled_days > 0 && (
+              <div className={styles.birthdayDate} style={{ marginTop: '0.4rem' }}>
+                Remaining: {balances[leaveType].remaining} of {balances[leaveType].entitled_days} days (informational only)
+              </div>
+            )}
           </div>
           <div className={styles.clockGrid} style={{ gridTemplateColumns: '1fr 1fr' }}>
             <div className={styles.field}>

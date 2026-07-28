@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createHrPolicy, updateHrPolicy, deleteHrPolicy, type HrPolicyInput } from '@/app/actions/hr-zone'
-import type { HrPolicy, HrClockSettings, HrBirthday, LeaveRequest, ExpenseRequest } from '@/lib/types'
+import type { HrPolicy, HrClockSettings, HrBirthday, LeaveRequest, ExpenseRequest, LeaveBalance } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import HrClockAdmin from './HrClockAdmin'
@@ -46,12 +46,13 @@ function PolicyRow({ policy, expanded, canEdit, canDelete, onToggle, onEdit, onD
 
 export default function HrZoneView({
   policies, clockSettings, birthdays, canEditPolicies, canDeletePolicies, showClockAdmin,
-  isApprover, pendingApprovalsCount, myLeaveRequests, myExpenseRequests, orgId, userId,
+  isApprover, pendingApprovalsCount, myLeaveRequests, myExpenseRequests, myLeaveBalances, orgId, userId,
 }: {
   policies: HrPolicy[]; clockSettings: HrClockSettings | null; birthdays: HrBirthday[]
   canEditPolicies: boolean; canDeletePolicies: boolean; showClockAdmin: boolean
   isApprover: boolean; pendingApprovalsCount: number
   myLeaveRequests: LeaveRequest[]; myExpenseRequests: ExpenseRequest[]
+  myLeaveBalances: Record<string, LeaveBalance> | null
   orgId: string; userId: string
 }) {
   const router = useRouter()
@@ -90,25 +91,27 @@ export default function HrZoneView({
         {showClockAdmin && clockSettings && (
           <HrClockAdmin settings={clockSettings} birthdays={birthdays} canEdit={canEditPolicies} canDelete={canDeletePolicies} />
         )}
-        <MyRequests leaveRequests={myLeaveRequests} expenseRequests={myExpenseRequests} orgId={orgId} userId={userId} />
-        {policies.length === 0 ? (
-          <div className={styles.empty}>No policies published yet.</div>
-        ) : (
-          <div className={styles.list}>
-            {policies.map((p) => (
-              <PolicyRow
-                key={p.id}
-                policy={p}
-                expanded={expandedId === p.id}
-                canEdit={canEditPolicies}
-                canDelete={canDeletePolicies}
-                onToggle={() => setExpandedId((cur) => (cur === p.id ? null : p.id))}
-                onEdit={() => setEditing(p)}
-                onDelete={() => handleDelete(p.id)}
-              />
-            ))}
-          </div>
-        )}
+        <MyRequests leaveRequests={myLeaveRequests} expenseRequests={myExpenseRequests} leaveBalances={myLeaveBalances} orgId={orgId} userId={userId} />
+        <div className={styles.policyListWrap}>
+          {policies.length === 0 ? (
+            <div className={styles.empty}>No policies published yet.</div>
+          ) : (
+            <div className={styles.list}>
+              {policies.map((p) => (
+                <PolicyRow
+                  key={p.id}
+                  policy={p}
+                  expanded={expandedId === p.id}
+                  canEdit={canEditPolicies}
+                  canDelete={canDeletePolicies}
+                  onToggle={() => setExpandedId((cur) => (cur === p.id ? null : p.id))}
+                  onEdit={() => setEditing(p)}
+                  onDelete={() => handleDelete(p.id)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {editing && (

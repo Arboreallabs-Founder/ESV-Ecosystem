@@ -4,6 +4,7 @@ import { fetchHrPolicies } from '@/lib/hr-zone'
 import { fetchClockSettings, fetchAllBirthdays } from '@/lib/hr-clock'
 import { fetchMyLeaveRequests, fetchPendingLeaveRequests } from '@/lib/leave-requests'
 import { fetchMyExpenseRequests, fetchPendingExpenseRequests } from '@/lib/expense-requests'
+import { fetchMyLeaveBalances } from '@/lib/leave-balances'
 import HrZoneView from './_components/HrZoneView'
 
 export default async function HrZonePage() {
@@ -16,7 +17,7 @@ export default async function HrZonePage() {
   const canDeletePolicies = ['founder', 'admin'].includes(user.role ?? '')
   const isApprover = ['founder', 'admin', 'hr'].includes(user.role ?? '')
 
-  const [policies, clockSettings, birthdays, myLeaveRequests, myExpenseRequests, pendingLeave, pendingExpense] = await Promise.all([
+  const [policies, clockSettings, birthdays, myLeaveRequests, myExpenseRequests, pendingLeave, pendingExpense, myLeaveBalances] = await Promise.all([
     fetchHrPolicies(),
     showClockAdmin ? fetchClockSettings() : Promise.resolve(null),
     showClockAdmin ? fetchAllBirthdays() : Promise.resolve([]),
@@ -24,6 +25,7 @@ export default async function HrZonePage() {
     fetchMyExpenseRequests(user.id),
     isApprover ? fetchPendingLeaveRequests() : Promise.resolve([]),
     isApprover ? fetchPendingExpenseRequests() : Promise.resolve([]),
+    fetchMyLeaveBalances(user.id),
   ])
 
   return (
@@ -38,6 +40,7 @@ export default async function HrZonePage() {
       pendingApprovalsCount={pendingLeave.length + pendingExpense.length}
       myLeaveRequests={myLeaveRequests}
       myExpenseRequests={myExpenseRequests}
+      myLeaveBalances={myLeaveBalances}
       orgId={user.org_id ?? ''}
       userId={user.id}
     />

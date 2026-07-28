@@ -59,7 +59,8 @@ export async function decideLeaveRequest(id: string, decision: 'approved' | 'rej
     .eq('id', id)
     .single()
   if (!existing) throw new Error('Leave request not found.')
-  if (existing.status !== 'pending') throw new Error('This request has already been decided.')
+  // Approvers may re-decide an already-decided request (e.g. correcting a mistake, or
+  // reviewing one flagged from the Team leaves roster) — not just act on pending ones.
 
   const { error } = await supabase
     .from('leave_requests')
@@ -85,4 +86,14 @@ export async function decideLeaveRequest(id: string, decision: 'approved' | 'rej
   revalidatePath('/approvals')
   revalidatePath('/hr')
   revalidatePath('/escalations')
+}
+
+// Founder/admin/hr can cancel any request from the Team leaves roster, regardless of status
+// (not just a requester withdrawing their own pending one — see withdrawLeaveRequest above).
+export async function deleteLeaveRequestAsAdmin(id: string): Promise<void> {
+  const { supabase } = await requireApprover()
+  const { error } = await supabase.from('leave_requests').delete().eq('id', id)
+  if (error) throw error
+  revalidatePath('/approvals')
+  revalidatePath('/hr')
 }
