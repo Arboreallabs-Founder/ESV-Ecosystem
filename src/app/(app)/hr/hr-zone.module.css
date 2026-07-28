@@ -1,10 +1,10 @@
 .page { width: 100%; }
 .content { width: 100%; }
 
-/* Scoped to just the policy list/empty-state — long-form policy text stays at a readable line
-   width even though the widget cards above it (Approvals link, clock/birthdays, My Leaves/
-   Expenses) now fill the page. */
-.policyListWrap { max-width: 780px; }
+/* Full width, matching the widget cards above it. The policy *body* keeps its readable line
+   length via .policyBody's own max-width instead, so prose stays comfortable without the
+   collapsed row and empty state looking narrower than everything else on the page. */
+.policyListWrap { width: 100%; }
 
 .header {
   display: flex;
@@ -64,6 +64,9 @@
   font-size: 0.875rem;
   color: var(--color-text);
   line-height: 1.65;
+  /* Cap the measure on the prose itself, not the card — the row stays full width like every
+     other surface while long policy text keeps a comfortable line length. */
+  max-width: 78ch;
   white-space: pre-wrap;
   border-top: 1px solid var(--color-border);
   padding-top: 0.85rem;
