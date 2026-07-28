@@ -36,8 +36,10 @@
   flex-direction: column;
   justify-content: flex-end;
   gap: 0.5rem;
-  min-height: 190px;
-  padding: 1rem 1.05rem 0.9rem;
+  min-height: 216px;
+  /* Top padding clears the flap + wax seal (seal bottom sits at 120px), so the bottom-anchored
+     text can never grow up underneath it — including when a long name wraps to two lines. */
+  padding: 132px 1.05rem 0.9rem;
   border: none;
   border-radius: var(--radius-lg);
   cursor: pointer;
@@ -80,8 +82,8 @@
 .envSealIcon { width: 34px; height: 34px; display: block; }
 
 .envMeta { display: flex; flex-direction: column; gap: 0.1rem; margin-top: auto; }
-.envTo { font-size: 0.9375rem; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
-.envFrom { font-size: 0.75rem; color: rgba(255, 255, 255, 0.62); }
+.envTo { font-size: 0.9375rem; font-weight: 700; color: #fff; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.envFrom { font-size: 0.75rem; color: rgba(255, 255, 255, 0.62); overflow-wrap: anywhere; }
 
 .envFoot { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
 .envCat { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
