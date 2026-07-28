@@ -48,6 +48,14 @@
 
 .linkBtn { border: none; background: none; color: var(--color-primary); font-size: 0.8125rem; font-weight: 600; cursor: pointer; padding: 0; text-decoration: underline; }
 
+.chevron { color: var(--color-muted); font-size: 0.75rem; flex-shrink: 0; transition: transform 0.15s; }
+.chevronOpen { transform: rotate(90deg); }
+
+.rowHead { cursor: pointer; }
+.rowHead:hover { background: var(--color-card-raised); }
+
+.balanceEditBody { border-top: 1px solid var(--color-border); padding-top: 0.85rem; margin-top: 0.75rem; }
+
 .statusPill { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.2rem 0.55rem; border-radius: 9999px; flex-shrink: 0; }
 .statusPending { background: rgba(203,140,124,0.12); color: var(--color-warning); }
 .statusApproved { background: rgba(46,125,50,0.12); color: var(--color-success); }

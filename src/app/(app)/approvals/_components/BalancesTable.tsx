@@ -4,21 +4,25 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BALANCE_LEAVE_TYPES, LEAVE_TYPE_LABELS } from '@/lib/types'
 import type { LeaveBalanceRow } from '@/lib/types'
-import EditBalancesModal from './EditBalancesModal'
+import BalanceEditRow from './BalanceEditRow'
 import styles from '../approvals.module.css'
 
 export default function BalancesTable({ rows }: { rows: LeaveBalanceRow[] }) {
   const router = useRouter()
-  const [editing, setEditing] = useState<LeaveBalanceRow | null>(null)
+  const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
 
   if (rows.length === 0) return <div className={styles.empty}>No internal users found.</div>
 
   return (
-    <>
-      <div className={styles.list}>
-        {rows.map((row) => (
+    <div className={styles.list}>
+      {rows.map((row) => {
+        const expanded = expandedUserId === row.user_id
+        return (
           <div key={row.user_id} className={styles.card}>
-            <div className={styles.cardTop}>
+            <div
+              className={`${styles.cardTop} ${styles.rowHead}`}
+              onClick={() => setExpandedUserId(expanded ? null : row.user_id)}
+            >
               <div style={{ display: 'flex', gap: '1.25rem', flexWrap: 'wrap', alignItems: 'baseline' }}>
                 <span className={styles.cardTitle}>{row.user_name}</span>
                 {BALANCE_LEAVE_TYPES.map((type) => {
@@ -30,15 +34,19 @@ export default function BalancesTable({ rows }: { rows: LeaveBalanceRow[] }) {
                   )
                 })}
               </div>
-              <button className={styles.linkBtn} onClick={() => setEditing(row)}>Edit</button>
+              <span className={`${styles.chevron} ${expanded ? styles.chevronOpen : ''}`}>›</span>
             </div>
-          </div>
-        ))}
-      </div>
 
-      {editing && (
-        <EditBalancesModal row={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); router.refresh() }} />
-      )}
-    </>
+            {expanded && (
+              <BalanceEditRow
+                row={row}
+                onCancel={() => setExpandedUserId(null)}
+                onSaved={() => { setExpandedUserId(null); router.refresh() }}
+              />
+            )}
+          </div>
+        )
+      })}
+    </div>
   )
 }
