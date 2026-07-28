@@ -7,7 +7,10 @@ import type { ScorePeriod } from '@/lib/types'
 import TeamAnalytics from './_components/TeamAnalytics'
 import MyScorecard from './_components/MyScorecard'
 
-const INTERNAL = ['founder', 'admin', 'associate', 'general', 'hr']
+/* Access is intentionally narrow for now — founder/admin only while the scoring model is being
+   evaluated. The personal-scorecard branch below is kept wired up so widening this back out to
+   associate/general/hr is a one-line change here (plus the nav roles in AppShell.tsx). */
+const CAN_VIEW = ['founder', 'admin']
 const LEADERS = ['founder', 'admin', 'hr']
 
 export default async function AnalyticsPage({
@@ -17,7 +20,7 @@ export default async function AnalyticsPage({
 }) {
   const user = await getUser()
   if (!user) redirect('/login')
-  if (!INTERNAL.includes(user.role ?? '')) redirect('/dashboard')
+  if (!CAN_VIEW.includes(user.role ?? '')) redirect('/tasks')
 
   const { period: rawPeriod } = await searchParams
   const period: ScorePeriod = (rawPeriod && rawPeriod in SCORE_PERIOD_LABELS ? rawPeriod : '90d') as ScorePeriod

@@ -62,9 +62,8 @@ Legend: ✅ full · 🟡 limited/conditional · 👁 read-only · ❌ none
 | Leave requests — submit | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Leave / Expense requests — approve | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Approvals page (`/approvals`) | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| Analytics — team view | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| Analytics — own scorecard | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Analytics — record an adjustment | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Analytics page (`/analytics`)⁶ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Analytics — record an adjustment | ✅ | ✅ | ❌ | ❌ | ❌⁶ | ❌ | ❌ |
 | Analytics — edit scoring weights | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Leave balances — set entitlement/used | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Leave balances — view own remaining | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
@@ -97,6 +96,11 @@ to, with org total earning, referred earning, a base selector, an editable split
 share. Associates can read it but not change the share config.
 ⁴ Partners see a **My Earnings** page with only their **own** final share per deal (₹) — never org
 totals or other investors. Computed server-side via the `get_partner_earnings` SECURITY DEFINER function.
+⁶ `/analytics` is currently gated to **founder/admin only** while the scoring model is being
+evaluated — set in `CAN_VIEW` in `src/app/(app)/analytics/page.tsx` and the nav `roles` array in
+`AppShell.tsx`. The RLS underneath is deliberately wider than the UI: `performance_adjustments`
+still grants SELECT to HR and to `user_id = auth.uid()`, and the personal-scorecard branch is still
+wired up, so re-opening access to HR/associate/general is a UI-only change requiring no migration.
 ⁵ HR cannot raise or act on an escalation through the UI (`updateEscalationStatus`'s app-layer guard
 doesn't include `hr`, and only founders/partners are valid recipients). The `"Escalations insert"`
 RLS policy was widened to include `hr` purely so the backend can auto-insert a founder-notify row
@@ -272,15 +276,19 @@ Approvals below. This is not a user-facing escalations capability.
   (change approve/reject after the fact) or cancel any request, not just pending ones.
 
 ### Performance analytics (`/analytics`)
-- **Team view** (Founder/Admin/HR): a per-person table and charts scoring everyone in the org for
-  a chosen period — score, kudos (total and by area), on-time rate, overdue, pushed deadlines,
-  recurring-duty completions, event attendance, and manual adjustments.
-- **Own scorecard** (everyone internal, including associate/general): the same numbers for
-  themselves only, with a breakdown showing exactly which signals produced their score, and every
-  adjustment recorded about them **including the reason** — RLS grants `user_id = auth.uid()` on
-  `performance_adjustments` specifically so nobody can be marked down invisibly.
-- **Manual adjustments** (Founder/Admin/HR): signed points with a mandatory written reason and a
-  recorded author, for things the data can't see.
+**Currently founder/admin only** while the scoring model is evaluated — see footnote ⁶. The
+capabilities below describe the module as built; the personal-scorecard branch and the wider RLS
+grants are intact, so widening access later needs no migration.
+- **Team view**: a per-person table and charts scoring everyone in the org for a chosen period —
+  score, kudos (total and by area), on-time rate, overdue, pushed deadlines, recurring-duty
+  completions, event attendance, and manual adjustments.
+- **Own scorecard** (built, currently not reachable — would serve associate/general/HR if
+  re-opened): the same numbers for themselves only, with a breakdown showing exactly which signals
+  produced their score, and every adjustment recorded about them **including the reason** — RLS
+  grants `user_id = auth.uid()` on `performance_adjustments` specifically so nobody can be marked
+  down invisibly.
+- **Manual adjustments**: signed points with a mandatory written reason and a recorded author, for
+  things the data can't see. RLS permits HR here too, though the page is currently admin-gated.
 - **Scoring weights** (Founder/Admin only): the formula lives in `performance_weights`, not in
   code, and the UI states the active weights next to the scores so they read as a judgement call
   rather than a measurement. HR can read the weights and record adjustments but cannot change how

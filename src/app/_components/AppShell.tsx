@@ -213,7 +213,8 @@ const NAV_ITEMS: NavEntry[] = [
   {
     href: '/analytics',
     label: 'Analytics',
-    roles: ['founder', 'admin', 'associate', 'general', 'hr'],
+    // Founder/admin only for now — see the CAN_VIEW note in analytics/page.tsx.
+    roles: ['founder', 'admin'],
     section: 'Team',
     icon: <Icon d="M3 3v18h18" d2="M7 15l4-5 3 3 5-7" />,
   },
