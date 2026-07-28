@@ -17,6 +17,8 @@ export type LeaveRequestInput = {
   leave_type: LeaveType
   start_date: string
   end_date: string
+  /** Only valid when start_date === end_date; counts 0.5 against the balance. */
+  is_half_day?: boolean
   reason?: string | null
 }
 
@@ -24,6 +26,9 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<void
   const { supabase, userId, orgId } = await requireRequester()
   if (!input.start_date || !input.end_date) throw new Error('Start and end dates are required.')
   if (input.end_date < input.start_date) throw new Error('End date cannot be before the start date.')
+  if (input.is_half_day && input.start_date !== input.end_date) {
+    throw new Error('A half day must start and end on the same date.')
+  }
 
   const { error } = await supabase.from('leave_requests').insert({
     org_id: orgId,
@@ -31,6 +36,7 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<void
     leave_type: input.leave_type,
     start_date: input.start_date,
     end_date: input.end_date,
+    is_half_day: input.is_half_day ?? false,
     reason: input.reason?.trim() || null,
   })
   if (error) throw error

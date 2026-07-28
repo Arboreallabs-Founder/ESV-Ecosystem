@@ -191,6 +191,8 @@ export type LeaveRequest = {
   leave_type: LeaveType
   start_date: string
   end_date: string
+  /** Only valid on a single-day request; counts 0.5 against the balance. */
+  is_half_day: boolean
   reason: string | null
   status: ApprovalStatus
   decided_by: string | null
@@ -203,6 +205,26 @@ export type LeaveRequest = {
 
 // Leave types that carry an entitlement balance — Unpaid is deliberately excluded (uncapped).
 export const BALANCE_LEAVE_TYPES: LeaveType[] = ['earned', 'sick', 'my_day', 'compensatory']
+
+/** Short codes shown on the balance chips. */
+export const LEAVE_TYPE_CODES: Record<string, string> = {
+  earned: 'EL', sick: 'SL', my_day: 'MD', compensatory: 'CL',
+}
+
+/** Org-wide standard entitlement per leave type, in days. */
+export type LeavePolicy = {
+  id: string
+  earned_days: number
+  sick_days: number
+  my_day_days: number
+  compensatory_days: number
+  updated_at: string
+}
+
+/** Maps a leave type to its column on LeavePolicy. */
+export const POLICY_COLUMN: Record<string, keyof LeavePolicy> = {
+  earned: 'earned_days', sick: 'sick_days', my_day: 'my_day_days', compensatory: 'compensatory_days',
+}
 
 // One row per person+type; "remaining" is computed at read time (entitled - manual_used - sum
 // of approved leave_requests days), never stored, so it can't drift out of sync with approvals.
@@ -219,6 +241,8 @@ export type LeaveBalance = {
 export type LeaveBalanceRow = {
   user_id: string
   user_name: string
+  designation: string | null
+  photo_url: string | null
   balances: Record<string, LeaveBalance>
 }
 

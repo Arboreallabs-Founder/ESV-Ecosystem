@@ -124,6 +124,9 @@
 .requestTab { border: none; background: none; color: var(--color-muted); padding: 0.4rem 0.85rem; border-radius: 7px; font-size: 0.8125rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.12s, color 0.12s; }
 .requestTabActive { background: var(--color-card); color: var(--color-text); }
 
+/* Only offered when the request is a single day — a half day across a range is meaningless. */
+.halfDayRow { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8125rem; color: var(--color-text); cursor: pointer; }
+
 .statusPill { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.2rem 0.55rem; border-radius: 9999px; flex-shrink: 0; }
 .statusPending { background: rgba(203,140,124,0.12); color: var(--color-warning); }
 .statusApproved { background: rgba(46,125,50,0.12); color: var(--color-success); }

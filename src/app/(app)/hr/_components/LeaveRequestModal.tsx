@@ -15,6 +15,7 @@ export default function LeaveRequestModal({ balances, onClose, onSaved }: {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [reason, setReason] = useState('')
+  const [isHalfDay, setIsHalfDay] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -22,7 +23,11 @@ export default function LeaveRequestModal({ balances, onClose, onSaved }: {
     setError(null)
     if (!startDate || !endDate) { setError('Start and end dates are required.'); return }
     if (endDate < startDate) { setError('End date cannot be before the start date.'); return }
-    const input: LeaveRequestInput = { leave_type: leaveType, start_date: startDate, end_date: endDate, reason: reason || null }
+    const singleDay = startDate === endDate
+    const input: LeaveRequestInput = {
+      leave_type: leaveType, start_date: startDate, end_date: endDate,
+      is_half_day: singleDay && isHalfDay, reason: reason || null,
+    }
     startTransition(async () => {
       try {
         await createLeaveRequest(input)
@@ -62,6 +67,14 @@ export default function LeaveRequestModal({ balances, onClose, onSaved }: {
               <input className={styles.input} type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
             </div>
           </div>
+          {startDate !== '' && startDate === endDate && (
+            <div className={styles.field}>
+              <label className={styles.halfDayRow}>
+                <input type="checkbox" checked={isHalfDay} onChange={(e) => setIsHalfDay(e.target.checked)} />
+                Half day (counts as 0.5)
+              </label>
+            </div>
+          )}
           <div className={styles.field}>
             <label className={styles.fieldLabel}>Reason</label>
             <textarea className={styles.textarea} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Optional details…" style={{ minHeight: '100px' }} />

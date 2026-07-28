@@ -1,77 +1,79 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { upsertLeaveBalance } from '@/app/actions/leave-balances'
-import { BALANCE_LEAVE_TYPES, LEAVE_TYPE_LABELS } from '@/lib/types'
+import { setAvailableBalances } from '@/app/actions/leave-balances'
+import { BALANCE_LEAVE_TYPES } from '@/lib/types'
 import type { LeaveBalanceRow } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
+import { artForLeaveType, fmtDays } from './leave-type-meta'
 import styles from '../approvals.module.css'
 
-// Inline expanded edit form for a Balances row — no overlay/dialog, rendered directly beneath
-// the row's summary line (see BalancesTable.tsx) so it reads as an accordion, not a popup.
+/* Inline edit for one person's balances — no dialog, expands in place under the row.
+   HR types what's LEFT; the action back-solves the stored baseline from it. */
 export default function BalanceEditRow({ row, onCancel, onSaved }: {
   row: LeaveBalanceRow; onCancel: () => void; onSaved: () => void
 }) {
-  const [values, setValues] = useState(() =>
-    Object.fromEntries(BALANCE_LEAVE_TYPES.map((t) => [t, {
-      entitled: String(row.balances[t]?.entitled_days ?? 0),
-      manualUsed: String(row.balances[t]?.manual_used_days ?? 0),
-    }])),
+  const [values, setValues] = useState<Record<string, string>>(() =>
+    Object.fromEntries(BALANCE_LEAVE_TYPES.map((t) => [t, String(row.balances[t]?.remaining ?? 0)])),
   )
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
-  function setField(type: string, field: 'entitled' | 'manualUsed', value: string) {
-    setValues((prev) => ({ ...prev, [type]: { ...prev[type], [field]: value } }))
-  }
-
   function submit() {
     setError(null)
+    const available: Record<string, number> = {}
+    for (const t of BALANCE_LEAVE_TYPES) {
+      const n = Number(values[t])
+      if (!Number.isFinite(n) || n < 0) {
+        setError(`Enter a valid number for ${artForLeaveType(t).label}.`); return
+      }
+      if (Math.round(n * 2) !== n * 2) {
+        setError('Balances move in half-day steps (e.g. 12 or 12.5).'); return
+      }
+      available[t] = n
+    }
     startTransition(async () => {
       try {
-        for (const type of BALANCE_LEAVE_TYPES) {
-          const entitled = Number(values[type].entitled)
-          const manualUsed = Number(values[type].manualUsed)
-          if (Number.isNaN(entitled) || Number.isNaN(manualUsed) || entitled < 0 || manualUsed < 0) {
-            throw new Error(`Enter valid numbers for ${LEAVE_TYPE_LABELS[type]}.`)
-          }
-          await upsertLeaveBalance({ user_id: row.user_id, leave_type: type, entitled_days: entitled, manual_used_days: manualUsed })
-        }
+        await setAvailableBalances({ user_id: row.user_id, available })
         onSaved()
       } catch (e) { setError((e as Error).message) }
     })
   }
 
   return (
-    <div className={styles.balanceEditBody} onClick={(e) => e.stopPropagation()}>
-      {BALANCE_LEAVE_TYPES.map((type) => (
-        <div key={type} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 100px', gap: '0.6rem', alignItems: 'center', marginBottom: '0.6rem' }}>
-          <span className={styles.cardMeta} style={{ marginTop: 0 }}>{LEAVE_TYPE_LABELS[type]}</span>
-          <div>
-            <label className={styles.cardMeta} style={{ marginTop: 0, display: 'block' }}>Entitled</label>
-            <input
-              type="number" min="0" className={styles.filterSelect} style={{ width: '100%' }}
-              value={values[type].entitled}
-              onChange={(e) => setField(type, 'entitled', e.target.value)}
-            />
-          </div>
-          <div>
-            <label className={styles.cardMeta} style={{ marginTop: 0, display: 'block' }}>Used (manual)</label>
-            <input
-              type="number" min="0" className={styles.filterSelect} style={{ width: '100%' }}
-              value={values[type].manualUsed}
-              onChange={(e) => setField(type, 'manualUsed', e.target.value)}
-            />
-          </div>
-        </div>
-      ))}
+    <div className={styles.editBody} onClick={(e) => e.stopPropagation()}>
+      <div className={styles.editFields}>
+        {BALANCE_LEAVE_TYPES.map((t) => {
+          const art = artForLeaveType(t)
+          const b = row.balances[t]
+          return (
+            <div key={t} className={styles.editField}>
+              <label className={styles.editLabel} htmlFor={`${row.user_id}-${t}`}>{art.label}</label>
+              <div className={styles.editInputRow}>
+                <input
+                  id={`${row.user_id}-${t}`}
+                  type="number"
+                  min="0"
+                  step="0.5"
+                  className={styles.editInput}
+                  value={values[t]}
+                  onChange={(e) => setValues((p) => ({ ...p, [t]: e.target.value }))}
+                />
+                <span className={styles.editMax}>/ {fmtDays(b?.entitled_days ?? 0)} days</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
 
       {error && <div className={styles.errBox}>{error}</div>}
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.75rem' }}>
-        <button className={styles.rejectBtn} onClick={onCancel} disabled={pending} style={{ borderColor: 'var(--color-border)', background: 'none', color: 'var(--color-text)' }}>Cancel</button>
-        <button className={styles.approveBtn} onClick={submit} disabled={pending}>
-          {pending ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><Spinner size={14} /> Saving…</span> : 'Save'}
+      <div className={styles.editActions}>
+        <button className={styles.cancelBtn} onClick={onCancel} disabled={pending}>Cancel</button>
+        <button className={styles.saveBtn} onClick={submit} disabled={pending}>
+          {pending
+            ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}><Spinner size={14} className="spinnerOnPrimary" /> Saving…</span>
+            : 'Save'}
         </button>
       </div>
     </div>
