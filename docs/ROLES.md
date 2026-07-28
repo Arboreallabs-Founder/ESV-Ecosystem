@@ -62,6 +62,10 @@ Legend: ✅ full · 🟡 limited/conditional · 👁 read-only · ❌ none
 | Leave requests — submit | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Leave / Expense requests — approve | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Approvals page (`/approvals`) | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Analytics — team view | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Analytics — own scorecard | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Analytics — record an adjustment | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Analytics — edit scoring weights | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Leave balances — set entitlement/used | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Leave balances — view own remaining | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | User management (`/admin/users`) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ cross-org |
@@ -266,6 +270,26 @@ Approvals below. This is not a user-facing escalations capability.
 - **Team leaves roster**: the "Team leaves" tab on `/approvals` (Founder/Admin/HR) lists every
   leave request org-wide, any status, filterable by person — with the ability to re-decide
   (change approve/reject after the fact) or cancel any request, not just pending ones.
+
+### Performance analytics (`/analytics`)
+- **Team view** (Founder/Admin/HR): a per-person table and charts scoring everyone in the org for
+  a chosen period — score, kudos (total and by area), on-time rate, overdue, pushed deadlines,
+  recurring-duty completions, event attendance, and manual adjustments.
+- **Own scorecard** (everyone internal, including associate/general): the same numbers for
+  themselves only, with a breakdown showing exactly which signals produced their score, and every
+  adjustment recorded about them **including the reason** — RLS grants `user_id = auth.uid()` on
+  `performance_adjustments` specifically so nobody can be marked down invisibly.
+- **Manual adjustments** (Founder/Admin/HR): signed points with a mandatory written reason and a
+  recorded author, for things the data can't see.
+- **Scoring weights** (Founder/Admin only): the formula lives in `performance_weights`, not in
+  code, and the UI states the active weights next to the scores so they read as a judgement call
+  rather than a measurement. HR can read the weights and record adjustments but cannot change how
+  everyone's score is calculated.
+- **Leave is deliberately not a signal.** Approved leave is an entitlement, and scoring it
+  negatively pressures people to work while ill. Attendance concerns route through the manual
+  adjustment path, where they carry a name and a reason.
+- Scores are **period-scoped** (default 90 days) and shown alongside rates, so the table doesn't
+  simply reward whoever was assigned the most work or has been here longest.
 
 ### Partner Portal (`/portal` — "My Links")
 - **Partner** only: generate submission links, copy/open them, view their own issued links, and

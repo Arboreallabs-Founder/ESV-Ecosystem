@@ -262,6 +262,65 @@ export type Kudos = {
   recipient?: { name: string | null } | null
 }
 
+/* ── Performance analytics ──────────────────────────────────────────────
+   Weights are stored, not hardcoded: the scoring formula is a judgement the org owns and can
+   change, so the UI shows the active weights alongside every score. */
+export type PerformanceWeights = {
+  id: string
+  kudos_received: number
+  task_on_time: number
+  task_overdue: number
+  task_pushed: number
+  recurring_completed: number
+  event_attended: number
+  updated_at: string
+}
+
+export type PerformanceAdjustment = {
+  id: string
+  user_id: string
+  points: number
+  reason: string
+  occurred_on: string
+  created_by: string | null
+  created_at: string
+  user?: { name: string | null } | null
+  created_by_user?: { name: string | null } | null
+}
+
+export type ScorePeriod = '30d' | '90d' | 'quarter' | 'year' | 'all'
+
+export const SCORE_PERIOD_LABELS: Record<ScorePeriod, string> = {
+  '30d': 'Last 30 days',
+  '90d': 'Last 90 days',
+  quarter: 'This quarter',
+  year: 'This year',
+  all: 'All time',
+}
+
+/** One person's scored signals for the selected period. */
+export type PerformanceRow = {
+  user_id: string
+  user_name: string
+  role: string
+  // Raw counts
+  kudosReceived: number
+  kudosByCategory: Record<string, number>
+  tasksTotal: number
+  tasksOnTime: number
+  tasksOverdue: number
+  tasksPushed: number
+  recurringCompleted: number
+  eventsAttended: number
+  adjustmentPoints: number
+  adjustmentCount: number
+  // Derived rates — shown alongside totals so the table isn't purely volume-driven.
+  onTimeRate: number | null
+  // Weighted contributions, keyed the same as the weight columns, plus the final score.
+  contributions: Record<string, number>
+  score: number
+}
+
 export type ServiceType =
   | 'vc_fund' | 'angel_fund' | 'family_office' | 'angel_investor'
   | 'debt_fund' | 'corporate_vc' | 'private_equity' | 'growth_equity'

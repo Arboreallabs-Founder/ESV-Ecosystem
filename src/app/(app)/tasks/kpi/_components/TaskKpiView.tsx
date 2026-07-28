@@ -1,41 +1,11 @@
 'use client'
 
 import type { Task, UserRow } from '@/lib/types'
+import { computeKpis } from '@/lib/task-kpi'
 import styles from '../../tasks.module.css'
 
-type Kpis = { total: number; done: number; onTime: number; pushed: number; pending: number; notCompleted: number }
-
-// DATE columns have no time — treat the deadline as the end of that calendar day.
-function endOfDay(dateStr: string): number {
-  const d = new Date(dateStr)
-  d.setHours(23, 59, 59, 999)
-  return d.getTime()
-}
-
-function computeKpis(tasks: Task[]): Kpis {
-  const now = Date.now()
-  const k: Kpis = { total: tasks.length, done: 0, onTime: 0, pushed: 0, pending: 0, notCompleted: 0 }
-
-  for (const t of tasks) {
-    if (t.pushed_at) k.pushed++
-
-    const isDone = t.status === 'Done'
-    const deadline = t.pushed_date ?? t.due_date
-
-    if (isDone) {
-      k.done++
-      // On time = completed on/before the original due date (legacy Done with no stamp counts as on time).
-      if (!t.due_date || !t.completed_at || new Date(t.completed_at).getTime() <= endOfDay(t.due_date)) {
-        k.onTime++
-      }
-    } else {
-      // Open tasks: past the effective deadline → not completed; otherwise pending.
-      if (deadline && now > endOfDay(deadline)) k.notCompleted++
-      else k.pending++
-    }
-  }
-  return k
-}
+// computeKpis lives in @/lib/task-kpi so /analytics scores punctuality with exactly the same
+// maths — the two pages must never disagree about someone's numbers.
 
 function KpiCard({ label, value, accent }: { label: string; value: number; accent?: string }) {
   return (

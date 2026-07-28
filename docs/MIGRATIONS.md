@@ -55,3 +55,7 @@ marks it.
   "already used" baseline for Earned/Sick/My Day/Compensatory only — Unpaid is uncapped).
   Informational only, nothing blocks a request that exceeds the remaining balance. Managed by
   founder/admin/hr on the new "Balances" tab on `/approvals`.
+- `20260815000000_performance_analytics.sql` — `performance_weights` (per-org singleton holding
+  the scoring formula, editable by founder/admin only) and `performance_adjustments` (signed
+  manual points with a mandatory reason). Backs `/analytics`. Note the deliberate omission: leave
+  is **not** a scoring signal — see the comment at the top of the migration.
