@@ -20,33 +20,359 @@
 .ghostBtn { border: 1px solid var(--color-border); background: var(--color-card); color: var(--color-text); padding: 0.5rem 0.9rem; border-radius: var(--radius-md); font-size: 0.8125rem; font-weight: 600; cursor: pointer; font-family: inherit; transition: background 0.12s; }
 .ghostBtn:hover { background: var(--color-card-raised); }
 
-.list { display: flex; flex-direction: column; gap: 0.65rem; }
-
-.card {
-  background: var(--color-card);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 0.9rem 1.05rem;
-  box-shadow: var(--shadow-card);
-}
-
-.cardTop { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; }
-.cardNames { font-size: 0.9375rem; font-weight: 600; color: var(--color-text); }
-.cardArrow { color: var(--color-muted); font-weight: 400; margin: 0 0.3rem; }
-.cardMessage { font-size: 0.875rem; color: var(--color-text); line-height: 1.55; margin-top: 0.45rem; white-space: pre-wrap; }
-.cardFoot { font-size: 0.75rem; color: var(--color-muted); margin-top: 0.6rem; }
-
-.badge { font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.125rem 0.5rem; border-radius: 9999px; white-space: nowrap; background: rgba(213,174,143,0.16); color: var(--color-accent); }
-
-.iconBtn { border: none; background: none; color: var(--color-muted); cursor: pointer; font-size: 0.8rem; line-height: 1; padding: 0.3rem 0.45rem; border-radius: 6px; transition: background 0.12s, color 0.12s; font-family: inherit; flex-shrink: 0; }
-.iconBtn:hover { background: var(--color-card-raised); color: var(--color-text); }
-
 .empty { text-align: center; padding: 3rem 1.5rem; color: var(--color-muted); font-size: 0.875rem; line-height: 1.6; border: 1.5px dashed var(--color-border); border-radius: var(--radius-lg); }
 
-/* ── Modal ────────────────────────────────────────────────────────── */
-.overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 1rem; }
-.modal { background: var(--color-bg); border: 1px solid var(--color-border); border-radius: var(--radius-xl); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-elevated); }
-.modalHead { display: flex; align-items: center; padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--color-border); position: sticky; top: 0; background: var(--color-bg); }
+/* ═══ Envelope grid ══════════════════════════════════════════════════════ */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.1rem;
+}
+
+/* A sealed envelope — the whole tile is the button that opens the kudos. */
+.env {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  min-height: 190px;
+  padding: 1rem 1.05rem 0.9rem;
+  border: none;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(20, 12, 60, 0.28);
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s;
+}
+.env:hover { transform: translateY(-4px); box-shadow: 0 18px 42px rgba(20, 12, 60, 0.38); }
+.env:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+
+/* The closed flap — a soft V across the top. */
+.envFlap {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 96px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.03));
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  pointer-events: none;
+  transition: background 0.2s;
+}
+.env:hover .envFlap { background: linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.05)); }
+
+/* Wax-seal medallion sitting on the flap's point. */
+.envSeal {
+  position: absolute;
+  top: 62px; left: 50%;
+  width: 58px; height: 58px;
+  margin-left: -29px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255,255,255,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.envSealIcon { width: 34px; height: 34px; display: block; }
+
+.envMeta { display: flex; flex-direction: column; gap: 0.1rem; margin-top: auto; }
+.envTo { font-size: 0.9375rem; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+.envFrom { font-size: 0.75rem; color: rgba(255, 255, 255, 0.62); }
+
+.envFoot { display: flex; align-items: baseline; justify-content: space-between; gap: 0.5rem; }
+.envCat { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; }
+.envDate { font-size: 0.6875rem; color: rgba(255, 255, 255, 0.45); }
+
+.envHint {
+  position: absolute;
+  top: 0.85rem; right: 0.95rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.55);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.env:hover .envHint, .env:focus-visible .envHint { opacity: 1; transform: translateY(0); }
+
+/* ═══ Opened kudos ═══════════════════════════════════════════════════════ */
+.openOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  background: rgba(12, 8, 32, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  overflow-y: auto;
+  animation: kFade 0.22s ease both;
+}
+@keyframes kFade { from { opacity: 0; } to { opacity: 1; } }
+
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 620px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  perspective: 1400px;
+}
+
+/* Envelope the card lifts out of — behind and below it, purely decorative. */
+.envOpen {
+  position: absolute;
+  bottom: 3.2rem;
+  width: 74%;
+  height: 150px;
+  border-radius: 0 0 14px 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  transform-style: preserve-3d;
+}
+.envOpenFlap {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 118px;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top center;
+  filter: brightness(1.25);
+  animation: kFlap 0.55s cubic-bezier(0.5, 0, 0.3, 1) 0.12s both;
+}
+@keyframes kFlap {
+  from { transform: rotateX(0deg); }
+  to   { transform: rotateX(-165deg); }
+}
+/* Front pocket, drawn over the card's lower edge so the card reads as sitting *inside*. */
+.envOpenPocket {
+  position: absolute;
+  inset: 0;
+  border-radius: 0 0 14px 14px;
+  clip-path: polygon(0 34%, 50% 0, 100% 34%, 100% 100%, 0 100%);
+  filter: brightness(0.82);
+  z-index: 3;
+  box-shadow: inset 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.cardReveal {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  animation: kLift 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.42s both;
+}
+@keyframes kLift {
+  from { transform: translateY(120px) scale(0.82); opacity: 0; }
+  60%  { opacity: 1; }
+  to   { transform: translateY(-38px) scale(1); opacity: 1; }
+}
+
+.openActions {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  gap: 0.6rem;
+  animation: kFade 0.3s ease 1.05s both;
+}
+.openClose, .openDelete {
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: #fff;
+  transition: background 0.12s;
+}
+.openClose:hover { background: rgba(255, 255, 255, 0.22); }
+.openDelete { border-color: rgba(255, 140, 130, 0.5); color: #FFB4AC; }
+.openDelete:hover { background: rgba(255, 90, 80, 0.18); }
+
+/* ═══ The kudos card itself ══════════════════════════════════════════════
+   Deliberately theme-independent — the same rich treatment in light, dark and OLED, because a
+   kudos is a celebratory artifact rather than another app surface. */
+.kCard {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  color: #fff;
+  box-shadow: 0 26px 70px rgba(10, 6, 34, 0.55), inset 0 1px 0 rgba(255,255,255,0.14);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  isolation: isolate;
+}
+
+.kDecor { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.kGlowA {
+  position: absolute; top: -30%; right: -12%;
+  width: 62%; aspect-ratio: 1;
+  border-radius: 50%;
+  filter: blur(70px);
+  opacity: 0.35;
+}
+.kGlowB {
+  position: absolute; bottom: -35%; left: -10%;
+  width: 55%; aspect-ratio: 1;
+  border-radius: 50%;
+  background: #7C5CF0;
+  filter: blur(65px);
+  opacity: 0.4;
+}
+.kConfetti {
+  position: absolute;
+  border-radius: 2px;
+  opacity: 0.9;
+  animation: kFloat 4.5s ease-in-out infinite;
+}
+@keyframes kFloat {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50%      { transform: translateY(-7px) rotate(12deg); }
+}
+/* Soft dune sweeping across the lower third, as in the reference art. */
+.kWave {
+  position: absolute;
+  left: -5%; right: -5%; bottom: -12%;
+  height: 46%;
+  background: linear-gradient(105deg, rgba(124, 92, 240, 0.55), rgba(150, 90, 220, 0.30));
+  border-radius: 50% 50% 0 0 / 68% 68% 0 0;
+  transform: rotate(-4deg);
+}
+.kRibbonLeft, .kRibbonRight {
+  position: absolute;
+  bottom: 7%;
+  width: 118px; height: 26px;
+  border-radius: 999px;
+  opacity: 0.75;
+}
+.kRibbonLeft {
+  left: 4%;
+  background: linear-gradient(90deg, transparent, #8B62F0 30%, #B9A6FF 65%, transparent);
+  transform: rotate(-8deg);
+}
+.kRibbonRight {
+  right: 3%;
+  background: linear-gradient(90deg, transparent, #F0C87B 35%, #FFE9BC 70%, transparent);
+  transform: rotate(14deg);
+}
+
+.kTop { position: relative; z-index: 1; padding: 1.4rem 1.6rem 0.6rem; }
+
+.kBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.34rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.07);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #FFD98A;
+}
+
+.kHeadRow { display: flex; align-items: center; gap: 1rem; margin-top: 1.1rem; }
+.kHeadText { flex: 1; min-width: 0; }
+
+.kTitle {
+  margin: 0;
+  font-size: clamp(1.7rem, 4.4vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+  color: #fff;
+}
+
+.kDivider { display: flex; align-items: center; gap: 0.5rem; margin: 0.7rem 0; max-width: 170px; }
+.kDividerLine { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, rgba(185, 166, 255, 0.75), transparent); }
+
+.kTagline {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: rgba(214, 206, 255, 0.88);
+  max-width: 24ch;
+}
+
+/* Glass medallion holding the category illustration. */
+.kMedallion {
+  position: relative;
+  flex-shrink: 0;
+  width: clamp(112px, 26%, 168px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  box-shadow: inset 0 2px 14px rgba(255,255,255,0.18), 0 12px 34px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.kMedallionInner { width: 66%; height: 66%; }
+.kSparkle {
+  position: absolute;
+  top: 8%; right: 8%;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 18px 6px rgba(255, 226, 160, 0.85);
+}
+
+/* Message plate — darkened so the text stays legible wherever the gradient lands behind it. */
+.kBody {
+  position: relative;
+  z-index: 1;
+  margin: 0.9rem 1rem 1rem;
+  padding: 1rem 1.15rem 1.05rem;
+  border-radius: 14px;
+  background: rgba(10, 6, 32, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.kNames { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+.kRecipient { font-size: 1.0625rem; font-weight: 700; color: #fff; }
+.kFrom { font-size: 0.8125rem; color: rgba(214, 206, 255, 0.7); }
+.kMessage {
+  margin: 0.55rem 0 0;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.94);
+  white-space: pre-wrap;
+  border-left: 2px solid rgba(185, 166, 255, 0.5);
+  padding-left: 0.75rem;
+}
+.kDate { margin-top: 0.7rem; font-size: 0.75rem; color: rgba(214, 206, 255, 0.55); }
+
+@media (max-width: 560px) {
+  .kHeadRow { flex-direction: column; align-items: flex-start; gap: 0.9rem; }
+  .kMedallion { width: 116px; align-self: center; }
+  .kTagline { max-width: none; }
+}
+
+/* Reduced motion: show the opened card immediately, skip the envelope theatrics. */
+@media (prefers-reduced-motion: reduce) {
+  .envOpenFlap, .cardReveal, .openActions, .kConfetti, .openOverlay { animation: none; }
+  .cardReveal { transform: none; opacity: 1; }
+  .envOpen { display: none; }
+}
+
+/* ── Give-kudos modal ─────────────────────────────────────────────── */
+.overlay { position: fixed; inset: 0; z-index: 200; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; padding: 1rem; backdrop-filter: blur(8px); }
+.modal { border: 1px solid var(--color-border); border-radius: var(--radius-xl); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-elevated); }
+.modalHead { display: flex; align-items: center; padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--color-border); position: sticky; top: 0; }
 .modalTitle { font-family: var(--font-serif); font-size: 1.25rem; font-weight: 500; color: var(--color-text); margin: 0; flex: 1; }
 .closeBtn { border: none; background: none; cursor: pointer; color: var(--color-muted); font-size: 1.25rem; line-height: 1; }
 .modalBody { padding: 1.25rem; }
@@ -60,31 +386,10 @@
 
 .errBox { background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.3); border-radius: var(--radius-md); padding: 0.6rem 0.75rem; font-size: 0.8125rem; color: var(--color-destructive); margin-top: 0.5rem; }
 
-/* ─── Frosted glass ────────────────────────────────────────────────────
-   Backgrounds already come through as translucent from --color-card in globals.css;
-   these rules add the blur + light edge that turn translucency into frosted glass.
-   Appended rather than edited inline so the treatment is easy to see and revert. */
-.card {
+/* Frosted glass on the give-kudos modal, matching the rest of the app. */
+.modal, .modalHead {
+  background: var(--glass-panel);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   border-color: var(--glass-border);
 }
-
-/* .modal/.modalHead were built against the opaque --color-bg; repoint them at the translucent
-   raised token so they match the rest of the glass system. .modalHead is position:sticky, so it
-   keeps its own backdrop-filter — that preserves occlusion of content scrolling underneath it. */
-.modal {
-  background: var(--color-card-raised);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-  border-color: var(--glass-border);
-}
-.modalHead {
-  background: var(--color-card-raised);
-  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
-}
-
-/* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
-   the content out to grey. Still frosted (see the backdrop-filter above). */
-.modal, .modalHead { background: var(--glass-panel); }
