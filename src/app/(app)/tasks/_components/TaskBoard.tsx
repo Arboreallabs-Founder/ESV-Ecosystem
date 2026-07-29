@@ -9,6 +9,7 @@ import { weekRange } from '@/lib/week'
 import Combobox from '@/app/_components/Combobox'
 import TaskDetailModal from './TaskDetailModal'
 import { WikiButton } from '@/app/_components/WikiPanel'
+import { formatDateTimeIst, formatDateTimeIstLong } from '@/lib/format-datetime'
 import styles from '../tasks.module.css'
 
 const STATUSES = ['To Do', 'Done'] as const
@@ -279,7 +280,9 @@ export default function TaskBoard({
               {due.isOverdue ? '⚠ ' : ''}{due.label}
             </span>
           ) : (
-            <span className={styles.metaTag}>Assigned {formatDue(task.created_at).label}</span>
+            <span className={styles.metaTag} title={`Assigned ${formatDateTimeIstLong(task.created_at)}`}>
+              Assigned {formatDateTimeIst(task.created_at)}
+            </span>
           )}
           {task.pushed_at && (
             <span className={styles.pushedTag} title={`Pushed ${task.push_count}×`}>
@@ -301,7 +304,12 @@ export default function TaskBoard({
           </div>
         )}
         {(task.assigned_by_user?.name || task.created_by_user?.name) && (
-          <div className={styles.assignedBy}>Assigned by {task.assigned_by_user?.name ?? task.created_by_user?.name}</div>
+          <div className={styles.assignedBy} title={`Assigned ${formatDateTimeIstLong(task.created_at)}`}>
+            Assigned by {task.assigned_by_user?.name ?? task.created_by_user?.name}
+            {/* When a due date is shown the meta row has no assignment stamp, so surface it here
+                instead — otherwise the card would never show when the task landed. */}
+            {task.due_date && <> · {formatDateTimeIst(task.created_at)}</>}
+          </div>
         )}
         <div className={styles.cardActions}>
           <select

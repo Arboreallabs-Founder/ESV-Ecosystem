@@ -4,13 +4,12 @@ import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { getTaskComments, addTaskComment, deleteTaskComment, updateTask } from '@/app/actions/tasks'
 import type { Task, TaskComment, UserRow } from '@/lib/types'
+import { formatDateTimeIst, formatDateTimeIstLong } from '@/lib/format-datetime'
 import Spinner from '@/app/_components/Spinner'
 import Combobox from '@/app/_components/Combobox'
 import styles from '../tasks.module.css'
 
-function formatDateTime(iso: string) {
-  return new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
-}
+const formatDateTime = formatDateTimeIst
 
 export default function TaskDetailModal({
   task,
@@ -217,14 +216,20 @@ export default function TaskDetailModal({
           {task.due_date ? (
             <span className={styles.metaTag}>Due {new Date(task.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
           ) : (
-            <span className={styles.metaTag}>Assigned {new Date(task.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} (no due date)</span>
+            <span className={styles.metaTag}>No due date</span>
           )}
         </div>
-        {(task.assigned_by_user?.name || task.created_by_user?.name) && (
-          <div className={styles.assignedBy} style={{ marginTop: '-1rem', marginBottom: '1rem' }}>
-            Assigned by {task.assigned_by_user?.name ?? task.created_by_user?.name}
-          </div>
-        )}
+        {/* Assignment stamp is always shown here, not just when there's no due date — it's the
+            detail view, and "who assigned this and exactly when" is the thing people come here
+            to check. */}
+        <div className={styles.assignedBy} style={{ marginTop: '-1rem', marginBottom: '1rem' }}>
+          {(task.assigned_by_user?.name || task.created_by_user?.name) && (
+            <>Assigned by {task.assigned_by_user?.name ?? task.created_by_user?.name} · </>
+          )}
+          <span title={formatDateTimeIstLong(task.created_at)}>
+            {formatDateTimeIstLong(task.created_at)}
+          </span>
+        </div>
         {task.description && (
           <div style={{ fontSize: '0.875rem', color: 'var(--color-muted)', lineHeight: 1.5, marginBottom: '1.5rem' }}>{task.description}</div>
         )}
