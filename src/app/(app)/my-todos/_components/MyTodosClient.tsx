@@ -6,14 +6,17 @@ import {
   addPersonalTodo, updatePersonalTodo, deletePersonalTodo, togglePersonalTodo, portTaskIn, unlinkPersonalTodo,
 } from '@/app/actions/personal-todos'
 import type { PersonalTodo, Task } from '@/lib/types'
+import { isPastDue } from '@/lib/task-kpi'
 import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import styles from '../my-todos.module.css'
 
 function formatDue(dateStr: string) {
-  const d = new Date(dateStr)
-  const isOverdue = d < new Date(new Date().toDateString())
-  return { label: d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), isOverdue }
+  // Same rule as the task board: overdue only after the due day has fully passed.
+  return {
+    label: new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+    isOverdue: isPastDue(dateStr),
+  }
 }
 
 function TodoRow({ todo, isDone, expanded, pending, onToggle, onToggleExpand, onDelete, onUnlink, onSave }: {

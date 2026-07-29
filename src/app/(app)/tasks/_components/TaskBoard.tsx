@@ -10,6 +10,7 @@ import Combobox from '@/app/_components/Combobox'
 import TaskDetailModal from './TaskDetailModal'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import { formatDateTimeIst, formatDateTimeIstLong } from '@/lib/format-datetime'
+import { isPastDue } from '@/lib/task-kpi'
 import styles from '../tasks.module.css'
 
 const STATUSES = ['To Do', 'Done'] as const
@@ -42,10 +43,10 @@ function Avatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) 
 }
 
 function formatDue(dateStr: string) {
-  const d = new Date(dateStr)
-  const now = new Date()
-  const isOverdue = d < now
-  const label = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
+  // Overdue only once the due day has fully passed — a task due today is not late today.
+  // Shared with /tasks/kpi and /analytics so all three agree; see @/lib/task-kpi.
+  const isOverdue = isPastDue(dateStr)
+  const label = new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })
   return { label, isOverdue }
 }
 
@@ -148,8 +149,7 @@ export default function TaskBoard({
   }, {} as Record<Status, Task[]>)
 
   // Task summary (respects filters)
-  const nowDate = new Date()
-  const taskOverdue = (t: Task) => { const d = t.pushed_date ?? t.due_date; return t.status !== 'Done' && !!d && new Date(d) < nowDate }
+  const taskOverdue = (t: Task) => { const d = t.pushed_date ?? t.due_date; return t.status !== 'Done' && !!d && isPastDue(d) }
   const summary = {
     open: filteredTasks.filter((t) => t.status !== 'Done').length,
     overdue: filteredTasks.filter(taskOverdue).length,
