@@ -90,3 +90,9 @@ marks it.
   mirrored third-party images such as company founder headshots. See `src/lib/image-cache.ts` for
   why pasted URLs are mirrored rather than stored raw — the short version is that LinkedIn-style
   media URLs are signed and expire, so a stored link works today and 404s later.
+- `20260821000000_internal_roles_view_org_users.sql` — replaces the associate-only "Associates
+  view org users" SELECT policy with one covering `associate`, `general` **and** `hr`. HR and
+  general could previously read only their own `users` row, so every embedded person join came
+  back NULL — `/approvals` showed requests from "Unknown" and the balances roster had no names.
+  Worth remembering as a failure mode: RLS filters a joined row out **silently**, so the symptom
+  is a UI fallback rather than an error.

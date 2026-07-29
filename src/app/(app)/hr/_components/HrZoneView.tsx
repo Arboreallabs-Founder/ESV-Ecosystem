@@ -7,6 +7,7 @@ import { createHrPolicy, updateHrPolicy, deleteHrPolicy, type HrPolicyInput } fr
 import type { HrPolicy, HrClockSettings, HrBirthday, LeaveRequest, ExpenseRequest, LeaveBalance } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
+import FilterTabs from '@/app/_components/FilterTabs'
 import HrClockAdmin from './HrClockAdmin'
 import MyRequests from './MyRequests'
 import Avatar from '@/app/_components/Avatar'
@@ -63,6 +64,14 @@ export default function HrZoneView({
   const [editing, setEditing] = useState<HrPolicy | 'new' | null>(null)
   const [, startTransition] = useTransition()
 
+  // Birthdays and clock settings are HR-admin config, not something an associate needs — the tab
+  // only exists for people who can see that card at all.
+  const showBirthdaysTab = showClockAdmin && !!clockSettings
+  const [tab, setTab] = useState<'policies' | 'requests' | 'birthdays'>('policies')
+
+  const pendingCount = myLeaveRequests.filter((r) => r.status === 'pending').length
+    + myExpenseRequests.filter((r) => r.status === 'pending').length
+
   function handleDelete(id: string) {
     if (!confirm('Delete this policy?')) return
     startTransition(async () => { await deleteHrPolicy(id); router.refresh() })
@@ -76,45 +85,73 @@ export default function HrZoneView({
             <div className={styles.pageTitle}>HR Zone</div>
             <WikiButton sectionKey="hr" />
           </div>
-          <div className={styles.pageSub}>Company policies</div>
+          <div className={styles.pageSub}>
+            {tab === 'policies' ? 'Company policies'
+              : tab === 'requests' ? 'Your leave and expense requests'
+              : 'Clock reminders and team birthdays'}
+          </div>
         </div>
-        {canEditPolicies && <button className={styles.primaryBtn} onClick={() => setEditing('new')}>+ New policy</button>}
+        {/* Only offered on the tab it acts on — a "+ New policy" button above the Birthdays
+            list would be a trap. */}
+        {canEditPolicies && tab === 'policies' && (
+          <button className={styles.primaryBtn} onClick={() => setEditing('new')}>+ New policy</button>
+        )}
       </div>
 
+      <FilterTabs
+        tabs={[
+          { value: 'policies', label: 'Policies', count: policies.length },
+          { value: 'requests', label: 'Requests', count: pendingCount || undefined },
+          ...(showBirthdaysTab ? [{ value: 'birthdays', label: 'Birthdays', count: birthdays.length }] : []),
+        ]}
+        value={tab}
+        onChange={(v) => setTab(v as typeof tab)}
+      />
+
       <div className={styles.content}>
-        {isApprover && (
-          <Link href="/approvals" className={styles.clockCard} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
-            <span className={styles.clockCardHead} style={{ marginBottom: 0 }}>Approvals</span>
-            <span className={styles.pageSub} style={{ marginTop: 0 }}>
-              {pendingApprovalsCount === 0 ? 'Nothing pending' : `${pendingApprovalsCount} pending request${pendingApprovalsCount === 1 ? '' : 's'}`}
-            </span>
-            <span style={{ marginLeft: 'auto', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.8125rem' }}>Review →</span>
-          </Link>
+        {tab === 'policies' && (
+          <div className={styles.policyListWrap}>
+            {policies.length === 0 ? (
+              <div className={styles.empty}>No policies published yet.</div>
+            ) : (
+              <div className={styles.list}>
+                {policies.map((p) => (
+                  <PolicyRow
+                    key={p.id}
+                    policy={p}
+                    expanded={expandedId === p.id}
+                    canEdit={canEditPolicies}
+                    canDelete={canDeletePolicies}
+                    onToggle={() => setExpandedId((cur) => (cur === p.id ? null : p.id))}
+                    onEdit={() => setEditing(p)}
+                    onDelete={() => handleDelete(p.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         )}
-        {showClockAdmin && clockSettings && (
+
+        {tab === 'requests' && (
+          <>
+            {/* Approvers get the queue link here rather than on every tab — it's a request
+                surface, so this is where someone is already thinking about them. */}
+            {isApprover && (
+              <Link href="/approvals" className={styles.clockCard} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none' }}>
+                <span className={styles.clockCardHead} style={{ marginBottom: 0 }}>Approvals</span>
+                <span className={styles.pageSub} style={{ marginTop: 0 }}>
+                  {pendingApprovalsCount === 0 ? 'Nothing pending' : `${pendingApprovalsCount} pending request${pendingApprovalsCount === 1 ? '' : 's'}`}
+                </span>
+                <span style={{ marginLeft: 'auto', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.8125rem' }}>Review →</span>
+              </Link>
+            )}
+            <MyRequests leaveRequests={myLeaveRequests} expenseRequests={myExpenseRequests} leaveBalances={myLeaveBalances} orgId={orgId} userId={userId} />
+          </>
+        )}
+
+        {tab === 'birthdays' && showBirthdaysTab && clockSettings && (
           <HrClockAdmin settings={clockSettings} birthdays={birthdays} canEdit={canEditPolicies} canDelete={canDeletePolicies} />
         )}
-        <MyRequests leaveRequests={myLeaveRequests} expenseRequests={myExpenseRequests} leaveBalances={myLeaveBalances} orgId={orgId} userId={userId} />
-        <div className={styles.policyListWrap}>
-          {policies.length === 0 ? (
-            <div className={styles.empty}>No policies published yet.</div>
-          ) : (
-            <div className={styles.list}>
-              {policies.map((p) => (
-                <PolicyRow
-                  key={p.id}
-                  policy={p}
-                  expanded={expandedId === p.id}
-                  canEdit={canEditPolicies}
-                  canDelete={canDeletePolicies}
-                  onToggle={() => setExpandedId((cur) => (cur === p.id ? null : p.id))}
-                  onEdit={() => setEditing(p)}
-                  onDelete={() => handleDelete(p.id)}
-                />
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       {editing && (

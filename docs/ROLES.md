@@ -358,6 +358,20 @@ grants are intact, so widening access later needs no migration.
   both purely to support the founder-notify-on-approval mechanism described above, not a general
   escalations capability for HR.
 
+### Reading the `users` table
+Every internal role (`associate`, `general`, `hr`) plus founder/admin can read the org's `users`
+rows; everyone else sees only their own. This matters more than it looks: person names throughout
+the app arrive as **embedded joins** (`requester:requester_id(name, photo_url)` and friends), and
+RLS filters a blocked join out silently rather than erroring — so a missing grant shows up as
+"Unknown" in the UI, not as a failure. HR hit exactly this on `/approvals` before
+`20260821000000`.
+
+### HR Zone tabs
+`/hr` is split into **Policies / Requests / Birthdays**. Birthdays only appears for
+founder/admin/HR — it holds the clock-reminder windows and the birthday roster, which are HR
+admin config rather than something an associate needs. The "+ New policy" button shows only on
+the Policies tab.
+
 ### Push reasons & the "why it moved" KPI
 Pushing a task's date **requires a reason** — validated server-side in `pushTask`, not just in the
 modal, so the KPI can't silently fill with blanks. Only the task's assignee can push. Two optional
