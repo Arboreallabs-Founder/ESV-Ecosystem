@@ -59,8 +59,10 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
   const canManage = ['founder', 'admin'].includes(userRole)
   // Partners may edit their own referrals (they only ever see their own via RLS) but not delete.
   // Associates can edit investor details too, same as founder/admin — just never delete.
-  const canEdit = canManage || userRole === 'associate' || userRole === 'franchise_partner'
-  const isInternal = ['founder', 'admin', 'associate'].includes(userRole)
+  // HR owns relationship management, so it edits (and imports) like an associate — but, like
+  // associates, never deletes. See docs/ROLES.md "Investors & Partners - HR access".
+  const canEdit = canManage || ['associate', 'hr', 'franchise_partner'].includes(userRole)
+  const isInternal = ['founder', 'admin', 'associate', 'hr'].includes(userRole)
   const showContacts = investor.service_type !== 'angel_investor'
   const typeColor = SERVICE_TYPE_COLOR[investor.service_type]
 

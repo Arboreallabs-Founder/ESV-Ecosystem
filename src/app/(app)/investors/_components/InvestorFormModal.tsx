@@ -10,7 +10,47 @@ import { STAGE_OPTIONS, SECTOR_OPTIONS, BUSINESS_TYPE_OPTIONS, THESIS_TAG_OPTION
 import TagSelect from '@/app/_components/TagSelect'
 import Combobox from '@/app/_components/Combobox'
 import { displayToMd, mdToDisplay } from '@/lib/birthday'
+import {
+  PersonIcon, PeopleIcon, TargetIcon, RupeeIcon, GlobeIcon, LinkIcon, CalendarIcon,
+  ShieldIcon, CheckCircleIcon, BuildingIcon, BriefcaseIcon, TagIcon, HandshakeIcon, ChartIcon,
+} from './InvestorFormIcons'
 import styles from '../investors.module.css'
+
+/** A titled card grouping related fields — the form's main unit of structure. */
+function Section({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className={styles.formSection}>
+      <div className={styles.formSectionHead}>
+        <span className={styles.formSectionIcon}>{icon}</span>
+        <span className={styles.formSectionTitle}>{title}</span>
+      </div>
+      {children}
+    </div>
+  )
+}
+
+/** Heading beside the control instead of above it, for sections holding a single field. */
+function InlineSection({ icon, title, children }: { icon: React.ReactNode; title: string; children: React.ReactNode }) {
+  return (
+    <div className={`${styles.formSection} ${styles.formSectionInline}`}>
+      <div className={styles.formSectionHead}>
+        <span className={styles.formSectionIcon}>{icon}</span>
+        <span className={styles.formSectionTitle}>{title}</span>
+      </div>
+      <div className={styles.formSectionField}>{children}</div>
+    </div>
+  )
+}
+
+/** Wraps a plain input/select to sit a leading icon inside it. */
+function WithIcon({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <span className={styles.inputWrap}>
+      <span className={styles.inputIcon}>{icon}</span>
+      {children}
+    </span>
+  )
+}
 
 type ContactDraft = {
   key: string
@@ -141,226 +181,279 @@ export default function InvestorFormModal({
 
   return (
     <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className={styles.modalLarge} onMouseDown={(e) => e.stopPropagation()}>
-        <div className={styles.modalTitle}>
-          {mode === 'create' ? 'Add Investor' : 'Edit Investor'}
+      <div className={styles.formShell} onMouseDown={(e) => e.stopPropagation()}>
+        <div className={styles.formHeader}>
+          <button type="button" className={styles.formBack} onClick={onClose} aria-label="Back">&#8592;</button>
+          <div>
+            <h2 className={styles.formTitle}>{mode === 'create' ? 'Add Investor' : 'Edit Investor'}</h2>
+            <p className={styles.formSubtitle}>
+              {mode === 'create'
+                ? 'Add an investor to the database so the team can match them to deals.'
+                : 'Update investor details to keep your database accurate.'}
+            </p>
+          </div>
+          <span className={styles.formHeaderArt} aria-hidden="true"><PeopleIcon size={44} /></span>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
-          {/* Row 1: Name + Service Type */}
-          <div className={styles.formRow}>
-            <div className={styles.field} style={{ flex: 2 }}>
-              <label className={styles.label}>Name *</label>
-              <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} required placeholder="Fund or individual name" />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Type *</label>
-              <select className={styles.select} value={serviceType} onChange={(e) => setServiceType(e.target.value as ServiceType)}>
-                {(Object.entries(SERVICE_TYPE_LABELS) as [ServiceType, string][]).map(([val, label]) => (
-                  <option key={val} value={val}>{label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Row 2: Country + Website */}
-          <div className={styles.formRow}>
-            <div className={styles.field}>
-              <label className={styles.label}>Country</label>
-              <Combobox options={COUNTRY_OPTIONS} value={country} onChange={setCountry} placeholder="Search country…" />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Website</label>
-              <input className={styles.input} type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://…" />
-            </div>
-          </div>
-
-          {/* Row 3: Stage + ESV POC */}
-          <div className={styles.formRow}>
-            <div className={styles.field}>
-              <label className={styles.label}>Stage Preference</label>
-              <TagSelect
-                options={STAGE_OPTIONS}
-                value={stageList}
-                onChange={(vals) => setStage(vals.join(', '))}
-                placeholder="Select stages…"
-              />
-            </div>
-            {!isPartner && (
-            <div className={styles.field}>
-              <label className={styles.label}>ESV POC</label>
-              <div className={styles.pocSearchWrap} onClick={() => pocInputRef.current?.focus()}>
-                {esvPocs.map((id) => {
-                  const user = internalUsers.find((u) => u.id === id)
-                  if (!user) return null
-                  return (
-                    <span key={id} className={styles.pocSelectedChip}>
-                      {user.name}
-                      <button
-                        type="button"
-                        className={styles.pocSelectedChipRemove}
-                        onMouseDown={(e) => { e.preventDefault(); setEsvPocs((prev) => prev.filter((x) => x !== id)) }}
-                      >×</button>
-                    </span>
-                  )
-                })}
-                <input
-                  ref={pocInputRef}
-                  type="text"
-                  className={styles.pocSearchInput}
-                  placeholder={esvPocs.length === 0 ? 'Search team member…' : ''}
-                  value={pocSearch}
-                  onChange={(e) => { setPocSearch(e.target.value); setPocDropdownOpen(true) }}
-                  onFocus={() => setPocDropdownOpen(true)}
-                  onBlur={() => setTimeout(() => setPocDropdownOpen(false), 150)}
-                />
-                {pocDropdownOpen && (
-                  <div className={styles.pocDropdown}>
-                    {internalUsers
-                      .filter((u) => !esvPocs.includes(u.id) && u.name.toLowerCase().includes(pocSearch.toLowerCase()))
-                      .map((u) => (
-                        <button
-                          key={u.id}
-                          type="button"
-                          className={styles.pocDropdownItem}
-                          onMouseDown={(e) => {
-                            e.preventDefault()
-                            setEsvPocs((prev) => [...prev, u.id])
-                            setPocSearch('')
-                            setPocDropdownOpen(false)
-                          }}
-                        >
-                          {u.name}
-                        </button>
-                      ))
-                    }
-                    {internalUsers.filter((u) => !esvPocs.includes(u.id) && u.name.toLowerCase().includes(pocSearch.toLowerCase())).length === 0 && (
-                      <div className={styles.pocDropdownEmpty}>No matches</div>
-                    )}
-                  </div>
-                )}
+          <Section icon={<PersonIcon />} title="Basic Information">
+            <div className={styles.formRow}>
+              <div className={styles.field} style={{ flex: 2 }}>
+                <label className={styles.label}>Name *</label>
+                <WithIcon icon={<PersonIcon size={16} />}>
+                  <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} required placeholder="Fund or individual name" />
+                </WithIcon>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Type *</label>
+                <WithIcon icon={<BriefcaseIcon size={16} />}>
+                  <select className={styles.select} value={serviceType} onChange={(e) => setServiceType(e.target.value as ServiceType)}>
+                    {(Object.entries(SERVICE_TYPE_LABELS) as [ServiceType, string][]).map(([val, label]) => (
+                      <option key={val} value={val}>{label}</option>
+                    ))}
+                  </select>
+                </WithIcon>
               </div>
             </div>
-            )}
-          </div>
 
-          {/* Row 4: Ticket Size */}
-          <div className={styles.formRow}>
-            <div className={styles.field}>
-              <label className={styles.label}>Ticket Min (₹)</label>
-              <input className={styles.input} type="number" min={0} step={100000} value={ticketMin} onChange={(e) => setTicketMin(e.target.value)} placeholder="e.g. 500000" />
+            <div className={styles.formRow}>
+              <div className={styles.field}>
+                <label className={styles.label}>Country</label>
+                {/* Combobox renders its own flag chip, so no leading icon here. */}
+                <Combobox options={COUNTRY_OPTIONS} value={country} onChange={setCountry} placeholder="Search country&#8230;" />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Website</label>
+                <WithIcon icon={<GlobeIcon size={16} />}>
+                  <input className={styles.input} type="url" value={website} onChange={(e) => setWebsite(e.target.value)} placeholder="https://&#8230;" />
+                </WithIcon>
+              </div>
             </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Ticket Max (₹)</label>
-              <input className={styles.input} type="number" min={0} step={5000000} value={ticketMax} onChange={(e) => setTicketMax(e.target.value)} placeholder="e.g. 50000000" />
+          </Section>
+
+          <Section icon={<TargetIcon />} title="Investment Preferences &amp; Team">
+            <div className={styles.formRow}>
+              <div className={styles.field}>
+                <label className={styles.label}>Stage Preference</label>
+                <TagSelect
+                  options={STAGE_OPTIONS}
+                  value={stageList}
+                  onChange={(vals) => setStage(vals.join(', '))}
+                  placeholder="Select stages&#8230;"
+                />
+              </div>
+              {!isPartner && (
+                <div className={styles.field}>
+                  <label className={styles.label}>ESV POC</label>
+                  <div className={styles.pocSearchWrap} onClick={() => pocInputRef.current?.focus()}>
+                    {esvPocs.map((id) => {
+                      const user = internalUsers.find((u) => u.id === id)
+                      if (!user) return null
+                      return (
+                        <span key={id} className={styles.pocSelectedChip}>
+                          {user.name}
+                          <button
+                            type="button"
+                            className={styles.pocSelectedChipRemove}
+                            onMouseDown={(e) => { e.preventDefault(); setEsvPocs((prev) => prev.filter((x) => x !== id)) }}
+                          >&times;</button>
+                        </span>
+                      )
+                    })}
+                    <input
+                      ref={pocInputRef}
+                      type="text"
+                      className={styles.pocSearchInput}
+                      placeholder={esvPocs.length === 0 ? 'Search team member\u2026' : ''}
+                      value={pocSearch}
+                      onChange={(e) => { setPocSearch(e.target.value); setPocDropdownOpen(true) }}
+                      onFocus={() => setPocDropdownOpen(true)}
+                      onBlur={() => setTimeout(() => setPocDropdownOpen(false), 150)}
+                    />
+                    {pocDropdownOpen && (
+                      <div className={styles.pocDropdown}>
+                        {internalUsers
+                          .filter((u) => !esvPocs.includes(u.id) && u.name.toLowerCase().includes(pocSearch.toLowerCase()))
+                          .map((u) => (
+                            <button
+                              key={u.id}
+                              type="button"
+                              className={styles.pocDropdownItem}
+                              onMouseDown={(e) => {
+                                e.preventDefault()
+                                setEsvPocs((prev) => [...prev, u.id])
+                                setPocSearch('')
+                                setPocDropdownOpen(false)
+                              }}
+                            >
+                              {u.name}
+                            </button>
+                          ))
+                        }
+                        {internalUsers.filter((u) => !esvPocs.includes(u.id) && u.name.toLowerCase().includes(pocSearch.toLowerCase())).length === 0 && (
+                          <div className={styles.pocDropdownEmpty}>No matches</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          </Section>
+
+          <Section icon={<RupeeIcon />} title="Investment Range (&#8377;)">
+            <div className={styles.formRow}>
+              <div className={styles.field}>
+                <label className={styles.label}>Ticket Min (&#8377;)</label>
+                <WithIcon icon={<RupeeIcon size={16} />}>
+                  <input className={styles.input} type="number" min={0} step={100000} value={ticketMin} onChange={(e) => setTicketMin(e.target.value)} placeholder="e.g. 500000" />
+                </WithIcon>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Ticket Max (&#8377;)</label>
+                <WithIcon icon={<ChartIcon size={16} />}>
+                  <input className={styles.input} type="number" min={0} step={5000000} value={ticketMax} onChange={(e) => setTicketMax(e.target.value)} placeholder="e.g. 50000000" />
+                </WithIcon>
+              </div>
+            </div>
+          </Section>
 
           {/* Onboarding + KYC — angel investors only */}
           {showOnboardingKyc && (
-            <div className={styles.formRow}>
-              <div className={styles.field}>
-                <label className={styles.label}>Onboarding Form Completed</label>
-                <select className={styles.select} value={onboardingDone ? 'yes' : 'no'} onChange={(e) => setOnboardingDone(e.target.value === 'yes')}>
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
+            <Section icon={<ShieldIcon />} title="Onboarding &amp; KYC">
+              <div className={styles.formRow}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Onboarding Form Completed</label>
+                  <WithIcon icon={<CheckCircleIcon size={16} />}>
+                    <select className={styles.select} value={onboardingDone ? 'yes' : 'no'} onChange={(e) => setOnboardingDone(e.target.value === 'yes')}>
+                      <option value="no">No</option>
+                      <option value="yes">Yes</option>
+                    </select>
+                  </WithIcon>
+                </div>
+                <div className={styles.field}>
+                  {/* Day/month only — an angel's birth year is rarely known. */}
+                  <label className={styles.label}>Birthday (DD/MM)</label>
+                  <WithIcon icon={<CalendarIcon size={16} />}>
+                    <input
+                      className={styles.input}
+                      type="text"
+                      inputMode="numeric"
+                      value={birthday}
+                      onChange={(e) => setBirthday(e.target.value)}
+                      placeholder="e.g. 29/07"
+                      title="Day and month, e.g. 29/07"
+                    />
+                  </WithIcon>
+                </div>
               </div>
-              <div className={styles.field}>
-                {/* Day/month only — an angel's birth year is rarely known. */}
-                <label className={styles.label}>Birthday (DD/MM)</label>
-                <input
-                  className={styles.input}
-                  type="text"
-                  inputMode="numeric"
-                  value={birthday}
-                  onChange={(e) => setBirthday(e.target.value)}
-                  placeholder="e.g. 29/07"
-                  title="Day and month, e.g. 29/07"
-                />
+              <div className={styles.formRow}>
+                <div className={styles.field}>
+                  <label className={styles.label}>KYC Done</label>
+                  <WithIcon icon={<ShieldIcon size={16} />}>
+                    <select className={styles.select} value={kycDone ? 'yes' : 'no'} onChange={(e) => setKycDone(e.target.value === 'yes')}>
+                      <option value="no">No</option>
+                      <option value="yes">Yes</option>
+                    </select>
+                  </WithIcon>
+                </div>
+                <div className={styles.field} style={{ flex: 2 }}>
+                  <label className={styles.label}>Signed Onboarding Form Link</label>
+                  <WithIcon icon={<LinkIcon size={16} />}>
+                    <input className={styles.input} type="url" value={onboardingUrl} onChange={(e) => setOnboardingUrl(e.target.value)} placeholder="https://&#8230;" />
+                  </WithIcon>
+                </div>
               </div>
-              <div className={styles.field}>
-                <label className={styles.label}>KYC Done</label>
-                <select className={styles.select} value={kycDone ? 'yes' : 'no'} onChange={(e) => setKycDone(e.target.value === 'yes')}>
-                  <option value="no">No</option>
-                  <option value="yes">Yes</option>
-                </select>
-              </div>
-              <div className={styles.field} style={{ flex: 2 }}>
-                <label className={styles.label}>Signed Onboarding Form Link</label>
-                <input className={styles.input} type="url" value={onboardingUrl} onChange={(e) => setOnboardingUrl(e.target.value)} placeholder="https://…" />
-              </div>
-            </div>
+            </Section>
           )}
 
-          {/* Sectors */}
-          <div className={styles.field}>
-            <label className={styles.label}>Sectors</label>
-            <TagSelect options={SECTOR_OPTIONS} value={sectors} onChange={setSectors} placeholder="Search sectors…" />
-          </div>
+          <InlineSection icon={<BuildingIcon />} title="Sectors">
+            <TagSelect options={SECTOR_OPTIONS} value={sectors} onChange={setSectors} placeholder="Search sectors&#8230;" />
+          </InlineSection>
 
-          {/* Business Types + other thesis tags */}
-          <div className={styles.formRow}>
-            <div className={styles.field}>
-              <label className={styles.label}>Business Types</label>
-              <TagSelect options={BUSINESS_TYPE_OPTIONS} value={businessTypes} onChange={setBusinessTypes} placeholder="Search business types…" />
+          <div className={`${styles.formSection} ${styles.formInlinePair}`}>
+            <div className={styles.formSectionInline}>
+              <div className={styles.formSectionHead}>
+                <span className={styles.formSectionIcon}><BriefcaseIcon /></span>
+                <span className={styles.formSectionTitle}>Business Types</span>
+              </div>
+              <div className={styles.formSectionField}>
+                <TagSelect options={BUSINESS_TYPE_OPTIONS} value={businessTypes} onChange={setBusinessTypes} placeholder="Search business types&#8230;" />
+              </div>
             </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Other Thesis Tags</label>
-              <TagSelect options={THESIS_TAG_OPTIONS} value={metaTags} onChange={setMetaTags} placeholder="Search thesis tags…" />
+            <div className={styles.formSectionInline}>
+              <div className={styles.formSectionHead}>
+                <span className={styles.formSectionIcon}><TagIcon /></span>
+                <span className={styles.formSectionTitle}>Other Thesis Tags</span>
+              </div>
+              <div className={styles.formSectionField}>
+                <TagSelect options={THESIS_TAG_OPTIONS} value={metaTags} onChange={setMetaTags} placeholder="Search thesis tags&#8230;" />
+              </div>
             </div>
           </div>
 
           {/* Referred By — admin/founder only */}
           {canSetReferredBy && (
-            <div className={styles.field}>
-              <label className={styles.label}>Referred by Partner</label>
+            <InlineSection icon={<HandshakeIcon />} title="Referred By Partner">
               <Combobox
                 options={franchisePartners.map((p) => ({ id: p.id, label: p.name }))}
                 value={referredBy}
                 onChange={setReferredBy}
-                placeholder="Search a partner…"
+                placeholder="Search a partner&#8230;"
               />
-            </div>
+            </InlineSection>
           )}
 
           {/* Contacts — create mode only, not angel_investor */}
           {mode === 'create' && showContacts && (
-            <div className={styles.contactsSection}>
-              <div className={styles.contactsSectionTitle}>
-                Contacts
-                <button type="button" className={styles.addContactInlineBtn}
-                  onClick={() => setContacts((cs) => [...cs, blankContact()])}>
-                  + Add
-                </button>
-              </div>
-              {contacts.map((c) => (
-                <div key={c.key} className={styles.contactDraftRow}>
-                  <input className={styles.input} placeholder="Name *" value={c.name}
-                    onChange={(e) => setContact(c.key, 'name', e.target.value)} />
-                  <input className={styles.input} placeholder="Role" value={c.role}
-                    onChange={(e) => setContact(c.key, 'role', e.target.value)} />
-                  <input className={styles.input} placeholder="Email *" type="email" value={c.email}
-                    onChange={(e) => setContact(c.key, 'email', e.target.value)} />
-                  <input className={styles.input} placeholder="LinkedIn URL" type="url" value={c.linkedin_url}
-                    onChange={(e) => setContact(c.key, 'linkedin_url', e.target.value)} />
-                  <input className={styles.input} placeholder="Phone" value={c.phone}
-                    onChange={(e) => setContact(c.key, 'phone', e.target.value)} />
-                  <button type="button" className={styles.contactDraftRemove}
-                    onClick={() => setContacts((cs) => cs.filter((x) => x.key !== c.key))}>×</button>
+            <Section icon={<PeopleIcon />} title="Contacts">
+              <div className={styles.contactsSection} style={{ marginTop: 0 }}>
+                <div className={styles.contactsSectionTitle}>
+                  <span style={{ color: 'var(--color-muted)', fontSize: '0.8125rem', fontWeight: 500 }}>
+                    People to reach at this investor
+                  </span>
+                  <button type="button" className={styles.addContactInlineBtn}
+                    onClick={() => setContacts((cs) => [...cs, blankContact()])}>
+                    + Add
+                  </button>
                 </div>
-              ))}
-            </div>
+                {contacts.map((c) => (
+                  <div key={c.key} className={styles.contactDraftRow}>
+                    <input className={styles.input} placeholder="Name *" value={c.name}
+                      onChange={(e) => setContact(c.key, 'name', e.target.value)} />
+                    <input className={styles.input} placeholder="Role" value={c.role}
+                      onChange={(e) => setContact(c.key, 'role', e.target.value)} />
+                    <input className={styles.input} placeholder="Email *" type="email" value={c.email}
+                      onChange={(e) => setContact(c.key, 'email', e.target.value)} />
+                    <input className={styles.input} placeholder="LinkedIn URL" type="url" value={c.linkedin_url}
+                      onChange={(e) => setContact(c.key, 'linkedin_url', e.target.value)} />
+                    <input className={styles.input} placeholder="Phone" value={c.phone}
+                      onChange={(e) => setContact(c.key, 'phone', e.target.value)} />
+                    <button type="button" className={styles.contactDraftRemove}
+                      onClick={() => setContacts((cs) => cs.filter((x) => x.key !== c.key))}>&times;</button>
+                  </div>
+                ))}
+              </div>
+            </Section>
           )}
 
-          <div className={styles.modalActions}>
+          <div className={styles.formFooter}>
             <button type="button" className={styles.cancelBtn} onClick={onClose}>Cancel</button>
-            <button type="submit" className={styles.submitBtn} disabled={isPending || !name.trim()}>
-              {isPending ? 'Saving…' : mode === 'create' ? 'Add Investor' : 'Save Changes'}
+            <button type="submit" className={styles.formSaveBtn} disabled={isPending || !name.trim()}>
+              <SaveIcon />
+              {isPending ? 'Saving\u2026' : mode === 'create' ? 'Add Investor' : 'Save Changes'}
             </button>
           </div>
         </form>
       </div>
     </div>
+  )
+}
+
+function SaveIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 3h11l3 3v15H5zM8 3v6h8V3M8 21v-6h8v6" />
+    </svg>
   )
 }

@@ -281,6 +281,13 @@ management sits with HR). This covers the `investors`, `investor_contacts` and
 `franchise_partners` RLS policies, the matching action guards, the page gates and the nav.
 HR does **not** gain Deal Flow access generally — this is scoped to these two records only.
 
+Granting this took three passes, which is worth recording: the RLS policies, the *named* guard
+helpers, and then three **inline** `requireRole([...])` arrays in `investors.ts` — and even then
+HR still couldn't edit, because the client components (`InvestorDetail`, `InvestorGrid`) had their
+own hardcoded role arrays, so the Edit button never rendered. When adding a role to a module,
+check all four layers. Partner **earnings** (`/admin/partners/[partnerId]`) stays founder/admin:
+that's payout data, not the relationship record HR needs.
+
 **Birthdays:** angel investors and partner contacts carry an optional day/month birthday
 (`birthday_md` / `contact_birthday_md`, stored `MM-DD`). The year is deliberately not
 captured — it's usually unknown, and a DATE with an invented year would leak that fiction into

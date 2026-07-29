@@ -24,7 +24,7 @@ type Tab = (typeof ALL_TABS)[number]
 
 export default function InvestorGrid({ investors, userRole, canManage = true, internalUsers, franchisePartners }: Props) {
   const router = useRouter()
-  const isInternal = ['founder', 'admin', 'associate'].includes(userRole)
+  const isInternal = ['founder', 'admin', 'associate', 'hr'].includes(userRole)
   const [activeTab, setActiveTab] = useState<Tab>('all')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Investor | null>(null)
