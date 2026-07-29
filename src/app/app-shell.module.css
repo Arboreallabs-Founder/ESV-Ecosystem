@@ -264,31 +264,56 @@
   pointer-events: none;
 }
 
-.hrClockTime {
+/* One pill holding the time and, when a window is open, the clock-in/out status as a second
+   segment divided by a hairline. overflow:hidden lets the segment backgrounds meet the pill's
+   rounded edge cleanly without each needing its own radius. */
+.hrClockPill {
   display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.375rem 0.75rem;
+  align-items: stretch;
   background: var(--color-card-raised);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   border: 1px solid var(--glass-border);
   border-radius: 999px;
   box-shadow: var(--shadow-elevated);
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.hrClockTime {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.375rem 0.75rem;
   font-size: 0.8125rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--color-text);
-  pointer-events: auto;
 }
+
+.hrClockStatus {
+  display: flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  border-left: 1px solid var(--glass-border);
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.hrClockStatusIn { background: rgba(46, 125, 50, 0.14); color: var(--color-success); }
+.hrClockStatusOut { background: rgba(192, 57, 43, 0.14); color: var(--color-destructive); }
 
 .hrClockDot {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--color-success);
+  background: var(--color-muted);
   flex-shrink: 0;
+  transition: background 0.2s;
 }
+/* Reinforces the status segment beside it — never the only cue, the segment is labelled. */
+.hrClockDotIn { background: var(--color-success); }
+.hrClockDotOut { background: var(--color-destructive); }
 
 .hrClockTz {
   font-size: 0.6875rem;
@@ -296,10 +321,9 @@
   color: var(--color-muted);
 }
 
-/* Row + wrap (not a column stack) so the widget's height stays as close to
-   one extra line as possible — clock-in/out and a birthday rarely collide,
-   but when they do this keeps growth horizontal, not vertical, which is
-   what .mainWithClock below reserves space for. */
+/* Birthdays only — the clock-in/out status now lives inside .hrClockPill. Row + wrap rather than
+   a column stack so several birthdays on one day grow horizontally, not vertically, which is what
+   .mainWithClock below reserves space for. */
 .hrClockNotices {
   display: flex;
   flex-direction: row;
@@ -317,18 +341,6 @@
   box-shadow: var(--shadow-elevated);
   pointer-events: auto;
   white-space: nowrap;
-}
-
-.hrClockNoticeGreen {
-  background: rgba(46, 125, 50, 0.12);
-  color: var(--color-success);
-  border: 1px solid var(--color-success);
-}
-
-.hrClockNoticeRed {
-  background: rgba(192, 57, 43, 0.12);
-  color: var(--color-destructive);
-  border: 1px solid var(--color-destructive);
 }
 
 .hrClockNoticeBirthday {

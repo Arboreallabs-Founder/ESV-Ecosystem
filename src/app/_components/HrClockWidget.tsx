@@ -38,14 +38,24 @@ export default function HrClockWidget({ settings, birthdaysToday }: {
 
   return (
     <div className={styles.hrClockWidget}>
-      <div className={styles.hrClockTime}>
-        <span className={styles.hrClockDot} />
-        {now.label} <span className={styles.hrClockTz}>IST</span>
+      {/* Time and clock-in/out status share one pill — the status is a property of the current
+          time, so splitting them into separate floating chips read as two unrelated things.
+          Both windows being active at once is only possible if they're configured to overlap;
+          rendering both segments surfaces that rather than silently hiding one. */}
+      <div className={styles.hrClockPill}>
+        <span className={styles.hrClockTime}>
+          <span
+            className={`${styles.hrClockDot} ${isClockIn ? styles.hrClockDotIn : ''} ${isClockOut ? styles.hrClockDotOut : ''}`}
+          />
+          {now.label} <span className={styles.hrClockTz}>IST</span>
+        </span>
+        {isClockIn && <span className={`${styles.hrClockStatus} ${styles.hrClockStatusIn}`}>Clock In</span>}
+        {isClockOut && <span className={`${styles.hrClockStatus} ${styles.hrClockStatusOut}`}>Clock Out</span>}
       </div>
-      {(isClockIn || isClockOut || birthdaysToday.length > 0) && (
+
+      {/* Birthdays stay separate — they're an event, not a state of the clock. */}
+      {birthdaysToday.length > 0 && (
         <div className={styles.hrClockNotices}>
-          {isClockIn && <div className={`${styles.hrClockNotice} ${styles.hrClockNoticeGreen}`}>Clock In</div>}
-          {isClockOut && <div className={`${styles.hrClockNotice} ${styles.hrClockNoticeRed}`}>Clock Out</div>}
           {birthdaysToday.map((b) => (
             <div key={b.id} className={`${styles.hrClockNotice} ${styles.hrClockNoticeBirthday}`}>
               🎂 {b.name}&apos;s birthday
