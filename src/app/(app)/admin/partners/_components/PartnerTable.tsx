@@ -231,14 +231,14 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
               <div className={styles.field}>
                 {/* Day/month only — the year is rarely known for a contact, and a date input
                     would force inventing one. */}
-                <label className={styles.label}>Contact Birthday (DD/MM)</label>
+                <label className={styles.label}>Contact Birthday (DD/MM or DD/MM/YYYY)</label>
                 <input
                   className={styles.input}
                   name="contact_birthday_md"
                   type="text"
                   inputMode="numeric"
                   pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])"
-                  defaultValue={mdToDisplay(editTarget.franchise_partners?.contact_birthday_md)}
+                  defaultValue={mdToDisplay(editTarget.franchise_partners?.contact_birthday_md, editTarget.franchise_partners?.contact_birthday_year)}
                   placeholder="e.g. 29/07"
                   title="Day and month, e.g. 29/07"
                 />

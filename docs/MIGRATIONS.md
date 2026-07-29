@@ -78,3 +78,9 @@ marks it.
     (`user_id = auth.uid()`), and stay that way: filing an item into a work week is the explicit
     opt-in that publishes it to that week's update. `work_week_start IS NULL` remains invisible
     to everyone but its owner.
+- `20260819000000_birthday_years.sql` — optional `investors.birthday_year` /
+  `franchise_partners.contact_birthday_year` (SMALLINT). Deliberately a separate nullable column
+  rather than converting `birthday_md` to a DATE: for most angels and partner contacts the year
+  genuinely isn't known, and a DATE forces you to invent one. This way "29 July, year unknown" and
+  "29 July 1984" are both representable and both tell the truth. A CHECK keeps a year from existing
+  without a day/month, and the day/month remains the sole basis for "is it their birthday today".

@@ -11,6 +11,7 @@ export const fetchAllInvestors = cache(async (): Promise<Investor[]> => {
       esv_poc_id, ticket_size_min, ticket_size_max, stage,
       referred_by_partner_id, created_by, created_at, username,
       onboarding_form_completed, onboarding_form_url, kyc_done,
+      birthday_md, birthday_year,
       esv_poc:users!esv_poc_id(name),
       esv_pocs:investor_poc_users(user:users(id, name)),
       referred_by_partner:franchise_partners!referred_by_partner_id(name),
@@ -29,6 +30,8 @@ export const fetchAllInvestors = cache(async (): Promise<Investor[]> => {
     onboarding_form_completed: row.onboarding_form_completed ?? false,
     onboarding_form_url: row.onboarding_form_url ?? null,
     kyc_done: row.kyc_done ?? false,
+    birthday_md: row.birthday_md ?? null,
+    birthday_year: row.birthday_year ?? null,
     esv_poc: Array.isArray(row.esv_poc) ? (row.esv_poc[0] ?? null) : (row.esv_poc ?? null),
     esv_pocs: (row.esv_pocs ?? []).map((p: any) => {
       const user = Array.isArray(p.user) ? p.user[0] : p.user

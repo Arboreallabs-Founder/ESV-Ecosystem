@@ -1,11 +1,13 @@
 'use server'
 
 import { requireAuth, requireRole } from '@/lib/guards'
-import { displayToMd } from '@/lib/birthday'
+import { parseBirthday } from '@/lib/birthday'
 import type { PartnerDealEarning, MyDealEarning, PartnerShareBase } from '@/lib/types'
 
 export async function upsertPartnerDetails(userId: string, formData: FormData) {
   const { supabase, orgId } = await requireAuth()
+
+  const birthday = parseBirthday(formData.get('contact_birthday_md') as string)
 
   const { data: partner, error: insertError } = await supabase
     .from('franchise_partners')
@@ -16,7 +18,8 @@ export async function upsertPartnerDetails(userId: string, formData: FormData) {
       agreement_type: (formData.get('agreement_type') as string) || 'Standard',
       success_fee_split_pct: Number(formData.get('success_fee_split_pct')) || 0,
       contract_link: (formData.get('contract_link') as string) || null,
-      contact_birthday_md: displayToMd(formData.get('contact_birthday_md') as string),
+      contact_birthday_md: birthday.md,
+      contact_birthday_year: birthday.year,
       org_id: orgId,
     })
     .select('id')
@@ -36,6 +39,8 @@ export async function upsertPartnerDetails(userId: string, formData: FormData) {
 export async function updatePartnerDetails(partnerId: string, formData: FormData) {
   const { supabase } = await requireAuth()
 
+  const birthday = parseBirthday(formData.get('contact_birthday_md') as string)
+
   const { error } = await supabase
     .from('franchise_partners')
     .update({
@@ -45,7 +50,8 @@ export async function updatePartnerDetails(partnerId: string, formData: FormData
       agreement_type: (formData.get('agreement_type') as string) || 'Standard',
       success_fee_split_pct: Number(formData.get('success_fee_split_pct')) || 0,
       contract_link: (formData.get('contract_link') as string) || null,
-      contact_birthday_md: displayToMd(formData.get('contact_birthday_md') as string),
+      contact_birthday_md: birthday.md,
+      contact_birthday_year: birthday.year,
     })
     .eq('id', partnerId)
 

@@ -1153,3 +1153,11 @@
   .formSectionInline { flex-direction: column; align-items: stretch; gap: 0.75rem; }
   .formHeaderArt { display: none; }
 }
+
+/* Inline feedback under a field — e.g. the birthday box telling you the year wasn't recognised
+   before you hit Save and assume it was. */
+.fieldHint {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  line-height: 1.4;
+}

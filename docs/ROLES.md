@@ -288,10 +288,14 @@ own hardcoded role arrays, so the Edit button never rendered. When adding a role
 check all four layers. Partner **earnings** (`/admin/partners/[partnerId]`) stays founder/admin:
 that's payout data, not the relationship record HR needs.
 
-**Birthdays:** angel investors and partner contacts carry an optional day/month birthday
-(`birthday_md` / `contact_birthday_md`, stored `MM-DD`). The year is deliberately not
-captured — it's usually unknown, and a DATE with an invented year would leak that fiction into
-sorting and display. Fund-type investors have no birthday field, since a fund doesn't have one.
+**Birthdays:** angel investors and partner contacts carry a day/month birthday
+(`birthday_md` / `contact_birthday_md`, stored `MM-DD`) plus an **optional** year
+(`birthday_year` / `contact_birthday_year`, added 2026-08-19). Entered as `DD/MM` or
+`DD/MM/YYYY`. The year stayed optional rather than becoming a DATE because it's usually unknown,
+and a DATE would force an invented one that then leaks into sorting, display and age maths — the
+day/month alone remains what "is it their birthday today" matches on. An unrecognised year is
+dropped while the day/month is kept, and the form says so instead of failing silently.
+Fund-type investors have no birthday field, since a fund doesn't have one.
 
 ### Performance analytics (`/analytics`)
 **Currently founder/admin only** while the scoring model is evaluated — see footnote ⁶. The

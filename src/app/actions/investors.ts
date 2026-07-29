@@ -63,6 +63,7 @@ export async function createInvestor(params: {
   kyc_done?: boolean
   /** 'MM-DD' — angel investors only; year is usually unknown. */
   birthday_md?: string | null
+  birthday_year?: number | null
   contacts: ContactDraft[]
   isPartnerReferral?: boolean
 }): Promise<{ id: string }> {
@@ -114,6 +115,7 @@ export async function createInvestor(params: {
       onboarding_form_url: fields.onboarding_form_url || null,
       kyc_done: fields.kyc_done ?? false,
       birthday_md: fields.birthday_md || null,
+      birthday_year: fields.birthday_md ? (fields.birthday_year ?? null) : null,
       created_by: userId,
       org_id: orgId,
     })
@@ -194,6 +196,7 @@ export async function updateInvestor(
     onboarding_form_url?: string | null
     kyc_done?: boolean
     birthday_md?: string | null
+    birthday_year?: number | null
   }
 ): Promise<void> {
   // Partners may edit their own referrals, but never the ESV POC or referral attribution.
@@ -215,6 +218,8 @@ export async function updateInvestor(
     onboarding_form_url: params.onboarding_form_url || null,
     kyc_done: params.kyc_done ?? false,
     birthday_md: params.birthday_md || null,
+    // A year without a day/month is an orphan the DB CHECK rejects, so clear it together.
+    birthday_year: params.birthday_md ? (params.birthday_year ?? null) : null,
   }
   const nextFields = isPartner ? baseFields : { ...baseFields, referred_by_partner_id: params.referred_by_partner_id || null }
 

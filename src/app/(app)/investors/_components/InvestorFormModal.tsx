@@ -9,7 +9,7 @@ import { COUNTRY_OPTIONS } from '@/lib/countries'
 import { STAGE_OPTIONS, SECTOR_OPTIONS, BUSINESS_TYPE_OPTIONS, THESIS_TAG_OPTIONS } from '@/lib/taxonomies'
 import TagSelect from '@/app/_components/TagSelect'
 import Combobox from '@/app/_components/Combobox'
-import { displayToMd, mdToDisplay } from '@/lib/birthday'
+import { parseBirthday, mdToDisplay, ageFrom } from '@/lib/birthday'
 import {
   PersonIcon, PeopleIcon, TargetIcon, RupeeIcon, GlobeIcon, LinkIcon, CalendarIcon,
   ShieldIcon, CheckCircleIcon, BuildingIcon, BriefcaseIcon, TagIcon, HandshakeIcon, ChartIcon,
@@ -99,10 +99,23 @@ export default function InvestorFormModal({
   const [onboardingDone, setOnboardingDone] = useState(initial?.onboarding_form_completed ?? false)
   const [onboardingUrl, setOnboardingUrl] = useState(initial?.onboarding_form_url ?? '')
   const [kycDone, setKycDone] = useState(initial?.kyc_done ?? false)
-  const [birthday, setBirthday] = useState(mdToDisplay(initial?.birthday_md))
+  const [birthday, setBirthday] = useState(mdToDisplay(initial?.birthday_md, initial?.birthday_year))
   const [contacts, setContacts] = useState<ContactDraft[]>(
     mode === 'create' ? [] : []  // contacts managed live in detail drawer on edit
   )
+
+  // Live feedback on the birthday box: the field silently drops an unparseable entry, so say so
+  // rather than letting someone hit Save believing it was recorded.
+  const birthdayHint = (() => {
+    if (!birthday.trim()) return null
+    const { md, year } = parseBirthday(birthday)
+    if (!md) return 'Not a valid date — use DD/MM or DD/MM/YYYY.'
+    if (!year) return birthday.trim().split(/[/-]/).length > 2
+      ? 'Year not recognised — saving the day and month only.'
+      : null
+    const age = ageFrom(md, year)
+    return age === null ? null : `Turns ${age + 1} on their next birthday.`
+  })()
 
   const stageList = stage ? stage.split(',').map((s) => s.trim()).filter(Boolean) : []
   const isPartner = userRole === 'franchise_partner'
@@ -130,6 +143,10 @@ export default function InvestorFormModal({
         sort_order: i,
       }))
 
+    // Parsed once here so both payloads agree, and so an unparseable entry clears both parts
+    // together rather than leaving a stale year behind.
+    const birthdayParts = parseBirthday(birthday)
+
     startTransition(async () => {
       if (mode === 'create') {
         await createInvestor({
@@ -149,7 +166,8 @@ export default function InvestorFormModal({
           onboarding_form_completed: showOnboardingKyc ? onboardingDone : false,
           onboarding_form_url: showOnboardingKyc ? (onboardingUrl.trim() || null) : null,
           kyc_done: showOnboardingKyc ? kycDone : false,
-          birthday_md: showOnboardingKyc ? displayToMd(birthday) : null,
+          birthday_md: showOnboardingKyc ? birthdayParts.md : null,
+          birthday_year: showOnboardingKyc ? birthdayParts.year : null,
           contacts: contactDrafts,
           isPartnerReferral: isPartner,
         })
@@ -171,7 +189,8 @@ export default function InvestorFormModal({
           onboarding_form_completed: showOnboardingKyc ? onboardingDone : false,
           onboarding_form_url: showOnboardingKyc ? (onboardingUrl.trim() || null) : null,
           kyc_done: showOnboardingKyc ? kycDone : false,
-          birthday_md: showOnboardingKyc ? displayToMd(birthday) : null,
+          birthday_md: showOnboardingKyc ? birthdayParts.md : null,
+          birthday_year: showOnboardingKyc ? birthdayParts.year : null,
         })
       }
       router.refresh()
@@ -332,8 +351,9 @@ export default function InvestorFormModal({
                   </WithIcon>
                 </div>
                 <div className={styles.field}>
-                  {/* Day/month only — an angel's birth year is rarely known. */}
-                  <label className={styles.label}>Birthday (DD/MM)</label>
+                  {/* The year is optional on purpose — for most angels it simply isn't known,
+                      and day/month alone is enough to wish them a happy birthday. */}
+                  <label className={styles.label}>Birthday (DD/MM, year optional)</label>
                   <WithIcon icon={<CalendarIcon size={16} />}>
                     <input
                       className={styles.input}
@@ -341,10 +361,11 @@ export default function InvestorFormModal({
                       inputMode="numeric"
                       value={birthday}
                       onChange={(e) => setBirthday(e.target.value)}
-                      placeholder="e.g. 29/07"
-                      title="Day and month, e.g. 29/07"
+                      placeholder="e.g. 29/07 or 29/07/1984"
+                      title="Day and month, with an optional year — e.g. 29/07 or 29/07/1984"
                     />
                   </WithIcon>
+                  {birthdayHint && <span className={styles.fieldHint}>{birthdayHint}</span>}
                 </div>
               </div>
               <div className={styles.formRow}>

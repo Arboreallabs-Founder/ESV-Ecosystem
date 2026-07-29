@@ -443,6 +443,8 @@ export type Investor = {
   // Angel-investor only (shown/edited when service_type === 'angel_investor').
   // 'MM-DD' — the year is usually unknown, so only day/month is stored.
   birthday_md: string | null
+  /** Optional; the day/month is often all that is known. */
+  birthday_year: number | null
   onboarding_form_completed: boolean
   onboarding_form_url: string | null
   kyc_done: boolean
@@ -519,6 +521,7 @@ export type FranchisePartner = {
   contract_link: string | null
   /** 'MM-DD' — the contact person's birthday; year is usually unknown. */
   contact_birthday_md: string | null
+  contact_birthday_year: number | null
 }
 
 export type PartnerShareBase = 'total' | 'referred'
