@@ -1161,3 +1161,16 @@
   color: var(--color-muted);
   line-height: 1.4;
 }
+
+@media (max-width: 560px) {
+  /* Contact draft rows are a wide input grid; stack them so each field keeps a usable width. */
+  .contactDraftRow {
+    grid-template-columns: 1fr;
+    display: grid;
+    gap: 0.5rem;
+  }
+  .formFooter { flex-direction: column-reverse; }
+  .formFooter button { width: 100%; justify-content: center; }
+  .formSectionIcon { width: 30px; height: 30px; }
+  .formSectionTitle { font-size: 1rem; }
+}

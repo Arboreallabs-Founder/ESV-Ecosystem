@@ -364,3 +364,11 @@
   align-items: center;
   gap: 0.35rem;
 }
+
+@media (max-width: 560px) {
+  .policyHead { flex-direction: column; gap: 0.625rem; }
+  .policyEditBtn { margin-left: 0; align-self: flex-start; }
+  .policyGrid { grid-template-columns: repeat(2, 1fr); }
+  .policyActions { flex-direction: column-reverse; }
+  .policyActions button { width: 100%; }
+}

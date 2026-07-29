@@ -2141,3 +2141,11 @@
   align-items: center;
   gap: 0.35rem;
 }
+
+@media (max-width: 560px) {
+  .updateComposerActions { justify-content: stretch; }
+  .updatePostBtn { width: 100%; }
+  /* Delete stops hugging the right edge once the head wraps onto two lines. */
+  .updateDelete { margin-left: 0; }
+  .dealTeamLabel { display: none; }
+}

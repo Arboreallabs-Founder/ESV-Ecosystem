@@ -375,13 +375,17 @@
   border: 1.5px solid var(--color-border);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
-  overflow: hidden;
+  /* Scrolls rather than clips: this table is nine columns wide since the push breakdown landed,
+     which no phone fits. `hidden` here silently cut off "Not completed" entirely. */
+  overflow-x: auto;
 }
 
 .kpiTable {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
+  /* Below this the columns crush into unreadable slivers; let the wrapper scroll instead. */
+  min-width: 780px;
 }
 
 .kpiTable thead th {
@@ -1067,4 +1071,15 @@ a.linkChipTag:hover { background: rgba(var(--color-hover-rgb),0.16); }
   align-items: center;
   gap: 0.3rem;
   flex-wrap: wrap;
+}
+
+@media (max-width: 560px) {
+  /* The push modal grew a reason box, two checkboxes and a person picker — it needs the
+     horizontal room back at this width. */
+  .modal { padding: 1.25rem 1.125rem; }
+  .modalActions { flex-direction: column-reverse; }
+  .modalActions button { width: 100%; }
+
+  /* Wrap so a long explainer label doesn't shove the "i" hint off the edge. */
+  .checkRow { flex-wrap: wrap; }
 }

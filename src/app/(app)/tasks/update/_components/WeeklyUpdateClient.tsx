@@ -1,22 +1,32 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import type { Task, ActiveDeal, UserRow, PersonalTodo } from '@/lib/types'
 import { weekRange } from '@/lib/week'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import Avatar from '@/app/_components/Avatar'
 import styles from '../weekly-update.module.css'
 
+type TaskRef = { id: string; title: string }
+/** `update` is empty when nothing has been posted on the deal yet. */
+type MandateRef = { id: string; name: string; update: string }
+
 type AssociateReport = {
   id: string
   name: string
   designation: string | null
   photoUrl: string | null
-  completed: string[]
-  open: string[]
-  /** `Deal: latest update`, or the deal name with a placeholder when nothing has been posted. */
-  mandates: string[]
+  completed: TaskRef[]
+  open: TaskRef[]
+  mandates: MandateRef[]
   personal: Array<{ title: string; done: boolean }>
+}
+
+/** The exact line the WhatsApp message uses for a mandate. Kept in one place so the card and the
+    copied text can never drift apart. */
+function mandateLine(m: MandateRef): string {
+  return `${m.name}: ${m.update || '(no update yet)'}`
 }
 
 /**
@@ -30,17 +40,17 @@ function buildMessage(report: AssociateReport, weekLabel: string): string {
   lines.push('')
   lines.push(`✅ Completed (${report.completed.length})`)
   if (report.completed.length === 0) lines.push('None')
-  else report.completed.forEach((title, i) => lines.push(`${i + 1}. ${title}`))
+  else report.completed.forEach((t, i) => lines.push(`${i + 1}. ${t.title}`))
   lines.push('')
   lines.push(`🔲 Open (${report.open.length})`)
   if (report.open.length === 0) lines.push('None')
-  else report.open.forEach((title, i) => lines.push(`${i + 1}. ${title}`))
+  else report.open.forEach((t, i) => lines.push(`${i + 1}. ${t.title}`))
   if (report.mandates.length > 0) {
     lines.push('')
     // One line per mandate rather than a comma list — each carries its own latest update, which
     // would be unreadable run together.
     lines.push('📁 Active mandates')
-    report.mandates.forEach((m) => lines.push(m))
+    report.mandates.forEach((m) => lines.push(mandateLine(m)))
   }
   if (report.personal.length > 0) {
     lines.push('')
@@ -113,15 +123,11 @@ export default function WeeklyUpdateClient({
         )
         const completed = relevant
           .filter((t) => t.status === 'Done' && t.completed_at && inWeek(t.completed_at))
-          .map((t) => t.title)
-        const open = relevant.filter((t) => t.status !== 'Done').map((t) => t.title)
+          .map((t) => ({ id: t.id, title: t.title }))
+        const open = relevant.filter((t) => t.status !== 'Done').map((t) => ({ id: t.id, title: t.title }))
         const mandates = activeDeals
           .filter((d) => d.deal_state === 'active' && d.entry?.assignees?.some((x) => x.user_id === a.id))
-          .map((d) => {
-            const name = d.entry?.title ?? 'Untitled'
-            const latest = dealUpdates[d.id]
-            return latest ? `${name}: ${latest}` : `${name}: (no update yet)`
-          })
+          .map((d) => ({ id: d.id, name: d.entry?.title ?? 'Untitled', update: dealUpdates[d.id] ?? '' }))
         const personal = weekTodos
           .filter((t) => t.user_id === a.id && t.work_week_start === weekKey)
           .map((t) => ({ title: t.title, done: t.done }))
@@ -247,34 +253,44 @@ export default function WeeklyUpdateClient({
               <div className={styles.cardBody}>
                 <Section icon="✅" title="Completed" count={report.completed.length} empty="Nothing completed this week.">
                   <ol className={styles.numberList}>
-                    {report.completed.map((t, i) => <li key={i}>{t}</li>)}
+                    {report.completed.map((t) => (
+                      <li key={t.id}>
+                        {/* ?open= is the task board's existing deep-link — it opens straight
+                            into that task's detail modal. */}
+                        <Link href={`/tasks?open=${t.id}`} className={styles.entryLink}>{t.title}</Link>
+                      </li>
+                    ))}
                   </ol>
                 </Section>
 
                 <Section icon="🔲" title="Open" count={report.open.length} empty="No open tasks.">
                   <ol className={styles.numberList}>
-                    {report.open.map((t, i) => <li key={i}>{t}</li>)}
+                    {report.open.map((t) => (
+                      <li key={t.id}>
+                        <Link href={`/tasks?open=${t.id}`} className={styles.entryLink}>{t.title}</Link>
+                      </li>
+                    ))}
                   </ol>
                 </Section>
 
                 {report.mandates.length > 0 && (
                   <Section icon="📁" title="Active mandates" count={report.mandates.length} empty="">
                     <ul className={styles.mandateList}>
-                      {report.mandates.map((m, i) => {
-                        // `Deal name: latest update` — split so the name carries weight and the
-                        // update reads as prose beneath it.
-                        const at = m.indexOf(':')
-                        const name = at === -1 ? m : m.slice(0, at)
-                        const update = at === -1 ? '' : m.slice(at + 1).trim()
-                        return (
-                          <li key={i} className={styles.mandate}>
-                            <span className={styles.mandateName}>{name}</span>
-                            <span className={update === '(no update yet)' ? styles.mandateNone : styles.mandateUpdate}>
-                              {update}
+                      {report.mandates.map((m) => (
+                        // The whole block is the target, not just the name — during a call you
+                        // want to open the deal while reading its update, not aim at a word.
+                        <li key={m.id} className={styles.mandate}>
+                          <Link href={`/active-deals/${m.id}`} className={styles.mandateLink}>
+                            <span className={styles.mandateName}>
+                              {m.name}
+                              <span className={styles.mandateArrow} aria-hidden="true">↗</span>
                             </span>
-                          </li>
-                        )
-                      })}
+                            <span className={m.update ? styles.mandateUpdate : styles.mandateNone}>
+                              {m.update || '(no update yet)'}
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
                     </ul>
                   </Section>
                 )}
