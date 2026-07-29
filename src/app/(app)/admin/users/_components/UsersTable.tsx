@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { addApprovedUser, updateApprovedUser, revokeUser } from '@/app/actions/admin'
+import { addApprovedUser, updateApprovedUser, revokeUser, setUserPhotoFromUrl } from '@/app/actions/admin'
 import type { ApprovedUser } from '@/lib/types'
 import styles from '../../admin.module.css'
 
@@ -19,6 +19,20 @@ const ROLE_CLASS: Record<string, string> = {
   franchise_partner: styles.roleFranchise,
   general: styles.roleGeneral,
   hr: styles.roleHr,
+}
+
+function initials(name: string, email: string): string {
+  const source = name?.trim() || email
+  return source.split(/[\s@.]+/).filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
+}
+
+function CameraIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14.5 4h-5L8 6H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-4l-1.5-2Z" />
+      <circle cx="12" cy="13" r="3.5" />
+    </svg>
+  )
 }
 
 function PencilIcon() {
@@ -66,9 +80,36 @@ export default function UsersTable({
   const [editRole, setEditRole] = useState<string>('')
 
   // Revoke modal
+  const [photoTarget, setPhotoTarget] = useState<ApprovedUser | null>(null)
+  const [photoUrl, setPhotoUrl] = useState('')
+  const [photoError, setPhotoError] = useState('')
+  const [photoSaving, setPhotoSaving] = useState(false)
   const [revokeTarget, setRevokeTarget] = useState<ApprovedUser | null>(null)
   const [revoking, setRevoking] = useState(false)
   const [revokeError, setRevokeError] = useState('')
+
+  function openPhoto(u: ApprovedUser) {
+    setPhotoTarget(u)
+    setPhotoUrl(u.photo_url ?? '')
+    setPhotoError('')
+  }
+
+  function savePhoto() {
+    if (!photoTarget?.userId) return
+    setPhotoError('')
+    setPhotoSaving(true)
+    startTransition(async () => {
+      try {
+        await setUserPhotoFromUrl(photoTarget.userId!, photoUrl.trim() || null)
+        setPhotoTarget(null)
+        router.refresh()
+      } catch (err) {
+        setPhotoError(err instanceof Error ? err.message : String(err))
+      } finally {
+        setPhotoSaving(false)
+      }
+    })
+  }
 
   function openEdit(u: ApprovedUser) {
     setEditTarget(u)
@@ -89,6 +130,7 @@ export default function UsersTable({
           added_at: new Date().toISOString(),
           org_id: null,
           userId: null,
+          photo_url: null,
           hasLoggedIn: false,
         }])
         setShowAdd(false)
@@ -148,6 +190,7 @@ export default function UsersTable({
         <table className={styles.table}>
             <thead>
               <tr>
+                <th style={{ width: '52px' }} aria-label="Photo" />
                 <th>Name</th>
                 <th>Email</th>
                 <th>Role</th>
@@ -158,6 +201,22 @@ export default function UsersTable({
             <tbody>
               {users.map((u) => (
                 <tr key={u.email}>
+                  <td>
+                    {/* Only signed-in users have a `users` row to hang a photo on; an
+                        approved-but-never-logged-in invite has nowhere to put one yet. */}
+                    <button
+                      type="button"
+                      className={styles.avatarBtn}
+                      onClick={() => u.userId && openPhoto(u)}
+                      disabled={!u.userId}
+                      title={u.userId ? 'Set profile photo' : 'They need to sign in before a photo can be set'}
+                    >
+                      {u.photo_url
+                        ? <img src={u.photo_url} alt="" className={styles.avatarImg} />
+                        : <span className={styles.avatarInitials}>{initials(u.name, u.email)}</span>}
+                      {u.userId && <span className={styles.avatarOverlay}><CameraIcon /></span>}
+                    </button>
+                  </td>
                   <td>
                     <div className={styles.name}>
                       {u.name || '—'}
@@ -311,6 +370,52 @@ export default function UsersTable({
       )}
 
       {/* Revoke modal */}
+      {photoTarget && (
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setPhotoTarget(null)}>
+          <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
+            <div className={styles.modalTitle}>Profile photo</div>
+            <p className={styles.modalSub}>
+              Paste a link to an image for {photoTarget.name || photoTarget.email}. We download it
+              once and serve our own copy, so it keeps working after the original link expires —
+              LinkedIn photo links in particular are time-limited.
+            </p>
+
+            <div className={styles.photoPreviewRow}>
+              <span className={styles.photoPreview}>
+                {photoUrl.trim()
+                  ? <img src={photoUrl} alt="" />
+                  : <span className={styles.avatarInitials}>{initials(photoTarget.name, photoTarget.email)}</span>}
+              </span>
+              <div className={styles.photoField}>
+                <label className={styles.label}>Image URL</label>
+                <input
+                  className={styles.input}
+                  value={photoUrl}
+                  onChange={(e) => setPhotoUrl(e.target.value)}
+                  placeholder="https://…"
+                  autoFocus
+                />
+                <span className={styles.photoHint}>
+                  Must link to the image itself, not the page it sits on — right-click the photo
+                  and choose &ldquo;Copy image address&rdquo;. Leave blank to remove.
+                </span>
+              </div>
+            </div>
+
+            {photoError && <div className={styles.errorText}>{photoError}</div>}
+
+            <div className={styles.modalActions}>
+              <button className={styles.cancelBtn} onClick={() => setPhotoTarget(null)} disabled={photoSaving}>
+                Cancel
+              </button>
+              <button className={styles.submitBtn} onClick={savePhoto} disabled={photoSaving}>
+                {photoSaving ? 'Saving…' : 'Save photo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {revokeTarget && (
         <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setRevokeTarget(null)}>
           <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>

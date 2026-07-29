@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
+import { mirrorImage, isAlreadyCached } from '@/lib/image-cache'
 
 async function requireAdminOrFounder() {
   const { supabase, userId, orgId } = await requireRole(['founder', 'admin'])
@@ -104,4 +105,43 @@ export async function revokeUser(email: string, userId: string | null) {
 
   // No revalidatePath for /admin/users — router.refresh() in UsersTable handles that.
   revalidatePath('/admin/partners')
+}
+
+// ── Avatars ─────────────────────────────────────────────────────────────────
+
+/**
+ * Set (or clear) a user's avatar from a pasted image URL.
+ *
+ * The image is mirrored into our own storage rather than the URL being stored as-is — see
+ * src/lib/image-cache.ts for why (short version: LinkedIn and friends serve signed URLs that
+ * expire, so a stored link works today and 404s later).
+ *
+ * A mirroring failure throws with a readable message rather than silently falling back to the
+ * raw URL: a fallback would reintroduce exactly the rot this exists to prevent, and the admin
+ * would have no idea it happened.
+ */
+export async function setUserPhotoFromUrl(userId: string, sourceUrl: string | null): Promise<string | null> {
+  const { supabase } = await requireAdminOrFounder()
+  if (!userId) throw new Error('That person has not signed in yet, so there is no profile to attach a photo to.')
+
+  const raw = sourceUrl?.trim() ?? ''
+  if (!raw) {
+    const { error } = await supabase.from('users').update({ photo_url: null }).eq('id', userId)
+    if (error) throw error
+    revalidatePath('/admin/users')
+    return null
+  }
+
+  // Already one of ours (e.g. re-saving an unchanged form) — copying it again would only churn.
+  const photoUrl = isAlreadyCached(raw)
+    ? raw
+    : (await mirrorImage(supabase, raw, 'profile-photos', `${userId}/avatar`)).publicUrl
+
+  const { error } = await supabase.from('users').update({ photo_url: photoUrl }).eq('id', userId)
+  if (error) throw error
+
+  revalidatePath('/admin/users')
+  revalidatePath('/tasks')
+  revalidatePath('/approvals')
+  return photoUrl
 }

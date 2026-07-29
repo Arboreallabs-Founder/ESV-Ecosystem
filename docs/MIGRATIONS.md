@@ -84,3 +84,9 @@ marks it.
   genuinely isn't known, and a DATE forces you to invent one. This way "29 July, year unknown" and
   "29 July 1984" are both representable and both tell the truth. A CHECK keeps a year from existing
   without a day/month, and the day/month remains the sole basis for "is it their birthday today".
+- `20260820000000_admin_avatars_and_image_cache.sql` — an additive storage policy letting
+  founder/admin manage any object in `profile-photos` (so admins can set someone else's avatar,
+  alongside the existing self-service policy), plus a new public `cached-images` bucket for
+  mirrored third-party images such as company founder headshots. See `src/lib/image-cache.ts` for
+  why pasted URLs are mirrored rather than stored raw — the short version is that LinkedIn-style
+  media URLs are signed and expire, so a stored link works today and 404s later.

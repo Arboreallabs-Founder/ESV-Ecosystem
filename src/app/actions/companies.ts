@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
+import { mirrorImage, isAlreadyCached } from '@/lib/image-cache'
 import { findOrCreateCompanyForDeskDeal, findOrCreateCompanyByName, findCompanyIdByName, enumOrNull } from '@/lib/company-sync'
 import { extractMetaTags } from '@/lib/company-tags'
 import { parseCompaniesCsv, type ParsedCompany } from '@/lib/companies-csv'
@@ -190,6 +191,28 @@ export async function suggestMetaTags(companyId: string): Promise<void> {
 export async function updateCompany(id: string, patch: CompanyPatch) {
   const { supabase } = await requireInternal()
   if (patch.name !== undefined && !patch.name.trim()) throw new Error('Company name is required.')
+
+  // Founder headshots are usually pasted from LinkedIn, whose media URLs are signed and expire.
+  // Mirror them into our own storage so the profile doesn't quietly lose its photos in a few
+  // weeks. Indexed by position because founders are a JSON array with no stable ids.
+  if (patch.founders?.length) {
+    patch = {
+      ...patch,
+      founders: await Promise.all(patch.founders.map(async (f, i) => {
+        const src = f.photo_url?.trim()
+        if (!src || isAlreadyCached(src)) return f
+        try {
+          const { publicUrl } = await mirrorImage(supabase, src, 'cached-images', `companies/${id}/founder-${i}`)
+          return { ...f, photo_url: publicUrl }
+        } catch {
+          // Keep the pasted URL rather than dropping the founder's photo entirely. It may still
+          // work for a while, and losing the whole save over one unreachable image would be worse.
+          return f
+        }
+      })),
+    }
+  }
+
   const { error } = await supabase.from('companies').update(patch).eq('id', id)
   if (error) throw error
   revalidatePath(`/companies/${id}`)

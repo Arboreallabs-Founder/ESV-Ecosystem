@@ -570,6 +570,8 @@ export type ApprovedUser = {
   added_at: string
   org_id: string | null
   userId: string | null
+  /** Only set once they've signed in — the avatar lives on `users`, not `approved_emails`. */
+  photo_url: string | null
   hasLoggedIn: boolean
 }
 
