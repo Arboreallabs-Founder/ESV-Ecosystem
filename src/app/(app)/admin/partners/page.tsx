@@ -5,7 +5,7 @@ import PartnerTable from './_components/PartnerTable'
 
 export default async function PartnersPage() {
   const [user, partnerUsers] = await Promise.all([getUser(), fetchPartnerUsers()])
-  if (!user || !['founder', 'admin'].includes(user.role)) redirect('/dashboard')
+  if (!user || !['founder', 'admin', 'hr'].includes(user.role)) redirect('/dashboard')
 
   return <PartnerTable partnerUsers={partnerUsers} />
 }

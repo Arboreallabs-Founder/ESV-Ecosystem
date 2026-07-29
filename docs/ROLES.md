@@ -42,10 +42,10 @@ Legend: ✅ full · 🟡 limited/conditional · 👁 read-only · ❌ none
 | Partner earnings — view | ✅ per partner³ | ✅ per partner³ | 👁 | ❌ | ❌ | 👁 own only⁴ | ❌ |
 | Accept a deal (entry → Accepted) | ✅ | ✅ | 🟡 if assigned | ❌ | ❌ | ❌ | ❌ |
 | Deal categories (CRUD) | ✅ | ✅ | 👁 | ❌ | ❌ | 👁 | ❌ |
-| Investors — create | ✅ | ✅ | ✅ | ❌ | ❌ | 🟡 referrals | ❌ |
-| Investors — edit | ✅ | ✅ | ❌ | ❌ | ❌ | 🟡 own referrals² | ❌ |
-| Investors — delete | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Investors — view | ✅ | ✅ | ✅ | 👁 | ❌ | 🟡 own referrals | ❌ |
+| Investors — create | ✅ | ✅ | ✅ | ❌ | ✅ | 🟡 referrals | ❌ |
+| Investors — edit | ✅ | ✅ | ❌ | ❌ | ✅ | 🟡 own referrals² | ❌ |
+| Investors — delete | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| Investors — view | ✅ | ✅ | ✅ | 👁 | ✅ | 🟡 own referrals | ❌ |
 | Set ESV POC on investor | ✅ | ✅ | 🟡 on create | ❌ | ❌ | ❌ | ❌ |
 | Tasks — view | ✅ all | ✅ all | 🟡 own assigned | 🟡 own assigned | 🟡 own assigned | ❌ | ❌ |
 | Tasks — create/assign | ✅ non-partners | ✅ non-partners | 🟡 self/associates/general/hr | 🟡 self/associates/general/hr | 🟡 self/associates/general/hr | ❌ | ❌ |
@@ -68,7 +68,7 @@ Legend: ✅ full · 🟡 limited/conditional · 👁 read-only · ❌ none
 | Leave balances — set entitlement/used | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Leave balances — view own remaining | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | User management (`/admin/users`) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ cross-org |
-| Partner management (`/admin/partners`) | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| Partner management (`/admin/partners`) | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | Manage organizations | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | Wiki | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
@@ -274,6 +274,17 @@ Approvals below. This is not a user-facing escalations capability.
 - **Team leaves roster**: the "Team leaves" tab on `/approvals` (Founder/Admin/HR) lists every
   leave request org-wide, any status, filterable by person — with the ability to re-decide
   (change approve/reject after the fact) or cancel any request, not just pending ones.
+
+### Investors & Partners — HR access
+HR was granted full edit access to Investors and Partners on 2026-08-17 (relationship
+management sits with HR). This covers the `investors`, `investor_contacts` and
+`franchise_partners` RLS policies, the matching action guards, the page gates and the nav.
+HR does **not** gain Deal Flow access generally — this is scoped to these two records only.
+
+**Birthdays:** angel investors and partner contacts carry an optional day/month birthday
+(`birthday_md` / `contact_birthday_md`, stored `MM-DD`). The year is deliberately not
+captured — it's usually unknown, and a DATE with an invented year would leak that fiction into
+sorting and display. Fund-type investors have no birthday field, since a fund doesn't have one.
 
 ### Performance analytics (`/analytics`)
 **Currently founder/admin only** while the scoring model is evaluated — see footnote ⁶. The

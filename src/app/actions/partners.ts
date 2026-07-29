@@ -1,6 +1,7 @@
 'use server'
 
 import { requireAuth, requireRole } from '@/lib/guards'
+import { displayToMd } from '@/lib/birthday'
 import type { PartnerDealEarning, MyDealEarning, PartnerShareBase } from '@/lib/types'
 
 export async function upsertPartnerDetails(userId: string, formData: FormData) {
@@ -15,6 +16,7 @@ export async function upsertPartnerDetails(userId: string, formData: FormData) {
       agreement_type: (formData.get('agreement_type') as string) || 'Standard',
       success_fee_split_pct: Number(formData.get('success_fee_split_pct')) || 0,
       contract_link: (formData.get('contract_link') as string) || null,
+      contact_birthday_md: displayToMd(formData.get('contact_birthday_md') as string),
       org_id: orgId,
     })
     .select('id')
@@ -43,6 +45,7 @@ export async function updatePartnerDetails(partnerId: string, formData: FormData
       agreement_type: (formData.get('agreement_type') as string) || 'Standard',
       success_fee_split_pct: Number(formData.get('success_fee_split_pct')) || 0,
       contract_link: (formData.get('contract_link') as string) || null,
+      contact_birthday_md: displayToMd(formData.get('contact_birthday_md') as string),
     })
     .eq('id', partnerId)
 
@@ -57,7 +60,7 @@ const num = (v: unknown): number => (v == null ? 0 : Number(v))
 
 // Admin/founder/associate: full per-deal earnings breakdown for one partner.
 export async function getPartnerEarnings(partnerId: string): Promise<PartnerDealEarning[]> {
-  const { supabase } = await requireRole(['founder', 'admin', 'associate'])
+  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'hr'])
   const { data, error } = await supabase.rpc('get_partner_earnings', { p_partner_id: partnerId })
   if (error) throw error
   return (data ?? []).map((r: any) => ({
@@ -80,7 +83,7 @@ export async function setPartnerDealShare(
   baseType: PartnerShareBase,
   splitPct: number | null,
 ) {
-  const { supabase, orgId } = await requireRole(['founder', 'admin'])
+  const { supabase, orgId } = await requireRole(['founder', 'admin', 'hr'])
   const { error } = await supabase
     .from('active_deal_partner_shares')
     .upsert(

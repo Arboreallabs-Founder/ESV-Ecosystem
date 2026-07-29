@@ -17,11 +17,11 @@ type ContactDraft = {
 }
 
 async function requireAdmin() {
-  return requireRole(['founder', 'admin'])
+  return requireRole(['founder', 'admin', 'hr'])
 }
 
 async function requireInternal() {
-  return requireRole(['founder', 'admin', 'associate'])
+  return requireRole(['founder', 'admin', 'associate', 'hr'])
 }
 
 // ── Investors ─────────────────────────────────────────────────────────────────
@@ -61,6 +61,8 @@ export async function createInvestor(params: {
   onboarding_form_completed?: boolean
   onboarding_form_url?: string | null
   kyc_done?: boolean
+  /** 'MM-DD' — angel investors only; year is usually unknown. */
+  birthday_md?: string | null
   contacts: ContactDraft[]
   isPartnerReferral?: boolean
 }): Promise<{ id: string }> {
@@ -111,6 +113,7 @@ export async function createInvestor(params: {
       onboarding_form_completed: fields.onboarding_form_completed ?? false,
       onboarding_form_url: fields.onboarding_form_url || null,
       kyc_done: fields.kyc_done ?? false,
+      birthday_md: fields.birthday_md || null,
       created_by: userId,
       org_id: orgId,
     })
@@ -190,6 +193,7 @@ export async function updateInvestor(
     onboarding_form_completed?: boolean
     onboarding_form_url?: string | null
     kyc_done?: boolean
+    birthday_md?: string | null
   }
 ): Promise<void> {
   // Partners may edit their own referrals, but never the ESV POC or referral attribution.
@@ -210,6 +214,7 @@ export async function updateInvestor(
     onboarding_form_completed: params.onboarding_form_completed ?? false,
     onboarding_form_url: params.onboarding_form_url || null,
     kyc_done: params.kyc_done ?? false,
+    birthday_md: params.birthday_md || null,
   }
   const nextFields = isPartner ? baseFields : { ...baseFields, referred_by_partner_id: params.referred_by_partner_id || null }
 

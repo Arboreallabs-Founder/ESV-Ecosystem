@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { upsertPartnerDetails, updatePartnerDetails } from '@/app/actions/partners'
 import type { PartnerUser } from '@/lib/types'
+import { mdToDisplay } from '@/lib/birthday'
 import styles from '../../admin.module.css'
 
 export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUser[] }) {
@@ -225,6 +226,21 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
                   step="0.1"
                   defaultValue={editTarget.franchise_partners?.success_fee_split_pct ?? 0}
                   placeholder="e.g. 30"
+                />
+              </div>
+              <div className={styles.field}>
+                {/* Day/month only — the year is rarely known for a contact, and a date input
+                    would force inventing one. */}
+                <label className={styles.label}>Contact Birthday (DD/MM)</label>
+                <input
+                  className={styles.input}
+                  name="contact_birthday_md"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[0-2])"
+                  defaultValue={mdToDisplay(editTarget.franchise_partners?.contact_birthday_md)}
+                  placeholder="e.g. 29/07"
+                  title="Day and month, e.g. 29/07"
                 />
               </div>
               <div className={styles.field}>
