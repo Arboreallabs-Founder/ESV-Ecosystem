@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { Task } from './types'
+import type { Task, TaskPush } from './types'
 
 export const fetchAllTasks = cache(async (): Promise<Task[]> => {
   const supabase = await createClient()
@@ -9,6 +9,18 @@ export const fetchAllTasks = cache(async (): Promise<Task[]> => {
     .select('*, assignee:assignee_id(name, photo_url), created_by_user:created_by(name), assigned_by_user:assigned_by_id(name), company:company_id(id, name), desk_deal:desk_deal_id(id, company_name)')
     .order('created_at', { ascending: false })
   return (data ?? []) as unknown as Task[]
+})
+
+/* The push log behind the /tasks/kpi "why it moved" breakdown. RLS scopes it: founder/admin see
+   the org, everyone else sees pushes on their own tasks. The maths over these rows is in
+   src/lib/task-pushes.ts, which stays free of server imports so client components can use it. */
+export const fetchPushes = cache(async (): Promise<TaskPush[]> => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('task_pushes')
+    .select('*, pushed_by_user:pushed_by(name), blocked_by_user:blocked_by_user_id(name), task:task_id(title, assignee_id)')
+    .order('created_at', { ascending: false })
+  return (data ?? []) as unknown as TaskPush[]
 })
 
 export const fetchOpenTaskCount = cache(async (): Promise<number> => {

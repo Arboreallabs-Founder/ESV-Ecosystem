@@ -59,3 +59,22 @@ marks it.
   the scoring formula, editable by founder/admin only) and `performance_adjustments` (signed
   manual points with a mandatory reason). Backs `/analytics`. Note the deliberate omission: leave
   is **not** a scoring signal — see the comment at the top of the migration.
+- `20260816000000_leave_policy_and_half_days.sql` — org-wide default leave entitlements
+  (`leave_policies`) plus half-day support on `leave_requests`/`leave_balances` (days stored as
+  `NUMERIC`, not hours — the ask was explicitly days with halves, not fractional-hour tracking).
+- `20260817000000_hr_investor_partner_access_and_birthdays.sql` — adds `hr` to the `investors`,
+  `investor_contacts` and `franchise_partners` policies, and adds `birthday_md` /
+  `contact_birthday_md` (`MM-DD` text — the year is deliberately not captured, see docs/ROLES.md).
+- `20260818000000_push_reasons_deal_updates_todo_weeks.sql` — three additions:
+  - `task_pushes` — one row per push with its mandatory reason, plus `blocked_external` and a
+    single `blocked_by_user_id`. A **log**, not extra columns on `tasks`: `tasks.pushed_at` /
+    `push_count` only ever describe the latest push, which can't answer "why does this keep
+    slipping". Read on `/tasks/kpi`.
+  - `active_deal_updates` — the timestamped "Latest Update" thread per active deal. INSERT is
+    gated on founder/admin **or** membership of the deal's `pipeline_entry_assignees` (the POCs),
+    so the RLS policy — not the UI — decides who can post.
+  - `personal_todos.work_week_start` + a new **SELECT-only** policy letting founder/admin read
+    to-dos that have a work week set. Personal to-dos are otherwise strictly private
+    (`user_id = auth.uid()`), and stay that way: filing an item into a work week is the explicit
+    opt-in that publishes it to that week's update. `work_week_start IS NULL` remains invisible
+    to everyone but its owner.

@@ -110,6 +110,20 @@
   white-space: nowrap;
 }
 .dueChipOverdue { color: var(--color-destructive); }
+
+/* An item filed into a work week is also published to that week's update — the chip is the only
+   signal that it has left the private list, so it uses the brand accent rather than the neutral
+   chip treatment. */
+.weekChip {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  background: var(--color-bg);
+  padding: 0.125rem 0.4375rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-primary-light);
+  white-space: nowrap;
+}
 .notesPreview { font-size: 0.75rem; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
 
 .rowActions { display: flex; align-items: center; gap: 0.2rem; flex-shrink: 0; }

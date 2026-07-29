@@ -44,7 +44,7 @@ export const WIKI: Record<string, WikiSection> = {
 
   tasks: {
     title: 'Tasks',
-    summary: 'Action items for the team. Tasks can be standalone or linked to a specific deal. The board has three views: Board, My To-Dos, Recurring, and KPI.',
+    summary: 'Action items for the team. Tasks can be standalone or linked to a specific deal. The board has four views: Board, Personal To-Do List, Recurring, and KPI.',
     items: [
       { heading: 'Board Columns', body: 'To Do → Done. Move tasks by changing the status dropdown on each card. Moving a task to Done stamps its completion time; moving it back to To Do clears it.' },
       { heading: 'Creating a Task', body: 'Click "+ New Task". Set a title, optional description, assignee, linked deal, due date, and priority (Low / Medium / High). Every card shows who it was assigned by.' },
@@ -54,17 +54,19 @@ export const WIKI: Record<string, WikiSection> = {
       { heading: 'Priority Levels', body: 'High = blocks progress or has a hard deadline. Medium = standard work. Low = nice-to-have or whenever. Overdue tasks show a ⚠ warning.' },
       { heading: 'Comments', body: 'Click "Comments" on any task card to open a discussion thread for that task. Founders/admins can comment on any task; associates only on tasks assigned to them. Anyone who can see the thread can delete a comment on it.' },
       { heading: 'KPI view', body: 'Switch to the KPI tab for performance metrics: On-time, Pushed, Pending, and Not-completed. Founders/admins see a per-person breakdown for the whole team plus org totals; associates see only their own numbers.' },
+      { heading: 'Pushing a task', body: 'Only a task\'s assignee can push its date, and a reason is required every time. Tick "Dependent on external party" when a client, investor or vendor is holding things up, or "Dependent on internal stakeholder" and pick the colleague you are waiting on. The reason is posted to the task\'s comment thread and rolled up in the KPI view, so recurring causes of slippage — and internal bottlenecks — are visible rather than guessed at.' },
     ],
   },
 
   myTodos: {
-    title: 'My To-Dos',
-    summary: 'A personal, private checklist — only you can see your own list. Quick items and tasks assigned to you live side by side, with completion synced back to the Tasks board.',
+    title: 'Personal To-Do List',
+    summary: 'A personal checklist — private by default, so only you see your own list. Quick items and tasks assigned to you live side by side, with completion synced back to the Tasks board.',
     items: [
       { heading: 'Adding a quick item', body: 'Type into the box at the top and press Enter or click Add. Quick items are personal only — they never appear on the shared Tasks board.' },
       { heading: 'Porting in a task', body: 'Click "Port in a task" to pick from tasks assigned to you and add one to your list, linked back to the original. Already-ported tasks are excluded from the picker.' },
       { heading: 'Two-way sync', body: 'Checking off a ported item marks the linked Task as Done on the shared board too — and vice versa: marking a Task Done on the board flips any personal to-do linked to it. Unchecking either side reopens both.' },
       { heading: 'Notes & due dates', body: 'Click the "⋯" on any item to add notes or a due date, or to unlink it from its task (keeping it as a standalone personal item).' },
+      { heading: 'Work weeks', body: 'Assign an item to a work week — when adding it, or later via the "⋯" menu — and it appears in that week\'s Weekly Update with its tick-box state. This is also the only thing that makes a personal item visible to founders and admins: anything with no work week stays private to you.' },
       { heading: 'Completed section', body: 'Finished items collapse into a "Completed" group at the bottom so your active list stays short.' },
     ],
   },

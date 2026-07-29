@@ -55,6 +55,42 @@ export type TaskComment = {
   author?: { name: string } | null
 }
 
+/** One row per push — the history is the point, so reasons can be aggregated per person. */
+export type TaskPush = {
+  id: string
+  task_id: string
+  pushed_by: string
+  from_date: string | null
+  to_date: string
+  reason: string
+  blocked_external: boolean
+  blocked_by_user_id: string | null
+  created_at: string
+  pushed_by_user?: { name: string | null } | null
+  blocked_by_user?: { name: string | null } | null
+  task?: { title: string; assignee_id: string | null } | null
+}
+
+/** Per-person push aggregation for the KPI page. */
+export type PushStats = {
+  user_id: string
+  total: number
+  blockedExternal: number
+  /** userId -> times they blocked this person. */
+  blockedBy: Record<string, number>
+  recent: TaskPush[]
+}
+
+/** A timestamped update on an active deal; the newest is the deal's "latest update". */
+export type ActiveDealUpdate = {
+  id: string
+  active_deal_id: string
+  body: string
+  created_by: string | null
+  created_at: string
+  created_by_user?: { name: string | null } | null
+}
+
 export type PersonalTodo = {
   id: string
   user_id: string
@@ -63,6 +99,8 @@ export type PersonalTodo = {
   done: boolean
   done_at: string | null
   due_date: string | null
+  /** Monday of the work week this belongs to; independent of due_date. */
+  work_week_start: string | null
   linked_task_id: string | null
   position: number
   created_at: string

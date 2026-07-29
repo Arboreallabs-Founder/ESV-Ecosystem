@@ -7,6 +7,7 @@ import { createTask, updateTaskStatus, pushTask, deleteTask } from '@/app/action
 import type { Task, UserRow } from '@/lib/types'
 import { weekRange } from '@/lib/week'
 import Combobox from '@/app/_components/Combobox'
+import InfoHint from '@/app/_components/InfoHint'
 import TaskDetailModal from './TaskDetailModal'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import { formatDateTimeIst, formatDateTimeIstLong } from '@/lib/format-datetime'
@@ -71,6 +72,11 @@ export default function TaskBoard({
   const [showModal, setShowModal] = useState(false)
   const [pushTarget, setPushTarget] = useState<Task | null>(null)
   const [pushDate, setPushDate] = useState('')
+  const [pushReason, setPushReason] = useState('')
+  const [pushExternal, setPushExternal] = useState(false)
+  const [pushInternal, setPushInternal] = useState(false)
+  const [pushBlockedBy, setPushBlockedBy] = useState('')
+  const [pushError, setPushError] = useState<string | null>(null)
   const [detailTask, setDetailTask] = useState<Task | null>(null)
 
   // Opened via the alerts bell (?open=<taskId>) — jump straight to that task's detail modal.
@@ -237,16 +243,34 @@ export default function TaskBoard({
 
   function handlePushSubmit() {
     if (!pushTarget || !pushDate) return
+    setPushError(null)
+    if (!pushReason.trim()) { setPushError('Please give a reason for pushing this task.'); return }
+    if (pushInternal && !pushBlockedBy) { setPushError('Choose who this is waiting on.'); return }
+
     const target = pushTarget
+    const payload = {
+      reason: pushReason,
+      blockedExternal: pushExternal,
+      blockedByUserId: pushInternal ? pushBlockedBy : null,
+    }
     setTasks((prev) => prev.map((t) => t.id === target.id
       ? { ...t, pushed_date: pushDate, pushed_at: new Date().toISOString(), push_count: (t.push_count ?? 0) + 1 }
       : t))
-    setPushTarget(null)
-    setPushDate('')
+    closePush()
     startTransition(async () => {
-      try { await pushTask(target.id, pushDate) }
+      try { await pushTask(target.id, pushDate, payload) }
       catch (err) { alert(String(err)); router.refresh() }
     })
+  }
+
+  function closePush() {
+    setPushTarget(null)
+    setPushDate('')
+    setPushReason('')
+    setPushExternal(false)
+    setPushInternal(false)
+    setPushBlockedBy('')
+    setPushError(null)
   }
 
   function renderCard(task: Task) {
@@ -665,7 +689,7 @@ export default function TaskBoard({
       )}
 
       {pushTarget && (
-        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setPushTarget(null)}>
+        <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && closePush()}>
           <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
             <div className={styles.modalTitle}>Push Task</div>
             <p style={{ fontSize: '0.875rem', color: 'var(--color-muted)', marginBottom: '1rem', lineHeight: 1.5 }}>
@@ -681,9 +705,58 @@ export default function TaskBoard({
                 autoFocus
               />
             </div>
+
+            <div className={`${styles.field} ${styles.fieldFull}`}>
+              <label className={styles.label}>
+                Reason *
+                <InfoHint text="Why the date moved. This is saved to the task's comment thread and rolled up in the KPI view, so patterns in what causes slippage are visible." />
+              </label>
+              <textarea
+                className={styles.textarea}
+                value={pushReason}
+                onChange={(e) => setPushReason(e.target.value)}
+                placeholder="What's holding this up?"
+                rows={3}
+              />
+            </div>
+
+            <div className={`${styles.field} ${styles.fieldFull}`}>
+              <label className={styles.checkRow}>
+                <input type="checkbox" checked={pushExternal} onChange={(e) => setPushExternal(e.target.checked)} />
+                Dependent on external party
+                <InfoHint text="The delay is caused by someone outside the company — a client, investor, vendor or regulator. Tracked so externally-blocked slippage isn't counted against the assignee." />
+              </label>
+            </div>
+
+            <div className={`${styles.field} ${styles.fieldFull}`}>
+              <label className={styles.checkRow}>
+                <input
+                  type="checkbox"
+                  checked={pushInternal}
+                  onChange={(e) => { setPushInternal(e.target.checked); if (!e.target.checked) setPushBlockedBy('') }}
+                />
+                Dependent on internal stakeholder
+                <InfoHint text="The delay is waiting on a colleague. Pick who — the KPI view shows where work is getting stuck internally, so bottlenecks surface instead of looking like individual slippage." />
+              </label>
+              {pushInternal && (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <Combobox
+                    options={assigneeOptions.filter((o) => o.id !== currentUserId)}
+                    value={pushBlockedBy}
+                    onChange={setPushBlockedBy}
+                    placeholder="Who are you waiting on?"
+                  />
+                </div>
+              )}
+            </div>
+
+            {pushError && (
+              <div style={{ fontSize: '0.8125rem', color: 'var(--color-destructive)', marginBottom: '0.75rem' }}>{pushError}</div>
+            )}
+
             <div className={styles.modalActions}>
-              <button type="button" className={styles.cancelBtn} onClick={() => setPushTarget(null)}>Cancel</button>
-              <button type="button" className={styles.submitBtn} onClick={handlePushSubmit} disabled={isPending || !pushDate}>
+              <button type="button" className={styles.cancelBtn} onClick={closePush}>Cancel</button>
+              <button type="button" className={styles.submitBtn} onClick={handlePushSubmit} disabled={isPending || !pushDate || !pushReason.trim()}>
                 {isPending ? 'Pushing…' : 'Push Task'}
               </button>
             </div>

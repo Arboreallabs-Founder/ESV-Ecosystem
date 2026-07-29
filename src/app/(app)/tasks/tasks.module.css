@@ -412,6 +412,100 @@
 
 .kpiBad { color: var(--color-destructive); font-weight: 700; }
 
+/* ── Push reasons (why tasks moved) ─────────────────────────────── */
+.kpiRowClickable { cursor: pointer; }
+.kpiRowClickable:hover td { background: rgba(var(--color-hover-rgb), 0.04); }
+
+.kpiCaret {
+  display: inline-block;
+  width: 1rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+
+/* The expanded row is a full-width detail panel, so it opts out of the table's centred cells. */
+.kpiDetailRow td {
+  text-align: left !important;
+  padding: 0 !important;
+  background: var(--color-bg);
+}
+
+.pushSection {
+  margin-top: 1.75rem;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem;
+}
+
+.pushSectionTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.pushSectionSub {
+  margin-top: 0.15rem;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+.pushList {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.kpiDetailRow .pushList { margin: 0; padding: 1rem 1.25rem; }
+
+.pushItem {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-raised);
+}
+
+.pushMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.pushTask { font-weight: 600; font-size: 0.875rem; color: var(--color-text); }
+.pushDate { font-size: 0.75rem; color: var(--color-muted); }
+
+.pushReason {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  line-height: 1.45;
+  white-space: pre-wrap;
+}
+
+.pushTags {
+  margin-top: 0.4rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.pushTag {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--color-muted);
+}
+
+.pushMore { font-size: 0.75rem; color: var(--color-muted); }
+
 /* ── Modal ──────────────────────────────────────────────────────── */
 .overlay {
   position: fixed;
@@ -948,3 +1042,13 @@ a.linkChipTag:hover { background: rgba(var(--color-hover-rgb),0.16); }
 /* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
    the content out to grey. Still frosted (see the backdrop-filter above). */
 .modal { background: var(--glass-panel); }
+
+/* Push-modal dependency checkboxes — label wraps the input so the text is a click target. */
+.checkRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  cursor: pointer;
+}

@@ -124,17 +124,31 @@ export async function updateTaskStatus(taskId: string, status: string) {
   revalidatePath('/my-todos')
 }
 
-export async function pushTask(taskId: string, newDate: string) {
-  const { supabase, userId } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
+export type PushTaskInput = {
+  reason: string
+  blockedExternal?: boolean
+  blockedByUserId?: string | null
+}
+
+export async function pushTask(taskId: string, newDate: string, input: PushTaskInput) {
+  const { supabase, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
+  if (!orgId) throw new Error('No organization found for this account.')
+
+  // Validated here, not just in the modal — the reason is the whole point of the change, and a
+  // client-side-only check would leave the KPI silently full of blank reasons.
+  const reason = input.reason?.trim()
+  if (!reason) throw new Error('A reason is required to push a task.')
 
   // Only the assignee may push their own task.
   const { data: task } = await supabase
     .from('tasks')
-    .select('assignee_id, push_count')
+    .select('assignee_id, push_count, pushed_date, due_date')
     .eq('id', taskId)
     .single()
   if (!task) throw new Error('Task not found.')
   if (task.assignee_id !== userId) throw new Error('Only the assignee can push this task.')
+
+  const fromDate = task.pushed_date ?? task.due_date ?? null
 
   const { error } = await supabase
     .from('tasks')
@@ -145,6 +159,39 @@ export async function pushTask(taskId: string, newDate: string) {
     })
     .eq('id', taskId)
   if (error) throw error
+
+  const blockedBy = input.blockedByUserId || null
+  const { error: pushErr } = await supabase.from('task_pushes').insert({
+    org_id: orgId,
+    task_id: taskId,
+    pushed_by: userId,
+    from_date: fromDate,
+    to_date: newDate,
+    reason,
+    blocked_external: input.blockedExternal ?? false,
+    blocked_by_user_id: blockedBy,
+  })
+  if (pushErr) throw pushErr
+
+  // Mirror the reason into the task's comment thread so it's visible where people already look,
+  // rather than only inside the KPI aggregate. Non-fatal: the push itself already succeeded, and
+  // failing here would misleadingly report the push as failed.
+  try {
+    const tags: string[] = []
+    if (input.blockedExternal) tags.push('external dependency')
+    if (blockedBy) {
+      const { data: blocker } = await supabase.from('users').select('name').eq('id', blockedBy).single()
+      tags.push(`waiting on ${blocker?.name ?? 'a colleague'}`)
+    }
+    const suffix = tags.length ? ` (${tags.join(', ')})` : ''
+    await supabase.from('task_comments').insert({
+      task_id: taskId,
+      org_id: orgId,
+      author_id: userId,
+      body: `⤳ Pushed to ${newDate} — ${reason}${suffix}`,
+    })
+  } catch { /* comment is a courtesy; never fail the push over it */ }
+
   revalidatePath('/tasks')
 }
 

@@ -343,3 +343,31 @@ grants are intact, so widening access later needs no migration.
   to accept `leave_request`/`expense_request`, and its `"Escalations insert"` policy gained `hr` —
   both purely to support the founder-notify-on-approval mechanism described above, not a general
   escalations capability for HR.
+
+### Push reasons & the "why it moved" KPI
+Pushing a task's date **requires a reason** — validated server-side in `pushTask`, not just in the
+modal, so the KPI can't silently fill with blanks. Only the task's assignee can push. Two optional
+flags sit alongside it: *dependent on external party*, and *dependent on internal stakeholder*
+(which reveals a single-person picker). Each push writes a `task_pushes` row and mirrors the reason
+into the task's comment thread.
+
+On `/tasks/kpi`: founder/admin get "Blocked ext." and "Waiting on" columns and can expand any row
+for that person's recent reasons; everyone else sees the same breakdown for themselves only. RLS
+does the scoping — non-leads can read only pushes on their own tasks.
+
+### Active deal "Latest Update" thread
+A timestamped thread on each active deal (`/active-deals/[id]`). Postable by **founder/admin or
+anyone assigned to that deal** (its POCs), enforced by the `active_deal_updates` INSERT policy; the
+UI's `canPost` check only mirrors it. Readable by every internal role; partners see nothing. The
+newest entry is what the Weekly Update prints as `[Deal name]: [Latest Update]`.
+
+### Personal To-Do List (`/my-todos`)
+Renamed from "My To-Dos" (route unchanged). Items are **private by default** — the base policy is
+`user_id = auth.uid()`. Assigning an item to a **work week** is the explicit opt-in that publishes
+it to that week's Weekly Update, and is the only thing that makes it readable by founder/admin.
+Anything with no work week stays invisible to everyone but its owner.
+
+### Weekly Update (`/tasks/update`)
+Now open to `associate` as well as founder/admin/general/hr, since everyone has personal to-dos and
+mandates worth reporting. It stays a read-only, copyable summary — RLS scopes what each viewer can
+actually see, so an associate opening it gets their own row and nobody else's.

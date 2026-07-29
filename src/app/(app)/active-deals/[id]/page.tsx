@@ -5,6 +5,7 @@ import { fetchCompanyOptions } from '@/lib/companies'
 import { getDealInvestors } from '@/app/actions/active-deals'
 import { createClient } from '@/lib/supabase/server'
 import { getEntryAnswers, getEntryStageHistory, getEntryStageAnswers } from '@/app/actions/pipelines'
+import { getDealUpdates } from '@/app/actions/active-deal-updates'
 import type { PipelineEntryStageHistory } from '@/lib/types'
 import ActiveDealPageClient from '../_components/ActiveDealPageClient'
 
@@ -24,11 +25,13 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
   // `general` can't view investors (getDealInvestors' guard rejects them), so skip the fetch
   // entirely for that role — the dashboard hides the investor section for them anyway.
   const canViewInvestors = user.role !== 'general'
-  const [answers, history, stageAnswers, investorData] = await Promise.all([
+  const [answers, history, stageAnswers, investorData, updates] = await Promise.all([
     getEntryAnswers(deal.pipeline_entry_id),
     getEntryStageHistory(deal.pipeline_entry_id),
     getEntryStageAnswers(deal.pipeline_entry_id),
     canViewInvestors ? getDealInvestors(id) : Promise.resolve({ investors: [], dealFieldValues: [] }),
+    // Partners aren't internal, so the updates policy would reject them anyway — skip the round trip.
+    user.role === 'franchise_partner' ? Promise.resolve([]) : getDealUpdates(id),
   ])
 
   const teamMembers = (teamRows ?? []) as Array<{ id: string; name: string }>
@@ -45,6 +48,8 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
       history={history as PipelineEntryStageHistory[]}
       stageAnswers={stageAnswers}
       teamMembers={teamMembers}
+      updates={updates}
+      currentUserId={user.id}
     />
   )
 }

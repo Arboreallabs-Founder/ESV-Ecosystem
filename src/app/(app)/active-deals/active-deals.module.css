@@ -1992,3 +1992,125 @@
 /* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
    the content out to grey. Still frosted (see the backdrop-filter above). */
 .modalPanel { background: var(--glass-panel); }
+
+/* ── Latest Update thread ────────────────────────────────────────────────── */
+.updateHint {
+  margin: -0.25rem 0 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.updateComposer { margin-bottom: 1.125rem; }
+
+.updateInput {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-raised);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+.updateInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.updateComposerActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.updatePostBtn {
+  padding: 0.45rem 0.95rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.updatePostBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Same timeline treatment as Stage History, so the two read as one visual language. */
+.updateThread {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.updateItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  position: relative;
+}
+
+.updateDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  flex-shrink: 0;
+  margin-top: 0.4rem;
+}
+
+.updateLine {
+  position: absolute;
+  left: 3.5px;
+  top: 15px;
+  bottom: -6px;
+  width: 1px;
+  background: var(--color-border);
+}
+
+.updateContent {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 1rem;
+}
+
+.updateHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.updateAuthor { font-size: 0.8125rem; font-weight: 700; color: var(--color-text); }
+.updateTime { font-size: 0.75rem; color: var(--color-muted); }
+
+.updateLatestTag {
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: var(--color-primary-light);
+  color: #2C2C3A;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.updateDelete {
+  margin-left: auto;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.updateDelete:hover { color: var(--color-destructive); }
+
+.updateBody {
+  margin-top: 0.2rem;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  color: var(--color-text);
+  white-space: pre-wrap;
+}

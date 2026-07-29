@@ -20,21 +20,38 @@ export async function getMyTodos(): Promise<PersonalTodo[]> {
   return (data ?? []) as unknown as PersonalTodo[]
 }
 
-export async function addPersonalTodo(input: { title: string; notes?: string | null; due_date?: string | null }): Promise<string> {
+export async function addPersonalTodo(input: {
+  title: string
+  notes?: string | null
+  due_date?: string | null
+  /** Monday of the work week this belongs to. Setting it also publishes the item to that week's update. */
+  work_week_start?: string | null
+}): Promise<string> {
   const { supabase, userId, orgId } = await requireInternal()
   const title = input.title.trim()
   if (!title) throw new Error('Title is required.')
   const { data, error } = await supabase
     .from('personal_todos')
-    .insert({ user_id: userId, org_id: orgId, title, notes: input.notes?.trim() || null, due_date: input.due_date || null })
+    .insert({
+      user_id: userId, org_id: orgId, title,
+      notes: input.notes?.trim() || null,
+      due_date: input.due_date || null,
+      work_week_start: input.work_week_start || null,
+    })
     .select('id')
     .single()
   if (error) throw error
   revalidatePath('/my-todos')
+  revalidatePath('/tasks/update')
   return data.id as string
 }
 
-export async function updatePersonalTodo(id: string, patch: { title?: string; notes?: string | null; due_date?: string | null }): Promise<void> {
+export async function updatePersonalTodo(id: string, patch: {
+  title?: string
+  notes?: string | null
+  due_date?: string | null
+  work_week_start?: string | null
+}): Promise<void> {
   const { supabase } = await requireInternal()
   const update: Record<string, unknown> = {}
   if (patch.title !== undefined) {
@@ -44,9 +61,11 @@ export async function updatePersonalTodo(id: string, patch: { title?: string; no
   }
   if (patch.notes !== undefined) update.notes = patch.notes?.trim() || null
   if (patch.due_date !== undefined) update.due_date = patch.due_date || null
+  if (patch.work_week_start !== undefined) update.work_week_start = patch.work_week_start || null
   const { error } = await supabase.from('personal_todos').update(update).eq('id', id)
   if (error) throw error
   revalidatePath('/my-todos')
+  revalidatePath('/tasks/update')
 }
 
 export async function deletePersonalTodo(id: string): Promise<void> {
@@ -82,6 +101,7 @@ export async function togglePersonalTodo(id: string, done: boolean): Promise<voi
   revalidatePath('/my-todos')
   revalidatePath('/tasks')
   revalidatePath('/dashboard')
+  revalidatePath('/tasks/update')
 }
 
 /** Port an existing Task into the caller's personal list, linked for two-way completion sync. */

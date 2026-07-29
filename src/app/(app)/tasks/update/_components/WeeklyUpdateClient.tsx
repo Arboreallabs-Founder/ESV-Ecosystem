@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import type { Task, ActiveDeal, UserRow } from '@/lib/types'
+import type { Task, ActiveDeal, UserRow, PersonalTodo } from '@/lib/types'
 import { weekRange } from '@/lib/week'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import styles from '../../tasks.module.css'
@@ -11,7 +11,9 @@ type AssociateReport = {
   name: string
   completed: string[]
   open: string[]
+  /** Already rendered as `Deal — Latest update`, or just the deal name when there's no update yet. */
   mandates: string[]
+  personal: Array<{ title: string; done: boolean }>
 }
 
 function buildMessage(report: AssociateReport, weekLabel: string): string {
@@ -27,17 +29,28 @@ function buildMessage(report: AssociateReport, weekLabel: string): string {
   else report.open.forEach((title, i) => lines.push(`${i + 1}. ${title}`))
   if (report.mandates.length > 0) {
     lines.push('')
-    lines.push(`📁 Active mandate: ${report.mandates.join(', ')}`)
+    // One line per mandate rather than a comma list — each now carries its own latest update,
+    // which would be unreadable run together.
+    lines.push('📁 Active mandates')
+    report.mandates.forEach((m) => lines.push(m))
+  }
+  if (report.personal.length > 0) {
+    lines.push('')
+    lines.push(`📝 Personal to-dos (${report.personal.length})`)
+    report.personal.forEach((t) => lines.push(`${t.done ? '☑' : '☐'} ${t.title}`))
   }
   return lines.join('\n')
 }
 
 export default function WeeklyUpdateClient({
-  tasks, activeDeals, users, currentUserId, currentUserRole,
+  tasks, activeDeals, users, dealUpdates, weekTodos, currentUserId, currentUserRole,
 }: {
   tasks: Task[]
   activeDeals: ActiveDeal[]
   users: UserRow[]
+  /** activeDealId -> newest update body. */
+  dealUpdates: Record<string, string>
+  weekTodos: PersonalTodo[]
   currentUserId: string
   currentUserRole: string
 }) {
@@ -46,9 +59,9 @@ export default function WeeklyUpdateClient({
   const [founderFilter, setFounderFilter] = useState<string>(currentUserRole === 'founder' ? currentUserId : 'all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
 
-  const { start: weekStart, end: weekEnd, label: weekLabel } = useMemo(() => weekRange(weekOffset), [weekOffset])
+  const { start: weekStart, end: weekEnd, label: weekLabel, key: weekKey } = useMemo(() => weekRange(weekOffset), [weekOffset])
 
-  const associates = useMemo(() => users.filter((u) => ['associate', 'admin'].includes(u.role)), [users])
+  const associates = useMemo(() => users.filter((u) => ['associate', 'admin', 'general', 'hr'].includes(u.role)), [users])
 
   const reports = useMemo<AssociateReport[]>(() => {
     const inWeek = (dateStr: string) => {
@@ -66,11 +79,18 @@ export default function WeeklyUpdateClient({
         const open = relevant.filter((t) => t.status !== 'Done').map((t) => t.title)
         const mandates = activeDeals
           .filter((d) => d.deal_state === 'active' && d.entry?.assignees?.some((x) => x.user_id === a.id))
-          .map((d) => d.entry?.title ?? 'Untitled')
-        return { id: a.id, name: a.name ?? a.email, completed, open, mandates }
+          .map((d) => {
+            const name = d.entry?.title ?? 'Untitled'
+            const latest = dealUpdates[d.id]
+            return latest ? `${name}: ${latest}` : `${name}: (no update yet)`
+          })
+        const personal = weekTodos
+          .filter((t) => t.user_id === a.id && t.work_week_start === weekKey)
+          .map((t) => ({ title: t.title, done: t.done }))
+        return { id: a.id, name: a.name ?? a.email, completed, open, mandates, personal }
       })
-      .filter((r) => r.completed.length > 0 || r.open.length > 0 || r.mandates.length > 0)
-  }, [associates, tasks, activeDeals, founderFilter, weekStart, weekEnd])
+      .filter((r) => r.completed.length > 0 || r.open.length > 0 || r.mandates.length > 0 || r.personal.length > 0)
+  }, [associates, tasks, activeDeals, dealUpdates, weekTodos, weekKey, founderFilter, weekStart, weekEnd])
 
   async function copyText(text: string, id: string) {
     try {
@@ -97,7 +117,7 @@ export default function WeeklyUpdateClient({
             <div className={styles.pageTitle}>Weekly Update</div>
             <WikiButton sectionKey="tasks" />
           </div>
-          <div className={styles.pageSub}>A copyable WhatsApp-ready summary of each associate&apos;s and admin&apos;s week.</div>
+          <div className={styles.pageSub}>A copyable WhatsApp-ready summary of everyone&apos;s week \u2014 tasks, mandate updates, and any personal to-dos filed into this week.</div>
         </div>
         {reports.length > 0 && (
           <button className={styles.addBtn} onClick={copyAll}>
@@ -136,6 +156,7 @@ export default function WeeklyUpdateClient({
                   <span className={styles.personPill}>{report.completed.length} done</span>
                   <span className={styles.personPill}>{report.open.length} open</span>
                   {report.mandates.length > 0 && <span className={styles.personPill}>{report.mandates.length} mandate{report.mandates.length === 1 ? '' : 's'}</span>}
+                  {report.personal.length > 0 && <span className={styles.personPill}>{report.personal.length} personal</span>}
                 </span>
                 <button className={styles.expandAllBtn} onClick={() => copyOne(report)}>
                   {copiedId === report.id ? 'Copied!' : 'Copy'}

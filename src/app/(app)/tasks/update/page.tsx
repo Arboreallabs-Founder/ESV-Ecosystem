@@ -3,17 +3,20 @@ import { getUser } from '@/lib/user'
 import { fetchAllTasks } from '@/lib/tasks'
 import { fetchActiveDeals } from '@/lib/active-deals'
 import { fetchAllUsers } from '@/lib/partners'
+import { fetchLatestDealUpdates, fetchWeekTodos } from '@/lib/weekly-update'
 import WeeklyUpdateClient from './_components/WeeklyUpdateClient'
 
 export default async function TasksUpdatePage() {
   const user = await getUser()
   if (!user) redirect('/login')
-  if (!['founder', 'admin', 'general', 'hr'].includes(user.role ?? '')) redirect('/tasks')
+  if (!['founder', 'admin', 'associate', 'general', 'hr'].includes(user.role ?? '')) redirect('/tasks')
 
-  const [tasks, activeDeals, users] = await Promise.all([
+  const [tasks, activeDeals, users, dealUpdates, weekTodos] = await Promise.all([
     fetchAllTasks(),
     fetchActiveDeals(),
     fetchAllUsers(),
+    fetchLatestDealUpdates(),
+    fetchWeekTodos(),
   ])
 
   return (
@@ -21,6 +24,8 @@ export default async function TasksUpdatePage() {
       tasks={tasks}
       activeDeals={activeDeals}
       users={users}
+      dealUpdates={dealUpdates}
+      weekTodos={weekTodos}
       currentUserId={user.id}
       currentUserRole={user.role ?? ''}
     />

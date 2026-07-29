@@ -124,7 +124,7 @@ const NAV_ITEMS: NavEntry[] = [
       },
       {
         href: '/my-todos',
-        label: 'My To-Dos',
+        label: 'Personal To-Do List',
         roles: ['founder', 'admin', 'associate', 'general', 'hr'],
         icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
         badgeColor: 'var(--color-accent)',
@@ -146,7 +146,7 @@ const NAV_ITEMS: NavEntry[] = [
       {
         href: '/tasks/update',
         label: 'Weekly Update',
-        roles: ['founder', 'admin', 'general', 'hr'],
+        roles: ['founder', 'admin', 'associate', 'general', 'hr'],
         icon: <Icon d="M6 12 3.269 3.126A59.768 59.768 0 0 1 21.485 12 59.77 59.77 0 0 1 3.27 20.876L5.999 12Zm0 0h7.5" />,
         badgeColor: 'var(--color-primary-light)',
       },
