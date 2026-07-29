@@ -3,8 +3,9 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BALANCE_LEAVE_TYPES } from '@/lib/types'
-import type { LeaveBalance, LeaveBalanceRow } from '@/lib/types'
+import type { LeaveBalance, LeaveBalanceRow, LeavePolicy } from '@/lib/types'
 import BalanceEditRow from './BalanceEditRow'
+import PolicyEditor from './PolicyEditor'
 import { artForLeaveType, fmtDays } from './leave-type-meta'
 import styles from '../approvals.module.css'
 
@@ -35,9 +36,11 @@ function SummaryBar({ myBalances }: { myBalances: Record<string, LeaveBalance> |
   )
 }
 
-export default function BalancesTable({ rows, myBalances }: {
+export default function BalancesTable({ rows, myBalances, policy, userRole }: {
   rows: LeaveBalanceRow[]
   myBalances: Record<string, LeaveBalance> | null
+  policy: LeavePolicy
+  userRole: string
 }) {
   const router = useRouter()
   const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
@@ -66,6 +69,8 @@ export default function BalancesTable({ rows, myBalances }: {
           ))}
         </select>
       </div>
+
+      <PolicyEditor policy={policy} canEdit={['founder', 'admin', 'hr'].includes(userRole)} />
 
       {rows.length === 0 ? (
         <div className={styles.empty}>No internal users found.</div>

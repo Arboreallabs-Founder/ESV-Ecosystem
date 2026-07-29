@@ -267,7 +267,10 @@ Approvals below. This is not a user-facing escalations capability.
   fetched — never a public URL.
 - **Leave balances**: Founder/Admin/HR can set a per-person entitled-days total and a manual
   "already used" baseline for Earned/Sick/My Day/Compensatory leave (Unpaid is uncapped, no
-  balance) on the "Balances" tab on `/approvals`. **Informational only** — "remaining" is computed
+  balance) on the "Balances" tab on `/approvals`. The **annual entitlement** itself (the org-wide
+  days-per-type standard in `leave_policy`) is edited on that same tab by founder/admin/HR — it is
+  not a code constant. Raising or lowering it re-bases everyone's remaining days, because remaining
+  is always computed (entitlement − manual baseline − approved days) and never stored. **Informational only** — "remaining" is computed
   live (entitled − manual baseline − days from approved requests) and shown to the requester on
   the leave request form and to approvers on the "Team leaves" roster, but nothing blocks a
   request or approval that would take someone past zero remaining.

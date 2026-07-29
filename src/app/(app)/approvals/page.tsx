@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
 import { fetchPendingLeaveRequests, fetchRecentLeaveDecisions, fetchAllLeaveRequests } from '@/lib/leave-requests'
 import { fetchPendingExpenseRequests, fetchRecentExpenseDecisions } from '@/lib/expense-requests'
-import { fetchAllLeaveBalances, fetchMyLeaveBalances } from '@/lib/leave-balances'
+import { fetchAllLeaveBalances, fetchMyLeaveBalances, fetchLeavePolicy } from '@/lib/leave-balances'
 import ApprovalsView from './_components/ApprovalsView'
 
 export default async function ApprovalsPage() {
@@ -10,7 +10,7 @@ export default async function ApprovalsPage() {
   if (!user) redirect('/login')
   if (!['founder', 'admin', 'hr'].includes(user.role ?? '')) redirect('/hr')
 
-  const [pendingLeave, pendingExpense, recentLeave, recentExpense, allLeave, balances, myBalances] = await Promise.all([
+  const [pendingLeave, pendingExpense, recentLeave, recentExpense, allLeave, balances, myBalances, policy] = await Promise.all([
     fetchPendingLeaveRequests(),
     fetchPendingExpenseRequests(),
     fetchRecentLeaveDecisions(),
@@ -18,6 +18,7 @@ export default async function ApprovalsPage() {
     fetchAllLeaveRequests(),
     fetchAllLeaveBalances(),
     fetchMyLeaveBalances(user.id),
+    fetchLeavePolicy(),
   ])
 
   return (
@@ -29,6 +30,8 @@ export default async function ApprovalsPage() {
       allLeave={allLeave}
       balances={balances}
       myBalances={myBalances}
+      policy={policy}
+      userRole={user.role ?? ''}
     />
   )
 }

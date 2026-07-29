@@ -221,3 +221,138 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   border-color: var(--glass-border);
 }
+
+/* ── Annual entitlement (org-wide leave policy) ──────────────────────────────
+   Sits between the viewer's own summary bar and the roster. Deliberately its own card rather
+   than an editable version of the summary bar: that bar is the viewer's *remaining* days, this
+   is the org standard everyone is measured against. Same numbers before anyone takes leave,
+   very different meanings after. */
+.policyCard {
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem;
+  background: var(--color-card);
+  border: 1.5px solid var(--glass-border, var(--color-border));
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}
+
+.policyHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 0.9rem;
+}
+
+.policyTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.policySub {
+  margin-top: 0.1rem;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  line-height: 1.45;
+  max-width: 46ch;
+}
+
+.policyEditBtn {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 0.35rem 0.85rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.policyEditBtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+.policyGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.9rem;
+}
+
+.policyField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.policyFieldLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+.policyReadValue {
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--color-text);
+  line-height: 1.1;
+}
+
+.policyInputRow { display: flex; align-items: baseline; gap: 0.4rem; }
+
+.policyInput {
+  width: 5rem;
+  padding: 0.3rem 0.15rem;
+  border: none;
+  border-bottom: 2px solid var(--color-accent);
+  background: none;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 1.25rem;
+  font-weight: 700;
+  outline: none;
+}
+.policyInput:focus { border-bottom-color: var(--color-primary); }
+
+.policyUnit { font-size: 0.8125rem; font-weight: 500; color: var(--color-muted); }
+
+.policyError {
+  margin-top: 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--color-destructive);
+}
+
+.policyActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.policyCancelBtn {
+  padding: 0.45rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-raised);
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.policyCancelBtn:hover { border-color: var(--color-text); }
+
+.policySaveBtn {
+  padding: 0.45rem 1.15rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.policySaveBtn:disabled { opacity: 0.55; cursor: not-allowed; }
+.policySaveBtn:not(:disabled):hover { opacity: 0.88; }

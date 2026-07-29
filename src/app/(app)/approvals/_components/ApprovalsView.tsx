@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { decideLeaveRequest, deleteLeaveRequestAsAdmin } from '@/app/actions/leave-requests'
 import { decideExpenseRequest } from '@/app/actions/expense-requests'
 import { LEAVE_TYPE_LABELS, EXPENSE_TYPE_LABELS } from '@/lib/types'
-import type { LeaveRequest, ExpenseRequest, LeaveBalanceRow, LeaveBalance } from '@/lib/types'
+import type { LeaveRequest, ExpenseRequest, LeaveBalanceRow, LeaveBalance, LeavePolicy } from '@/lib/types'
 import BalancesTable from './BalancesTable'
 import styles from '../approvals.module.css'
 
@@ -20,12 +20,15 @@ function StatusPill({ status }: { status: 'pending' | 'approved' | 'rejected' })
 
 export default function ApprovalsView({
   pendingLeave, pendingExpense, recentLeave, recentExpense, allLeave, balances, myBalances,
+  policy, userRole,
 }: {
   pendingLeave: LeaveRequest[]; pendingExpense: ExpenseRequest[]
   recentLeave: LeaveRequest[]; recentExpense: ExpenseRequest[]
   allLeave: LeaveRequest[]
   balances: LeaveBalanceRow[]
   myBalances: Record<string, LeaveBalance> | null
+  policy: LeavePolicy
+  userRole: string
 }) {
   const router = useRouter()
   const [tab, setTab] = useState<'approvals' | 'team-leaves' | 'balances'>('approvals')
@@ -204,7 +207,9 @@ export default function ApprovalsView({
           </>
         )}
 
-        {tab === 'balances' && <BalancesTable rows={balances} myBalances={myBalances} />}
+        {tab === 'balances' && (
+          <BalancesTable rows={balances} myBalances={myBalances} policy={policy} userRole={userRole} />
+        )}
       </div>
     </div>
   )
