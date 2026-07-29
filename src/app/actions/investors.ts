@@ -197,7 +197,7 @@ export async function updateInvestor(
   }
 ): Promise<void> {
   // Partners may edit their own referrals, but never the ESV POC or referral attribution.
-  const { supabase, role, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'franchise_partner'])
+  const { supabase, role, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'franchise_partner', 'hr'])
   const isPartner = role === 'franchise_partner'
 
   const baseFields = {
@@ -270,7 +270,7 @@ const one = <T>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? 
 // History" panel. Doubles as inferred preferences: sectors/meta_tags the investor has actually
 // backed, distinct from (and shown alongside) their self-declared sectors/business_types.
 export async function getInvestorPortfolio(investorId: string): Promise<InvestorPortfolioItem[]> {
-  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'franchise_partner'])
+  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'franchise_partner', 'hr'])
   const { data } = await supabase
     .from('active_deal_investors')
     .select(`
@@ -386,7 +386,7 @@ export async function addContact(
   params: ContactDraft
 ): Promise<InvestorContact> {
   // Allow franchise_partner too — RLS enforces they can only add to their own referrals
-  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'franchise_partner'])
+  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'franchise_partner', 'hr'])
   const { data, error } = await supabase
     .from('investor_contacts')
     .insert({
