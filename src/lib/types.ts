@@ -212,7 +212,7 @@ export type HrBirthday = {
   created_at: string
 }
 
-export type LeaveType = 'earned' | 'sick' | 'my_day' | 'compensatory' | 'unpaid'
+export type LeaveType = 'earned' | 'sick' | 'my_day' | 'compensatory' | 'unpaid' | 'wfh'
 export type ApprovalStatus = 'pending' | 'approved' | 'rejected'
 
 export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
@@ -221,6 +221,7 @@ export const LEAVE_TYPE_LABELS: Record<LeaveType, string> = {
   my_day: 'My Day Leave',
   compensatory: 'Compensatory Leave',
   unpaid: 'Unpaid Leave',
+  wfh: 'Work from Home',
 }
 
 export type LeaveRequest = {
@@ -242,11 +243,11 @@ export type LeaveRequest = {
 }
 
 // Leave types that carry an entitlement balance — Unpaid is deliberately excluded (uncapped).
-export const BALANCE_LEAVE_TYPES: LeaveType[] = ['earned', 'sick', 'my_day', 'compensatory']
+export const BALANCE_LEAVE_TYPES: LeaveType[] = ['earned', 'sick', 'my_day', 'compensatory', 'wfh']
 
 /** Short codes shown on the balance chips. */
 export const LEAVE_TYPE_CODES: Record<string, string> = {
-  earned: 'EL', sick: 'SL', my_day: 'MD', compensatory: 'CL',
+  earned: 'EL', sick: 'SL', my_day: 'MD', compensatory: 'CL', wfh: 'WFH',
 }
 
 /** Org-wide standard entitlement per leave type, in days. */
@@ -256,12 +257,14 @@ export type LeavePolicy = {
   sick_days: number
   my_day_days: number
   compensatory_days: number
+  wfh_days: number
   updated_at: string
 }
 
 /** Maps a leave type to its column on LeavePolicy. */
 export const POLICY_COLUMN: Record<string, keyof LeavePolicy> = {
   earned: 'earned_days', sick: 'sick_days', my_day: 'my_day_days', compensatory: 'compensatory_days',
+  wfh: 'wfh_days',
 }
 
 // One row per person+type; "remaining" is computed at read time (entitled - manual_used - sum

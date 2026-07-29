@@ -77,6 +77,7 @@ export type LeavePolicyInput = {
   sick_days: number
   my_day_days: number
   compensatory_days: number
+  wfh_days: number
 }
 
 export async function updateLeavePolicy(input: LeavePolicyInput): Promise<void> {

@@ -96,3 +96,13 @@ marks it.
   back NULL — `/approvals` showed requests from "Unknown" and the balances roster had no names.
   Worth remembering as a failure mode: RLS filters a joined row out **silently**, so the symptom
   is a UI fallback rather than an error.
+- `20260822000000_leave_type_wfh_enum.sql` — adds `'wfh'` to the `leave_type` enum. **Standalone,
+  and must run before `20260822100000`**: Postgres rejects a new enum value used by any statement
+  in the same transaction that added it. Same reason `20260814000000` (the `hr` role) is its own
+  migration.
+- `20260822100000_wfh_entitlement.sql` — `leave_policy.wfh_days NUMERIC NOT NULL DEFAULT 24`,
+  backfilled to 24 for existing orgs. Modelled as an entitlement like the others rather than a
+  separate concept: WFH isn't leave in the HR sense, but it's requested, approved and counted
+  against an annual allowance identically, so reusing `leave_requests` keeps one approval queue
+  and one balance calculation instead of a parallel set that would drift. 24 is a starting
+  standard, editable on the Balances tab like every other entitlement.

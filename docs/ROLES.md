@@ -274,6 +274,10 @@ Approvals below. This is not a user-facing escalations capability.
   live (entitled − manual baseline − days from approved requests) and shown to the requester on
   the leave request form and to approvers on the "Team leaves" roster, but nothing blocks a
   request or approval that would take someone past zero remaining.
+- **Work from Home** is a fifth tracked category (added 2026-08-22), 24 days a year by default
+  and editable like the rest. It rides the same request/approve/balance machinery as leave —
+  someone working from home is working, but it's requested and counted identically, so a parallel
+  system would only drift. It is **not** a performance signal, same as every other leave type.
 - **Team leaves roster**: the "Team leaves" tab on `/approvals` (Founder/Admin/HR) lists every
   leave request org-wide, any status, filterable by person — with the ability to re-decide
   (change approve/reject after the fact) or cancel any request, not just pending ones.

@@ -19,7 +19,7 @@ import {
 const BALANCE_ROSTER_ROLES = ['admin', 'associate', 'general', 'hr']
 
 const DEFAULT_POLICY: Omit<LeavePolicy, 'id' | 'updated_at'> = {
-  earned_days: 20, sick_days: 10, my_day_days: 2, compensatory_days: 20,
+  earned_days: 20, sick_days: 10, my_day_days: 2, compensatory_days: 20, wfh_days: 24,
 }
 
 /** Whole days between two dates, inclusive; a flagged single-day request counts as 0.5. */

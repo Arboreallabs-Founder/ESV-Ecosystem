@@ -50,11 +50,24 @@ function ClockIcon() {
   )
 }
 
+function HouseIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="m3 10.5 9-7 9 7" />
+      <path d="M5 9.5V20a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V9.5" />
+      <path d="M9.5 21v-6h5v6" />
+    </svg>
+  )
+}
+
 export const LEAVE_TYPE_ART: Record<string, LeaveTypeArt> = {
   earned: { code: 'EL', label: 'Earned Leave', icon: <LeafIcon /> },
   sick: { code: 'SL', label: 'Sick Leave', icon: <HeartIcon /> },
   my_day: { code: 'MD', label: 'My Day', icon: <SunIcon /> },
   compensatory: { code: 'CL', label: 'Compensatory Leave', icon: <ClockIcon /> },
+  // Not leave in the HR sense — someone working from home is working — but it's requested,
+  // approved and counted against an annual allowance identically, so it lives here.
+  wfh: { code: 'WFH', label: 'Work from Home', icon: <HouseIcon /> },
 }
 
 export function artForLeaveType(type: LeaveType | string): LeaveTypeArt {

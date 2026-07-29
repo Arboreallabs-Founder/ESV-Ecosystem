@@ -63,6 +63,7 @@ export default function PolicyEditor({ policy, canEdit }: { policy: LeavePolicy;
           sick_days: values.sick,
           my_day_days: values.my_day,
           compensatory_days: values.compensatory,
+          wfh_days: values.wfh,
         })
         setOpen(false)
         router.refresh()
