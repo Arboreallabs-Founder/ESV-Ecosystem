@@ -396,6 +396,11 @@ it to that week's Weekly Update, and is the only thing that makes it readable by
 Anything with no work week stays invisible to everyone but its owner.
 
 ### Weekly Update (`/tasks/update`)
-Now open to `associate` as well as founder/admin/general/hr, since everyone has personal to-dos and
-mandates worth reporting. It stays a read-only, copyable summary — RLS scopes what each viewer can
-actually see, so an associate opening it gets their own row and nobody else's.
+Open to every internal role. Founder/admin get the full team carousel and the "assigned by" filter;
+**everyone else sees only their own card**.
+
+That last part is a presentation choice layered on top of RLS, not a substitute for it. Tasks and
+personal to-dos are already database-scoped, but active deals are readable org-wide — so without
+the client-side narrowing a non-lead would still get a card per colleague containing nothing but
+their mandates. Read-only and copyable in both cases; the copy button emits the identical WhatsApp
+text either way.

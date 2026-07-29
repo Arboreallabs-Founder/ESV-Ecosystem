@@ -109,7 +109,19 @@ export default function WeeklyUpdateClient({
 
   const { start: weekStart, end: weekEnd, label: weekLabel, key: weekKey } = useMemo(() => weekRange(weekOffset), [weekOffset])
 
-  const associates = useMemo(() => users.filter((u) => ['associate', 'admin', 'general', 'hr'].includes(u.role)), [users])
+  // Leads review the team; everyone else gets their own card and only their own.
+  //
+  // This is a presentation choice on top of RLS, not a substitute for it — an associate's tasks
+  // and to-dos are already scoped by the database. But active deals are readable org-wide, so
+  // without this a non-lead would still see a card per colleague: no tasks, just their mandates.
+  // A carousel of near-empty colleague cards is worse than useless when you came to read your own.
+  const isLead = ['founder', 'admin'].includes(currentUserRole)
+  const associates = useMemo(
+    () => (isLead
+      ? users.filter((u) => ['associate', 'admin', 'general', 'hr'].includes(u.role))
+      : users.filter((u) => u.id === currentUserId)),
+    [users, isLead, currentUserId],
+  )
 
   const reports = useMemo<AssociateReport[]>(() => {
     const inWeek = (dateStr: string) => {
@@ -188,10 +200,12 @@ export default function WeeklyUpdateClient({
             <WikiButton sectionKey="tasks" />
           </div>
           <p className={styles.pageSub}>
-            One card per person — tasks, mandate updates, and any personal to-dos filed into this week.
+            {isLead
+              ? 'One card per person — tasks, mandate updates, and any personal to-dos filed into this week.'
+              : 'Your week — tasks, mandate updates, and any personal to-dos you filed into this week.'}
           </p>
         </div>
-        {reports.length > 0 && (
+        {reports.length > 1 && (
           <button className={styles.copyAllBtn} onClick={copyAll}>
             {copied === '__all__' ? 'Copied all ✓' : `Copy all ${reports.length}`}
           </button>
@@ -207,14 +221,20 @@ export default function WeeklyUpdateClient({
         {weekOffset !== 0 && (
           <button className={styles.thisWeekBtn} onClick={() => setWeekOffset(0)}>This week</button>
         )}
-        <select className={styles.filterSelect} value={founderFilter} onChange={(e) => setFounderFilter(e.target.value)}>
-          <option value="all">All founders/admins</option>
-          {founders.map((f) => <option key={f.id} value={f.id}>{f.name || f.email}</option>)}
-        </select>
+        {isLead && (
+          <select className={styles.filterSelect} value={founderFilter} onChange={(e) => setFounderFilter(e.target.value)}>
+            <option value="all">All founders/admins</option>
+            {founders.map((f) => <option key={f.id} value={f.id}>{f.name || f.email}</option>)}
+          </select>
+        )}
       </div>
 
       {!report ? (
-        <div className={styles.empty}>Nothing to report for this week.</div>
+        <div className={styles.empty}>
+          {isLead
+            ? 'Nothing to report for this week.'
+            : 'Nothing to report for this week yet — completed tasks, mandate updates and work-week to-dos land here.'}
+        </div>
       ) : (
         <>
           <div className={styles.stage}>
