@@ -688,7 +688,10 @@
   color: var(--color-primary);
   flex-shrink: 0;
   text-transform: uppercase;
+  /* Holds a photo when there is one; the tinted initials remain the fallback. */
+  overflow: hidden;
 }
+.userAvatar img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 .userDetails {
   flex: 1;
@@ -944,6 +947,11 @@
     transform: translateX(-100%);
     transition: transform 0.22s ease;
     box-shadow: var(--shadow-elevated);
+    /* On desktop the sidebar is persistent chrome beside the page, where translucency reads as
+       depth. As a mobile drawer it sits *over* the page, and at card alpha the content behind
+       shows straight through it — nav labels and page text overlapping illegibly. Same reason
+       modals and flyouts use this token. */
+    background-color: var(--glass-panel);
   }
   .sidebarOpen {
     transform: translateX(0);
@@ -966,7 +974,9 @@
     height: 56px;
     flex-shrink: 0;
     padding: 0 0.875rem;
-    background: var(--color-card);
+    /* Page content scrolls beneath the topbar, so it needs the same near-opaque treatment as
+       the drawer — at card alpha you read the page through the brand and the bell. */
+    background: var(--glass-panel);
     backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
     -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
     border-bottom: 1px solid var(--glass-border);
@@ -981,6 +991,10 @@
     top: 64px;
     right: 0.75rem;
   }
+
+  /* The drawer's scrim should cover the clock too — a bright pill hovering over a dimmed page
+     reads as a rendering fault. */
+  .shellDrawerOpen .hrClockWidget { display: none; }
 
   /* Same reservation as desktop's .mainWithClock, sized for the widget's
      lower starting point (below the 56px topbar) on small screens. */

@@ -12,7 +12,7 @@ import HrClockWidget from '@/app/_components/HrClockWidget'
 import type { HrClockSettings, HrBirthday } from '@/lib/types'
 import styles from '@/app/app-shell.module.css'
 
-type UserRow = { id: string; name: string | null; role: string | null; email: string | null }
+type UserRow = { id: string; name: string | null; role: string | null; email: string | null; photo_url?: string | null }
 type TaskAlert = { id: string; title: string; created_at: string; kind: 'assigned' | 'comment'; by?: string }
 
 // The HR clock widget is narrower than general task access — founder/admin/hr only.
@@ -381,6 +381,23 @@ export default function AppShell({
   // Close the mobile drawer whenever the route changes.
   useEffect(() => { setMobileOpen(false) }, [pathname])
 
+  // Lock the page behind the open drawer. Without this, scrolling over the scrim scrolls the
+  // page underneath — you close the drawer and find yourself somewhere else entirely.
+  useEffect(() => {
+    if (!mobileOpen) return
+    const previous = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = previous }
+  }, [mobileOpen])
+
+  // Escape closes the drawer, matching every other dismissible surface in the app.
+  useEffect(() => {
+    if (!mobileOpen) return
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setMobileOpen(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [mobileOpen])
+
   // Collapsible icon-only rail (desktop only — the mobile drawer ignores this, see CSS).
   // Pure UI preference, not user-specific, so no id suffix on the storage key.
   const sidebarCollapsedKey = 'esv_sidebar_collapsed'
@@ -522,7 +539,7 @@ export default function AppShell({
   )
 
   return (
-    <div className={styles.shell}>
+    <div className={`${styles.shell} ${mobileOpen ? styles.shellDrawerOpen : ''}`}>
       {mobileOpen && <div className={styles.backdrop} onClick={() => setMobileOpen(false)} />}
       <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ''} ${sidebarCollapsed ? styles.sidebarCollapsed : ''}`}>
         {/* Demo mode banner */}
@@ -748,7 +765,9 @@ export default function AppShell({
         {/* User footer */}
         <div className={styles.sidebarFooter}>
           <Link href="/settings" className={styles.userRow} onClick={() => setMobileOpen(false)}>
-            <div className={styles.userAvatar}>{initials}</div>
+            <div className={styles.userAvatar}>
+              {user.photo_url ? <img src={user.photo_url} alt="" /> : initials}
+            </div>
             <div className={styles.userDetails}>
               <div className={styles.userName}>{displayName}</div>
               <div className={styles.userEmail}>{user.email ?? ROLE_LABELS[role] ?? role}</div>
