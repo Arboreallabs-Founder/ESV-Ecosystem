@@ -9,7 +9,7 @@ import type { ActiveDealUpdate } from '@/lib/types'
 
 const INTERNAL = ['founder', 'admin', 'associate', 'general', 'hr'] as const
 
-const UPDATE_SELECT = '*, created_by_user:created_by(name)'
+const UPDATE_SELECT = '*, created_by_user:created_by(name, photo_url)'
 
 export async function getDealUpdates(activeDealId: string): Promise<ActiveDealUpdate[]> {
   const { supabase } = await requireRole([...INTERNAL])

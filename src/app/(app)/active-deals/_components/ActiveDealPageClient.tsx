@@ -10,6 +10,7 @@ import { ACTIVE_DEAL_INVESTOR_STATUSES, ACTIVE_DEAL_INVESTOR_STATUS_META, DEAL_S
 import { computeFeeAmount } from '@/lib/deal-fees'
 import { StatusGauge, StatusDonut, type DonutSegment } from './DealCharts'
 import DealUpdates from './DealUpdates'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../active-deals.module.css'
 
 function formatINR(amount: number) {
@@ -92,7 +93,7 @@ export default function ActiveDealPageClient({
   answers: AnswerItem[]
   history: PipelineEntryStageHistory[]
   stageAnswers: StageAnswerView[]
-  teamMembers: Array<{ id: string; name: string }>
+  teamMembers: Array<{ id: string; name: string; photo_url: string | null }>
   updates: ActiveDealUpdate[]
   currentUserId: string
 }) {
@@ -131,7 +132,7 @@ export default function ActiveDealPageClient({
   function handleAddAssignee(userId: string) {
     const member = teamMembers.find((m) => m.id === userId)
     if (!member) return
-    setAssignees((prev) => [...prev, { user_id: userId, name: member.name }])
+    setAssignees((prev) => [...prev, { user_id: userId, name: member.name, photo_url: member.photo_url }])
     startAssigneeTransition(async () => {
       try { await addAssignee(deal.pipeline_entry_id, userId) }
       catch (err) { setAssignees((prev) => prev.filter((a) => a.user_id !== userId)); alert(String(err)) }
@@ -374,6 +375,7 @@ export default function ActiveDealPageClient({
             <div className={styles.assigneeChips}>
               {assignees.map((a) => (
                 <span key={a.user_id} className={styles.assigneeChip}>
+                  <Avatar name={a.name} photoUrl={a.photo_url} size="xs" />
                   {a.name}
                   <button className={styles.assigneeChipRemove} onClick={() => handleRemoveAssignee(a.user_id)} title="Remove">×</button>
                 </span>
@@ -399,7 +401,10 @@ export default function ActiveDealPageClient({
           ) : (
             <div className={styles.assigneeChips}>
               {assignees.map((a) => (
-                <span key={a.user_id} className={styles.detailAssigneeChip}>{a.name}</span>
+                <span key={a.user_id} className={styles.detailAssigneeChip}>
+                  <Avatar name={a.name} photoUrl={a.photo_url} size="xs" />
+                  {a.name}
+                </span>
               ))}
             </div>
           )}

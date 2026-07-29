@@ -7,6 +7,7 @@ import type { Task, TaskComment, UserRow } from '@/lib/types'
 import { formatDateTimeIst, formatDateTimeIstLong } from '@/lib/format-datetime'
 import Spinner from '@/app/_components/Spinner'
 import Combobox from '@/app/_components/Combobox'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../tasks.module.css'
 
 const formatDateTime = formatDateTimeIst
@@ -210,7 +211,12 @@ export default function TaskDetailModal({
       <div className={`${styles.modal} ${styles.modalWide}`} onMouseDown={(e) => e.stopPropagation()}>
         <div className={styles.modalTitle}>{task.title}</div>
         <div className={styles.detailMeta}>
-          {task.assignee?.name && <span className={styles.metaTag}>{task.assignee.name}</span>}
+          {task.assignee?.name && (
+            <span className={styles.metaTag}>
+              <Avatar name={task.assignee.name} photoUrl={task.assignee.photo_url} size="xs" />
+              {task.assignee.name}
+            </span>
+          )}
           <span className={styles.metaTag}>{task.status}</span>
           <span className={`${styles.priority} ${task.priority === 'High' ? styles.priorityHigh : task.priority === 'Medium' ? styles.priorityMedium : styles.priorityLow}`}>{task.priority}</span>
           {task.due_date ? (
@@ -224,7 +230,15 @@ export default function TaskDetailModal({
             to check. */}
         <div className={styles.assignedBy} style={{ marginTop: '-1rem', marginBottom: '1rem' }}>
           {(task.assigned_by_user?.name || task.created_by_user?.name) && (
-            <>Assigned by {task.assigned_by_user?.name ?? task.created_by_user?.name} · </>
+            <>
+              Assigned by{' '}
+              <Avatar
+                name={task.assigned_by_user?.name ?? task.created_by_user?.name}
+                photoUrl={task.assigned_by_user?.photo_url ?? task.created_by_user?.photo_url}
+                size="xs"
+              />{' '}
+              {task.assigned_by_user?.name ?? task.created_by_user?.name} ·{' '}
+            </>
           )}
           <span title={formatDateTimeIstLong(task.created_at)}>
             {formatDateTimeIstLong(task.created_at)}
@@ -265,6 +279,7 @@ export default function TaskDetailModal({
             {comments.map((c) => (
               <div key={c.id} className={styles.comment}>
                 <div className={styles.commentHead}>
+                  <Avatar name={c.author?.name} photoUrl={c.author?.photo_url} size="xs" />
                   <span className={styles.commentAuthor}>{c.author?.name ?? 'Someone'}</span>
                   <span className={styles.commentDate}>{formatDateTime(c.created_at)}</span>
                   <button className={styles.commentRemove} onClick={() => remove(c.id)} title="Delete">×</button>

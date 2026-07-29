@@ -5,7 +5,7 @@ import type { ActiveDeal, ActiveDealCategoryData, DealCategory, DealState } from
 type FieldValueRow = { field_id: string; value: string | null }
 type DealCategoryFieldRow = DealCategory['fields'][number]
 type DealCategoryRow = Omit<DealCategory, 'fields'> & { fields?: DealCategoryFieldRow[] | null }
-type UserNameRow = { name: string | null }
+type UserNameRow = { name: string | null; photo_url: string | null }
 type EntryAssigneeRow = { user_id: string; user?: UserNameRow | UserNameRow[] | null }
 type PartnerRow = { id: string; name: string }
 type CompanyRefRow = { id: string; name: string; logo_url: string | null }
@@ -66,7 +66,7 @@ const ACTIVE_DEAL_SELECT = `
   created_at,
   deal_state,
   logo_url,
-  entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, company_id, company:companies!company_id(id, name, logo_url), assignees:pipeline_entry_assignees(user_id, user:users(name)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
+  entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, company_id, company:companies!company_id(id, name, logo_url), assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
   categories:active_deal_categories(
     category:deal_categories(
       id, name, description, color, created_at,
@@ -100,7 +100,7 @@ function shapeActiveDealRow(row: ActiveDealRow): ActiveDeal {
       company: company ? { id: company.id, name: company.name, logo_url: company.logo_url ?? null } : null,
       assignees: (entry?.assignees ?? []).map((a) => {
         const user = first(a.user)
-        return { user_id: a.user_id, name: user?.name ?? 'Unknown' }
+        return { user_id: a.user_id, name: user?.name ?? 'Unknown', photo_url: user?.photo_url ?? null }
       }),
       sourced_via_partner: fp ? { id: fp.id, name: fp.name } : null,
     },

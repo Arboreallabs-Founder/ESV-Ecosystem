@@ -8,6 +8,7 @@ import { linkFormToPipeline } from '@/app/actions/forms'
 import { getCategories, acceptDeal } from '@/app/actions/active-deals'
 import { linkPipelineEntryToCompany } from '@/app/actions/companies'
 import type { Pipeline, PipelineStage, PipelineEntry, DealCategory, PipelineStageQuestion, StageAnswerView, StageQuestionFieldType } from '@/lib/types'
+import Avatar from '@/app/_components/Avatar'
 import styles from './board.module.css'
 
 const STAGE_COLORS = ['#745FFD', '#16a34a', '#d97706', '#dc2626', '#0ea5e9', '#8b5cf6', '#ec4899', '#14b8a6']
@@ -59,7 +60,7 @@ export default function PipelineBoardClient({
   pipeline: Pipeline
   entries: PipelineEntry[]
   canManage: boolean
-  teamMembers: Array<{ id: string; name: string }>
+  teamMembers: Array<{ id: string; name: string; photo_url: string | null }>
   forms: FormItem[]
   currentUserId?: string
   companyOptions?: Array<{ id: string; name: string }>
@@ -380,8 +381,8 @@ export default function PipelineBoardClient({
   function handleAddAssignee(entryId: string, userId: string) {
     const member = teamMembers.find((m) => m.id === userId)
     if (!member) return
-    setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, assignees: [...(e.assignees ?? []), { user_id: userId, name: member.name }] } : e))
-    setSelectedEntry((prev) => prev ? { ...prev, assignees: [...(prev.assignees ?? []), { user_id: userId, name: member.name }] } : null)
+    setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, assignees: [...(e.assignees ?? []), { user_id: userId, name: member.name, photo_url: member.photo_url }] } : e))
+    setSelectedEntry((prev) => prev ? { ...prev, assignees: [...(prev.assignees ?? []), { user_id: userId, name: member.name, photo_url: member.photo_url }] } : null)
     startTransition(async () => { await addAssignee(entryId, userId) })
   }
 
@@ -610,7 +611,12 @@ export default function PipelineBoardClient({
                         <div className={styles.listRowMeta}>
                           {entry.submitter_name && <span>{entry.submitter_name}</span>}
                           <span>{new Date(entry.submitted_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
-                          {(entry.assignees ?? []).map((a) => <span key={a.user_id} className={styles.entryAssigneeChip}>{a.name.split(' ')[0]}</span>)}
+                          {(entry.assignees ?? []).map((a) => (
+                            <span key={a.user_id} className={styles.entryAssigneeChip}>
+                              <Avatar name={a.name} photoUrl={a.photo_url} size="xs" />
+                              {a.name.split(' ')[0]}
+                            </span>
+                          ))}
                         </div>
                       </div>
                       {canMoveEntry(entry) ? (
@@ -908,6 +914,7 @@ export default function PipelineBoardClient({
                 <div className={styles.assigneeChips}>
                   {(selectedEntry.assignees ?? []).map((a) => (
                     <span key={a.user_id} className={styles.assigneeChip}>
+                      <Avatar name={a.name} photoUrl={a.photo_url} size="xs" />
                       {a.name}
                       <button className={styles.assigneeChipRemove} onClick={() => handleRemoveAssignee(selectedEntry.id, a.user_id)} title="Remove">×</button>
                     </span>
@@ -935,7 +942,10 @@ export default function PipelineBoardClient({
                 <label className={styles.label}>Assigned To</label>
                 <div className={styles.assigneeChips}>
                   {(selectedEntry.assignees ?? []).map((a) => (
-                    <span key={a.user_id} className={styles.assigneeChip} style={{ cursor: 'default' }}>{a.name}</span>
+                    <span key={a.user_id} className={styles.assigneeChip} style={{ cursor: 'default' }}>
+                      <Avatar name={a.name} photoUrl={a.photo_url} size="xs" />
+                      {a.name}
+                    </span>
                   ))}
                 </div>
               </div>

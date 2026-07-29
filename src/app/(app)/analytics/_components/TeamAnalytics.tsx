@@ -7,6 +7,7 @@ import { MagnitudeBars, ScoreTile } from './PerformanceCharts'
 import PeriodPicker from './PeriodPicker'
 import AdjustmentModal from './AdjustmentModal'
 import WeightsPanel from './WeightsPanel'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../analytics.module.css'
 
 type SortKey = 'score' | 'kudosReceived' | 'onTimeRate' | 'tasksOverdue'
@@ -119,7 +120,12 @@ export default function TeamAnalytics({
                 <tbody>
                   {sorted.map((r) => (
                     <tr key={r.user_id}>
-                      <td className={styles.tdName}>{r.user_name}<span className={styles.tdRole}>{r.role}</span></td>
+                      <td className={styles.tdName}>
+                        <span className={styles.tdNameInner}>
+                          <Avatar name={r.user_name} photoUrl={r.photo_url} size="sm" />
+                          <span>{r.user_name}<span className={styles.tdRole}>{r.role}</span></span>
+                        </span>
+                      </td>
                       <td className={r.score >= 0 ? styles.divValuePos : styles.divValueNeg}>
                         <strong>{r.score}</strong>
                       </td>
@@ -149,6 +155,7 @@ export default function TeamAnalytics({
                   <span className={`${styles.adjPoints} ${a.points > 0 ? styles.divValuePos : styles.divValueNeg}`}>
                     {a.points > 0 ? '+' : ''}{a.points}
                   </span>
+                  <Avatar name={a.user?.name} photoUrl={a.user?.photo_url} size="xs" />
                   <span className={styles.adjWho}>{a.user?.name ?? 'Unknown'}</span>
                   <span className={styles.adjReason}>{a.reason}</span>
                   <span className={styles.adjMeta}>

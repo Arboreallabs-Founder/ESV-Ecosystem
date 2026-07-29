@@ -10,6 +10,7 @@ import {
 import type { Escalation, EscalationLinkedType, EscalationStatus } from '@/lib/types'
 import Combobox from '@/app/_components/Combobox'
 import FilterTabs from '@/app/_components/FilterTabs'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../escalations.module.css'
 
 type Option = { id: string; label: string }
@@ -171,9 +172,11 @@ export default function EscalationsList({
                 </div>
                 {e.body && <div className={styles.body}>{e.body}</div>}
                 <div className={styles.meta}>
-                  <span className={styles.metaItem}>To <strong>{e.recipient_user?.name ?? 'Unknown'}</strong> · {roleLabel(e.recipient_user?.role ?? '')}</span>
+                  <span className={styles.metaItem}>To <Avatar name={e.recipient_user?.name} photoUrl={e.recipient_user?.photo_url} size="xs" /> <strong>{e.recipient_user?.name ?? 'Unknown'}</strong> · {roleLabel(e.recipient_user?.role ?? '')}</span>
                   <span className={styles.metaSep}>·</span>
-                  <span className={styles.metaItem}>from {e.raised_by_user?.name ?? 'Unknown'}</span>
+                  <span className={styles.metaItem}>
+                  from <Avatar name={e.raised_by_user?.name} photoUrl={e.raised_by_user?.photo_url} size="xs" /> {e.raised_by_user?.name ?? 'Unknown'}
+                </span>
                   <span className={styles.metaSep}>·</span>
                   <span className={styles.metaItem}>{formatDate(e.created_at)}</span>
                   {e.linked_type && (

@@ -323,3 +323,11 @@
 /* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
    the content out to grey. Still frosted (see the backdrop-filter above). */
 .modal, .modalHead, .attendeeAddDropdown { background: var(--glass-panel); }
+
+/* These now hold an avatar alongside their text — align the two on a shared centre
+   line so the face doesn't sit on the text baseline. */
+.attendeeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}

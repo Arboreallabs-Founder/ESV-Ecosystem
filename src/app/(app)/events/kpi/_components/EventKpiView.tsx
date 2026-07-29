@@ -3,6 +3,7 @@
 import { Fragment, useState } from 'react'
 import type { BulletinEventKpiRow } from '@/lib/types'
 import { WikiButton } from '@/app/_components/WikiPanel'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../../events.module.css'
 
 function formatEventDate(dateStr: string | null) {
@@ -100,7 +101,12 @@ export default function EventKpiView({ events }: { events: BulletinEventKpiRow[]
                       <tr>
                         <td colSpan={5} className={styles.kpiAttendeeRow}>
                           <div className={styles.attendeeChips}>
-                            {e.attendees.map((a) => <span key={a.user_id} className={styles.attendeeChip}>{a.name}</span>)}
+                            {e.attendees.map((a) => (
+                              <span key={a.user_id} className={styles.attendeeChip}>
+                                <Avatar name={a.name} photoUrl={a.photo_url} size="xs" />
+                                {a.name}
+                              </span>
+                            ))}
                           </div>
                         </td>
                       </tr>

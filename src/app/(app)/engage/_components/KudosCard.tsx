@@ -2,6 +2,7 @@
 
 import type { Kudos } from '@/lib/types'
 import { artFor } from './kudos-meta'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../engage.module.css'
 
 /* Fixed, not randomised — random positions would differ between the server and client render
@@ -82,8 +83,13 @@ export default function KudosCard({ kudos }: { kudos: Kudos }) {
          regardless of where the gradient lands behind it. */}
       <div className={styles.kBody}>
         <div className={styles.kNames}>
-          <span className={styles.kRecipient}>{kudos.recipient?.name ?? 'Someone'}</span>
-          <span className={styles.kFrom}>from {kudos.giver?.name ?? 'Someone'}</span>
+          <span className={styles.kRecipient}>
+            <Avatar name={kudos.recipient?.name} photoUrl={kudos.recipient?.photo_url} size="sm" />
+            {kudos.recipient?.name ?? 'Someone'}
+          </span>
+          <span className={styles.kFrom}>
+            from <Avatar name={kudos.giver?.name} photoUrl={kudos.giver?.photo_url} size="xs" /> {kudos.giver?.name ?? 'Someone'}
+          </span>
         </div>
         <blockquote className={styles.kMessage}>{kudos.message}</blockquote>
         <div className={styles.kDate}>{formatDate(kudos.created_at)}</div>

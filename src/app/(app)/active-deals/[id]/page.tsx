@@ -17,7 +17,7 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
     fetchActiveDeal(id),
     fetchCategories(),
     fetchCompanyOptions(),
-    supabase.from('users').select('id, name').not('role', 'in', '(franchise_partner,general)').order('name'),
+    supabase.from('users').select('id, name, photo_url').not('role', 'in', '(franchise_partner,general)').order('name'),
   ])
   if (!user || !['founder', 'admin', 'associate', 'franchise_partner', 'general'].includes(user.role ?? '')) redirect('/login')
   if (!deal) notFound()
@@ -34,7 +34,7 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
     user.role === 'franchise_partner' ? Promise.resolve([]) : getDealUpdates(id),
   ])
 
-  const teamMembers = (teamRows ?? []) as Array<{ id: string; name: string }>
+  const teamMembers = (teamRows ?? []) as Array<{ id: string; name: string; photo_url: string | null }>
 
   return (
     <ActiveDealPageClient

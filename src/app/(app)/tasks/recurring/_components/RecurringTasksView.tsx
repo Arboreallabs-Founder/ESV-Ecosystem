@@ -10,6 +10,7 @@ import { RECURRENCE_TYPES } from '@/lib/types'
 import type { RecurringTask, RecurringTaskStatus, RecurrenceType, UserRow } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../../tasks.module.css'
 
 type RecTask = RecurringTask & { status: RecurringTaskStatus }
@@ -97,7 +98,12 @@ export default function RecurringTasksView({ tasks, users, isAdmin }: { tasks: R
                   </div>
                   <div className={styles.recMeta}>
                     <span className={styles.metaTag}>{RECURRENCE_LABELS[t.recurrence_type]}</span>
-                    {t.assignee?.name && <span className={styles.metaTag}>{t.assignee.name}</span>}
+                    {t.assignee?.name && (
+                      <span className={styles.metaTag}>
+                        <Avatar name={t.assignee.name} photoUrl={t.assignee.photo_url} size="xs" />
+                        {t.assignee.name}
+                      </span>
+                    )}
                     {t.link_url && <a href={t.link_url} target="_blank" rel="noreferrer" className={styles.recLinkBtn}>Open ↗</a>}
                   </div>
                   {t.description && <div className={styles.recDesc}>{t.description}</div>}

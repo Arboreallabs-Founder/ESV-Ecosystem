@@ -1124,3 +1124,10 @@
 /* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
    the content out to grey. Still frosted (see the backdrop-filter above). */
 .modal { background: var(--glass-panel); }
+
+/* Assignee chips now carry a face alongside the name — centre the two together. */
+.entryAssigneeChip, .assigneeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}

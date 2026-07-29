@@ -12,6 +12,7 @@ import TaskDetailModal from './TaskDetailModal'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import { formatDateTimeIst, formatDateTimeIstLong } from '@/lib/format-datetime'
 import { isPastDue } from '@/lib/task-kpi'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../tasks.module.css'
 
 const STATUSES = ['To Do', 'Done'] as const
@@ -29,18 +30,6 @@ function userRoleLabel(role: string) {
 function PriorityBadge({ priority }: { priority: Task['priority'] }) {
   const cls = priority === 'High' ? styles.priorityHigh : priority === 'Medium' ? styles.priorityMedium : styles.priorityLow
   return <span className={`${styles.priority} ${cls}`}>{priority}</span>
-}
-
-function initials(name: string): string {
-  return name.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-}
-
-function Avatar({ name, photoUrl }: { name: string; photoUrl?: string | null }) {
-  return (
-    <span className={styles.avatar}>
-      {photoUrl ? <img src={photoUrl} alt="" /> : initials(name)}
-    </span>
-  )
 }
 
 function formatDue(dateStr: string) {
@@ -295,7 +284,7 @@ export default function TaskBoard({
         <div className={styles.cardMeta}>
           {task.assignee?.name && (
             <span className={styles.metaTag}>
-              <Avatar name={task.assignee.name} photoUrl={task.assignee.photo_url} />
+              <Avatar name={task.assignee.name} photoUrl={task.assignee.photo_url} size="sm" />
               {task.assignee.name}
             </span>
           )}
@@ -329,7 +318,13 @@ export default function TaskBoard({
         )}
         {(task.assigned_by_user?.name || task.created_by_user?.name) && (
           <div className={styles.assignedBy} title={`Assigned ${formatDateTimeIstLong(task.created_at)}`}>
-            Assigned by {task.assigned_by_user?.name ?? task.created_by_user?.name}
+            Assigned by
+            <Avatar
+              name={task.assigned_by_user?.name ?? task.created_by_user?.name}
+              photoUrl={task.assigned_by_user?.photo_url ?? task.created_by_user?.photo_url}
+              size="xs"
+            />
+            {task.assigned_by_user?.name ?? task.created_by_user?.name}
             {/* When a due date is shown the meta row has no assignment stamp, so surface it here
                 instead — otherwise the card would never show when the task landed. */}
             {task.due_date && <> · {formatDateTimeIst(task.created_at)}</>}
@@ -516,7 +511,7 @@ export default function TaskBoard({
                     >
                       <path d="m9 18 6-6-6-6" />
                     </svg>
-                    <Avatar name={p.name} photoUrl={p.photoUrl} />
+                    <Avatar name={p.name} photoUrl={p.photoUrl} size="md" />
                     <span className={styles.personName}>{p.name}</span>
                     {p.role && <span className={styles.personRole}>{userRoleLabel(p.role)}</span>}
                     <div style={{ flex: 1 }} />

@@ -7,10 +7,10 @@ export const fetchRecurringTasks = cache(async (): Promise<Array<RecurringTask &
   const supabase = await createClient()
   const { data } = await supabase
     .from('recurring_tasks')
-    .select('*, assignee:assignee_id(name), completions:recurring_task_completions(completed_at, completed_by_user:completed_by(name))')
+    .select('*, assignee:assignee_id(name, photo_url), completions:recurring_task_completions(completed_at, completed_by_user:completed_by(name, photo_url))')
     .order('next_due_date', { ascending: true })
 
-  const rows = (data ?? []) as unknown as Array<RecurringTask & { completions: Array<{ completed_at: string; completed_by_user: { name: string } | null }> }>
+  const rows = (data ?? []) as unknown as Array<RecurringTask & { completions: Array<{ completed_at: string; completed_by_user: { name: string; photo_url: string | null } | null }> }>
   return rows.map((r) => {
     const last = [...(r.completions ?? [])].sort((a, b) => new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime())[0]
     const { completions: _completions, ...rest } = r

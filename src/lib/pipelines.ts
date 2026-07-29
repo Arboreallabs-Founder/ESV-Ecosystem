@@ -40,7 +40,7 @@ export const fetchPipelineEntries = cache(async (pipelineId: string): Promise<Pi
   const supabase = await createClient()
   const { data } = await supabase
     .from('pipeline_entries')
-    .select('*, form:forms(title), form_link:form_links(created_by, label, creator:users!created_by(name)), assignees:pipeline_entry_assignees(user_id, user:users(name)), active_deals(id)')
+    .select('*, form:forms(title), form_link:form_links(created_by, label, creator:users!created_by(name)), assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url)), active_deals(id)')
     .eq('pipeline_id', pipelineId)
     .order('submitted_at', { ascending: false })
 

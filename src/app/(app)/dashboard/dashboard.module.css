@@ -334,3 +334,11 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   border-color: var(--glass-border);
 }
+
+/* The byline now carries a face, so it lays out inline rather than as plain text. */
+.activityMeta {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}

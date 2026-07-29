@@ -32,7 +32,7 @@ export const fetchCompany = cache(async (id: string): Promise<Company | null> =>
       funding_rounds:company_funding_rounds(*),
       cap_table:company_cap_table(*),
       documents:company_documents(*),
-      updates:company_updates(*, author:users!author_id(name)),
+      updates:company_updates(*, author:users!author_id(name, photo_url)),
       field_values:company_field_values(field_def_id, value),
       linked_desk_deals:desk_deals!company_id(id, company_name, associate_id, deal_status),
       linked_pipeline_entries:pipeline_entries!company_id(
@@ -60,7 +60,7 @@ export const fetchCompany = cache(async (id: string): Promise<Company | null> =>
     cap_table: ((row.cap_table as Company['cap_table']) ?? []).sort((a, b) => a.sort_order - b.sort_order),
     documents: (row.documents as Company['documents']) ?? [],
     updates: ((row.updates as Company['updates']) ?? [])
-      .map((u: Record<string, unknown>) => ({ ...(u as unknown as Company['updates'][number]), author: one(u.author as { name: string } | { name: string }[] | null) }))
+      .map((u: Record<string, unknown>) => ({ ...(u as unknown as Company['updates'][number]), author: one(u.author as { name: string; photo_url: string | null } | { name: string; photo_url: string | null }[] | null) }))
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()),
     field_values: (row.field_values as Company['field_values']) ?? [],
     linked_desk_deals: (row.linked_desk_deals as Company['linked_desk_deals']) ?? [],

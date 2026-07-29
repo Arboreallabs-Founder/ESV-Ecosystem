@@ -16,6 +16,7 @@ import VoiceRecorder from './VoiceRecorder'
 import DealEditModal from './DealEditModal'
 import NotesList from './NotesList'
 import Spinner from '@/app/_components/Spinner'
+import Avatar from '@/app/_components/Avatar'
 import styles from './deal-desk.module.css'
 
 const BUCKET = 'deal-desk'
@@ -322,6 +323,7 @@ export default function DealDetailOverlay({
                 {deal.actions.map((a) => (
                   <div key={a.id} className={styles.threadItem}>
                     <div className={styles.threadHead}>
+                      <Avatar name={a.created_by_user?.name} photoUrl={a.created_by_user?.photo_url} size="xs" />
                       <span className={styles.threadWho}>{a.created_by_user?.name ?? 'Reviewer'}</span>
                       <span className={`${styles.statusPill} ${statusClass(mapActionToStatus(a.action_type))}`}>{DESK_DEAL_STATUS_LABELS[mapActionToStatus(a.action_type)]}</span>
                       <span className={styles.threadWhen}>{formatDate(a.created_at)}</span>

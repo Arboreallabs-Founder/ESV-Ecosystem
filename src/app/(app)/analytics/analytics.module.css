@@ -197,3 +197,16 @@
   .twoCol { grid-template-columns: 1fr; }
   .barRow, .divRow { grid-template-columns: minmax(72px, 100px) 1fr 44px; }
 }
+
+/* Rows that gained an avatar next to their text. */
+.adjMeta, .adjWho {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.tdNameInner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}

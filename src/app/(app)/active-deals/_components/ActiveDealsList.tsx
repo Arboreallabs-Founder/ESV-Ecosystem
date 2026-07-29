@@ -9,6 +9,7 @@ import NewDealModal from './NewDealModal'
 import DealImportModal from './DealImportModal'
 import FilterTabs from '@/app/_components/FilterTabs'
 import { WikiButton } from '@/app/_components/WikiPanel'
+import { AvatarGroup } from '@/app/_components/Avatar'
 import styles from '../active-deals.module.css'
 
 // Group a plain number with Indian digit separators (e.g. 100000000 → 10,00,00,000).
@@ -244,6 +245,21 @@ export default function ActiveDealsList({
                         {category.name}
                       </span>
                     ))}
+                  </div>
+                )}
+
+                {/* Who's running this mandate. Faces rather than names: at card scale a name list
+                    wraps and competes with the deal title, whereas a stack of faces is scannable
+                    at a glance and is the thing people actually look for. */}
+                {(deal.entry?.assignees?.length ?? 0) > 0 && (
+                  <div className={styles.dealTeam}>
+                    <AvatarGroup
+                      people={(deal.entry?.assignees ?? []).map((a) => ({ id: a.user_id, name: a.name, photo_url: a.photo_url }))}
+                      size="sm"
+                    />
+                    <span className={styles.dealTeamLabel}>
+                      {(deal.entry?.assignees ?? []).map((a) => a.name).join(', ')}
+                    </span>
                   </div>
                 )}
 

@@ -2114,3 +2114,30 @@
   color: var(--color-text);
   white-space: pre-wrap;
 }
+
+/* Assignee faces on a deal card. */
+.dealTeam {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.dealTeamLabel {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* These now hold an avatar alongside their text — align the two on a shared centre
+   line so the face doesn't sit on the text baseline. */
+.assigneeChip, .detailAssigneeChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}

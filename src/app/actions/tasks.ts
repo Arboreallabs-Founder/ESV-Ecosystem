@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { Task, TaskComment } from '@/lib/types'
 
-const TASK_SELECT = '*, assignee:assignee_id(name), created_by_user:created_by(name), assigned_by_user:assigned_by_id(name), company:company_id(id, name), desk_deal:desk_deal_id(id, company_name)'
+const TASK_SELECT = '*, assignee:assignee_id(name, photo_url), created_by_user:created_by(name, photo_url), assigned_by_user:assigned_by_id(name, photo_url), company:company_id(id, name), desk_deal:desk_deal_id(id, company_name)'
 
 export async function createTask(formData: FormData): Promise<Task> {
   const { supabase, userId, orgId, role } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
@@ -210,7 +210,7 @@ export async function getTaskComments(taskId: string): Promise<TaskComment[]> {
   const { supabase } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
   const { data } = await supabase
     .from('task_comments')
-    .select('*, author:author_id(name)')
+    .select('*, author:author_id(name, photo_url)')
     .eq('task_id', taskId)
     .order('created_at', { ascending: true })
   return (data ?? []) as unknown as TaskComment[]

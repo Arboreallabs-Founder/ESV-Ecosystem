@@ -6,7 +6,7 @@ export const fetchEscalations = cache(async (): Promise<Escalation[]> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('escalations')
-    .select('*, raised_by_user:raised_by(name), recipient_user:recipient_user_id(name, role)')
+    .select('*, raised_by_user:raised_by(name, photo_url), recipient_user:recipient_user_id(name, role, photo_url)')
     .order('created_at', { ascending: false })
   return (data ?? []) as unknown as Escalation[]
 })

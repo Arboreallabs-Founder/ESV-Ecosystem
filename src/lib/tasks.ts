@@ -18,7 +18,7 @@ export const fetchPushes = cache(async (): Promise<TaskPush[]> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('task_pushes')
-    .select('*, pushed_by_user:pushed_by(name), blocked_by_user:blocked_by_user_id(name), task:task_id(title, assignee_id)')
+    .select('*, pushed_by_user:pushed_by(name, photo_url), blocked_by_user:blocked_by_user_id(name, photo_url), task:task_id(title, assignee_id)')
     .order('created_at', { ascending: false })
   return (data ?? []) as unknown as TaskPush[]
 })
@@ -49,7 +49,7 @@ export const fetchMyOpenTaskAlerts = cache(async (userId: string): Promise<TaskA
       .limit(50),
     supabase
       .from('task_comments')
-      .select('created_at, author:author_id(name), task:task_id(id, title, assignee_id)')
+      .select('created_at, author:author_id(name, photo_url), task:task_id(id, title, assignee_id)')
       .neq('author_id', userId)
       .order('created_at', { ascending: false })
       .limit(200),

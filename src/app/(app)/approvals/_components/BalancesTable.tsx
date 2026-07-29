@@ -7,11 +7,8 @@ import type { LeaveBalance, LeaveBalanceRow, LeavePolicy } from '@/lib/types'
 import BalanceEditRow from './BalanceEditRow'
 import PolicyEditor from './PolicyEditor'
 import { artForLeaveType, fmtDays } from './leave-type-meta'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../approvals.module.css'
-
-function initials(name: string) {
-  return name.split(' ').filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
-}
 
 /** The viewer's own remaining balance, shown while they administer everyone else's. */
 function SummaryBar({ myBalances }: { myBalances: Record<string, LeaveBalance> | null }) {
@@ -94,9 +91,7 @@ export default function BalancesTable({ rows, myBalances, policy, userRole }: {
                   }}
                 >
                   <span className={styles.avatar}>
-                    {row.photo_url
-                      ? <img src={row.photo_url} alt="" className={styles.avatarImg} />
-                      : initials(row.user_name)}
+                    <Avatar name={row.user_name} photoUrl={row.photo_url} size="md" />
                   </span>
 
                   <span className={styles.personCell}>

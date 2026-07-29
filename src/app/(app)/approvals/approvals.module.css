@@ -356,3 +356,11 @@
 }
 .policySaveBtn:disabled { opacity: 0.55; cursor: not-allowed; }
 .policySaveBtn:not(:disabled):hover { opacity: 0.88; }
+
+/* These now hold an avatar alongside their text — align the two on a shared centre
+   line so the face doesn't sit on the text baseline. */
+.cardTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}

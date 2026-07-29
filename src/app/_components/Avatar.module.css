@@ -1,0 +1,57 @@
+.avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--color-card-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+  /* Names sit next to these constantly; without this the text baseline shifts as photos load. */
+  user-select: none;
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.initials { letter-spacing: 0.02em; }
+
+/* xs is for inline bylines ("posted by X"), where a full avatar would outweigh the text. */
+.xs { width: 18px; height: 18px; font-size: 0.5rem; }
+.sm { width: 24px; height: 24px; font-size: 0.625rem; }
+.md { width: 32px; height: 32px; font-size: 0.75rem; }
+.lg { width: 44px; height: 44px; font-size: 0.9375rem; }
+
+/* ── Stacked group ───────────────────────────────────────────────────────── */
+.group {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.groupItem {
+  display: inline-flex;
+  position: relative;
+}
+.groupItem + .groupItem { margin-left: -6px; }
+
+/* A ring in the page colour is what separates overlapping faces; without it a stack of dark
+   photos reads as one blob. */
+.groupItem .avatar,
+.groupItem.avatar {
+  box-shadow: 0 0 0 2px var(--color-bg);
+}
+
+.overflow {
+  background: var(--color-card-raised);
+  color: var(--color-muted);
+  font-size: 0.5625rem;
+}

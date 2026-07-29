@@ -2,7 +2,7 @@ import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import type { LeaveRequest } from './types'
 
-const LEAVE_SELECT = '*, requester:requester_id(name, email), decided_by_user:decided_by(name)'
+const LEAVE_SELECT = '*, requester:requester_id(name, email, photo_url), decided_by_user:decided_by(name, photo_url)'
 
 export const fetchMyLeaveRequests = cache(async (userId: string): Promise<LeaveRequest[]> => {
   const supabase = await createClient()

@@ -7,6 +7,7 @@ import { decideExpenseRequest } from '@/app/actions/expense-requests'
 import { LEAVE_TYPE_LABELS, EXPENSE_TYPE_LABELS } from '@/lib/types'
 import type { LeaveRequest, ExpenseRequest, LeaveBalanceRow, LeaveBalance, LeavePolicy } from '@/lib/types'
 import BalancesTable from './BalancesTable'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../approvals.module.css'
 
 function formatDate(iso: string) {
@@ -93,7 +94,7 @@ export default function ApprovalsView({
                   <div key={r.id} className={styles.card}>
                     <div className={styles.cardTop}>
                       <div>
-                        <div className={styles.cardTitle}>{r.requester?.name ?? 'Unknown'} — {LEAVE_TYPE_LABELS[r.leave_type]}</div>
+                        <div className={styles.cardTitle}><Avatar name={r.requester?.name} photoUrl={r.requester?.photo_url} size="sm" />{r.requester?.name ?? 'Unknown'} — {LEAVE_TYPE_LABELS[r.leave_type]}</div>
                         <div className={styles.cardMeta}>{formatDate(r.start_date)} – {formatDate(r.end_date)}</div>
                         {r.reason && <div className={styles.cardReason}>{r.reason}</div>}
                       </div>
@@ -116,7 +117,7 @@ export default function ApprovalsView({
                   <div key={r.id} className={styles.card}>
                     <div className={styles.cardTop}>
                       <div>
-                        <div className={styles.cardTitle}>{r.requester?.name ?? 'Unknown'} — {EXPENSE_TYPE_LABELS[r.expense_type]} (₹{r.amount})</div>
+                        <div className={styles.cardTitle}><Avatar name={r.requester?.name} photoUrl={r.requester?.photo_url} size="sm" />{r.requester?.name ?? 'Unknown'} — {EXPENSE_TYPE_LABELS[r.expense_type]} (₹{r.amount})</div>
                         {r.description && <div className={styles.cardReason}>{r.description}</div>}
                         {r.invoice_signed_url && (
                           <a href={r.invoice_signed_url} target="_blank" rel="noopener noreferrer" className={styles.linkBtn}>View invoice</a>
@@ -140,7 +141,7 @@ export default function ApprovalsView({
                     <div key={r.id} className={styles.card}>
                       <div className={styles.cardTop}>
                         <div>
-                          <div className={styles.cardTitle}>{r.requester?.name ?? 'Unknown'} — {LEAVE_TYPE_LABELS[r.leave_type]}</div>
+                          <div className={styles.cardTitle}><Avatar name={r.requester?.name} photoUrl={r.requester?.photo_url} size="sm" />{r.requester?.name ?? 'Unknown'} — {LEAVE_TYPE_LABELS[r.leave_type]}</div>
                           <div className={styles.cardMeta}>{formatDate(r.start_date)} – {formatDate(r.end_date)}{r.decided_by_user?.name ? ` · decided by ${r.decided_by_user.name}` : ''}</div>
                         </div>
                         <StatusPill status={r.status} />
@@ -151,7 +152,7 @@ export default function ApprovalsView({
                     <div key={r.id} className={styles.card}>
                       <div className={styles.cardTop}>
                         <div>
-                          <div className={styles.cardTitle}>{r.requester?.name ?? 'Unknown'} — {EXPENSE_TYPE_LABELS[r.expense_type]} (₹{r.amount})</div>
+                          <div className={styles.cardTitle}><Avatar name={r.requester?.name} photoUrl={r.requester?.photo_url} size="sm" />{r.requester?.name ?? 'Unknown'} — {EXPENSE_TYPE_LABELS[r.expense_type]} (₹{r.amount})</div>
                           <div className={styles.cardMeta}>{r.decided_by_user?.name ? `Decided by ${r.decided_by_user.name}` : ''}</div>
                         </div>
                         <StatusPill status={r.status} />
@@ -182,7 +183,7 @@ export default function ApprovalsView({
                   <div key={r.id} className={styles.card}>
                     <div className={styles.cardTop}>
                       <div>
-                        <div className={styles.cardTitle}>{r.requester?.name ?? 'Unknown'} — {LEAVE_TYPE_LABELS[r.leave_type]}</div>
+                        <div className={styles.cardTitle}><Avatar name={r.requester?.name} photoUrl={r.requester?.photo_url} size="sm" />{r.requester?.name ?? 'Unknown'} — {LEAVE_TYPE_LABELS[r.leave_type]}</div>
                         <div className={styles.cardMeta}>
                           {formatDate(r.start_date)} – {formatDate(r.end_date)}
                           {r.decided_by_user?.name ? ` · decided by ${r.decided_by_user.name}` : ''}

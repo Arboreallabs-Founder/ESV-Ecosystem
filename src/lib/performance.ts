@@ -44,7 +44,7 @@ export const fetchAdjustments = cache(async (period: ScorePeriod): Promise<Perfo
   const start = periodStart(period)
   let q = supabase
     .from('performance_adjustments')
-    .select('*, user:user_id(name), created_by_user:created_by(name)')
+    .select('*, user:user_id(name, photo_url), created_by_user:created_by(name, photo_url)')
     .order('occurred_on', { ascending: false })
   if (start) q = q.gte('occurred_on', start.toISOString().slice(0, 10))
   const { data } = await q
@@ -65,7 +65,7 @@ export const fetchPerformanceRows = cache(async (period: ScorePeriod): Promise<P
 
   const [weights, usersRes, kudosRes, tasksRes, recurringRes, eventsRes, adjustmentsRes] = await Promise.all([
     fetchPerformanceWeights(),
-    supabase.from('users').select('id, name, role').in('role', SCORED_ROLES).order('name'),
+    supabase.from('users').select('id, name, role, photo_url').in('role', SCORED_ROLES).order('name'),
     (() => {
       let q = supabase.from('kudos').select('recipient_id, category, created_at')
       if (startIso) q = q.gte('created_at', startIso)
@@ -94,7 +94,7 @@ export const fetchPerformanceRows = cache(async (period: ScorePeriod): Promise<P
     })(),
   ])
 
-  const users = (usersRes.data ?? []) as Array<{ id: string; name: string | null; role: string }>
+  const users = (usersRes.data ?? []) as Array<{ id: string; name: string | null; role: string; photo_url: string | null }>
   const tasks = (tasksRes.data ?? []) as unknown as Task[]
 
   // Bucket every signal by user id up-front so the per-user loop stays O(1) per lookup.
@@ -147,6 +147,7 @@ export const fetchPerformanceRows = cache(async (period: ScorePeriod): Promise<P
     return {
       user_id: u.id,
       user_name: u.name ?? 'Unknown',
+      photo_url: u.photo_url ?? null,
       role: u.role,
       kudosReceived: kudos.total,
       kudosByCategory: kudos.byCategory,

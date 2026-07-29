@@ -51,7 +51,7 @@ const DEAL_SELECT = `
   *,
   associate:users!associate_id(name),
   media:desk_deal_media(*),
-  actions:desk_deal_actions(*, created_by_user:users!created_by(name))
+  actions:desk_deal_actions(*, created_by_user:users!created_by(name, photo_url))
 `
 
 /**

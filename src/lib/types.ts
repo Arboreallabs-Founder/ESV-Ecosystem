@@ -15,8 +15,8 @@ export type Escalation = {
   linked_title: string | null
   created_at: string
   resolved_at: string | null
-  raised_by_user?: { name: string } | null
-  recipient_user?: { name: string; role: string } | null
+  raised_by_user?: { name: string; photo_url: string | null } | null
+  recipient_user?: { name: string; role: string; photo_url: string | null } | null
 }
 
 export type TaskStatus = 'To Do' | 'Done'
@@ -40,8 +40,8 @@ export type Task = {
   pushed_at: string | null
   push_count: number
   assignee?: { name: string; photo_url: string | null } | null
-  created_by_user?: { name: string } | null
-  assigned_by_user?: { name: string } | null
+  created_by_user?: { name: string; photo_url: string | null } | null
+  assigned_by_user?: { name: string; photo_url: string | null } | null
   company?: { id: string; name: string } | null
   desk_deal?: { id: string; company_name: string } | null
 }
@@ -52,7 +52,7 @@ export type TaskComment = {
   body: string
   author_id: string | null
   created_at: string
-  author?: { name: string } | null
+  author?: { name: string; photo_url: string | null } | null
 }
 
 /** One row per push — the history is the point, so reasons can be aggregated per person. */
@@ -66,8 +66,8 @@ export type TaskPush = {
   blocked_external: boolean
   blocked_by_user_id: string | null
   created_at: string
-  pushed_by_user?: { name: string | null } | null
-  blocked_by_user?: { name: string | null } | null
+  pushed_by_user?: { name: string | null; photo_url: string | null } | null
+  blocked_by_user?: { name: string | null; photo_url: string | null } | null
   task?: { title: string; assignee_id: string | null } | null
 }
 
@@ -88,7 +88,7 @@ export type ActiveDealUpdate = {
   body: string
   created_by: string | null
   created_at: string
-  created_by_user?: { name: string | null } | null
+  created_by_user?: { name: string | null; photo_url: string | null } | null
 }
 
 export type PersonalTodo = {
@@ -124,7 +124,7 @@ export type RecurringTask = {
   next_due_date: string
   created_by: string | null
   created_at: string
-  assignee?: { name: string } | null
+  assignee?: { name: string; photo_url: string | null } | null
   last_completion?: { completed_at: string; completed_by_name: string | null } | null
 }
 
@@ -134,7 +134,7 @@ export type RecurringTaskCompletion = {
   occurrence_date: string
   completed_by: string | null
   completed_at: string
-  completed_by_user?: { name: string } | null
+  completed_by_user?: { name: string; photo_url: string | null } | null
 }
 
 export const BULLETIN_POST_TYPES = ['event', 'announcement'] as const
@@ -160,8 +160,8 @@ export type BulletinPost = {
   completed: boolean
   created_by: string | null
   created_at: string
-  created_by_user?: { name: string } | null
-  attendees: Array<{ user_id: string; name: string }>
+  created_by_user?: { name: string; photo_url: string | null } | null
+  attendees: Array<{ user_id: string; name: string; photo_url: string | null }>
   media: BulletinEventMedia[]
   // Event-only dedicated links (replacing the old generic media list for events).
   media_url: string | null
@@ -176,7 +176,7 @@ export type BulletinEventKpiRow = {
   event_time: string | null
   location: string | null
   completed: boolean
-  attendees: Array<{ user_id: string; name: string }>
+  attendees: Array<{ user_id: string; name: string; photo_url: string | null }>
   media_count: number
 }
 
@@ -188,7 +188,7 @@ export type HrPolicy = {
   position: number
   created_by: string | null
   updated_at: string
-  created_by_user?: { name: string } | null
+  created_by_user?: { name: string; photo_url: string | null } | null
 }
 
 // India-time clock-in/out reminder windows, HR-adjustable — one row per org. Times are
@@ -237,8 +237,8 @@ export type LeaveRequest = {
   decided_at: string | null
   decision_note: string | null
   created_at: string
-  requester?: { name: string | null; email: string | null } | null
-  decided_by_user?: { name: string | null } | null
+  requester?: { name: string | null; email: string | null; photo_url: string | null } | null
+  decided_by_user?: { name: string | null; photo_url: string | null } | null
 }
 
 // Leave types that carry an entitlement balance — Unpaid is deliberately excluded (uncapped).
@@ -306,8 +306,8 @@ export type ExpenseRequest = {
   decided_at: string | null
   decision_note: string | null
   created_at: string
-  requester?: { name: string | null; email: string | null } | null
-  decided_by_user?: { name: string | null } | null
+  requester?: { name: string | null; email: string | null; photo_url: string | null } | null
+  decided_by_user?: { name: string | null; photo_url: string | null } | null
   invoice_signed_url?: string | null
 }
 
@@ -320,8 +320,8 @@ export type Kudos = {
   message: string
   category: KudosCategory | null
   created_at: string
-  giver?: { name: string | null } | null
-  recipient?: { name: string | null } | null
+  giver?: { name: string | null; photo_url: string | null } | null
+  recipient?: { name: string | null; photo_url: string | null } | null
 }
 
 /* ── Performance analytics ──────────────────────────────────────────────
@@ -346,8 +346,8 @@ export type PerformanceAdjustment = {
   occurred_on: string
   created_by: string | null
   created_at: string
-  user?: { name: string | null } | null
-  created_by_user?: { name: string | null } | null
+  user?: { name: string | null; photo_url: string | null } | null
+  created_by_user?: { name: string | null; photo_url: string | null } | null
 }
 
 export type ScorePeriod = '30d' | '90d' | 'quarter' | 'year' | 'all'
@@ -364,6 +364,7 @@ export const SCORE_PERIOD_LABELS: Record<ScorePeriod, string> = {
 export type PerformanceRow = {
   user_id: string
   user_name: string
+  photo_url: string | null
   role: string
   // Raw counts
   kudosReceived: number
@@ -449,7 +450,7 @@ export type Investor = {
   onboarding_form_url: string | null
   kyc_done: boolean
   esv_poc?: { name: string } | null
-  esv_pocs?: Array<{ id: string; name: string }>
+  esv_pocs?: Array<{ id: string; name: string; photo_url: string | null }>
   referred_by_partner?: { name: string } | null
   contacts?: InvestorContact[]
 }
@@ -715,7 +716,7 @@ export type PipelineEntry = {
   form?: { title: string } | null
   link_creator?: { name: string } | null
   form_link_label?: string | null
-  assignees?: Array<{ user_id: string; name: string }>
+  assignees?: Array<{ user_id: string; name: string; photo_url: string | null }>
   has_active_deal?: boolean
 }
 
@@ -769,7 +770,7 @@ export type ActiveDeal = {
     pipeline_id: string
     company_id?: string | null
     company?: { id: string; name: string; logo_url: string | null } | null
-    assignees?: Array<{ user_id: string; name: string }>
+    assignees?: Array<{ user_id: string; name: string; photo_url: string | null }>
     sourced_via_partner?: { id: string; name: string } | null
   }
   categories: ActiveDealCategoryData[]
@@ -886,7 +887,7 @@ export type DeskDealAction = {
   voice_note_url: string | null       // storage object path
   voice_note_signed_url?: string      // resolved for display
   created_by: string
-  created_by_user?: { name: string } | null
+  created_by_user?: { name: string; photo_url: string | null } | null
   created_at: string
 }
 
@@ -1017,7 +1018,7 @@ export type CompanyUpdate = {
   company_id: string
   body: string
   author_id: string | null
-  author?: { name: string } | null
+  author?: { name: string; photo_url: string | null } | null
   created_at: string
 }
 

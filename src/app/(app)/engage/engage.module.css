@@ -395,3 +395,10 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   border-color: var(--glass-border);
 }
+
+/* Kudos giver/recipient lines now lead with a face. */
+.kRecipient, .kFrom {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}

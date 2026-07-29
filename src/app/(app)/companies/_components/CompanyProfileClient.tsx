@@ -27,6 +27,7 @@ import CallUpdateModal from './CallUpdateModal'
 import DonutChart from './DonutChart'
 import { SpecField, OVERVIEW_SPECS, TRACTION_SPECS, RAISE_SPECS, PRODUCT_SPECS, CAP_TABLE_SPECS, initValue, coerce, type Spec } from './field-specs'
 import { formatInr, formatDate, initials, locationLabel } from './format'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../companies.module.css'
 
 type Team = Array<{ id: string; name: string }>
@@ -768,6 +769,7 @@ function UpdatesSection({ company, onChanged }: { company: Company; onChanged: (
           {company.updates.map((u) => (
             <div key={u.id} className={styles.update}>
               <div className={styles.updateHead}>
+                <Avatar name={u.author?.name} photoUrl={u.author?.photo_url} size="xs" />
                 <span className={styles.updateAuthor}>{u.author?.name ?? 'Someone'}</span>
                 <span className={styles.updateDate}>{formatDate(u.created_at)}</span>
                 <button className={styles.rowRemove} onClick={() => startTransition(async () => { await deleteUpdate(u.id, company.id); onChanged() })}>×</button>

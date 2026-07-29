@@ -20,7 +20,7 @@ async function signPaths(supabase: SupabaseServer, paths: string[]): Promise<Map
   return map
 }
 
-const EXPENSE_SELECT = '*, requester:requester_id(name, email), decided_by_user:decided_by(name)'
+const EXPENSE_SELECT = '*, requester:requester_id(name, email, photo_url), decided_by_user:decided_by(name, photo_url)'
 
 async function withSignedUrls(supabase: SupabaseServer, rows: ExpenseRequest[]): Promise<ExpenseRequest[]> {
   const signed = await signPaths(supabase, rows.map((r) => r.invoice_path))

@@ -10,6 +10,7 @@ import {
 import type { BulletinPost } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../events.module.css'
 
 function formatEventDate(dateStr: string, timeStr: string | null) {
@@ -137,6 +138,7 @@ function EventCard({
           <div className={styles.attendeeChips}>
             {event.attendees.map((a) => (
               <span key={a.user_id} className={styles.attendeeChip}>
+                <Avatar name={a.name} photoUrl={a.photo_url} size="xs" />
                 {a.user_id === currentUserId ? 'You' : a.name}
                 {canManage && a.user_id !== currentUserId && (
                   <button
@@ -206,7 +208,9 @@ function EventCard({
         </div>
       )}
 
-      <div className={styles.cardFoot}>Posted {formatPostedDate(event.created_at)}{event.created_by_user?.name ? ` by ${event.created_by_user.name}` : ''}</div>
+      <div className={styles.cardFoot}>Posted {formatPostedDate(event.created_at)}{event.created_by_user?.name && (
+        <> by <Avatar name={event.created_by_user.name} photoUrl={event.created_by_user.photo_url} size="xs" /> {event.created_by_user.name}</>
+      )}</div>
     </div>
   )
 }
@@ -248,7 +252,7 @@ export default function EventsView({
     mutateEvent(event.id, (e) => ({
       ...e,
       attendees: next
-        ? [...e.attendees, { user_id: currentUserId, name: 'You' }]
+        ? [...e.attendees, { user_id: currentUserId, name: 'You', photo_url: null }]
         : e.attendees.filter((a) => a.user_id !== currentUserId),
     }))
     startTransition(async () => {

@@ -8,7 +8,7 @@ export const fetchKudosFeed = cache(async (): Promise<Kudos[]> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('kudos')
-    .select('*, giver:giver_id(name), recipient:recipient_id(name)')
+    .select('*, giver:giver_id(name, photo_url), recipient:recipient_id(name, photo_url)')
     .order('created_at', { ascending: false })
     .limit(200)
   return (data ?? []) as unknown as Kudos[]

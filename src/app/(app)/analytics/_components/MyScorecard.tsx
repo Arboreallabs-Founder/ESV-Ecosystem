@@ -4,6 +4,7 @@ import { SCORE_PERIOD_LABELS } from '@/lib/types'
 import type { PerformanceAdjustment, PerformanceRow, PerformanceWeights, ScorePeriod } from '@/lib/types'
 import { ContributionBars, MagnitudeBars, ScoreTile } from './PerformanceCharts'
 import PeriodPicker from './PeriodPicker'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../analytics.module.css'
 
 const CONTRIBUTION_LABELS: Record<string, string> = {
@@ -95,7 +96,10 @@ export default function MyScorecard({ row, adjustments, weights, period }: {
                   </span>
                   <span className={styles.adjReason}>{a.reason}</span>
                   <span className={styles.adjMeta}>
-                    {a.occurred_on}{a.created_by_user?.name ? ` · ${a.created_by_user.name}` : ''}
+                    {a.occurred_on}
+                    {a.created_by_user?.name && (
+                      <> · <Avatar name={a.created_by_user.name} photoUrl={a.created_by_user.photo_url} size="xs" /> {a.created_by_user.name}</>
+                    )}
                   </span>
                 </div>
               ))}

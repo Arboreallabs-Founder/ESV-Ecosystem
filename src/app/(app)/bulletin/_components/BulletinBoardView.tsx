@@ -6,6 +6,7 @@ import { createBulletinPost, updateBulletinPost, deleteBulletinPost, toggleBulle
 import type { BulletinPost } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../bulletin.module.css'
 
 function formatPostedDate(iso: string) {
@@ -40,7 +41,9 @@ function PostCard({
         )}
       </div>
       {post.body && <div className={styles.cardBody}>{post.body}</div>}
-      <div className={styles.cardFoot}>Posted {formatPostedDate(post.created_at)}{post.created_by_user?.name ? ` by ${post.created_by_user.name}` : ''}</div>
+      <div className={styles.cardFoot}>Posted {formatPostedDate(post.created_at)}{post.created_by_user?.name && (
+        <> by <Avatar name={post.created_by_user.name} photoUrl={post.created_by_user.photo_url} size="xs" /> {post.created_by_user.name}</>
+      )}</div>
     </div>
   )
 }

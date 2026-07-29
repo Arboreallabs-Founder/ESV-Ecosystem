@@ -1052,3 +1052,19 @@ a.linkChipTag:hover { background: rgba(var(--color-hover-rgb),0.16); }
   color: var(--color-text);
   cursor: pointer;
 }
+
+/* These now hold an avatar alongside their text — align the two on a shared centre
+   line so the face doesn't sit on the text baseline. */
+.metaTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* "Assigned by <face> Name" reads as one line, so the row is flex rather than plain text. */
+.assignedBy {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}

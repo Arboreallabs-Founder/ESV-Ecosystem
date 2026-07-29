@@ -6,7 +6,7 @@ const one = <T>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? 
 
 const EVENT_SELECT = `
   *,
-  created_by_user:created_by(name),
+  created_by_user:created_by(name, photo_url),
   attendees:bulletin_event_attendees(user_id, user:users(name)),
   media:bulletin_event_media(id, post_id, label, url, created_at)
 `

@@ -13,7 +13,7 @@ export const fetchAllInvestors = cache(async (): Promise<Investor[]> => {
       onboarding_form_completed, onboarding_form_url, kyc_done,
       birthday_md, birthday_year,
       esv_poc:users!esv_poc_id(name),
-      esv_pocs:investor_poc_users(user:users(id, name)),
+      esv_pocs:investor_poc_users(user:users(id, name, photo_url)),
       referred_by_partner:franchise_partners!referred_by_partner_id(name),
       contacts:investor_contacts(
         id, investor_id, name, role, linkedin_url, linkedin_status,

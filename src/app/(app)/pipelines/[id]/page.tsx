@@ -13,14 +13,14 @@ export default async function PipelinePage({ params }: { params: Promise<{ id: s
     getUser(),
     fetchPipeline(id),
     fetchPipelineEntries(id),
-    supabase.from('users').select('id, name').not('role', 'in', '(franchise_partner,general)').order('name'),
+    supabase.from('users').select('id, name, photo_url').not('role', 'in', '(franchise_partner,general)').order('name'),
     supabase.from('forms').select('id, title, published, pipeline_id').order('created_at', { ascending: false }),
     fetchCompanyOptions(),
   ])
   if (!pipeline) notFound()
 
   const canManage = ['founder', 'admin'].includes(user?.role ?? '')
-  const teamMembers = (teamRows ?? []) as Array<{ id: string; name: string }>
+  const teamMembers = (teamRows ?? []) as Array<{ id: string; name: string; photo_url: string | null }>
   const forms = (allForms ?? []) as Array<{ id: string; title: string; published: boolean; pipeline_id: string | null }>
 
   return (

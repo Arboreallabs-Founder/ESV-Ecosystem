@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { fetchOpenTaskCount } from '@/lib/tasks'
 import { fetchOpenEscalationCount } from '@/lib/escalations'
 import { fetchBulletinPosts } from '@/lib/bulletin'
+import Avatar from '@/app/_components/Avatar'
 import styles from './dashboard.module.css'
 
 function formatDateTime(iso: string) {
@@ -167,7 +168,9 @@ export default async function DashboardPage() {
                     {post.body && <div className={styles.bulletinSnippet}>{post.body}</div>}
                     <div className={styles.activityMeta}>
                       {isEvent && post.location ? `${post.location} · ` : ''}{dateLabel}
-                      {post.created_by_user?.name ? ` · ${post.created_by_user.name}` : ''}
+                      {post.created_by_user?.name && (
+                        <> · <Avatar name={post.created_by_user.name} photoUrl={post.created_by_user.photo_url} size="xs" /> {post.created_by_user.name}</>
+                      )}
                     </div>
                   </div>
                 </div>

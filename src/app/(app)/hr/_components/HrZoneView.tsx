@@ -9,6 +9,7 @@ import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import HrClockAdmin from './HrClockAdmin'
 import MyRequests from './MyRequests'
+import Avatar from '@/app/_components/Avatar'
 import styles from '../hr-zone.module.css'
 
 function formatDate(iso: string) {
@@ -36,7 +37,9 @@ function PolicyRow({ policy, expanded, canEdit, canDelete, onToggle, onEdit, onD
         <div className={styles.policyBody}>
           {policy.body}
           <div className={styles.policyFoot}>
-            Last updated {formatDate(policy.updated_at)}{policy.created_by_user?.name ? ` by ${policy.created_by_user.name}` : ''}
+            Last updated {formatDate(policy.updated_at)}{policy.created_by_user?.name && (
+              <> by <Avatar name={policy.created_by_user.name} photoUrl={policy.created_by_user.photo_url} size="xs" /> {policy.created_by_user.name}</>
+            )}
           </div>
         </div>
       )}

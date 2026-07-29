@@ -11,7 +11,7 @@ import type { ActiveDealInvestor, ActiveDealInvestorFee, ActiveDealInvestorStatu
 type DealCategoryFieldRow = DealCategory['fields'][number]
 type DealCategoryRow = Omit<DealCategory, 'fields'> & { fields?: DealCategoryFieldRow[] | null }
 type FieldValueRow = { field_id: string; value: string | null }
-type UserNameRow = { name: string | null }
+type UserNameRow = { name: string | null; photo_url: string | null }
 type EntryAssigneeRow = { user_id: string; user?: UserNameRow | UserNameRow[] | null }
 type ActiveDealEntryListRow = {
   title: string | null
@@ -148,7 +148,7 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
   const [dealsRes, catsRes] = await Promise.all([
     supabase.from('active_deals').select(`
       id, pipeline_entry_id, created_at, deal_state, logo_url,
-      entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name))),
+      entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url))),
       categories:active_deal_categories(category:deal_categories(id, name, description, color, created_at, fields:deal_category_fields(*))),
       field_values:active_deal_field_values(field_id, value)
     `).order('created_at', { ascending: false }),
@@ -176,7 +176,7 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
         }
         return {
           ...e,
-          assignees: (e.assignees ?? []).map((a) => ({ user_id: a.user_id, name: first(a.user)?.name ?? 'Unknown' })),
+          assignees: (e.assignees ?? []).map((a) => ({ user_id: a.user_id, name: first(a.user)?.name ?? 'Unknown', photo_url: first(a.user)?.photo_url ?? null })),
         }
       })(),
       categories: (row.categories ?? []).map((c) => {

@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addApprovedUser, updateApprovedUser, revokeUser, setUserPhotoFromUrl } from '@/app/actions/admin'
 import type { ApprovedUser } from '@/lib/types'
+import { personInitials } from '@/app/_components/Avatar'
 import styles from '../../admin.module.css'
 
 const ROLES = ['founder', 'admin', 'associate', 'franchise_partner', 'general', 'hr'] as const
@@ -19,11 +20,6 @@ const ROLE_CLASS: Record<string, string> = {
   franchise_partner: styles.roleFranchise,
   general: styles.roleGeneral,
   hr: styles.roleHr,
-}
-
-function initials(name: string, email: string): string {
-  const source = name?.trim() || email
-  return source.split(/[\s@.]+/).filter(Boolean).map((w) => w[0]).join('').slice(0, 2).toUpperCase()
 }
 
 function CameraIcon() {
@@ -213,7 +209,7 @@ export default function UsersTable({
                     >
                       {u.photo_url
                         ? <img src={u.photo_url} alt="" className={styles.avatarImg} />
-                        : <span className={styles.avatarInitials}>{initials(u.name, u.email)}</span>}
+                        : <span className={styles.avatarInitials}>{personInitials(u.name, u.email)}</span>}
                       {u.userId && <span className={styles.avatarOverlay}><CameraIcon /></span>}
                     </button>
                   </td>
@@ -384,7 +380,7 @@ export default function UsersTable({
               <span className={styles.photoPreview}>
                 {photoUrl.trim()
                   ? <img src={photoUrl} alt="" />
-                  : <span className={styles.avatarInitials}>{initials(photoTarget.name, photoTarget.email)}</span>}
+                  : <span className={styles.avatarInitials}>{personInitials(photoTarget.name, photoTarget.email)}</span>}
               </span>
               <div className={styles.photoField}>
                 <label className={styles.label}>Image URL</label>

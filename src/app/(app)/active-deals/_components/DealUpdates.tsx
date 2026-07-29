@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addDealUpdate, deleteDealUpdate } from '@/app/actions/active-deal-updates'
 import { formatDateTimeIstLong } from '@/lib/format-datetime'
+import Avatar from '@/app/_components/Avatar'
 import type { ActiveDealUpdate } from '@/lib/types'
 import styles from '../active-deals.module.css'
 
@@ -96,6 +97,7 @@ export default function DealUpdates({
               {i < updates.length - 1 && <div className={styles.updateLine} />}
               <div className={styles.updateContent}>
                 <div className={styles.updateHead}>
+                  <Avatar name={u.created_by_user?.name} photoUrl={u.created_by_user?.photo_url} size="xs" />
                   <span className={styles.updateAuthor}>{u.created_by_user?.name ?? 'Someone'}</span>
                   <span className={styles.updateTime}>{formatDateTimeIstLong(u.created_at)}</span>
                   {i === 0 && <span className={styles.updateLatestTag}>Latest</span>}
