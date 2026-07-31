@@ -1,159 +1,349 @@
-/* Digital employee ID card. Proportioned like a physical card (roughly ISO ID-1, 1.586:1) so it
-   reads as one on a phone screen, which is where it will actually be shown. */
+/* Digital employee ID card.
+ *
+ * Every colour here is a literal hex from the ESV palette, NOT a CSS variable. That is the point:
+ * a card is a document, and it should look identical on a colleague's dark-mode phone, on an OLED
+ * screen and on paper. Theme-reactive tokens would produce three different documents.
+ *
+ * Palette in use — crema #F7ECE2, fair #F4F4F4, slate #A39B95, sand #D3C1A9, bronze #D5AE8F,
+ * golden glow #CB8C7C, purple #745FFD, pastel purple #CEAAFD, ink #2C2C3A.
+ */
+
+.printRoot { display: inline-block; max-width: 100%; }
 
 .card {
   width: 100%;
-  max-width: 380px;
-  border-radius: var(--radius-lg);
+  max-width: 520px;
+  border-radius: 22px;
   overflow: hidden;
-  background: var(--color-card-solid, #fff);
-  border: 1px solid var(--color-border);
-  box-shadow: var(--shadow-elevated);
-  /* Crema wash so the card is distinguishable from the page behind it in both themes. */
-  background-image: linear-gradient(160deg, rgba(247, 236, 226, 0.85), rgba(244, 244, 244, 0.6));
+  background: #FCFAF8;
+  border: 1px solid #EDE4DA;
+  box-shadow: 0 18px 44px rgba(44, 44, 58, 0.10), 0 3px 10px rgba(44, 44, 58, 0.05);
+  color: #2C2C3A;
+  /* Serif for the card face, matching the letterhead. */
+  font-family: var(--font-serif, Georgia, 'Times New Roman', serif);
 }
 
-[data-theme="dark"] .card,
-[data-theme="oled"] .card {
-  background-image: linear-gradient(160deg, rgba(52, 52, 82, 0.9), rgba(34, 34, 58, 0.75));
-}
-
+/* ── Header ───────────────────────────────────────────────────────────────── */
 .head {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.875rem 1rem;
-  border-bottom: 1px solid var(--color-border);
+  gap: 1rem;
+  padding: 1.5rem 1.5rem 1.25rem;
+  overflow: hidden;
 }
 
-.wordmark { width: 104px; height: auto; display: block; }
-[data-theme="dark"] .wordmark,
-[data-theme="oled"] .wordmark { filter: invert(1) brightness(1.6); }
+.headArcs {
+  position: absolute;
+  top: -14px;
+  left: -14px;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+}
+
+.brandBlock {
+  position: relative;
+  padding-right: 1.25rem;
+  border-right: 1px solid #D5AE8F;
+  z-index: 1;
+}
+
+.wordmark { width: 152px; height: auto; display: block; }
+
+.headRight { display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem; }
 
 .kind {
-  font-size: 0.5625rem;
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--color-muted);
+  color: #CB8C7C;
   white-space: nowrap;
 }
 
-.body { display: flex; gap: 0.875rem; padding: 1rem; }
+.headDots { width: 58px; height: 29px; }
+
+/* ── Body ─────────────────────────────────────────────────────────────────── */
+.body {
+  display: flex;
+  gap: 1.5rem;
+  padding: 0.25rem 1.5rem 1.5rem;
+}
 
 .photoWrap {
-  width: 84px;
-  height: 104px;
+  width: 112px;
+  height: 142px;
   flex-shrink: 0;
-  border-radius: var(--radius-sm);
+  border-radius: 14px;
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  background: var(--color-bg);
+  background: #F2E8DE;
 }
 
 .photo { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* Says what's missing rather than silently substituting the profile avatar — see IdCard.tsx. */
+/* Says what's missing rather than substituting the profile avatar — see IdCard.tsx. */
 .photoEmpty {
+  position: relative;
   width: 100%;
   height: 100%;
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
-  gap: 0.3rem;
-  font-size: 0.5625rem;
-  text-align: center;
-  color: var(--color-muted);
-  padding: 0 0.25rem;
+  padding-bottom: 0.6rem;
 }
-.photoEmptyIcon { font-size: 1.125rem; opacity: 0.6; }
+
+.photoWave { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 70%; }
+
+.photoEmptyText {
+  position: relative;
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  font-size: 0.5625rem;
+  letter-spacing: 0.04em;
+  color: #B3A79C;
+}
 
 .details { flex: 1; min-width: 0; }
 
+.nameBlock { padding-bottom: 0.6rem; margin-bottom: 0.2rem; }
+
 .name {
-  font-family: var(--font-serif);
-  font-size: 1.125rem;
-  font-weight: 400;
-  line-height: 1.2;
-  color: var(--color-text);
+  font-size: 1.3125rem;
+  line-height: 1.15;
+  color: #2C2C3A;
   word-break: break-word;
 }
 
 .designation {
-  margin-top: 0.1rem;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--color-muted);
-}
-
-.facts { margin: 0.6rem 0 0; display: flex; flex-direction: column; gap: 0.2rem; }
-
-.fact { display: flex; gap: 0.5rem; align-items: baseline; }
-
-.fact dt {
-  width: 42px;
-  flex-shrink: 0;
-  font-size: 0.5625rem;
+  margin-top: 0.15rem;
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  font-size: 0.625rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-muted);
+  letter-spacing: 0.09em;
+  color: #A39B95;
 }
 
-.fact dd {
+.rows { margin: 0; display: flex; flex-direction: column; }
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #EAE0D5;
+}
+.row:last-child { border-bottom: none; }
+
+.rowLabel {
+  width: 62px;
+  flex-shrink: 0;
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #A39B95;
+}
+
+.rowValue {
   margin: 0;
-  font-size: 0.75rem;
-  color: var(--color-text);
+  font-size: 1rem;
+  color: #2C2C3A;
   min-width: 0;
   word-break: break-word;
+  font-variant-numeric: tabular-nums;
 }
 
-.mono { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+/* The one field a stranger reads in a hurry. */
+.blood { font-weight: 700; }
 
-/* The one field a stranger reads in a hurry, so it gets weight and the app's alert colour. */
-.blood {
-  font-weight: 700;
-  color: var(--color-destructive);
-}
-
+/* ── Emergency band ───────────────────────────────────────────────────────── */
 .emergency {
   display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  padding: 0.6rem 1rem;
-  border-top: 1px solid var(--color-border);
-  background: rgba(203, 140, 124, 0.07);
+  align-items: stretch;
+  border-top: 1px solid #EDE4DA;
+  background: #FFFFFF;
 }
 
-.emergencyLabel {
-  font-size: 0.5625rem;
+.emergencyIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 62px;
+  flex-shrink: 0;
+  background: #E6D8FB;
+}
+.emergencyIcon svg { width: 26px; height: 26px; }
+
+.emergencyText {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.1rem;
+  padding: 0.75rem 0.875rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.emergencyTitle {
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-warning);
+  letter-spacing: 0.1em;
+  color: #745FFD;
 }
 
-.emergencyValue { font-size: 0.75rem; color: var(--color-text); }
+.emergencySub {
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  font-size: 0.8125rem;
+  color: #6B6B7B;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
+.emergencyDivider { width: 1px; background: #EAE0D5; margin: 0.75rem 0; flex-shrink: 0; }
+
+.emergencyPhone {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.75rem 1rem 0.75rem 0.875rem;
+  flex-shrink: 0;
+  min-width: 150px;
+}
+
+.phoneIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid #CEAAFD;
+}
+.phoneIcon svg { width: 15px; height: 15px; }
+
+.phoneNumber {
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  font-size: 0.8125rem;
+  color: #2C2C3A;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+
+/* An empty rule to write on, matching the mockup, when no number is recorded. */
+.phoneBlank {
+  display: block;
+  width: 90px;
+  border-bottom: 1px solid #C9BCAF;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
 .foot {
-  padding: 0.55rem 1rem 0.7rem;
-  border-top: 1px solid var(--color-border);
-  font-size: 0.5625rem;
-  line-height: 1.4;
-  color: var(--color-muted);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem 0.875rem 1.25rem;
+  background: #F7ECE2;
+  overflow: hidden;
 }
 
-/* Printing an ID card is a real thing people do, so make it survive it. */
+.footIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid #D5AE8F;
+}
+.footIcon svg { width: 15px; height: 15px; }
+
+.footDivider { width: 1px; align-self: stretch; background: #DFCDB8; flex-shrink: 0; }
+
+.footText {
+  font-family: var(--font-geist-sans, system-ui, sans-serif);
+  font-size: 0.6875rem;
+  line-height: 1.5;
+  color: #7C7268;
+  flex: 1;
+  min-width: 0;
+}
+
+.footDots { position: absolute; right: 10px; bottom: 6px; width: 46px; height: 23px; }
+
+/* ── Print button ─────────────────────────────────────────────────────────── */
+.printBtn {
+  display: inline-block;
+  margin-top: 0.875rem;
+  padding: 0.5rem 1.15rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-raised);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.printBtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+/* ── Print ────────────────────────────────────────────────────────────────────
+   `visibility` rather than `display` so the card keeps its place in the layout tree while
+   everything around it goes blank — the card is nested deep inside the app shell, and hiding
+   ancestors with `display: none` would take the card with them. */
 @media print {
+  :global(body) * { visibility: hidden !important; }
+
+  .printRoot, .printRoot * { visibility: visible !important; }
+
+  .printRoot {
+    position: absolute !important;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+
   .card {
+    max-width: 520px;
     box-shadow: none;
-    border: 1px solid #000;
-    background: #fff;
-    background-image: none;
+    border: 1px solid #DFCDB8;
     break-inside: avoid;
   }
+
+  /* The button is a control, not part of the document. */
+  .printBtn { display: none !important; }
+}
+
+/* ── Narrow screens ───────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .head { padding: 1.125rem 1.125rem 1rem; }
+  .wordmark { width: 118px; }
+  .body { padding: 0.25rem 1.125rem 1.125rem; gap: 1rem; }
+  .photoWrap { width: 88px; height: 112px; }
+  .name { font-size: 1.125rem; }
+  .rowLabel { width: 52px; font-size: 0.625rem; }
+  .rowValue { font-size: 0.875rem; }
+
+  /* The phone block drops below rather than squeezing the contact name to nothing. */
+  .emergency { flex-wrap: wrap; }
+  .emergencyIcon { width: 48px; }
+  .emergencyDivider { display: none; }
+  .emergencyPhone {
+    width: 100%;
+    min-width: 0;
+    padding-top: 0;
+    padding-left: 1.125rem;
+  }
+  .foot { padding: 0.7rem 1.125rem; }
+  .footDots { display: none; }
 }

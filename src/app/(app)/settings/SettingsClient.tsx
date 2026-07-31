@@ -310,7 +310,7 @@ export default function SettingsClient({
             </div>
           ) : (
             <div className={styles.idCardRow}>
-              <IdCard name={name} designation={designation} profile={profile} />
+              <IdCard name={name} designation={designation} profile={profile} printable />
 
               <div className={styles.idCardActions}>
                 <input

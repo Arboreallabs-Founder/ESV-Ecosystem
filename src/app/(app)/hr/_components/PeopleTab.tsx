@@ -292,6 +292,7 @@ export default function PeopleTab({
               name={selected.user.name || selected.user.email}
               designation={selected.user.designation}
               profile={selected.profile}
+              printable
             />
           </div>
 
