@@ -236,7 +236,7 @@ CREATE POLICY "Issued documents update" ON public.issued_documents
 -- same document type in the same second cannot take the same number.
 CREATE OR REPLACE FUNCTION public.next_document_human_id(p_org_id UUID, p_code TEXT)
 RETURNS TEXT
-LANGUAGE plpgsql SECURITY DEFINER SET search_path = public
+LANGUAGE plpgsql VOLATILE SECURITY DEFINER SET search_path = public
 AS $$
 DECLARE
   v_segment TEXT;
@@ -276,7 +276,7 @@ RETURNS TABLE (
   revoked        BOOLEAN,
   org_name       TEXT
 )
-LANGUAGE sql SECURITY DEFINER SET search_path = public STABLE
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public
 AS $$
   SELECT d.human_id,
          t.name,
