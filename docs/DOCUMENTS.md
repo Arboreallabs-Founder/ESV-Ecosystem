@@ -2,7 +2,8 @@
 
 Generates HR letters on ESV letterhead, each with a document ID and a public verification link.
 
-**Status:** approved, not yet built.
+**Status:** built. Phases 1-5 shipped; see [DOCUMENTS_BUILD_PLAN.md](DOCUMENTS_BUILD_PLAN.md)
+for what each phase covered and what remains.
 **Source:** issuance policy form completed by the founder, 31 July 2026, plus follow-up answers.
 This file is the authority on *what was decided and why*. When something here and the code
 disagree, the code is the bug.
@@ -24,8 +25,9 @@ introducing new colour values.
 
 **Typeface caveat:** the letterhead is set in Book Antiqua, a licensed Monotype face embedded in
 the `.docx`. Embedding it in PDFs we distribute to third parties is a licensing question nobody
-has answered, so generated documents use **Arapey** (already in the app, safely licensed) unless
-someone confirms the Book Antiqua licence covers redistribution.
+has answered, so generated documents use react-pdf's built-in **Times-Roman** — a standard PDF
+base font that needs no embedding at all, which sidesteps the question rather than answering it.
+Revisit if someone confirms the Book Antiqua licence covers redistribution.
 
 ## Issuance matrix
 
@@ -123,8 +125,9 @@ The PDF is generated once, stored, and hashed. It is **never regenerated** — f
 embedded timestamps make regeneration non-byte-stable, so the hash would stop matching and every
 verification would fail.
 
-Open: whether the verification page shows the employee's name, and what it shows for a revoked
-document. The recommendation on both is in the "open items" below.
+**Resolved:** the verification page shows the employee's name, document type and issue date, so a
+bank can confirm the letter in front of them matches. A revoked document says so rather than
+404ing — a dead link reads as a forgery.
 
 ## Out of scope — decided, not overlooked
 
@@ -155,6 +158,5 @@ them.
   Separate from issuance rights, which is why it isn't in the table above.
 - **Permission-editing UI** — agreed to follow this build.
 - **Testimonial approver** — who signs off free-text wording.
-- **Verification page disclosure** — recommend showing employee name, document type and issue
-  date, so a bank can confirm the letter in front of them matches. Recommend a revoked document
-  shows "revoked" rather than 404 — a dead link is indistinguishable from a fake.
+- **Signatory** is currently a constant in `src/app/actions/documents.tsx`. When it becomes
+  per-document it belongs on `document_types`, not there.

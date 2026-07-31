@@ -1,7 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth', '/f/']
+// '/verify/' is the document verification page reached from the QR printed on HR letters.
+// It has to work for a bank clerk or landlord with no account at all — gating it behind
+// login would make every issued document unverifiable by the people it is issued for.
+const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth', '/f/', '/verify/']
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })

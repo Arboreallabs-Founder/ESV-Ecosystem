@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer'
 import type { SignatureMode } from '@/lib/types'
+import { ESV_WORDMARK_DATA_URI } from './wordmark'
 
 /* The ESV letterhead, as a react-pdf component.
 
@@ -108,7 +109,7 @@ export function Letterhead({
     <Document title={`${title} — ${humanId}`} author={ORG.legalName}>
       <Page size="A4" style={styles.page}>
         {/* eslint-disable-next-line jsx-a11y/alt-text -- react-pdf's Image takes no alt */}
-        <Image style={styles.wordmark} src="public/brand/esv-letterhead-wordmark.png" />
+        <Image style={styles.wordmark} src={ESV_WORDMARK_DATA_URI} />
         <View style={styles.headRule} />
 
         <View style={styles.meta}>

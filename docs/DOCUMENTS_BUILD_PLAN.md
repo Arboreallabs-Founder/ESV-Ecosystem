@@ -19,7 +19,7 @@ the data model comes first even though the visible payoff comes last.
 
 ---
 
-## Phase 1 — Employee profiles
+## Phase 1 — Employee profiles  ✅ built
 
 A `employee_profiles` table keyed to `users`, **not** more columns on `users`.
 
@@ -49,7 +49,7 @@ governs one table.
 
 **UI:** a *People* tab in HR Zone — roster on the left, profile form on the right.
 
-## Phase 2 — Compensation
+## Phase 2 — Compensation  ✅ built
 
 `employee_compensation`, separate again and for a stronger reason: putting CTC on `users` or even
 on `employee_profiles` means anything reading those rows can read salary. One table, one policy,
@@ -74,7 +74,7 @@ increment inserts a new row; the old one stays. Two consequences that matter:
 row is a feature to design (which fields, what history), not a default to fall into. Revisit with
 the privacy matrix.
 
-## Phase 3 — Document engine
+## Phase 3 — Document engine  ✅ built
 
 Three tables and the machinery around them.
 
@@ -110,7 +110,7 @@ needs a bundled binary that is painful and slow on Vercel.
 
 ---
 
-## Phase 4 — Templates
+## Phase 4 — Templates  ✅ built
 
 Cheapest first, so the engine is proven before the fiddly ones:
 
@@ -120,19 +120,29 @@ Cheapest first, so the engine is proven before the fiddly ones:
 4. **Compensation** — needs Phase 2
 5. **Exit**
 
-## Phase 5 — Verification page and HR Zone tab
+## Phase 5 — Verification page and HR Zone tab  ✅ built
 
 Public `/verify/[token]`, no auth, showing what the letter claims so a bank can check it against
 the paper in front of them. Plus the *Documents* tab in HR Zone for issuing and browsing.
 
-Two open questions blocking only this phase: whether the page shows the employee's name, and what
-a revoked document displays. Recommendations are in DOCUMENTS.md.
+Both open questions were resolved as recommended: the page **shows the employee's name** (a
+verifier needs to check the letter in front of them matches the record), and a revoked document
+**says "withdrawn"** rather than 404ing (a dead link is indistinguishable from a forgery).
 
-## Phase 6 — Testimonials and best-performer certificates
+`/verify/` is in `PUBLIC_ROUTES` in `src/proxy.ts` — gating it behind login would make every
+issued document unverifiable by the people it is issued for.
 
-Both need the engine proven. The testimonial is the first template with a free-text body rather
-than a pure data merge, so it needs an approval step on the wording. The best-performer
-certificate pulls its period and kudos counts from the existing Engage and Analytics modules.
+## Phase 6 — Remaining templates
+
+25 of the 29 catalogued types have templates. Not yet written:
+
+- **Offer Letter** — needs offered CTC and terms that aren't in the system until someone joins
+- **NDA**, **Code of Conduct** — multi-page legal text; better as managed uploads than merges
+- **Payslip** — needs a monthly payroll run, not just an annual package
+- **Testimonial** and **Best Performer** are built, but the testimonial has no approval step on its
+  free-text wording and the certificate doesn't yet pull kudos counts from Engage/Analytics
+
+Types without a template are hidden from the issue picker rather than offered and failing.
 
 ---
 
@@ -144,7 +154,8 @@ that third parties already hold — and a reissued PDF fails verification agains
 the copy in someone's file. Phases 1, 2 and 4 are ordinary schema and templating work that can be
 revised freely.
 
-**Typeface.** Documents render in Arapey, not the letterhead's Book Antiqua, until someone
+**Typeface.** Documents render in react-pdf's built-in Times-Roman, not the letterhead's Book
+Antiqua, until someone
 confirms the Monotype licence permits embedding in redistributed PDFs. Visually close; legally
 uncomplicated.
 

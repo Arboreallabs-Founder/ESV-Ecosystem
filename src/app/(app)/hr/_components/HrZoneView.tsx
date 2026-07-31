@@ -4,11 +4,12 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createHrPolicy, updateHrPolicy, deleteHrPolicy, type HrPolicyInput } from '@/app/actions/hr-zone'
-import type { HrPolicy, HrClockSettings, HrBirthday, LeaveRequest, ExpenseRequest, LeaveBalance, EmployeeRow, EmployeeCompensation, UserRow } from '@/lib/types'
+import type { HrPolicy, HrClockSettings, HrBirthday, LeaveRequest, ExpenseRequest, LeaveBalance, EmployeeRow, EmployeeCompensation, UserRow, DocumentType, IssuedDocument } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import FilterTabs from '@/app/_components/FilterTabs'
 import PeopleTab from './PeopleTab'
+import DocumentsTab from './DocumentsTab'
 import HrClockAdmin from './HrClockAdmin'
 import MyRequests from './MyRequests'
 import Avatar from '@/app/_components/Avatar'
@@ -53,6 +54,7 @@ export default function HrZoneView({
   policies, clockSettings, birthdays, canEditPolicies, canDeletePolicies, showClockAdmin,
   isApprover, pendingApprovalsCount, myLeaveRequests, myExpenseRequests, myLeaveBalances, orgId, userId,
   roster, compensation, canManagePeople, managers,
+  documentTypes, issuableCodes, issuedDocuments, templateFields, currentUserId,
 }: {
   policies: HrPolicy[]; clockSettings: HrClockSettings | null; birthdays: HrBirthday[]
   canEditPolicies: boolean; canDeletePolicies: boolean; showClockAdmin: boolean
@@ -64,6 +66,11 @@ export default function HrZoneView({
   compensation: Record<string, EmployeeCompensation[]>
   canManagePeople: boolean
   managers: UserRow[]
+  documentTypes: DocumentType[]
+  issuableCodes: string[]
+  issuedDocuments: IssuedDocument[]
+  templateFields: Record<string, Array<{ name: string; label: string; type: string; required?: boolean; hint?: string }>>
+  currentUserId: string
 }) {
   const router = useRouter()
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -73,7 +80,7 @@ export default function HrZoneView({
   // Birthdays and clock settings are HR-admin config, not something an associate needs — the tab
   // only exists for people who can see that card at all.
   const showBirthdaysTab = showClockAdmin && !!clockSettings
-  const [tab, setTab] = useState<'policies' | 'requests' | 'people' | 'birthdays'>('policies')
+  const [tab, setTab] = useState<'policies' | 'requests' | 'people' | 'documents' | 'birthdays'>('policies')
 
   const pendingCount = myLeaveRequests.filter((r) => r.status === 'pending').length
     + myExpenseRequests.filter((r) => r.status === 'pending').length
@@ -95,6 +102,7 @@ export default function HrZoneView({
             {tab === 'policies' ? 'Company policies'
               : tab === 'requests' ? 'Your leave and expense requests'
               : tab === 'people' ? 'Employee records — the data HR letters are generated from'
+              : tab === 'documents' ? 'Generate letters on ESV letterhead, each verifiable online'
               : 'Clock reminders and team birthdays'}
           </div>
         </div>
@@ -110,6 +118,7 @@ export default function HrZoneView({
           { value: 'policies', label: 'Policies', count: policies.length },
           { value: 'requests', label: 'Requests', count: pendingCount || undefined },
           ...(canManagePeople ? [{ value: 'people', label: 'People', count: roster.length }] : []),
+          ...(canManagePeople ? [{ value: 'documents', label: 'Documents', count: issuedDocuments.length || undefined }] : []),
           ...(showBirthdaysTab ? [{ value: 'birthdays', label: 'Birthdays', count: birthdays.length }] : []),
         ]}
         value={tab}
@@ -163,6 +172,17 @@ export default function HrZoneView({
             compensation={compensation}
             canSeeCompensation={canManagePeople}
             managers={managers}
+          />
+        )}
+
+        {tab === 'documents' && canManagePeople && (
+          <DocumentsTab
+            types={documentTypes}
+            issuable={issuableCodes}
+            issued={issuedDocuments}
+            roster={roster}
+            templateFields={templateFields}
+            currentUserId={currentUserId}
           />
         )}
 

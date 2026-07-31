@@ -7,6 +7,8 @@ import { fetchMyExpenseRequests, fetchPendingExpenseRequests } from '@/lib/expen
 import { fetchMyLeaveBalances } from '@/lib/leave-balances'
 import { fetchEmployeeRoster, fetchCompensationHistory } from '@/lib/employees'
 import { fetchAllUsers } from '@/lib/partners'
+import { fetchDocumentTypes, fetchIssuableCodes, fetchIssuedDocuments } from '@/lib/documents/catalogue'
+import { TEMPLATES } from '@/lib/documents/templates'
 import HrZoneView from './_components/HrZoneView'
 
 export default async function HrZonePage() {
@@ -21,7 +23,7 @@ export default async function HrZonePage() {
   // People and compensation are the same tier as the clock admin — founder/admin/HR.
   const canManagePeople = ['founder', 'admin', 'hr'].includes(user.role ?? '')
 
-  const [policies, clockSettings, birthdays, myLeaveRequests, myExpenseRequests, pendingLeave, pendingExpense, myLeaveBalances, roster, allUsers] = await Promise.all([
+  const [policies, clockSettings, birthdays, myLeaveRequests, myExpenseRequests, pendingLeave, pendingExpense, myLeaveBalances, roster, allUsers, documentTypes, issuableCodes, issuedDocuments] = await Promise.all([
     fetchHrPolicies(),
     showClockAdmin ? fetchClockSettings() : Promise.resolve(null),
     showClockAdmin ? fetchAllBirthdays() : Promise.resolve([]),
@@ -32,7 +34,16 @@ export default async function HrZonePage() {
     fetchMyLeaveBalances(user.id),
     canManagePeople ? fetchEmployeeRoster() : Promise.resolve([]),
     canManagePeople ? fetchAllUsers() : Promise.resolve([]),
+    canManagePeople ? fetchDocumentTypes() : Promise.resolve([]),
+    canManagePeople ? fetchIssuableCodes(user.role ?? '') : Promise.resolve(new Set<string>()),
+    canManagePeople ? fetchIssuedDocuments() : Promise.resolve([]),
   ])
+
+  // The field specs travel to the client as plain data — the templates themselves render PDFs on
+  // the server and must never be bundled for the browser.
+  const templateFields = Object.fromEntries(
+    Object.entries(TEMPLATES).map(([code, tpl]) => [code, tpl.fields ?? []]),
+  )
 
   // One history per person, fetched in parallel. RLS returns [] for anyone not permitted, so this
   // needs no separate permission branch beyond not asking at all when nobody can read it.
@@ -56,6 +67,11 @@ export default async function HrZonePage() {
       compensation={compensation}
       canManagePeople={canManagePeople}
       managers={allUsers}
+      documentTypes={documentTypes}
+      issuableCodes={[...issuableCodes]}
+      issuedDocuments={issuedDocuments}
+      templateFields={templateFields}
+      currentUserId={user.id}
       myLeaveRequests={myLeaveRequests}
       myExpenseRequests={myExpenseRequests}
       myLeaveBalances={myLeaveBalances}

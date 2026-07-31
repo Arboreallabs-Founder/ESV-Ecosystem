@@ -374,3 +374,98 @@
   .peopleList { max-height: 40vh; }
   .compHead { flex-direction: column; gap: 0.5rem; }
 }
+
+/* ══ Documents tab ═══════════════════════════════════════════════════════════ */
+.docsLayout { display: flex; flex-direction: column; gap: 1.5rem; }
+
+.docIssue, .docHistory {
+  padding: 1.25rem 1.375rem;
+  background: var(--color-card);
+  border: 1.5px solid var(--glass-border, var(--color-border));
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}
+
+/* Says up front whether this document needs printing and signing — that changes what the issuer
+   does next, so it belongs beside the picker rather than in a tooltip. */
+.docModeNote {
+  margin: 0.875rem 0;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--color-bg);
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+.docSuccess {
+  margin-top: 1rem;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--radius-sm);
+  background: rgba(46, 125, 50, 0.08);
+  border-left: 3px solid var(--color-success);
+  font-size: 0.875rem;
+  color: var(--color-text);
+}
+
+.mono { font-variant-numeric: tabular-nums; letter-spacing: 0.01em; }
+
+.docList { display: flex; flex-direction: column; gap: 0.6rem; }
+
+.docRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card-raised);
+}
+.docRevoked { opacity: 0.62; }
+
+.docMain { flex: 1; min-width: 0; }
+
+.docTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.docMeta { margin-top: 0.15rem; font-size: 0.75rem; color: var(--color-muted); }
+.docReason { margin-top: 0.3rem; font-size: 0.75rem; font-style: italic; color: var(--color-destructive); }
+
+.docRevokedTag, .docFailedTag {
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.docRevokedTag { background: rgba(192, 57, 43, 0.14); color: var(--color-destructive); }
+.docFailedTag { background: rgba(203, 140, 124, 0.18); color: var(--color-warning); }
+
+.docActions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+
+.dangerBtn {
+  padding: 0.35rem 0.75rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.dangerBtn:hover { border-color: var(--color-destructive); color: var(--color-destructive); }
+
+@media (max-width: 640px) {
+  .docRow { flex-wrap: wrap; }
+  .docActions { width: 100%; justify-content: flex-end; }
+}
