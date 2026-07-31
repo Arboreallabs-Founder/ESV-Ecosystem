@@ -123,3 +123,12 @@ marks it.
   `verify_document()` (SECURITY DEFINER, returns only what a verifier needs, granted to `anon`),
   and the private `hr-documents` bucket. Note there is **no DELETE policy** on `issued_documents`:
   a withdrawn document is revoked, not erased, or its verification link 404s and reads as a fake.
+
+  **Fixed after a failed first apply:** the `issued_documents` INSERT policy compared
+  `document_permissions.role` (TEXT) against `get_user_role()` (the `user_role` enum). Postgres
+  has no implicit `text = user_role` operator, so the statement errored and — because the SQL
+  editor runs a paste as one transaction — the entire migration rolled back, leaving phases 1 and
+  2 applied and phase 3 absent. The column stays TEXT on purpose, so adding a `manager` role later
+  is a row rather than an `ALTER TYPE`; the comparison now casts with `::TEXT`. Worth remembering:
+  a partial-looking outcome across a batch of migrations usually means one of them rolled back
+  whole, not that some statements within it survived.

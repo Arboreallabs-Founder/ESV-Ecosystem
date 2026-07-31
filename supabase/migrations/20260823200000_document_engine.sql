@@ -211,7 +211,11 @@ CREATE POLICY "Issued documents insert" ON public.issued_documents
       SELECT 1 FROM public.document_permissions p
       WHERE p.org_id = public.get_user_org_id()
         AND p.document_code = issued_documents.document_code
-        AND p.role = public.get_user_role()
+        -- The cast is required, not cosmetic. document_permissions.role is TEXT (deliberately —
+        -- so a future 'manager' role is a row, not an ALTER TYPE), while get_user_role() returns
+        -- the user_role enum. Postgres has no implicit text = user_role operator, so without
+        -- ::TEXT this whole migration fails to apply.
+        AND p.role = public.get_user_role()::TEXT
         AND p.can_issue
     )
   );
