@@ -11,6 +11,8 @@ quick orientation, read:
 - **[docs/ROLES.md](docs/ROLES.md)** — the authoritative role/permission reference, including the
   `general` role (not covered below)
 - **[docs/MIGRATIONS.md](docs/MIGRATIONS.md)** — schema history and phase labeling
+- **[docs/DOCUMENTS.md](docs/DOCUMENTS.md)** — HR document generation: issuance matrix, signature
+  modes, letterhead and verification model (approved, not yet built)
 - **[docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)** — local env setup
 - **[docs/](docs/)** — everything else (brand guidelines, original PRD)
 
