@@ -1153,6 +1153,9 @@ export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
   full_time: 'Full-time', intern: 'Intern', contract: 'Contract', consultant: 'Consultant',
 }
 
+export const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const
+export type BloodGroup = typeof BLOOD_GROUPS[number]
+
 export type EmployeeProfile = {
   user_id: string
   org_id: string
@@ -1173,6 +1176,9 @@ export type EmployeeProfile = {
   personal_email: string | null
   emergency_contact_name: string | null
   emergency_contact_phone: string | null
+  blood_group: BloodGroup | null
+  /** Deliberately not users.photo_url — an ID card needs a photo supplied for that purpose. */
+  id_photo_url: string | null
   updated_at: string
   reporting_manager?: { name: string | null } | null
 }

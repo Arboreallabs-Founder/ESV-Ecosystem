@@ -469,3 +469,9 @@
   .docRow { flex-wrap: wrap; }
   .docActions { width: 100%; justify-content: flex-end; }
 }
+
+.idCardSection {
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 2px solid var(--color-border);
+}

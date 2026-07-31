@@ -6,6 +6,9 @@ import { changePassword } from '@/app/actions/auth'
 import { updateMyProfile, updateMyPhoto } from '@/app/actions/profile'
 import { createClient } from '@/lib/supabase/client'
 import { useTheme } from '@/app/_components/ThemeProvider'
+import IdCard from '@/app/_components/IdCard'
+import { updateMyIdPhoto } from '@/app/actions/profile'
+import type { EmployeeProfile } from '@/lib/types'
 import styles from './settings.module.css'
 
 const ROLE_LABELS: Record<string, string> = {
@@ -19,7 +22,7 @@ function initials(name: string): string {
 }
 
 export default function SettingsClient({
-  userId, name, email, role, phone, designation, location, photoUrl,
+  userId, name, email, role, phone, designation, location, photoUrl, profile,
 }: {
   userId: string
   name: string
@@ -29,10 +32,14 @@ export default function SettingsClient({
   designation: string | null
   location: string | null
   photoUrl: string | null
+  profile: EmployeeProfile | null
 }) {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const idFileInputRef = useRef<HTMLInputElement>(null)
+  const [idPhotoPending, setIdPhotoPending] = useState(false)
+  const [idPhotoError, setIdPhotoError] = useState('')
 
   const [profileName, setProfileName] = useState(name)
   const [profileDesignation, setProfileDesignation] = useState(designation ?? '')
@@ -103,6 +110,32 @@ export default function SettingsClient({
       setNewPw('')
       setConfirmPw('')
     })
+  }
+
+  async function handleIdPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIdPhotoError('')
+    if (file.size > MAX_PHOTO_BYTES) { setIdPhotoError('Photo must be under 5MB.'); return }
+    setIdPhotoPending(true)
+    try {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop() || 'jpg'
+      // Fixed name so replacing your ID photo overwrites rather than accumulating orphans.
+      const path = `${userId}/id-photo.${ext}`
+      const { error: upErr } = await supabase.storage
+        .from('profile-photos').upload(path, file, { upsert: true })
+      if (upErr) throw new Error(upErr.message)
+      const { data } = supabase.storage.from('profile-photos').getPublicUrl(path)
+      // Cache-buster: the path is stable across replacements, so without it a browser keeps
+      // showing the previous photo.
+      await updateMyIdPhoto(`${data.publicUrl}?v=${Date.now().toString(36)}`)
+      router.refresh()
+    } catch (err) {
+      setIdPhotoError(err instanceof Error ? err.message : 'Could not upload photo.')
+    } finally {
+      setIdPhotoPending(false)
+    }
   }
 
   return (
@@ -258,6 +291,49 @@ export default function SettingsClient({
                 </button>
               </div>
             </form>
+          )}
+        </div>
+
+        {/* ── Digital ID card ── */}
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>ID Card</div>
+          <div className={styles.sectionDesc}>
+            Your digital employee ID. The photo here is separate from your profile picture on
+            purpose — this one appears on an identity document, so it needs a photo you uploaded
+            for that, not one mirrored in from a link.
+          </div>
+
+          {!profile ? (
+            <div className={styles.sectionDesc} style={{ marginTop: '1rem' }}>
+              Your employee profile has not been set up yet. Ask HR to create it and your ID card
+              will appear here.
+            </div>
+          ) : (
+            <div className={styles.idCardRow}>
+              <IdCard name={name} designation={designation} profile={profile} />
+
+              <div className={styles.idCardActions}>
+                <input
+                  ref={idFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  style={{ display: 'none' }}
+                  onChange={handleIdPhoto}
+                />
+                <button
+                  type="button"
+                  className={styles.submitBtn}
+                  onClick={() => idFileInputRef.current?.click()}
+                  disabled={idPhotoPending}
+                >
+                  {idPhotoPending ? 'Uploading…' : profile.id_photo_url ? 'Replace ID photo' : 'Upload ID photo'}
+                </button>
+                <div className={styles.sectionDesc}>
+                  A clear, front-facing photo. Under 5MB.
+                </div>
+                {idPhotoError && <div className={styles.errorMsg}>{idPhotoError}</div>}
+              </div>
+            </div>
           )}
         </div>
       </div>

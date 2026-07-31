@@ -26,8 +26,8 @@ const ISSUER_ROLES = ['founder', 'admin', 'hr'] as const
  * explicitly. When it becomes per-document it belongs in `document_types`, not here.
  */
 const SIGNATORY = {
-  name: 'Sakshay Upadhyay',
-  designation: 'Authorised Signatory',
+  name: 'Monica Gupta',
+  designation: 'Chief Executive Officer',
 }
 
 export type IssueDocumentInput = {

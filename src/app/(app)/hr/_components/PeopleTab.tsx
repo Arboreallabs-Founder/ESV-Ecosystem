@@ -4,10 +4,11 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveEmployeeProfile, saveCompensation } from '@/app/actions/employees'
 import {
-  EMPLOYMENT_TYPES, EMPLOYMENT_TYPE_LABELS, COMPENSATION_COMPONENTS,
+  EMPLOYMENT_TYPES, EMPLOYMENT_TYPE_LABELS, COMPENSATION_COMPONENTS, BLOOD_GROUPS,
 } from '@/lib/types'
 import type { EmployeeRow, EmployeeCompensation, EmploymentType, UserRow } from '@/lib/types'
 import Avatar from '@/app/_components/Avatar'
+import IdCard from '@/app/_components/IdCard'
 import styles from '../hr-zone.module.css'
 
 function formatINR(n: number) {
@@ -78,6 +79,7 @@ export default function PeopleTab({
           personal_email: fd.get('personal_email') as string,
           emergency_contact_name: fd.get('emergency_contact_name') as string,
           emergency_contact_phone: fd.get('emergency_contact_phone') as string,
+          blood_group: (fd.get('blood_group') as typeof BLOOD_GROUPS[number]) || null,
         })
         setSaved(true)
         router.refresh()
@@ -245,6 +247,14 @@ export default function PeopleTab({
                 <span className={styles.label}>Emergency phone</span>
                 <input className={styles.input} name="emergency_contact_phone" defaultValue={fieldValue(p?.emergency_contact_phone)} />
               </label>
+              <label className={styles.field}>
+                <span className={styles.label}>Blood group</span>
+                <select className={styles.input} name="blood_group" defaultValue={fieldValue(p?.blood_group)}>
+                  <option value="">—</option>
+                  {BLOOD_GROUPS.map((b) => <option key={b} value={b}>{b}</option>)}
+                </select>
+                <span className={styles.hint}>Printed on their ID card.</span>
+              </label>
             </div>
 
             <div className={styles.formSectionTitle}>Exit</div>
@@ -266,6 +276,24 @@ export default function PeopleTab({
               </button>
             </div>
           </form>
+
+          {/* ── ID card ── */}
+          <div className={styles.idCardSection}>
+            <div className={styles.compHead}>
+              <div>
+                <div className={styles.formSectionTitle} style={{ marginTop: 0 }}>ID card</div>
+                <div className={styles.hint}>
+                  The photo is uploaded by the employee from their own Settings page — it is not
+                  the profile avatar, which is often a mirrored LinkedIn headshot.
+                </div>
+              </div>
+            </div>
+            <IdCard
+              name={selected.user.name || selected.user.email}
+              designation={selected.user.designation}
+              profile={selected.profile}
+            />
+          </div>
 
           {/* ── Compensation ── */}
           {canSeeCompensation && (

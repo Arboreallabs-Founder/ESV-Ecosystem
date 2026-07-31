@@ -8,8 +8,12 @@ import type { EmployeeProfile, EmployeeRow, EmployeeCompensation, UserRow } from
    nothing more. Compensation in particular has no self-read policy: an associate calling
    fetchCompensationHistory for themselves gets an empty array, not an error. */
 
-/** Roles that appear on the People roster. Partners aren't employees; super_admin isn't staff. */
-const STAFF_ROLES = ['founder', 'admin', 'associate', 'general', 'hr']
+/** Roles that appear on the People roster.
+ *
+ *  Founders are excluded — they own the company rather than being managed by it, so there is no
+ *  employment record to keep or letters to issue against. Partners aren't employees and
+ *  super_admin isn't staff. */
+const STAFF_ROLES = ['admin', 'associate', 'general', 'hr']
 
 const PROFILE_SELECT = '*, reporting_manager:reporting_manager_id(name)'
 

@@ -1,0 +1,159 @@
+/* Digital employee ID card. Proportioned like a physical card (roughly ISO ID-1, 1.586:1) so it
+   reads as one on a phone screen, which is where it will actually be shown. */
+
+.card {
+  width: 100%;
+  max-width: 380px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-card-solid, #fff);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-elevated);
+  /* Crema wash so the card is distinguishable from the page behind it in both themes. */
+  background-image: linear-gradient(160deg, rgba(247, 236, 226, 0.85), rgba(244, 244, 244, 0.6));
+}
+
+[data-theme="dark"] .card,
+[data-theme="oled"] .card {
+  background-image: linear-gradient(160deg, rgba(52, 52, 82, 0.9), rgba(34, 34, 58, 0.75));
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.wordmark { width: 104px; height: auto; display: block; }
+[data-theme="dark"] .wordmark,
+[data-theme="oled"] .wordmark { filter: invert(1) brightness(1.6); }
+
+.kind {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.body { display: flex; gap: 0.875rem; padding: 1rem; }
+
+.photoWrap {
+  width: 84px;
+  height: 104px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.photo { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+/* Says what's missing rather than silently substituting the profile avatar — see IdCard.tsx. */
+.photoEmpty {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  font-size: 0.5625rem;
+  text-align: center;
+  color: var(--color-muted);
+  padding: 0 0.25rem;
+}
+.photoEmptyIcon { font-size: 1.125rem; opacity: 0.6; }
+
+.details { flex: 1; min-width: 0; }
+
+.name {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.designation {
+  margin-top: 0.1rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+.facts { margin: 0.6rem 0 0; display: flex; flex-direction: column; gap: 0.2rem; }
+
+.fact { display: flex; gap: 0.5rem; align-items: baseline; }
+
+.fact dt {
+  width: 42px;
+  flex-shrink: 0;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+.fact dd {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text);
+  min-width: 0;
+  word-break: break-word;
+}
+
+.mono { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
+
+/* The one field a stranger reads in a hurry, so it gets weight and the app's alert colour. */
+.blood {
+  font-weight: 700;
+  color: var(--color-destructive);
+}
+
+.emergency {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.6rem 1rem;
+  border-top: 1px solid var(--color-border);
+  background: rgba(203, 140, 124, 0.07);
+}
+
+.emergencyLabel {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-warning);
+}
+
+.emergencyValue { font-size: 0.75rem; color: var(--color-text); }
+
+.foot {
+  padding: 0.55rem 1rem 0.7rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.5625rem;
+  line-height: 1.4;
+  color: var(--color-muted);
+}
+
+/* Printing an ID card is a real thing people do, so make it survive it. */
+@media print {
+  .card {
+    box-shadow: none;
+    border: 1px solid #000;
+    background: #fff;
+    background-image: none;
+    break-inside: avoid;
+  }
+}

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
-import type { EmploymentType } from '@/lib/types'
+import type { EmploymentType, BloodGroup } from '@/lib/types'
 
 /* Employee profiles and compensation.
 
@@ -30,6 +30,7 @@ export type EmployeeProfileInput = {
   personal_email?: string | null
   emergency_contact_name?: string | null
   emergency_contact_phone?: string | null
+  blood_group?: BloodGroup | null
 }
 
 /** Empty strings from a form mean "cleared", not "the empty string". */
