@@ -5,6 +5,8 @@ import { fetchClockSettings, fetchAllBirthdays } from '@/lib/hr-clock'
 import { fetchMyLeaveRequests, fetchPendingLeaveRequests } from '@/lib/leave-requests'
 import { fetchMyExpenseRequests, fetchPendingExpenseRequests } from '@/lib/expense-requests'
 import { fetchMyLeaveBalances } from '@/lib/leave-balances'
+import { fetchEmployeeRoster, fetchCompensationHistory } from '@/lib/employees'
+import { fetchAllUsers } from '@/lib/partners'
 import HrZoneView from './_components/HrZoneView'
 
 export default async function HrZonePage() {
@@ -16,8 +18,10 @@ export default async function HrZonePage() {
   const canEditPolicies = ['founder', 'admin', 'hr'].includes(user.role ?? '')
   const canDeletePolicies = ['founder', 'admin'].includes(user.role ?? '')
   const isApprover = ['founder', 'admin', 'hr'].includes(user.role ?? '')
+  // People and compensation are the same tier as the clock admin — founder/admin/HR.
+  const canManagePeople = ['founder', 'admin', 'hr'].includes(user.role ?? '')
 
-  const [policies, clockSettings, birthdays, myLeaveRequests, myExpenseRequests, pendingLeave, pendingExpense, myLeaveBalances] = await Promise.all([
+  const [policies, clockSettings, birthdays, myLeaveRequests, myExpenseRequests, pendingLeave, pendingExpense, myLeaveBalances, roster, allUsers] = await Promise.all([
     fetchHrPolicies(),
     showClockAdmin ? fetchClockSettings() : Promise.resolve(null),
     showClockAdmin ? fetchAllBirthdays() : Promise.resolve([]),
@@ -26,7 +30,17 @@ export default async function HrZonePage() {
     isApprover ? fetchPendingLeaveRequests() : Promise.resolve([]),
     isApprover ? fetchPendingExpenseRequests() : Promise.resolve([]),
     fetchMyLeaveBalances(user.id),
+    canManagePeople ? fetchEmployeeRoster() : Promise.resolve([]),
+    canManagePeople ? fetchAllUsers() : Promise.resolve([]),
   ])
+
+  // One history per person, fetched in parallel. RLS returns [] for anyone not permitted, so this
+  // needs no separate permission branch beyond not asking at all when nobody can read it.
+  const compensation: Record<string, import('@/lib/types').EmployeeCompensation[]> = {}
+  if (canManagePeople) {
+    const histories = await Promise.all(roster.map((r) => fetchCompensationHistory(r.user.id)))
+    roster.forEach((r, i) => { compensation[r.user.id] = histories[i] })
+  }
 
   return (
     <HrZoneView
@@ -38,6 +52,10 @@ export default async function HrZonePage() {
       showClockAdmin={showClockAdmin}
       isApprover={isApprover}
       pendingApprovalsCount={pendingLeave.length + pendingExpense.length}
+      roster={roster}
+      compensation={compensation}
+      canManagePeople={canManagePeople}
+      managers={allUsers}
       myLeaveRequests={myLeaveRequests}
       myExpenseRequests={myExpenseRequests}
       myLeaveBalances={myLeaveBalances}

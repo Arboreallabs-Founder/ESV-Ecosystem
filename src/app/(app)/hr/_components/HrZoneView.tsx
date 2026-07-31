@@ -4,10 +4,11 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createHrPolicy, updateHrPolicy, deleteHrPolicy, type HrPolicyInput } from '@/app/actions/hr-zone'
-import type { HrPolicy, HrClockSettings, HrBirthday, LeaveRequest, ExpenseRequest, LeaveBalance } from '@/lib/types'
+import type { HrPolicy, HrClockSettings, HrBirthday, LeaveRequest, ExpenseRequest, LeaveBalance, EmployeeRow, EmployeeCompensation, UserRow } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import FilterTabs from '@/app/_components/FilterTabs'
+import PeopleTab from './PeopleTab'
 import HrClockAdmin from './HrClockAdmin'
 import MyRequests from './MyRequests'
 import Avatar from '@/app/_components/Avatar'
@@ -51,6 +52,7 @@ function PolicyRow({ policy, expanded, canEdit, canDelete, onToggle, onEdit, onD
 export default function HrZoneView({
   policies, clockSettings, birthdays, canEditPolicies, canDeletePolicies, showClockAdmin,
   isApprover, pendingApprovalsCount, myLeaveRequests, myExpenseRequests, myLeaveBalances, orgId, userId,
+  roster, compensation, canManagePeople, managers,
 }: {
   policies: HrPolicy[]; clockSettings: HrClockSettings | null; birthdays: HrBirthday[]
   canEditPolicies: boolean; canDeletePolicies: boolean; showClockAdmin: boolean
@@ -58,6 +60,10 @@ export default function HrZoneView({
   myLeaveRequests: LeaveRequest[]; myExpenseRequests: ExpenseRequest[]
   myLeaveBalances: Record<string, LeaveBalance> | null
   orgId: string; userId: string
+  roster: EmployeeRow[]
+  compensation: Record<string, EmployeeCompensation[]>
+  canManagePeople: boolean
+  managers: UserRow[]
 }) {
   const router = useRouter()
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -67,7 +73,7 @@ export default function HrZoneView({
   // Birthdays and clock settings are HR-admin config, not something an associate needs — the tab
   // only exists for people who can see that card at all.
   const showBirthdaysTab = showClockAdmin && !!clockSettings
-  const [tab, setTab] = useState<'policies' | 'requests' | 'birthdays'>('policies')
+  const [tab, setTab] = useState<'policies' | 'requests' | 'people' | 'birthdays'>('policies')
 
   const pendingCount = myLeaveRequests.filter((r) => r.status === 'pending').length
     + myExpenseRequests.filter((r) => r.status === 'pending').length
@@ -88,6 +94,7 @@ export default function HrZoneView({
           <div className={styles.pageSub}>
             {tab === 'policies' ? 'Company policies'
               : tab === 'requests' ? 'Your leave and expense requests'
+              : tab === 'people' ? 'Employee records — the data HR letters are generated from'
               : 'Clock reminders and team birthdays'}
           </div>
         </div>
@@ -102,6 +109,7 @@ export default function HrZoneView({
         tabs={[
           { value: 'policies', label: 'Policies', count: policies.length },
           { value: 'requests', label: 'Requests', count: pendingCount || undefined },
+          ...(canManagePeople ? [{ value: 'people', label: 'People', count: roster.length }] : []),
           ...(showBirthdaysTab ? [{ value: 'birthdays', label: 'Birthdays', count: birthdays.length }] : []),
         ]}
         value={tab}
@@ -147,6 +155,15 @@ export default function HrZoneView({
             )}
             <MyRequests leaveRequests={myLeaveRequests} expenseRequests={myExpenseRequests} leaveBalances={myLeaveBalances} orgId={orgId} userId={userId} />
           </>
+        )}
+
+        {tab === 'people' && canManagePeople && (
+          <PeopleTab
+            roster={roster}
+            compensation={compensation}
+            canSeeCompensation={canManagePeople}
+            managers={managers}
+          />
         )}
 
         {tab === 'birthdays' && showBirthdaysTab && clockSettings && (

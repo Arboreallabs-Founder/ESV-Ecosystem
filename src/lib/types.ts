@@ -1142,3 +1142,141 @@ export type CompanyListItem = {
   updated_at: string
   has_active_deal: boolean
 }
+
+// ─── HR documents: employee profiles (Phase 1) ──────────────────────────────
+// Kept off `users` deliberately — see supabase/migrations/20260823000000.
+
+export const EMPLOYMENT_TYPES = ['full_time', 'intern', 'contract', 'consultant'] as const
+export type EmploymentType = typeof EMPLOYMENT_TYPES[number]
+
+export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
+  full_time: 'Full-time', intern: 'Intern', contract: 'Contract', consultant: 'Consultant',
+}
+
+export type EmployeeProfile = {
+  user_id: string
+  org_id: string
+  employee_code: string | null
+  date_of_joining: string | null
+  employment_type: EmploymentType | null
+  probation_end_date: string | null
+  confirmation_date: string | null
+  reporting_manager_id: string | null
+  work_location: string | null
+  notice_period_days: number | null
+  date_of_exit: string | null
+  exit_reason: string | null
+  /** As on PAN — routinely differs from users.name, and letters must match presented ID. */
+  legal_name: string | null
+  date_of_birth: string | null
+  residential_address: string | null
+  personal_email: string | null
+  emergency_contact_name: string | null
+  emergency_contact_phone: string | null
+  updated_at: string
+  reporting_manager?: { name: string | null } | null
+}
+
+/** A person plus their profile, which is how the People roster reads. */
+export type EmployeeRow = {
+  user: UserRow
+  profile: EmployeeProfile | null
+}
+
+// ─── HR documents: compensation (Phase 2) ───────────────────────────────────
+// Effective-dated. A payslip for March must reflect March, so records are never overwritten.
+
+export type EmployeeCompensation = {
+  id: string
+  org_id: string
+  user_id: string
+  effective_from: string
+  annual_ctc: number
+  basic: number | null
+  hra: number | null
+  special_allowance: number | null
+  employer_pf: number | null
+  gratuity: number | null
+  variable_pay: number | null
+  other_allowances: number | null
+  currency: string
+  notes: string | null
+  created_at: string
+}
+
+/** The breakdown lines, in the order a payslip prints them. */
+export const COMPENSATION_COMPONENTS = [
+  { key: 'basic', label: 'Basic' },
+  { key: 'hra', label: 'HRA' },
+  { key: 'special_allowance', label: 'Special Allowance' },
+  { key: 'employer_pf', label: "Employer's PF" },
+  { key: 'gratuity', label: 'Gratuity' },
+  { key: 'variable_pay', label: 'Variable Pay' },
+  { key: 'other_allowances', label: 'Other Allowances' },
+] as const satisfies ReadonlyArray<{ key: keyof EmployeeCompensation; label: string }>
+
+// ─── HR documents: the engine (Phase 3) ─────────────────────────────────────
+
+export const SIGNATURE_MODES = ['system', 'visual', 'physical'] as const
+export type SignatureMode = typeof SIGNATURE_MODES[number]
+
+export const SIGNATURE_MODE_LABELS: Record<SignatureMode, string> = {
+  system: 'System-generated',
+  visual: 'Visual signature',
+  physical: 'Requires physical signature',
+}
+
+export type DocumentCategory = 'leave' | 'verification' | 'onboarding' | 'compensation' | 'exit' | 'other'
+
+export const DOCUMENT_CATEGORY_LABELS: Record<DocumentCategory, string> = {
+  leave: 'Leave & attendance',
+  verification: 'Employment verification',
+  onboarding: 'Onboarding',
+  compensation: 'Compensation',
+  exit: 'Exit',
+  other: 'Other',
+}
+
+export type DocumentType = {
+  code: string
+  name: string
+  category: DocumentCategory
+  signature_mode: SignatureMode
+  id_segment: string
+  sort_order: number
+  active: boolean
+}
+
+export type IssuedDocument = {
+  id: string
+  org_id: string
+  document_code: string
+  subject_user_id: string
+  /** Printed on the letter. Sequential, therefore guessable — never used for access. */
+  human_id: string
+  /** What the QR points at. */
+  verify_token: string
+  storage_path: string | null
+  sha256: string | null
+  /** Every value merged into the letter, frozen at issue time. */
+  payload: Record<string, unknown>
+  signature_mode: SignatureMode
+  issued_by: string | null
+  issued_at: string
+  revoked_at: string | null
+  revoked_reason: string | null
+  document_type?: { name: string; category: DocumentCategory } | null
+  subject?: { name: string | null; photo_url: string | null } | null
+  issuer?: { name: string | null } | null
+}
+
+/** What the public /verify/[token] page is allowed to see. Deliberately narrow. */
+export type DocumentVerification = {
+  human_id: string
+  document_name: string
+  subject_name: string | null
+  issued_at: string
+  signature_mode: SignatureMode
+  revoked: boolean
+  org_name: string
+}

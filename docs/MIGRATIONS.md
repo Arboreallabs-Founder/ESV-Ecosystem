@@ -106,3 +106,20 @@ marks it.
   against an annual allowance identically, so reusing `leave_requests` keeps one approval queue
   and one balance calculation instead of a parallel set that would drift. 24 is a starting
   standard, editable on the Balances tab like every other entitlement.
+- `20260823000000_employee_profiles.sql` — Phase 1 of HR document generation. `employee_profiles`
+  keyed to `users` rather than more columns on `users` itself: that table is `select('*')`-ed in a
+  dozen places, so a date of birth added there would start flowing into task-board payloads. Read
+  by founder/admin/HR plus self; **written by founder/admin/HR only** — an employee editing their
+  own joining date would be editing the source of their own letters.
+- `20260823100000_employee_compensation.sql` — Phase 2. Effective-dated compensation, never
+  overwritten: a payslip for March must reflect March. Founder/admin/HR for every operation, with
+  **no self-read policy** — showing someone their own CTC is a feature to design, not a default to
+  fall into. DELETE is founder-only because removing a record destroys the basis of any payslip
+  already issued against it.
+- `20260823200000_document_engine.sql` — Phase 3. `document_types` (the catalogue, seeded),
+  `document_permissions` (the approved issuance matrix as data, so granting middle management
+  compensation letters later is an UPDATE rather than a deploy), and `issued_documents`. Plus
+  `next_document_human_id()` (advisory-locked so concurrent issuers can't take the same number),
+  `verify_document()` (SECURITY DEFINER, returns only what a verifier needs, granted to `anon`),
+  and the private `hr-documents` bucket. Note there is **no DELETE policy** on `issued_documents`:
+  a withdrawn document is revoked, not erased, or its verification link 404s and reads as a fake.
