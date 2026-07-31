@@ -45,10 +45,18 @@ export async function addApprovedUser(email: string, name: string, role: string,
   // revalidatePath would reset modal state by triggering an RSC refresh.
 }
 
-export async function updateApprovedUser(email: string, name: string, role: string, userId: string | null) {
+export async function updateApprovedUser(
+  email: string,
+  name: string,
+  role: string,
+  userId: string | null,
+  designation?: string | null,
+) {
   const { supabase } = await requireAdminOrFounder()
   const trimmedName = name.trim()
 
+  // approved_emails carries only what is needed to let someone in; it has no designation column,
+  // which is why a job title can't be set before first login.
   const { error: emailError } = await supabase
     .from('approved_emails')
     .update({ name: trimmedName, role })
@@ -57,7 +65,10 @@ export async function updateApprovedUser(email: string, name: string, role: stri
 
   // Also update public.users if they have already logged in
   if (userId) {
-    await supabase.from('users').update({ name: trimmedName, role }).eq('id', userId)
+    const patch: Record<string, unknown> = { name: trimmedName, role }
+    // undefined means "not being edited"; null means "cleared".
+    if (designation !== undefined) patch.designation = designation?.trim() || null
+    await supabase.from('users').update(patch).eq('id', userId)
   }
 
   // No revalidatePath — optimistic update + router.refresh() in UsersTable handles the UI.

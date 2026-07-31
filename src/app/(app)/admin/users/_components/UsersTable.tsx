@@ -74,6 +74,7 @@ export default function UsersTable({
   const [editTarget, setEditTarget] = useState<ApprovedUser | null>(null)
   const [editName, setEditName] = useState('')
   const [editRole, setEditRole] = useState<string>('')
+  const [editDesignation, setEditDesignation] = useState('')
 
   // Revoke modal
   const [photoTarget, setPhotoTarget] = useState<ApprovedUser | null>(null)
@@ -111,6 +112,7 @@ export default function UsersTable({
     setEditTarget(u)
     setEditName(u.name)
     setEditRole(u.role)
+    setEditDesignation(u.designation ?? '')
   }
 
   function handleAdd(e: React.FormEvent) {
@@ -127,6 +129,7 @@ export default function UsersTable({
           org_id: null,
           userId: null,
           photo_url: null,
+          designation: null,
           hasLoggedIn: false,
         }])
         setShowAdd(false)
@@ -141,10 +144,18 @@ export default function UsersTable({
     e.preventDefault()
     if (!editTarget) return
     startTransition(async () => {
-      await updateApprovedUser(editTarget.email, editName, editRole, editTarget.userId)
+      await updateApprovedUser(
+        editTarget.email, editName, editRole, editTarget.userId,
+        editTarget.userId ? editDesignation : undefined,
+      )
       setUsers((prev) => prev.map((u) =>
         u.email === editTarget.email
-          ? { ...u, name: editName.trim(), role: editRole as ApprovedUser['role'] }
+          ? {
+              ...u,
+              name: editName.trim(),
+              role: editRole as ApprovedUser['role'],
+              designation: editTarget.userId ? (editDesignation.trim() || null) : u.designation,
+            }
           : u
       ))
       setEditTarget(null)
@@ -220,6 +231,7 @@ export default function UsersTable({
                         <span style={{ fontSize: '0.6875rem', color: 'var(--color-muted)', marginLeft: '0.375rem' }}>(you)</span>
                       )}
                     </div>
+                    {u.designation && <div className={styles.designation}>{u.designation}</div>}
                   </td>
                   <td>
                     <a className={styles.emailLink} href={`mailto:${u.email}`}>{u.email}</a>
@@ -345,7 +357,28 @@ export default function UsersTable({
                 <input className={styles.input} value={editName} onChange={(e) => setEditName(e.target.value)} required autoFocus />
               </div>
               <div className={styles.field}>
-                <label className={styles.label}>Role</label>
+                <label className={styles.label}>Job Title</label>
+                {editTarget.userId ? (
+                  <>
+                    <input
+                      className={styles.input}
+                      value={editDesignation}
+                      onChange={(e) => setEditDesignation(e.target.value)}
+                      placeholder="e.g. Senior Investment Associate"
+                    />
+                    <span className={styles.fieldHint}>
+                      Their specific title. Appears on their ID card and on generated letters —
+                      separate from the permission role below.
+                    </span>
+                  </>
+                ) : (
+                  <div style={{ fontSize: '0.875rem', color: 'var(--color-muted)', padding: '0.5rem 0' }}>
+                    They need to sign in before a job title can be set.
+                  </div>
+                )}
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Permission Role</label>
                 {editTarget.email === currentUserEmail ? (
                   <div style={{ fontSize: '0.875rem', color: 'var(--color-muted)', padding: '0.5rem 0' }}>Cannot change your own role</div>
                 ) : (

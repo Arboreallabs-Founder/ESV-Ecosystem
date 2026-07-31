@@ -576,6 +576,9 @@ export type ApprovedUser = {
   userId: string | null
   /** Only set once they've signed in — the avatar lives on `users`, not `approved_emails`. */
   photo_url: string | null
+  /** Job title, e.g. "Senior Investment Associate" — distinct from `role`, which is permissions.
+   *  Also `users`-only, so it cannot be set before someone has logged in. */
+  designation: string | null
   hasLoggedIn: boolean
 }
 

@@ -386,3 +386,19 @@
   .modalActions { flex-direction: column-reverse; }
   .modalActions button { width: 100%; }
 }
+
+/* Job title under the name in the roster — what people actually recognise each other by, as
+   distinct from the permission role shown in its own column. */
+.designation {
+  margin-top: 0.1rem;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.fieldHint {
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--color-muted);
+}
