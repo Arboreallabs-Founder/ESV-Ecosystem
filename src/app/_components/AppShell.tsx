@@ -812,10 +812,6 @@ export default function AppShell({
         </div>
       </aside>
 
-      {showClockWidget && clockSettings && (
-        <HrClockWidget settings={clockSettings} birthdaysToday={birthdaysToday} />
-      )}
-
       {flyout?.kind === 'alerts' && (
         <NavFlyout anchor={flyout.anchor} onClose={closeFlyout}>
           <AlertsPanel alerts={newTaskAlerts} onSelect={openAlertTask} bare />
@@ -882,13 +878,15 @@ export default function AppShell({
             {theme === 'dark' ? '☀' : '🌙'}
           </button>
         </header>
-        <main
-          className={
-            fullWidth
-              ? `${styles.mainFull} ${showClockWidget ? styles.mainFullWithClock : ''}`
-              : `${styles.main} ${showClockWidget ? styles.mainWithClock : ''}`
-          }
-        >
+        {/* Sits in the column's own flow rather than floating over the viewport, so scrolling
+            content passes *beside* it instead of underneath. That also retires the padding
+            reservation the old fixed widget needed on every page. */}
+        {showClockWidget && clockSettings && (
+          <div className={styles.clockBar}>
+            <HrClockWidget settings={clockSettings} birthdaysToday={birthdaysToday} />
+          </div>
+        )}
+        <main className={fullWidth ? styles.mainFull : styles.main}>
           {children}
         </main>
       </div>
