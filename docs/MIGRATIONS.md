@@ -132,3 +132,13 @@ marks it.
   is a row rather than an `ALTER TYPE`; the comparison now casts with `::TEXT`. Worth remembering:
   a partial-looking outcome across a batch of migrations usually means one of them rolled back
   whole, not that some statements within it survived.
+- `20260826000000_partner_company_intake.sql` — partner-sourced company intake: `partner_companies`
+  plus `users.is_sgp_coordinator`. The partner-side sibling of Deal Desk. Submissions are
+  deliberately **not** rows in `companies` — a partner lead is something someone vouched for, not a
+  company of record, and mixing them would put unvetted entries into the table everything else
+  treats as authoritative. Coordinator is a **flag, not a role**: they are an associate who also
+  does this, so a role would force a choice between their existing permissions and this one.
+  RLS keeps partners isolated from each other — a partner sees only what they submitted, an
+  assignee only what was handed to them, coordinators and leadership the whole queue. No DELETE
+  policy: a submission evidences a partner's contribution, so it is closed with a reason rather
+  than erased.

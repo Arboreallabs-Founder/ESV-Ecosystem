@@ -579,6 +579,9 @@ export type ApprovedUser = {
   /** Job title, e.g. "Senior Investment Associate" — distinct from `role`, which is permissions.
    *  Also `users`-only, so it cannot be set before someone has logged in. */
   designation: string | null
+  /** Triages partner-sourced companies on the SGP Desk. A flag rather than a role — see
+   *  supabase/migrations/20260826000000. */
+  is_sgp_coordinator: boolean
   hasLoggedIn: boolean
 }
 
@@ -1288,4 +1291,57 @@ export type DocumentVerification = {
   signature_mode: SignatureMode
   revoked: boolean
   org_name: string
+}
+
+// ─── Partner-sourced company intake (SGP) ───────────────────────────────────
+
+export const SGP_INTAKE_ACTIONS = ['first_call', 'prefunding_proposal', 'discuss_with_founder'] as const
+export type SgpIntakeAction = typeof SGP_INTAKE_ACTIONS[number]
+
+/** The label the coordinator picks, and the title the resulting task carries. */
+export const SGP_INTAKE_ACTION_LABELS: Record<SgpIntakeAction, string> = {
+  first_call: 'Set up first level call',
+  prefunding_proposal: 'Send prefunding proposal',
+  discuss_with_founder: 'Discuss with founder first',
+}
+
+export const SGP_INTAKE_ACTION_HINTS: Record<SgpIntakeAction, string> = {
+  first_call: 'Assignee books and runs an introductory call with the company.',
+  prefunding_proposal: 'Assignee prepares and sends the prefunding proposal.',
+  discuss_with_founder: 'Needs a founder’s view before anything goes to the company.',
+}
+
+export type SgpSubmissionStatus = 'submitted' | 'assigned' | 'closed'
+
+export type SupportingLink = { label: string; url: string }
+
+export type PartnerCompany = {
+  id: string
+  org_id: string
+  submitted_by: string
+  partner_id: string | null
+  name: string
+  website: string | null
+  sector: string | null
+  hq_city: string | null
+  contact_name: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  partner_comments: string | null
+  status: SgpSubmissionStatus
+  intake_action: SgpIntakeAction | null
+  coordinator_id: string | null
+  coordinator_notes: string | null
+  supporting_links: SupportingLink[]
+  assigned_to: string | null
+  assigned_at: string | null
+  task_id: string | null
+  company_id: string | null
+  closed_reason: string | null
+  created_at: string
+  updated_at: string
+  submitter?: { name: string | null; photo_url: string | null } | null
+  partner?: { name: string } | null
+  assignee?: { name: string | null; photo_url: string | null } | null
+  coordinator?: { name: string | null } | null
 }

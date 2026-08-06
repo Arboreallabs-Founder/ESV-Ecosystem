@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addApprovedUser, updateApprovedUser, revokeUser, setUserPhotoFromUrl } from '@/app/actions/admin'
+import { setSgpCoordinator } from '@/app/actions/partner-companies'
 import type { ApprovedUser } from '@/lib/types'
 import { personInitials } from '@/app/_components/Avatar'
 import styles from '../../admin.module.css'
@@ -75,6 +76,7 @@ export default function UsersTable({
   const [editName, setEditName] = useState('')
   const [editRole, setEditRole] = useState<string>('')
   const [editDesignation, setEditDesignation] = useState('')
+  const [editCoordinator, setEditCoordinator] = useState(false)
 
   // Revoke modal
   const [photoTarget, setPhotoTarget] = useState<ApprovedUser | null>(null)
@@ -113,6 +115,7 @@ export default function UsersTable({
     setEditName(u.name)
     setEditRole(u.role)
     setEditDesignation(u.designation ?? '')
+    setEditCoordinator(u.is_sgp_coordinator)
   }
 
   function handleAdd(e: React.FormEvent) {
@@ -130,6 +133,7 @@ export default function UsersTable({
           userId: null,
           photo_url: null,
           designation: null,
+          is_sgp_coordinator: false,
           hasLoggedIn: false,
         }])
         setShowAdd(false)
@@ -148,6 +152,11 @@ export default function UsersTable({
         editTarget.email, editName, editRole, editTarget.userId,
         editTarget.userId ? editDesignation : undefined,
       )
+      // Separate action: the coordinator flag decides who sees every partner's leads, so it is
+      // founder/admin-only and lives apart from the ordinary profile edit.
+      if (editTarget.userId && editCoordinator !== editTarget.is_sgp_coordinator) {
+        await setSgpCoordinator(editTarget.userId, editCoordinator)
+      }
       setUsers((prev) => prev.map((u) =>
         u.email === editTarget.email
           ? {
@@ -155,6 +164,7 @@ export default function UsersTable({
               name: editName.trim(),
               role: editRole as ApprovedUser['role'],
               designation: editTarget.userId ? (editDesignation.trim() || null) : u.designation,
+              is_sgp_coordinator: editTarget.userId ? editCoordinator : u.is_sgp_coordinator,
             }
           : u
       ))
@@ -232,6 +242,7 @@ export default function UsersTable({
                       )}
                     </div>
                     {u.designation && <div className={styles.designation}>{u.designation}</div>}
+                    {u.is_sgp_coordinator && <div className={styles.coordinatorTag}>SGP Coordinator</div>}
                   </td>
                   <td>
                     <a className={styles.emailLink} href={`mailto:${u.email}`}>{u.email}</a>
@@ -387,6 +398,22 @@ export default function UsersTable({
                   </select>
                 )}
               </div>
+              {editTarget.userId && ['associate', 'admin', 'founder'].includes(editRole) && (
+                <div className={styles.field}>
+                  <label className={styles.coordinatorRow}>
+                    <input
+                      type="checkbox"
+                      checked={editCoordinator}
+                      onChange={(e) => setEditCoordinator(e.target.checked)}
+                    />
+                    SGP Coordinator
+                  </label>
+                  <span className={styles.fieldHint}>
+                    Triages companies submitted by partners on the SGP Desk, and can assign them to
+                    an associate or general user. Founders and admins can always do this.
+                  </span>
+                </div>
+              )}
               <div className={styles.modalActions}>
                 <button type="button" className={styles.cancelBtn} onClick={() => setEditTarget(null)}>Cancel</button>
                 <button type="submit" className={styles.submitBtn} disabled={isPending}>

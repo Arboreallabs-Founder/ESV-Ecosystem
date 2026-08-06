@@ -263,6 +263,22 @@ const NAV_ITEMS: NavEntry[] = [
     icon: <Icon d="M3 3h6v6H3zM15 3h6v6h-6zM3 15h6v6H3zM15 15h6v6h-6zM9 6h6M6 9v6M18 9v6" />,
   },
   {
+    href: '/sgp-desk',
+    label: 'SGP Desk',
+    roles: ['founder', 'admin', 'associate'],
+    section: 'Deal Flow',
+    icon: <Icon d="M18 18.72a9.1 9.1 0 0 0 3.74-.78 3 3 0 0 0-4.68-3.32M18 18.72a9.1 9.1 0 0 1-11.96 0M18 18.72V18a5.97 5.97 0 0 0-.94-3.22M6.04 18.72A9.1 9.1 0 0 1 2.3 17.94a3 3 0 0 1 4.68-3.32M6.04 18.72V18c0-1.2.34-2.31.94-3.22M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />,
+    badgeColor: 'var(--color-accent)',
+  },
+  {
+    href: '/my-companies',
+    label: 'My Companies',
+    roles: ['franchise_partner'],
+    section: 'Deal Flow',
+    icon: <Icon d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />,
+    badgeColor: 'var(--color-accent)',
+  },
+  {
     href: '/share',
     label: 'Share',
     roles: ['founder', 'admin', 'associate'],

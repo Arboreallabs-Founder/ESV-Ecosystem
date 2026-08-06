@@ -61,6 +61,17 @@ restricted**: RLS only grants founders/admins full visibility and associates the
 `general` role has no access to Deal Desk at all (unlike Pipelines/Active Deals, where general has
 read-only visibility).
 
+### SGP Desk & partner companies (`/sgp-desk`, `/my-companies`)
+The partner-sourced sibling of Deal Desk. A partner logs a company they've found with their own
+comments (`/my-companies` — only the name is required, since the point is to capture a lead while
+it's fresh). It lands on `/sgp-desk`, visible to founders, admins and any associate flagged
+`is_sgp_coordinator`. The coordinator picks what happens next — set up first level call, send
+prefunding proposal, or discuss with founder first — assigns it to an associate or general user,
+and attaches supporting links. **That creates a real Task** on the existing board carrying the
+partner's notes and the links, rather than a parallel to-do list, so it drives the assignee's
+alerts, KPI numbers and weekly update like any other work. The partner sees the status move and
+who has it, but not internal notes. Closing needs a reason, which the partner sees.
+
 ### Companies (`/companies`)
 The startup "database of record" — richer than a deal record: founders, team, cap table, funding
 rounds, documents, an update timeline, custom fields, and linkage back to both Deal Desk deals and

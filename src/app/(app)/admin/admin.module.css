@@ -402,3 +402,27 @@
   line-height: 1.45;
   color: var(--color-muted);
 }
+
+/* Who triages partner-sourced companies — visible on the roster so the arrangement is legible
+   without opening each person. */
+.coordinatorTag {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(213, 174, 143, 0.22);
+  color: #8B6245;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.coordinatorRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
