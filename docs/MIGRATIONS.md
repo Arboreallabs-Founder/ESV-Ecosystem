@@ -142,3 +142,12 @@ marks it.
   assignee only what was handed to them, coordinators and leadership the whole queue. No DELETE
   policy: a submission evidences a partner's contribution, so it is closed with a reason rather
   than erased.
+
+### `20260827000000_associates_create_events.sql`
+Lets **associates create events**. The care here is that `bulletin_posts` holds both company
+announcements and events, told apart by `post_type` — adding `associate` to the existing policy
+would silently have handed them the announcement board too. So the grant is written against
+`post_type = 'event'` explicitly, in both the `USING` and the `WITH CHECK`: without it in the
+`WITH CHECK`, an associate could take their own event and convert it into an announcement.
+Editing is narrower than creating — an associate may fix an event they created (`created_by =
+auth.uid()`), not someone else's. Delete, pin, complete and attendee management stay founder/admin.

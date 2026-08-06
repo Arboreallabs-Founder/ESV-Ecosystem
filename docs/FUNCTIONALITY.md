@@ -43,6 +43,14 @@ board (`/pipelines/[id]`) — mandatory Lead/Accepted/Rejected stages plus custo
 typed question fields per custom stage, multi-assignee, rejection-reason capture, drag-and-drop.
 Accepting an entry creates an **Active Deal**.
 
+`/forms` has two tabs. **Forms** is the list and builder. **Share** (formerly the separate `/share`
+page, which now redirects here) is where anyone who can build a form issues their own link: pick a
+published form, add a private label, get a URL and a downloadable QR, and see per-link submission
+counts. Founders and admins can widen the view to everyone's links; everyone else sees their own.
+The two were separate pages, which split one job — you build a form here and hand it out there —
+but Share stays a **tab rather than a button next to Edit/Build**, because that burial is why
+associates never issued a link before it existed.
+
 ### Active Deals (`/active-deals`)
 Post-acceptance deal lifecycle. Deal detail shows stage history, form/stage-question answers, team
 assignment, and deal-category custom fields (categories/fields managed at `/admin/categories`).
@@ -107,8 +115,13 @@ Status workflow Open → Acknowledged → Resolved.
 ### Bulletin (`/bulletin`) & Events (`/events`, `/events/past`, `/events/kpi`)
 Bulletin posts are a single table (`bulletin_posts`) split by `post_type: 'event' | 'announcement'`.
 Events get attendance tracking (self-RSVP + admin-added attendees), dedicated media/scanned-cards
-links, and a KPI page showing who actually showed up. `general` role can create/edit (not delete)
-both — see [ROLES.md](ROLES.md).
+links, and a KPI page showing who actually showed up.
+
+Founder/admin/HR create and edit both. **Associates can create events** (2026-08-06) and edit the
+ones they created — not announcements, and not someone else's event. Because the two share one
+table, that grant is written against `post_type` in RLS rather than by role alone; see
+[ROLES.md](ROLES.md) and [MIGRATIONS.md](MIGRATIONS.md). Delete, pin, complete and attendee
+management remain founder/admin.
 
 ### HR Zone (`/hr`)
 Company policy documents, editable by founder/admin and (as of 2026-08-12) `general`; full

@@ -66,10 +66,10 @@ function AttendeeAdd({ options, onAdd }: { options: Array<{ id: string; name: st
 }
 
 function EventCard({
-  event, past, canEdit, canManage, currentUserId, internalUsers,
+  event, past, canEdit, canManage, canCreate, currentUserId, internalUsers,
   onPin, onEdit, onDelete, onToggleComplete, onToggleGoing, onAddAttendee, onRemoveAttendee, onAddMedia, onDeleteMedia,
 }: {
-  event: BulletinPost; past: boolean; canEdit: boolean; canManage: boolean; currentUserId: string
+  event: BulletinPost; past: boolean; canEdit: boolean; canManage: boolean; canCreate: boolean; currentUserId: string
   internalUsers: Array<{ id: string; name: string }>
   onPin: () => void; onEdit: () => void; onDelete: () => void
   onToggleComplete: () => void
@@ -106,7 +106,7 @@ function EventCard({
             </div>
           )}
         </div>
-        {(canEdit || canManage) && (
+        {(canEdit || canManage || (canCreate && event.created_by === currentUserId)) && (
           <div className={styles.cardActions}>
             {canManage && (
               <button className={`${styles.iconBtn} ${event.completed ? styles.iconBtnActive : ''}`} onClick={onToggleComplete} title={event.completed ? 'Mark not completed' : 'Mark completed'}>
@@ -118,7 +118,12 @@ function EventCard({
                 {event.pinned ? 'Unpin' : 'Pin'}
               </button>
             )}
-            {canEdit && <button className={styles.iconBtn} onClick={onEdit} title="Edit">Edit</button>}
+            {/* An associate may fix their own event but not rewrite someone else's; leads and HR
+                edit anything. Server and RLS enforce it — this just stops offering a button that
+                would be refused. */}
+            {(canEdit || (canCreate && event.created_by === currentUserId)) && (
+              <button className={styles.iconBtn} onClick={onEdit} title="Edit">Edit</button>
+            )}
             {canManage && <button className={styles.iconBtn} onClick={onDelete} title="Delete">Delete</button>}
           </div>
         )}
@@ -216,9 +221,9 @@ function EventCard({
 }
 
 export default function EventsView({
-  events: initialEvents, canEdit, canManage, currentUserId, mode, internalUsers,
+  events: initialEvents, canEdit, canManage, canCreate, currentUserId, mode, internalUsers,
 }: {
-  events: BulletinPost[]; canEdit: boolean; canManage: boolean; currentUserId: string; mode: 'upcoming' | 'past'
+  events: BulletinPost[]; canEdit: boolean; canManage: boolean; canCreate: boolean; currentUserId: string; mode: 'upcoming' | 'past'
   internalUsers: Array<{ id: string; name: string }>
 }) {
   const router = useRouter()
@@ -287,7 +292,7 @@ export default function EventsView({
   }
 
   const cardProps = (event: BulletinPost) => ({
-    event, past, canEdit, canManage, currentUserId, internalUsers,
+    event, past, canEdit, canManage, canCreate, currentUserId, internalUsers,
     onPin: () => handlePin(event),
     onEdit: () => setEditing(event),
     onDelete: () => handleDelete(event.id),
@@ -309,7 +314,7 @@ export default function EventsView({
           </div>
           <div className={styles.pageSub}>{past ? 'Events that have already happened.' : 'What\'s coming up next.'}</div>
         </div>
-        {canEdit && (
+        {canCreate && (
           <button className={styles.primaryBtn} onClick={() => setEditing('new')}>+ New Event</button>
         )}
       </div>

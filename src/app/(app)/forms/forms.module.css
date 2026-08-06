@@ -1,19 +1,61 @@
-/* ── Forms list ──────────────────────────────────────────────────────── */
-
-.page { }
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 2.5rem;
-  gap: 1rem;
-  flex-wrap: wrap;
+/* ── Page shell: header, then the Forms / Share tabs ─────────────────────── */
+.pageHeader {
+  padding-bottom: 1rem;
   border-bottom: 1px solid var(--color-border);
-  padding-bottom: 1.5rem;
 }
 
+.tabs {
+  display: inline-flex;
+  gap: 3px;
+  padding: 4px;
+  margin: 1.25rem 0;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-card);
+}
+
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.95rem;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--color-muted);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tabActive { background: var(--color-primary); color: #fff; }
+
+.tabCount {
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: rgba(var(--color-hover-rgb), 0.15);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+.tabActive .tabCount { background: rgba(255, 255, 255, 0.22); }
+
+/* Each tab's own action row — count and "+ New Form", or the blurb and scope toggle. */
+.pane { width: 100%; }
+.paneHead {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Forms list ──────────────────────────────────────────────────────── */
+
+.page { width: 100%; padding-bottom: 2rem; }
+
 .pageTitle {
+  margin: 0;
   font-family: var(--font-serif);
   font-size: 2rem;
   font-weight: 400;

@@ -56,7 +56,8 @@ Legend: ✅ full · 🟡 limited/conditional · 👁 read-only · ❌ none
 | Escalations — set status | ✅ | ✅ | 🟡 own raised | ❌ | ❌⁵ | 🟡 received | ❌ |
 | HR clock widget & birthdays | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | HR policies — create/edit (not delete) | ✅ | ✅ | ❌ | 👁 | ✅ | 👁 | ❌ |
-| Bulletin / Events — create/edit (not delete) | ✅ | ✅ | ❌ | 👁 | ✅ | 👁 | ❌ |
+| Bulletin — create/edit (not delete) | ✅ | ✅ | ❌ | 👁 | ✅ | 👁 | ❌ |
+| Events — create, and edit **your own** | ✅ | ✅ | ✅ | 👁 | ✅ | 👁 | ❌ |
 | Engage — give kudos | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Engage — delete a kudos | ✅ | ✅ | 🟡 own given | 🟡 own given | ✅ | ❌ | ❌ |
 | Leave requests — submit | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
@@ -229,6 +230,10 @@ Approvals below. This is not a user-facing escalations capability.
   partners have no access.
 - **Create/edit (not delete)**: Founder/Admin/HR only. `general` had this tier from 2026-08-12 to
   2026-08-14; it's now read-only there, same as associate.
+- **Create an event**: Founder/Admin/HR, and **Associate** (added 2026-08-06). An associate may
+  edit an event they created but not one someone else made, and cannot pin — pinning is an admin
+  decision, so `createEvent` forces `pinned: false` for them and `updateEvent` preserves the
+  existing value rather than taking it from the form.
 - **Delete/pin (Bulletin) / delete/pin/complete/attendee-manage (Events)**: Founder/Admin only —
   HR does not get this tier, matching the "create/edit, not delete" pattern used everywhere else.
 - **RSVP to an event**: any internal role, including HR — self only, never on someone else's behalf.

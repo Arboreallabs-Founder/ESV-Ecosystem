@@ -279,16 +279,10 @@ const NAV_ITEMS: NavEntry[] = [
     badgeColor: 'var(--color-accent)',
   },
   {
-    href: '/share',
-    label: 'Share',
-    roles: ['founder', 'admin', 'associate'],
-    section: 'Deal Flow',
-    icon: <Icon d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />,
-    badgeColor: 'var(--color-primary)',
-  },
-  {
     href: '/forms',
-    label: 'Forms',
+    // "& Share" stays in the label deliberately: sharing is a tab inside this page now, and the
+    // word is the only thing in the nav that says an associate can issue their own link.
+    label: 'Forms & Share',
     roles: ['founder', 'admin', 'associate'],
     section: 'Deal Flow',
     icon: <Icon d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />,

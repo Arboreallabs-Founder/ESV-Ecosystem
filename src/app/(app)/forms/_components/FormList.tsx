@@ -82,12 +82,9 @@ export default function FormList({ forms: initial, pipelines, canBuild, canDelet
   }
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <div>
-          <div className={styles.pageTitle}>Forms</div>
-          <div className={styles.pageSub}>{forms.length} form{forms.length !== 1 ? 's' : ''}</div>
-        </div>
+    <div className={styles.pane}>
+      <div className={styles.paneHead}>
+        <div className={styles.pageSub}>{forms.length} form{forms.length !== 1 ? 's' : ''}</div>
         {canBuild && (
           <button className={styles.addBtn} onClick={() => setShowAdd(true)}>+ New Form</button>
         )}

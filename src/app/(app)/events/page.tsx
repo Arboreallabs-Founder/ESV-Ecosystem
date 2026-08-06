@@ -10,7 +10,10 @@ export default async function UpcomingEventsPage() {
   if (!['founder', 'admin', 'associate', 'general', 'hr'].includes(user.role ?? '')) redirect('/dashboard')
 
   const canManage = ['founder', 'admin'].includes(user.role ?? '')
+  // canEdit is edit-anything; canCreate is may-add-an-event. Associates have the second but not
+  // the first — they can fix an event they created, which EventsView works out per card.
   const canEdit = canManage || user.role === 'hr'
+  const canCreate = canEdit || user.role === 'associate'
   const supabase = await createClient()
   const [events, { data: internalUsers }] = await Promise.all([
     fetchEvents(),
@@ -26,6 +29,7 @@ export default async function UpcomingEventsPage() {
       events={upcoming}
       canEdit={canEdit}
       canManage={canManage}
+      canCreate={canCreate}
       currentUserId={user.id}
       mode="upcoming"
       internalUsers={(internalUsers ?? []) as Array<{ id: string; name: string }>}

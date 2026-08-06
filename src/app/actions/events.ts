@@ -9,9 +9,14 @@ async function requireAdmin() {
 
 // HR can create/edit events too (not delete/pin/complete/attendee-manage) — see the
 // audit log this writes to. General lost this tier when HR was introduced.
+// Associates create events as well, but may only edit the ones they created — enforced below and
+// in RLS, since events share `bulletin_posts` with company announcements.
 async function requireEditor() {
-  return requireRole(['founder', 'admin', 'hr'])
+  return requireRole(['founder', 'admin', 'hr', 'associate'])
 }
+
+// Roles whose edit rights are unconditional; an associate's are limited to their own events.
+const UNRESTRICTED_EDITORS = ['founder', 'admin', 'hr']
 
 // Any internal user may RSVP themselves — never on someone else's behalf.
 async function requireInternal() {
@@ -55,7 +60,7 @@ function describeEventChanges(
 }
 
 export async function createEvent(input: EventInput): Promise<string> {
-  const { supabase, userId, orgId } = await requireEditor()
+  const { supabase, userId, orgId, role } = await requireEditor()
   const title = input.title.trim()
   if (!title) throw new Error('Title is required.')
   if (!input.event_date) throw new Error('Event date is required.')
@@ -71,7 +76,9 @@ export async function createEvent(input: EventInput): Promise<string> {
       event_date: input.event_date,
       event_time: input.event_time || null,
       location: input.location?.trim() || null,
-      pinned: input.pinned ?? false,
+      // Pinning is an admin decision everywhere else (toggleEventPin is admin-only). Creation
+      // must not be a way around that, so an associate's new event is never pinned.
+      pinned: UNRESTRICTED_EDITORS.includes(role) ? (input.pinned ?? false) : false,
       media_url: input.media_url?.trim() || null,
       scanned_cards_url: input.scanned_cards_url?.trim() || null,
     })
@@ -92,10 +99,24 @@ export async function createEvent(input: EventInput): Promise<string> {
 }
 
 export async function updateEvent(id: string, input: EventInput): Promise<void> {
-  const { supabase, userId, orgId } = await requireEditor()
+  const { supabase, userId, orgId, role } = await requireEditor()
   const title = input.title.trim()
   if (!title) throw new Error('Title is required.')
   if (!input.event_date) throw new Error('Event date is required.')
+
+  const { data: before } = await supabase
+    .from('bulletin_posts')
+    .select('title, body, event_date, event_time, location, pinned, media_url, scanned_cards_url, created_by')
+    .eq('id', id)
+    .single()
+
+  // RLS already refuses this, but an UPDATE it filters out comes back as a success that changed
+  // nothing — the editor would be told their change saved. Check it here so they get told the
+  // truth instead.
+  const restricted = !UNRESTRICTED_EDITORS.includes(role)
+  if (restricted && before?.created_by !== userId) {
+    throw new Error('You can only edit events you created. Ask an admin to change this one.')
+  }
 
   const nextFields = {
     title,
@@ -103,16 +124,11 @@ export async function updateEvent(id: string, input: EventInput): Promise<void> 
     event_date: input.event_date,
     event_time: input.event_time || null,
     location: input.location?.trim() || null,
-    pinned: input.pinned ?? false,
+    // Never let a restricted editor change the pin state by saving the form.
+    pinned: restricted ? (before?.pinned ?? false) : (input.pinned ?? false),
     media_url: input.media_url?.trim() || null,
     scanned_cards_url: input.scanned_cards_url?.trim() || null,
   }
-
-  const { data: before } = await supabase
-    .from('bulletin_posts')
-    .select('title, body, event_date, event_time, location, pinned, media_url, scanned_cards_url')
-    .eq('id', id)
-    .single()
 
   const { error } = await supabase.from('bulletin_posts').update(nextFields).eq('id', id)
   if (error) throw error

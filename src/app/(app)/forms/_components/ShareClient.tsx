@@ -81,26 +81,23 @@ export default function ShareClient({
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.pageTitle}>Share</h1>
-          <p className={styles.pageSub}>
-            Issue your own link to an intake form, share it as a URL or QR code, and see what it
-            brought in.
-          </p>
-        </div>
+    <div className={styles.pane}>
+      <header className={styles.paneHead}>
+        <p className={styles.pageSub}>
+          Issue your own link to an intake form, share it as a URL or QR code, and see what it
+          brought in.
+        </p>
         {canSeeAll && (
           <div className={styles.scopeToggle}>
             <button
               className={`${styles.scopeBtn} ${scope === 'mine' ? styles.scopeBtnActive : ''}`}
-              onClick={() => router.push('/share')}
+              onClick={() => router.push('/forms?tab=share')}
             >
               My links
             </button>
             <button
               className={`${styles.scopeBtn} ${scope === 'all' ? styles.scopeBtnActive : ''}`}
-              onClick={() => router.push('/share?scope=all')}
+              onClick={() => router.push('/forms?tab=share&scope=all')}
             >
               Everyone&apos;s
             </button>
@@ -160,8 +157,8 @@ export default function ShareClient({
              click from being fixed, and saying so is more use than an empty dropdown. */
           <p className={styles.issueNote}>
             {forms.length > 0
-              ? <>All {forms.length} form{forms.length !== 1 ? 's are' : ' is'} still a draft, so there is nothing to share yet. Publish one from <Link href="/forms" className={styles.inlineLink}>Forms</Link>.</>
-              : <>No intake forms exist yet. Build one from <Link href="/forms" className={styles.inlineLink}>Forms</Link> first.</>}
+              ? <>All {forms.length} form{forms.length !== 1 ? 's are' : ' is'} still a draft, so there is nothing to share yet. Publish one from the <Link href="/forms" className={styles.inlineLink}>Forms</Link> tab.</>
+              : <>No intake forms exist yet. Build one from the <Link href="/forms" className={styles.inlineLink}>Forms</Link> tab first.</>}
           </p>
         ) : (
           <p className={styles.issueNote}>
