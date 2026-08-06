@@ -433,3 +433,15 @@
 /* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
    the content out to grey. Still frosted (see the backdrop-filter above). */
 .modal { background: var(--glass-panel); }
+
+/* A draft form's issued links all 404 — say so on the card that caused it. */
+.deadLinksWarn {
+  margin: 0.5rem 0;
+  padding: 0.5rem 0.7rem;
+  border-left: 3px solid var(--color-warning);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: rgba(203, 140, 124, 0.1);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-text);
+}

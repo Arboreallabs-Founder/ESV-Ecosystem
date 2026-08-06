@@ -107,6 +107,15 @@ export default function FormList({ forms: initial, pipelines, canBuild, canDelet
               </div>
               {f.description && <div className={styles.cardDesc}>{f.description}</div>}
               {f.pipeline && <div className={styles.cardPipeline}>→ {f.pipeline.name}</div>}
+              {(f.links?.length ?? 0) > 0 && !f.published && (
+                /* Unpublishing does not just hide the form — every link already handed out starts
+                   returning an error, which reads to the recipient as a broken or expired link.
+                   Nothing else in the app said so. */
+                <div className={styles.deadLinksWarn}>
+                  {f.links!.length} issued link{f.links!.length !== 1 ? 's are' : ' is'} inactive
+                  while this form is a draft. Publish to make {f.links!.length !== 1 ? 'them' : 'it'} work again.
+                </div>
+              )}
               {(f.links?.length ?? 0) > 0 && (
                 <button className={styles.linksIssuedBtn} onClick={() => setViewLinksForm(f)}>
                   🔗 {f.links!.length} link{f.links!.length !== 1 ? 's' : ''} issued
