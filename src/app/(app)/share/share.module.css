@@ -13,6 +13,9 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+/* Keeps the page from spreading on a wide monitor while the card grid below still flows. */
+.page > * { max-width: 1400px; }
+
 .pageTitle {
   margin: 0;
   font-family: var(--font-serif);
@@ -69,6 +72,9 @@
 .issueCard {
   padding: 1.125rem 1.25rem;
   margin-bottom: 1.5rem;
+  /* Two inputs and a button have no business spanning an ultrawide monitor — past this the
+     controls stop reading as one group and the label/field pairing gets hard to follow. */
+  max-width: 900px;
   background: var(--color-card);
   border: 1.5px solid var(--glass-border, var(--color-border));
   border-radius: var(--radius-lg);
@@ -76,9 +82,12 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
 }
 
+/* Every cell is label + control only, so `end` alignment lines up the controls AND the labels
+   above them. A hint inside one cell would make that column taller and knock its label out of
+   line with the other — which is why hints sit below the grid instead. */
 .issueGrid {
   display: grid;
-  grid-template-columns: minmax(200px, 1.2fr) minmax(200px, 1fr) auto;
+  grid-template-columns: minmax(200px, 1fr) minmax(200px, 1fr) auto;
   gap: 0.875rem;
   align-items: end;
 }
@@ -106,8 +115,20 @@
   outline: none;
 }
 .input:focus { border-color: var(--color-primary); }
+.input:disabled { opacity: 0.6; cursor: not-allowed; }
 
-.hint { font-size: 0.6875rem; color: var(--color-muted); }
+.issueNote {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-muted);
+}
+
+.inlineLink {
+  color: var(--color-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 .issueBtn {
   padding: 0.6rem 1.25rem;

@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { generateFormLink, deleteFormLink } from '@/app/actions/forms'
 import type { ShareLink, ShareableForm } from '@/lib/share-links'
 import Avatar from '@/app/_components/Avatar'
@@ -121,10 +122,18 @@ export default function ShareClient({
       {/* ── Issue ── */}
       <form className={styles.issueCard} onSubmit={handleGenerate}>
         <div className={styles.issueGrid}>
+          {/* Each cell is label + control and nothing else, so all three line up on both edges.
+              Hints live below the grid — put one inside a cell and it makes that column taller,
+              which pushes its label out of line with the others. */}
           <label className={styles.field}>
             <span className={styles.label}>Form</span>
-            <select className={styles.input} value={formId} onChange={(e) => setFormId(e.target.value)}>
-              {published.length === 0 && <option value="">No published forms yet</option>}
+            <select
+              className={styles.input}
+              value={formId}
+              onChange={(e) => setFormId(e.target.value)}
+              disabled={published.length === 0}
+            >
+              {published.length === 0 && <option value="">No published forms available</option>}
               {published.map((f) => (
                 <option key={f.id} value={f.id}>
                   {f.title}{f.pipelineName ? ` → ${f.pipelineName}` : ''}
@@ -140,12 +149,25 @@ export default function ShareClient({
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g. TiE Mumbai, Nov cohort"
             />
-            <span className={styles.hint}>Only you see this — it&apos;s how you tell your links apart.</span>
           </label>
           <button type="submit" className={styles.issueBtn} disabled={isPending || !formId}>
             {isPending ? 'Creating…' : 'Create my link'}
           </button>
         </div>
+
+        {published.length === 0 ? (
+          /* Distinguish "nothing exists" from "everything is still a draft" — the second is one
+             click from being fixed, and saying so is more use than an empty dropdown. */
+          <p className={styles.issueNote}>
+            {forms.length > 0
+              ? <>All {forms.length} form{forms.length !== 1 ? 's are' : ' is'} still a draft, so there is nothing to share yet. Publish one from <Link href="/forms" className={styles.inlineLink}>Forms</Link>.</>
+              : <>No intake forms exist yet. Build one from <Link href="/forms" className={styles.inlineLink}>Forms</Link> first.</>}
+          </p>
+        ) : (
+          <p className={styles.issueNote}>
+            The label is only visible to you — it&apos;s how you tell your own links apart.
+          </p>
+        )}
 
         {selected && !selected.published && (
           <div className={styles.inlineWarn}>
