@@ -1000,3 +1000,35 @@
 /* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
    the content out to grey. Still frosted (see the backdrop-filter above). */
 .navFlyout, .alertsPanel { background: var(--glass-panel); }
+
+/* ── Brand lockup ─────────────────────────────────────────────────────────
+   The source logo pairs a near-black wordmark with a near-white tagline, which only
+   coexist on the mid-grey mockup they were rendered against. Two variants are generated
+   from it — one per theme — so both halves stay legible on the crema and navy pages.
+   Swapped in CSS rather than JS because the theme is set on <html> before hydration. */
+.brandLogoLight,
+.brandLogoDark {
+  height: auto;
+  width: 100%;
+  max-width: 180px;
+  object-fit: contain;
+  /* Never let the lockup dictate the sidebar's width. */
+  min-width: 0;
+}
+
+.brandLogoDark { display: none; }
+[data-theme="dark"] .brandLogoLight,
+[data-theme="oled"] .brandLogoLight { display: none; }
+[data-theme="dark"] .brandLogoDark,
+[data-theme="oled"] .brandLogoDark { display: block; }
+
+/* Collapsed rail: symbol only. No text in it, so one file serves every theme. */
+.brandSymbol {
+  width: 28px;
+  height: auto;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.topbarBrand .brandLogoLight,
+.topbarBrand .brandLogoDark { max-width: 152px; }

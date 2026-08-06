@@ -106,10 +106,10 @@ function LoginContent() {
     <div className={styles.page}>
       <div className={styles.card}>
         <div className={styles.logoBlock}>
-          <div className={styles.logoMark}>
-            <img src="/ecosystem-favicon-sapling.png" alt="" width={52} height={52} />
-          </div>
-          <span className={styles.wordmark}>Ecosystem</span>
+          {/* The lockup already carries the wordmark and tagline, so the separate text would
+              repeat them. Both theme variants ship; CSS picks one. */}
+          <img className={styles.brandLogoLight} src="/brand/ecosystem-logo.png" alt="Ecosystem" width={260} height={65} />
+          <img className={styles.brandLogoDark} src="/brand/ecosystem-logo-dark.png" alt="" aria-hidden="true" width={260} height={65} />
           <span className={styles.tagline}>by Earlyseed Ventures</span>
         </div>
 

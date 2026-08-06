@@ -332,3 +332,17 @@
   opacity: 0.8;
   text-decoration: underline;
 }
+
+/* Brand lockup — two variants, switched by theme. See app-shell.module.css for why. */
+.brandLogoLight,
+.brandLogoDark {
+  width: 100%;
+  max-width: 260px;
+  height: auto;
+  object-fit: contain;
+}
+.brandLogoDark { display: none; }
+[data-theme="dark"] .brandLogoLight,
+[data-theme="oled"] .brandLogoLight { display: none; }
+[data-theme="dark"] .brandLogoDark,
+[data-theme="oled"] .brandLogoDark { display: block; }

@@ -572,7 +572,19 @@ export default function AppShell({
         <div className={styles.sidebarTop}>
           <div className={styles.sidebarTopRow}>
             <Link href="/settings" className={styles.workspace} onClick={() => setMobileOpen(false)} title={demoMode ? 'AA Labs — Demo' : 'Earlyseed Ventures'} aria-label="Settings">
-              <span className={styles.logoText}>Ecosystem</span>
+              {sidebarCollapsed ? (
+                /* The rail is ~64px — the full lockup cannot fit, so the symbol stands in. It
+                   carries no text, so it needs no per-theme variant. */
+                <img className={styles.brandSymbol} src="/brand/ecosystem-symbol.png" alt="Ecosystem" width={28} height={27} />
+              ) : (
+                <>
+                  {/* Two files rather than one swapped in JS: the theme is applied to <html> by a
+                      beforeInteractive script, so CSS can switch these with no flash and no
+                      hydration mismatch. Both are under 10KB. */}
+                  <img className={styles.brandLogoLight} src="/brand/ecosystem-logo.png" alt="Ecosystem" width={180} height={45} />
+                  <img className={styles.brandLogoDark} src="/brand/ecosystem-logo-dark.png" alt="" aria-hidden="true" width={180} height={45} />
+                </>
+              )}
             </Link>
             {canHaveTasks && (
               <div className={styles.alertsWrap}>
@@ -866,10 +878,8 @@ export default function AppShell({
             </svg>
           </button>
           <div className={styles.topbarBrand}>
-            <div className={styles.logoMark}>
-              <img src="/ecosystem-favicon-sapling.png" alt="" width={28} height={28} />
-            </div>
-            <span className={styles.logoText}>Ecosystem</span>
+            <img className={styles.brandLogoLight} src="/brand/ecosystem-logo.png" alt="Ecosystem" width={152} height={38} />
+            <img className={styles.brandLogoDark} src="/brand/ecosystem-logo-dark.png" alt="" aria-hidden="true" width={152} height={38} />
           </div>
           {canHaveTasks && (
             <div className={styles.alertsWrap}>
