@@ -1,5 +1,7 @@
+/* Fills the page; the individual controls below cap themselves, which is where a limit
+   actually belongs — a text field a metre wide helps nobody, a stretched container is fine. */
 .page {
-  max-width: 640px;
+  width: 100%;
 }
 
 .header {

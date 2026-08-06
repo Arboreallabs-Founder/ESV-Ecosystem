@@ -1,5 +1,5 @@
 .page { width: 100%; }
-.content { max-width: 780px; }
+.content { width: 100%; }
 
 .header {
   display: flex;
@@ -23,7 +23,13 @@
 .sectionTitle { font-size: 0.6875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: var(--color-muted); margin: 1.5rem 0 0.75rem; }
 .sectionTitle:first-child { margin-top: 0; }
 
-.list { display: flex; flex-direction: column; gap: 0.65rem; }
+/* Grid so announcements use the width of the screen instead of a column down the left. */
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 0.65rem;
+  align-items: start;
+}
 
 .card {
   background: var(--color-card);

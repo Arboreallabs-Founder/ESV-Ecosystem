@@ -1,7 +1,6 @@
 /* ── My Companies: the partner-facing side of SGP intake ────────────────── */
 
 .page { padding-bottom: 2rem; }
-.page > * { max-width: 900px; }
 
 .header {
   display: flex;
@@ -138,8 +137,15 @@
   margin: 0 auto;
 }
 
-/* ── Submitted companies ── */
-.list { display: flex; flex-direction: column; gap: 0.75rem; }
+/* ── Submitted companies ──
+   A grid rather than a stacked list: on a wide screen a single column of short cards leaves the
+   right two-thirds of the page empty. Columns are added as width allows instead. */
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
 
 .card {
   padding: 1rem 1.125rem;

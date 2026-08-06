@@ -428,8 +428,7 @@
 
 /* ── Deal page (full-page detail) ──────────────────────────────── */
 .dealPage {
-  max-width: 1240px;
-  margin: 0 auto;
+  width: 100%;
 }
 
 .detailTopBar {

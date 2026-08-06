@@ -259,7 +259,6 @@
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
   overflow: hidden;
-  max-width: 780px;
 }
 
 .kpiTable { width: 100%; border-collapse: collapse; font-size: 0.875rem; }

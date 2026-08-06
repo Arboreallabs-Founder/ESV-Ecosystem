@@ -1,7 +1,6 @@
 /* ── SGP Desk: partner-sourced company intake ───────────────────────────── */
 
 .page { padding-bottom: 2rem; }
-.page > * { max-width: 1100px; }
 
 .header {
   padding-bottom: 1.25rem;
@@ -76,8 +75,16 @@
   font-size: 0.8125rem;
 }
 
-/* ── Submission cards ── */
-.list { display: flex; flex-direction: column; gap: 0.875rem; }
+/* ── Submission cards ──
+   Grid, not a stack: a triage queue is scanned, and on a wide screen a single column means
+   scrolling past whitespace to see what is waiting. The minimum keeps a card readable; anything
+   wider becomes another column. */
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+  gap: 0.875rem;
+  align-items: start;
+}
 
 .card {
   padding: 1.125rem 1.25rem;

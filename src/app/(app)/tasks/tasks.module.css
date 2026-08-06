@@ -942,8 +942,14 @@ a.linkChipTag:hover { background: rgba(var(--color-hover-rgb),0.16); }
 }
 
 /* ── Recurring tasks ──────────────────────────────────────────────── */
-.recContent { max-width: 760px; }
-.recList { display: flex; flex-direction: column; gap: 0.75rem; }
+.recContent { width: 100%; }
+/* Grid so recurring tasks fill the page rather than running down one side. */
+.recList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: 0.75rem;
+  align-items: start;
+}
 
 .recRow {
   background: var(--color-card);

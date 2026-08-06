@@ -1,5 +1,5 @@
 .page { width: 100%; }
-.content { max-width: 720px; }
+.content { width: 100%; }
 
 .header {
   display: flex;
@@ -51,7 +51,13 @@
 .textarea { width: 100%; resize: vertical; box-sizing: border-box; }
 
 /* ── List ─────────────────────────────────────────────────────────── */
-.list { display: flex; flex-direction: column; gap: 0.5rem; }
+/* Grid rather than a stack: rows are short, and a single column wastes a wide screen. */
+.list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 0.5rem;
+  align-items: start;
+}
 
 .row {
   background: var(--color-card);

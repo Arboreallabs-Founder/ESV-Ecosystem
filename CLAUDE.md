@@ -96,4 +96,10 @@ The app must feel premium, using rich aesthetics and smooth interactions.
 - `requireAdmin()` / `requireInternal()` guards are at the top of every mutating action.
 - No `revalidatePath` in actions — components call `router.refresh()` after mutations.
 - CSS variables are defined in `src/app/globals.css`. Always use them, never hardcode colours.
+- **Pages fill the screen.** Never put `max-width` on a page container or `.page > *`. Content
+  adapts to the viewport; where a grid would otherwise stretch, add columns
+  (`repeat(auto-fill, minmax(Npx, 1fr))`) rather than capping the container. The only things that
+  cap are genuinely fixed artifacts and overlays — modals, the printable ID card, the public
+  `/verify` card — and prose line-length on a *paragraph* (`max-width: 60ch` on a subtitle is fine;
+  on the container holding it is not). This has been raised twice; check it before shipping a page.
 - `@xyflow/react` is used only in the form builder — do not introduce it elsewhere.
