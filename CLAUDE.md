@@ -17,7 +17,8 @@ quick orientation, read:
 - **[docs/](docs/)** — everything else (brand guidelines, original PRD)
 
 ## Current Status (June 2026)
-- **Live:** Deployed to Vercel at `https://ecosystem-liart.vercel.app`
+- **Live:** `https://ecosystem.earlyseedventures.com` (deployed on Vercel; the
+  `ecosystem-liart.vercel.app` host still resolves and must stay enabled — see docs/DOCUMENTS.md)
 - **Repo:** `https://github.com/Arboreallabs-Founder/ESV-Ecosystem` (main branch)
 - **Database:** Supabase Cloud Project (`hsabrzwsetjeaqutjrjb`, ap-south-1)
 - **Auth:** Google OAuth (primary) + email/password (secondary). Pre-approved emails only via `approved_emails` table.

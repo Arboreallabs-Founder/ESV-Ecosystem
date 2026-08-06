@@ -121,6 +121,13 @@ Two separate identifiers, on purpose:
   guessable, it must not be what grants access, or someone increments it and reads a colleague's
   letter. Same split as the existing `form_links` → `/f/[token]` public route.
 
+**The verification URL is baked into the PDF permanently.** The custom domain
+`ecosystem.earlyseedventures.com` was set after the first documents were issued, so the three
+letters issued on 31 Jul 2026 carry `ecosystem-liart.vercel.app` in their footers and always will.
+That host must stay enabled on Vercel or those letters become unverifiable. The site URL now has a
+single definition in `src/lib/site-url.ts` so a future host change cannot land on some artefacts
+and not others.
+
 The PDF is generated once, stored, and hashed. It is **never regenerated** — font subsetting and
 embedded timestamps make regeneration non-byte-stable, so the hash would stop matching and every
 verification would fail.

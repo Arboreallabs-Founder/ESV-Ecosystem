@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import QRCode from 'qrcode'
 import { createClient } from '@/lib/supabase/server'
+import { formShareUrl } from '@/lib/site-url'
 
 /* Share links: the personalised /f/[token] URLs people hand to founders, plus what each one
    actually produced.
@@ -40,21 +41,7 @@ export type ShareableForm = {
   linkCount: number
 }
 
-/**
- * Base URL for a share link.
- *
- * Falls back to the production host rather than a localhost guess — these URLs get pasted into
- * emails and printed as QR codes, so one escaping with the wrong host is permanent in a way a
- * mistyped page is not.
- */
-function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '')
-    || 'https://ecosystem-liart.vercel.app')
-}
-
-export function shareUrlFor(token: string): string {
-  return `${siteUrl()}/f/${token}`
-}
+export { formShareUrl as shareUrlFor } from '@/lib/site-url'
 
 /** Forms that can have links issued against them. Drafts included, flagged, so the UI can explain. */
 export const fetchShareableForms = cache(async (): Promise<ShareableForm[]> => {
@@ -140,7 +127,7 @@ export const fetchShareLinks = cache(async (userId: string, mine: boolean): Prom
     const form = Array.isArray(row.form) ? row.form[0] : row.form
     const pipeline = form ? (Array.isArray(form.pipeline) ? form.pipeline[0] : form.pipeline) : null
     const creator = Array.isArray(row.creator) ? row.creator[0] : row.creator
-    const url = shareUrlFor(row.token)
+    const url = formShareUrl(row.token)
 
     return {
       id: row.id,

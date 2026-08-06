@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { SignatureMode } from '@/lib/types'
+import { documentVerifyUrl } from '@/lib/site-url'
 
 /* The document engine: allocate an id, render once, store, hash, record.
 
@@ -34,13 +35,12 @@ export function documentStoragePath(orgId: string, documentId: string): string {
 /**
  * Public verification URL printed in the footer.
  *
- * Falls back to the production host: this string is baked into a PDF that outlives the process
- * that made it, so a localhost URL escaping into a letter sent to a bank would be permanent.
+ * Baked permanently into the PDF, so it uses the one shared definition of the site URL — see
+ * src/lib/site-url.ts. A letter already issued keeps whatever host was current when it was
+ * generated; that is unavoidable and is why the host lives in one place.
  */
 export function verifyUrlFor(token: string): string {
-  const base = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '')
-    || 'https://ecosystem-liart.vercel.app'
-  return `${base}/verify/${token}`
+  return documentVerifyUrl(token)
 }
 
 /** Long-form date for the letter, pinned to IST like the rest of the app. */

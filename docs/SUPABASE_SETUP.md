@@ -72,7 +72,7 @@ The app runs at http://localhost:3000.
 
 ## 5. Google OAuth (if you need to test login)
 
-Google OAuth is already configured for the production URL (`https://ecosystem-liart.vercel.app`). If you want Google login to also work on `localhost:3000`:
+Google OAuth is already configured for the production URL (`https://ecosystem.earlyseedventures.com`). If you want Google login to also work on `localhost:3000`:
 
 1. Go to: https://supabase.com/dashboard/project/hsabrzwsetjeaqutjrjb/auth/url-configuration
 2. Under **Redirect URLs**, add: `http://localhost:3000/auth/callback`
