@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
-import { fetchDeskAssociates, fetchDeskDeals } from '@/lib/deal-desk'
+import { fetchDeskAssociates, fetchDeskDeals, fetchDeskOverview } from '@/lib/deal-desk'
 import DeskRoster from './_components/DeskRoster'
 import DeskModule from './_components/DeskModule'
+import DeskOverviewPanel from './_components/DeskOverview'
 
 // Role-aware landing:
 //   founder/admin (reviewers) → associate roster
@@ -13,9 +14,14 @@ export default async function DealDeskPage() {
   const role = user.role ?? ''
 
   if (role === 'founder' || role === 'admin' || role === 'super_admin') {
-    const associates = await fetchDeskAssociates()
+    const [associates, overview] = await Promise.all([fetchDeskAssociates(), fetchDeskOverview()])
     // Admins can also author, so give them a direct link to their own board.
-    return <DeskRoster associates={associates} selfAuthorId={role === 'admin' ? user.id : undefined} />
+    return (
+      <>
+        <DeskRoster associates={associates} selfAuthorId={role === 'admin' ? user.id : undefined} />
+        <DeskOverviewPanel overview={overview} />
+      </>
+    )
   }
 
   if (role === 'associate') {

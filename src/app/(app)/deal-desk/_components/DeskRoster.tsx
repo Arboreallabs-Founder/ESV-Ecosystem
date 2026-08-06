@@ -18,7 +18,7 @@ export default function DeskRoster({
       <div className={styles.header}>
         <div className={styles.headTitles}>
           <h1 className={styles.title}>Deal Desk</h1>
-          <div className={styles.subtitle}>Tap a name to review their deal cards.</div>
+          <div className={styles.subtitle}>Central hub to review and manage every deal on the desk.</div>
         </div>
         {selfAuthorId && (
           <Link href={`/deal-desk/${selfAuthorId}`} className={styles.primaryBtn} style={{ textDecoration: 'none' }}>
