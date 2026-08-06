@@ -1,7 +1,7 @@
 'use client'
 
 import { useId, useMemo, useState } from 'react'
-import styles from './deal-desk.module.css'
+import styles from './charts.module.css'
 
 /**
  * Deals on the desk over the trailing window — an area chart, hand-rolled in SVG because the app

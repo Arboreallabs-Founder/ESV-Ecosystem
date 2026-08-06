@@ -1,0 +1,64 @@
+/* ── Shared chart primitives ──────────────────────────────────────────────
+   Used by both the Deal Desk overview and the Dashboard. Kept in one place so the two pages
+   cannot drift into looking like two different products. All colour comes from CSS variables. */
+
+/* ── Trend chart ── */
+.trendWrap { position: relative; }
+.trendSvg { width: 100%; height: auto; display: block; overflow: visible; }
+.trendGrid { stroke: var(--color-border); stroke-width: 1; opacity: 0.5; }
+.trendAxis { fill: var(--color-muted); font-size: 9px; font-family: inherit; }
+.trendLine { fill: none; stroke: var(--color-primary); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.trendCursor { stroke: var(--color-primary); stroke-width: 1; opacity: 0.4; stroke-dasharray: 3 3; }
+.trendDot { fill: var(--color-primary); stroke: var(--color-card); stroke-width: 2; }
+
+.trendTip {
+  position: absolute;
+  top: 0; right: 0;
+  padding: 0.4rem 0.65rem;
+  border-radius: var(--radius-sm);
+  background: var(--glass-panel, var(--color-card));
+  border: 1px solid var(--color-border);
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  pointer-events: none;
+  box-shadow: var(--shadow-card);
+}
+.trendTipMeta { display: block; font-size: 0.6875rem; color: var(--color-muted); }
+
+.chartEmpty {
+  padding: 2rem 1rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+/* ── Stage donut ── */
+.donutWrap { display: flex; align-items: center; gap: 1.25rem; flex-wrap: wrap; }
+.donutFigure { flex-shrink: 0; }
+.donutSvg { width: 160px; height: 160px; display: block; }
+.donutSeg { cursor: pointer; transition: stroke-width 0.15s; }
+.donutValue { fill: var(--color-text); font-size: 26px; font-family: var(--font-serif); font-variant-numeric: tabular-nums; }
+.donutLabel { fill: var(--color-muted); font-size: 10px; }
+
+.donutLegend { list-style: none; margin: 0; padding: 0; flex: 1; min-width: 160px; display: flex; flex-direction: column; gap: 1px; }
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  font-family: inherit;
+  font-size: 0.75rem;
+  color: var(--color-text);
+  cursor: pointer;
+  text-align: left;
+}
+.legendRow:hover { background: rgba(var(--color-hover-rgb), 0.07); }
+.legendRowActive { background: rgba(var(--color-hover-rgb), 0.12); }
+.legendDot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+.legendName { flex: 1; min-width: 0; }
+.legendCount { font-variant-numeric: tabular-nums; font-weight: 600; }
+.legendPct { color: var(--color-muted); font-variant-numeric: tabular-nums; }

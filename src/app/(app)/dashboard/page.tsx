@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { fetchOpenTaskCount } from '@/lib/tasks'
 import { fetchOpenEscalationCount } from '@/lib/escalations'
 import { fetchBulletinPosts } from '@/lib/bulletin'
+import { fetchDashboardOverview } from '@/lib/dashboard'
+import DashboardOverviewPanels from './_components/DashboardOverview'
 import Avatar from '@/app/_components/Avatar'
 import styles from './dashboard.module.css'
 
@@ -85,12 +87,13 @@ async function fetchDashboardData() {
 export default async function DashboardPage() {
   // Data queries run under RLS, so they can start in parallel with the user
   // lookup instead of waiting for the role check.
-  const [user, data, openTasks, openEscalations, bulletinPosts] = await Promise.all([
+  const [user, data, openTasks, openEscalations, bulletinPosts, overview] = await Promise.all([
     getUser(),
     fetchDashboardData(),
     fetchOpenTaskCount(),
     fetchOpenEscalationCount(),
     fetchBulletinPosts(),
+    fetchDashboardOverview(),
   ])
   if (!user) redirect('/login')
   if (user.role === 'associate') redirect('/pipelines')
@@ -102,12 +105,11 @@ export default async function DashboardPage() {
   const firstName = user.name?.split(' ')[0] ?? ''
 
   const stats = [
-    { label: 'Active Deals', value: data.activeDealCount, desc: 'Live (non-archived)',    href: '/active-deals' },
-    { label: 'Pipelines',    value: data.pipelineCount,   desc: 'Active pipelines',        href: '/pipelines' },
-    { label: 'Submissions',  value: data.entryCount,      desc: 'Total entries received',  href: '/pipelines' },
-    { label: 'Companies',    value: data.companyCount,    desc: 'In the database',         href: '/companies' },
-    { label: 'Open Tasks',   value: openTasks,            desc: 'Not yet done',            href: '/tasks' },
-    { label: 'Escalations',  value: openEscalations,      desc: 'Open + acknowledged',     href: '/escalations' },
+    { label: 'Active deals', value: data.activeDealCount, desc: 'Live, not archived',     href: '/active-deals' },
+    { label: 'Submissions',  value: data.entryCount,      desc: 'Total entries received', href: '/pipelines', showDelta: true },
+    { label: 'Open tasks',   value: openTasks,            desc: 'Not yet done',           href: '/tasks' },
+    { label: 'Escalations',  value: openEscalations,      desc: 'Open + acknowledged',    href: '/escalations' },
+    { label: 'Companies',    value: data.companyCount,    desc: 'In the database',        href: '/companies' },
   ]
 
   const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
@@ -133,8 +135,9 @@ export default async function DashboardPage() {
         <p className={styles.greetingSub}>Here&apos;s what needs attention across the ecosystem.</p>
       </div>
 
-      {/* Quick links — the 8 most-used destinations */}
-      {/* Bottom: Bulletin + Recent Activity */}
+      <DashboardOverviewPanels overview={overview} kpis={stats} />
+
+      {/* Bulletin + Recent Activity */}
       <div className={styles.focusGrid}>
         {/* Bulletin updates */}
         <div className={styles.activityCard}>
@@ -258,23 +261,6 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <section className={styles.metricsSection} aria-labelledby="dashboard-health">
-        <div className={styles.sectionHeader}>
-          <div>
-            <h2 id="dashboard-health" className={styles.sectionTitle}>Ecosystem health</h2>
-            <p className={styles.sectionSub}>A compact read on volume and open work.</p>
-          </div>
-        </div>
-        <div className={styles.statsGrid}>
-          {stats.map(({ label, value, desc, href }) => (
-            <Link key={label} href={href} className={styles.statCard}>
-              <div className={styles.statLabel}>{label}</div>
-              <div className={styles.statValue}>{value}</div>
-              <div className={styles.statDesc}>{desc}</div>
-            </Link>
-          ))}
-        </div>
-      </section>
     </>
   )
 }

@@ -6,8 +6,8 @@ import type { DeskOverview, DeskOverviewRow } from '@/lib/deal-desk'
 import { DESK_DEAL_STATUS_LABELS } from '@/lib/types'
 import Avatar from '@/app/_components/Avatar'
 import { formatInrShort, formatDate, daysSince } from './format'
-import TrendChart from './TrendChart'
-import StageDonut from './StageDonut'
+import TrendChart from '@/app/_components/charts/TrendChart'
+import Donut from '@/app/_components/charts/Donut'
 import styles from './deal-desk.module.css'
 
 const PAGE_SIZE = 10
@@ -103,10 +103,12 @@ export default function DeskOverviewPanel({ overview }: { overview: DeskOverview
             <h2 className={styles.panelTitle}>Deals by stage</h2>
             {stage && <button className={styles.panelLink} onClick={() => { setStage(null); setPage(0) }}>Clear</button>}
           </div>
-          <StageDonut
+          <Donut
             data={overview.byStage}
             selected={stage}
             onSelect={(s) => { setStage(s); setPage(0) }}
+            centreLabel="On the desk"
+            ariaLabel="Deals by funding stage"
           />
           <p className={styles.panelFoot}>
             Funding stage of the company, not review progress — pick one to filter the table.

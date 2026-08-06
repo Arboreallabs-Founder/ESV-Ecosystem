@@ -1,37 +1,40 @@
 'use client'
 
 import { useState } from 'react'
-import styles from './deal-desk.module.css'
+import styles from './charts.module.css'
 
 /**
- * Deals by funding stage.
+ * A donut with a legend, shared by the Deal Desk overview and the Dashboard.
  *
- * Note this is the company's *funding* stage — MVP through Series A+ — not a pipeline stage. Deal
- * Desk has no Sourcing/Due Diligence/Term Sheet funnel; where a deal has got to in review is its
- * status, which the KPI strip and the table's Status column carry instead.
- *
- * Because the stages are ordered, the palette is a sequential lightness ramp rather than six
- * unrelated hues: adjacent stages stay distinguishable without depending on hue perception, and
- * the ordering is visible in the chart itself. The legend carries the count and share anyway, so
- * no value here is readable only by colour.
+ * The default palette is a sequential lightness ramp rather than a set of unrelated hues. Both
+ * places that use it show *ordered* categories — funding stages, pipeline stages — so a ramp keeps
+ * adjacent slices distinguishable without depending on hue perception, and makes the ordering
+ * visible in the chart itself. The legend always carries the count and share, so no value here is
+ * readable only by colour.
  */
-const RAMP = ['#E4D3FE', '#CEAAFD', '#A98BFD', '#8B72FD', '#745FFD', '#4B3BC4', '#A39B95']
+export const DONUT_RAMP = ['#E4D3FE', '#CEAAFD', '#A98BFD', '#8B72FD', '#745FFD', '#4B3BC4', '#A39B95']
 
-export default function StageDonut({
+export default function Donut({
   data,
   onSelect,
   selected,
+  palette = DONUT_RAMP,
+  centreLabel = 'Total',
+  ariaLabel = 'Breakdown by category',
 }: {
   data: Array<{ label: string; count: number }>
   onSelect?: (label: string | null) => void
   selected?: string | null
+  palette?: string[]
+  centreLabel?: string
+  ariaLabel?: string
 }) {
   const [hover, setHover] = useState<string | null>(null)
   const shown = data.filter((d) => d.count > 0)
   const total = shown.reduce((s, d) => s + d.count, 0)
 
   if (total === 0) {
-    return <div className={styles.chartEmpty}>No deals to break down yet.</div>
+    return <div className={styles.chartEmpty}>Nothing to break down yet.</div>
   }
 
   const R = 62
@@ -51,7 +54,7 @@ export default function StageDonut({
     const drawn = Math.max(MIN_ARC, len - GAP)
     const seg = {
       ...d,
-      colour: RAMP[Math.min(i, RAMP.length - 1)],
+      colour: palette[Math.min(i, palette.length - 1)],
       dash: `${drawn} ${C - drawn}`,
       // Offsets stay on the true proportions, so the ring as a whole still reads accurately.
       offset: -offset,
@@ -67,7 +70,7 @@ export default function StageDonut({
   return (
     <div className={styles.donutWrap}>
       <div className={styles.donutFigure}>
-        <svg viewBox="0 0 160 160" className={styles.donutSvg} role="img" aria-label={`Deals by funding stage: ${shown.map((d) => `${d.label} ${d.count}`).join(', ')}.`}>
+        <svg viewBox="0 0 160 160" className={styles.donutSvg} role="img" aria-label={`${ariaLabel}: ${shown.map((d) => `${d.label} ${d.count}`).join(', ')}.`}>
           <g transform="rotate(-90 80 80)">
             {segments.map((s) => (
               <circle
@@ -89,7 +92,7 @@ export default function StageDonut({
             {focused ? focused.count : total}
           </text>
           <text x="80" y="94" className={styles.donutLabel} textAnchor="middle">
-            {focused ? focused.label : 'Total'}
+            {focused ? focused.label : centreLabel}
           </text>
         </svg>
       </div>
