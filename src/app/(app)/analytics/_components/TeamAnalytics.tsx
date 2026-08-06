@@ -8,6 +8,7 @@ import PeriodPicker from './PeriodPicker'
 import AdjustmentModal from './AdjustmentModal'
 import WeightsPanel from './WeightsPanel'
 import Avatar from '@/app/_components/Avatar'
+import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../analytics.module.css'
 
 type SortKey = 'score' | 'kudosReceived' | 'onTimeRate' | 'tasksOverdue'
@@ -68,7 +69,7 @@ export default function TeamAnalytics({
       </div>
 
       <div className={styles.content}>
-        <div className={styles.tileRow}>
+        <div className={panels.kpiStrip}>
           <ScoreTile label="Kudos given" value={orgKudos} />
           <ScoreTile label="Tasks on time" value={orgOnTime} tone="pos" />
           <ScoreTile label="Overdue" value={orgOverdue} tone={orgOverdue > 0 ? 'neg' : undefined} />
@@ -76,25 +77,25 @@ export default function TeamAnalytics({
         </div>
 
         <div className={styles.chartGrid}>
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Score</h2>
-            <p className={styles.cardNote}>
+          <section className={panels.panel}>
+            <h2 className={panels.panelTitle}>Score</h2>
+            <p className={panels.panelFoot}>
               Weighted total per person. Scores are relative and period-scoped — read them
               alongside the rates in the table, not on their own.
             </p>
             <MagnitudeBars rows={topScorers} emptyLabel="No scored activity in this period" />
           </section>
 
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Kudos by area</h2>
-            <p className={styles.cardNote}>Across the whole team.</p>
+          <section className={panels.panel}>
+            <h2 className={panels.panelTitle}>Kudos by area</h2>
+            <p className={panels.panelFoot}>Across the whole team.</p>
             <MagnitudeBars rows={kudosByArea} emptyLabel="No kudos in this period" />
           </section>
         </div>
 
-        <section className={styles.card}>
-          <div className={styles.tableHead}>
-            <h2 className={styles.cardTitle}>Per person</h2>
+        <section className={panels.panel}>
+          <div className={panels.tableHead}>
+            <h2 className={panels.panelTitle}>Per person</h2>
             <div className={styles.sortRow}>
               <label className={styles.periodLabel} htmlFor="sort">Sort by</label>
               <select id="sort" className={styles.periodSelect} value={sortKey} onChange={(e) => setSortKey(e.target.value as SortKey)}>
@@ -107,10 +108,10 @@ export default function TeamAnalytics({
           </div>
 
           {sorted.length === 0 ? (
-            <div className={styles.chartEmpty}>No people to show.</div>
+            <div className={panels.chartEmpty}>No people to show.</div>
           ) : (
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
+            <div className={panels.tableScroll}>
+              <table className={panels.overviewTable}>
                 <thead>
                   <tr>
                     <th>Person</th><th>Score</th><th>Kudos</th><th>On time</th>
@@ -144,10 +145,10 @@ export default function TeamAnalytics({
           )}
         </section>
 
-        <section className={styles.card}>
-          <h2 className={styles.cardTitle}>Adjustment log</h2>
+        <section className={panels.panel}>
+          <h2 className={panels.panelTitle}>Adjustment log</h2>
           {adjustments.length === 0 ? (
-            <div className={styles.chartEmpty}>No adjustments in this period</div>
+            <div className={panels.chartEmpty}>No adjustments in this period</div>
           ) : (
             <div className={styles.adjList}>
               {adjustments.map((a) => (

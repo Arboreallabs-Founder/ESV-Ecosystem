@@ -3,18 +3,23 @@
 import { Fragment, useState } from 'react'
 import type { Task, UserRow, TaskPush } from '@/lib/types'
 import { computeKpis } from '@/lib/task-kpi'
+import type { TaskKpis } from '@/lib/task-kpi'
 import { computePushStats, blockerBreakdown } from '@/lib/task-pushes'
 import { formatDateTimeIst } from '@/lib/format-datetime'
+import Donut from '@/app/_components/charts/Donut'
+import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../../tasks.module.css'
 
 // computeKpis lives in @/lib/task-kpi so /analytics scores punctuality with exactly the same
 // maths — the two pages must never disagree about someone's numbers.
 
-function KpiCard({ label, value, accent }: { label: string; value: number; accent?: string }) {
+// The shared dashboard tile, so this page counts the same way it looks everywhere else.
+function Kpi({ label, value, foot }: { label: string; value: number | string; foot?: string }) {
   return (
-    <div className={styles.kpiCard}>
-      <div className={styles.kpiValue} style={accent ? { color: accent } : undefined}>{value}</div>
-      <div className={styles.kpiLabel}>{label}</div>
+    <div className={panels.kpi}>
+      <div className={panels.kpiLabel}>{label}</div>
+      <div className={panels.kpiValue}>{value}</div>
+      {foot && <span className={panels.kpiFoot}>{foot}</span>}
     </div>
   )
 }
@@ -51,6 +56,23 @@ function PushDetail({ pushes, total }: { pushes: TaskPush[]; total: number }) {
   )
 }
 
+// On time / late / pending / overdue partition the task set exactly — see computeKpis: every task
+// is either done (on time or late) or open (pending or past its deadline). "Pushed" is NOT here on
+// purpose: a pushed task is also one of the four, so a slice for it would double-count.
+function outcomeMix(k: TaskKpis) {
+  return [
+    { label: 'Completed on time', count: k.onTime },
+    { label: 'Completed late', count: Math.max(0, k.done - k.onTime) },
+    { label: 'Pending', count: k.pending },
+    { label: 'Overdue', count: k.notCompleted },
+  ]
+}
+
+// Semantic rather than sequential here: unlike funding or pipeline stages these are outcomes, not
+// an ordered scale. The legend still carries every label and count, so nothing reads by colour
+// alone.
+const OUTCOME_COLOURS = ['#2E7D32', '#D5AE8F', '#A39B95', '#C0392B']
+
 export default function TaskKpiView({
   tasks,
   users,
@@ -80,11 +102,27 @@ export default function TaskKpiView({
             <div className={styles.pageSub}>{k.total} task{k.total !== 1 ? 's' : ''} assigned to you</div>
           </div>
         </div>
-        <div className={styles.kpiCardRow}>
-          <KpiCard label="Completed on time" value={k.onTime} accent="var(--color-success, #2d8c6e)" />
-          <KpiCard label="Pushed" value={k.pushed} accent="var(--color-primary)" />
-          <KpiCard label="Pending" value={k.pending} />
-          <KpiCard label="Not completed" value={k.notCompleted} accent="var(--color-destructive)" />
+        <div className={panels.overview}>
+          <section className={panels.panel}>
+            <div className={panels.panelHead}>
+              <h2 className={panels.panelTitle}>My numbers</h2>
+              <span className={panels.panelNote}>{k.total} task{k.total !== 1 ? 's' : ''}</span>
+            </div>
+            <div className={panels.kpiStrip}>
+              <Kpi label="Completed on time" value={k.onTime} foot="Met the original due date" />
+              <Kpi label="Pending" value={k.pending} foot="Still inside the deadline" />
+              <Kpi label="Overdue" value={k.notCompleted} foot="Past the deadline, not done" />
+              <Kpi label="Pushed" value={k.pushed} foot="Moved at least once" />
+            </div>
+          </section>
+          <div className={panels.overviewSide}>
+            <section className={panels.panel}>
+              <div className={panels.panelHead}>
+                <h2 className={panels.panelTitle}>Outcome mix</h2>
+              </div>
+              <Donut data={outcomeMix(k)} palette={OUTCOME_COLOURS} centreLabel="My tasks" ariaLabel="My tasks by outcome" />
+            </section>
+          </div>
         </div>
 
         {mine.total > 0 && (
@@ -124,18 +162,44 @@ export default function TaskKpiView({
         </div>
       </div>
 
-      <div className={styles.kpiCardRow}>
-        <KpiCard label="Completed on time" value={orgK.onTime} accent="var(--color-success, #2d8c6e)" />
-        <KpiCard label="Pushed" value={orgK.pushed} accent="var(--color-primary)" />
-        <KpiCard label="Pending" value={orgK.pending} />
-        <KpiCard label="Not completed" value={orgK.notCompleted} accent="var(--color-destructive)" />
+      <div className={panels.overview}>
+        <section className={panels.panel}>
+          <div className={panels.panelHead}>
+            <h2 className={panels.panelTitle}>Team overview</h2>
+            <span className={panels.panelNote}>{orgK.total} task{orgK.total !== 1 ? 's' : ''} across {rows.length} {rows.length === 1 ? 'person' : 'people'}</span>
+          </div>
+          <div className={panels.kpiStrip}>
+            <Kpi label="Completed on time" value={orgK.onTime} foot="Met the original due date" />
+            <Kpi label="Pending" value={orgK.pending} foot="Still inside the deadline" />
+            <Kpi label="Overdue" value={orgK.notCompleted} foot="Past the deadline, not done" />
+            <Kpi label="Pushed" value={orgK.pushed} foot="Moved at least once" />
+            <Kpi
+              label="On-time rate"
+              value={orgK.done > 0 ? `${Math.round((orgK.onTime / orgK.done) * 100)}%` : '—'}
+              foot="Of everything completed"
+            />
+          </div>
+        </section>
+        <div className={panels.overviewSide}>
+          <section className={panels.panel}>
+            <div className={panels.panelHead}>
+              <h2 className={panels.panelTitle}>Outcome mix</h2>
+            </div>
+            <Donut data={outcomeMix(orgK)} palette={OUTCOME_COLOURS} centreLabel="All tasks" ariaLabel="Team tasks by outcome" />
+          </section>
+        </div>
       </div>
 
+      <section className={panels.panel} style={{ marginTop: '1rem' }}>
+        <div className={panels.panelHead}>
+          <h2 className={panels.panelTitle}>Per person</h2>
+          <span className={panels.panelNote}>Expand a row to see why their tasks moved</span>
+        </div>
       {rows.length === 0 ? (
-        <div className={styles.emptyCol} style={{ marginTop: '1.5rem' }}>No tasks assigned yet.</div>
+        <div className={panels.chartEmpty}>No tasks assigned yet.</div>
       ) : (
-        <div className={styles.kpiTableWrap}>
-          <table className={styles.kpiTable}>
+        <div className={panels.tableScroll}>
+          <table className={panels.overviewTable}>
             <thead>
               <tr>
                 <th>Team member</th>
@@ -186,6 +250,7 @@ export default function TaskKpiView({
           </table>
         </div>
       )}
+      </section>
     </div>
   )
 }

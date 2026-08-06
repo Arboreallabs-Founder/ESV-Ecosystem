@@ -6,17 +6,18 @@ import type { DashboardOverview } from '@/lib/dashboard'
 import Avatar from '@/app/_components/Avatar'
 import TrendChart from '@/app/_components/charts/TrendChart'
 import Donut from '@/app/_components/charts/Donut'
+import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../dashboard.module.css'
 
 const PAGE_SIZE = 8
 
 function MonthDelta({ now, prev }: { now: number; prev: number }) {
   if (prev === 0 && now === 0) return null
-  if (prev === 0) return <span className={styles.kpiDeltaUp}>↗ first this month</span>
+  if (prev === 0) return <span className={panels.kpiDeltaUp}>↗ first this month</span>
   const pct = Math.round(((now - prev) / prev) * 100)
-  if (pct === 0) return <span className={styles.kpiDeltaFlat}>→ level with last month</span>
+  if (pct === 0) return <span className={panels.kpiDeltaFlat}>→ level with last month</span>
   return (
-    <span className={pct > 0 ? styles.kpiDeltaUp : styles.kpiDeltaDown}>
+    <span className={pct > 0 ? panels.kpiDeltaUp : panels.kpiDeltaDown}>
       {pct > 0 ? '↗' : '↘'} {Math.abs(pct)}% vs last month
     </span>
   )
@@ -74,22 +75,22 @@ export default function DashboardOverviewPanels({
   const filtersOn = Boolean(search || stage || state)
 
   return (
-    <div className={styles.overview}>
+    <div className={panels.overview}>
       {/* ── KPI strip + submissions trend ── */}
-      <section className={styles.panel}>
-        <div className={styles.panelHead}>
-          <h2 className={styles.panelTitle}>Ecosystem overview</h2>
-          <span className={styles.panelNote}>Submissions, last 30 days</span>
+      <section className={panels.panel}>
+        <div className={panels.panelHead}>
+          <h2 className={panels.panelTitle}>Ecosystem overview</h2>
+          <span className={panels.panelNote}>Submissions, last 30 days</span>
         </div>
 
-        <div className={styles.kpiStrip}>
+        <div className={panels.kpiStrip}>
           {kpis.map((k) => (
-            <Link key={k.label} href={k.href} className={styles.kpi}>
-              <div className={styles.kpiLabel}>{k.label}</div>
-              <div className={styles.kpiValue}>{k.value}</div>
+            <Link key={k.label} href={k.href} className={`${panels.kpi} ${styles.kpiLink}`}>
+              <div className={panels.kpiLabel}>{k.label}</div>
+              <div className={panels.kpiValue}>{k.value}</div>
               {k.showDelta
                 ? <MonthDelta now={overview.submissionsThisMonth} prev={overview.submissionsLastMonth} />
-                : <span className={styles.kpiFoot}>{k.desc}</span>}
+                : <span className={panels.kpiFoot}>{k.desc}</span>}
             </Link>
           ))}
         </div>
@@ -97,12 +98,12 @@ export default function DashboardOverviewPanels({
         <TrendChart points={overview.trend} />
       </section>
 
-      <div className={styles.overviewSide}>
+      <div className={panels.overviewSide}>
         {/* ── Pipeline mix ── */}
-        <section className={styles.panel}>
-          <div className={styles.panelHead}>
-            <h2 className={styles.panelTitle}>Submissions by stage</h2>
-            {stage && <button className={styles.panelLink} onClick={() => { setStage(null); setPage(0) }}>Clear</button>}
+        <section className={panels.panel}>
+          <div className={panels.panelHead}>
+            <h2 className={panels.panelTitle}>Submissions by stage</h2>
+            {stage && <button className={panels.panelLink} onClick={() => { setStage(null); setPage(0) }}>Clear</button>}
           </div>
           <Donut
             data={overview.byStage}
@@ -111,19 +112,19 @@ export default function DashboardOverviewPanels({
             centreLabel="Submissions"
             ariaLabel="Pipeline submissions by stage"
           />
-          <p className={styles.panelFoot}>
+          <p className={panels.panelFoot}>
             Every submission across all pipelines, grouped by the stage it sits in.
           </p>
         </section>
 
         {/* ── Coming up: real dates, from tasks and events ── */}
-        <section className={styles.panel}>
-          <div className={styles.panelHead}>
-            <h2 className={styles.panelTitle}>Coming up</h2>
-            <Link href="/tasks" className={styles.panelLink}>Task board</Link>
+        <section className={panels.panel}>
+          <div className={panels.panelHead}>
+            <h2 className={panels.panelTitle}>Coming up</h2>
+            <Link href="/tasks" className={panels.panelLink}>Task board</Link>
           </div>
           {overview.upcoming.length === 0 ? (
-            <div className={styles.chartEmpty}>Nothing scheduled in the near future.</div>
+            <div className={panels.chartEmpty}>Nothing scheduled in the near future.</div>
           ) : (
             <ul className={styles.upList}>
               {overview.upcoming.map((u) => (
@@ -152,23 +153,23 @@ export default function DashboardOverviewPanels({
       </div>
 
       {/* ── Active deals ── */}
-      <section className={styles.panel}>
-        <div className={styles.tableHead}>
-          <h2 className={styles.panelTitle}>Active deals</h2>
-          <div className={styles.tableControls}>
+      <section className={panels.panel}>
+        <div className={panels.tableHead}>
+          <h2 className={panels.panelTitle}>Active deals</h2>
+          <div className={panels.tableControls}>
             <input
-              className={styles.tableSearch}
+              className={panels.tableSearch}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(0) }}
               placeholder="Search deals…"
               aria-label="Search deals"
             />
-            <select className={styles.tableSelect} value={state} onChange={(e) => { setState(e.target.value); setPage(0) }} aria-label="Filter by state">
+            <select className={panels.tableSelect} value={state} onChange={(e) => { setState(e.target.value); setPage(0) }} aria-label="Filter by state">
               <option value="">All states</option>
               {states.map((s) => <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>)}
             </select>
             {filtersOn && (
-              <button className={styles.tableReset} onClick={() => { setSearch(''); setStage(null); setState(''); setPage(0) }}>
+              <button className={panels.tableReset} onClick={() => { setSearch(''); setStage(null); setState(''); setPage(0) }}>
                 Reset
               </button>
             )}
@@ -176,13 +177,13 @@ export default function DashboardOverviewPanels({
         </div>
 
         {filtered.length === 0 ? (
-          <div className={styles.chartEmpty}>
+          <div className={panels.chartEmpty}>
             {overview.deals.length === 0 ? 'No active deals yet.' : 'No deals match those filters.'}
           </div>
         ) : (
           <>
-            <div className={styles.tableScroll}>
-              <table className={styles.overviewTable}>
+            <div className={panels.tableScroll}>
+              <table className={panels.overviewTable}>
                 <thead>
                   <tr>
                     <th>Company</th><th>Pipeline</th><th>Stage</th><th>Team</th><th>State</th><th>Started</th>
@@ -192,38 +193,38 @@ export default function DashboardOverviewPanels({
                   {visible.map((d) => (
                     <tr key={d.id}>
                       <td>
-                        <Link href={`/active-deals/${d.id}`} className={styles.tableCompany}>{d.name}</Link>
+                        <Link href={`/active-deals/${d.id}`} className={panels.tableCompany}>{d.name}</Link>
                       </td>
-                      <td className={styles.muted}>{d.pipelineName ?? '—'}</td>
-                      <td>{d.stage ? <span className={styles.stagePill}>{d.stage}</span> : <span className={styles.muted}>—</span>}</td>
+                      <td className={panels.muted}>{d.pipelineName ?? '—'}</td>
+                      <td>{d.stage ? <span className={panels.stagePill}>{d.stage}</span> : <span className={panels.muted}>—</span>}</td>
                       <td>
-                        {d.owners.length === 0 ? <span className={styles.muted}>Unassigned</span> : (
-                          <span className={styles.ownerCell}>
+                        {d.owners.length === 0 ? <span className={panels.muted}>Unassigned</span> : (
+                          <span className={panels.ownerCell}>
                             {d.owners.slice(0, 3).map((o) => (
                               <Avatar key={o.name} name={o.name} photoUrl={o.photo_url} size="xs" />
                             ))}
-                            {d.owners.length > 3 && <span className={styles.muted}>+{d.owners.length - 3}</span>}
+                            {d.owners.length > 3 && <span className={panels.muted}>+{d.owners.length - 3}</span>}
                           </span>
                         )}
                       </td>
                       <td><span className={styles.statePill}>{d.state.replace(/_/g, ' ')}</span></td>
-                      <td className={styles.muted}>{fmtDate(d.createdAt)}</td>
+                      <td className={panels.muted}>{fmtDate(d.createdAt)}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
 
-            <div className={styles.tableFoot}>
-              <span className={styles.tableCount}>
+            <div className={panels.tableFoot}>
+              <span className={panels.tableCount}>
                 Showing {safePage * PAGE_SIZE + 1}–{Math.min(filtered.length, (safePage + 1) * PAGE_SIZE)} of {filtered.length}
                 {filtersOn && overview.deals.length !== filtered.length ? ` (filtered from ${overview.deals.length})` : ''}
               </span>
               {pageCount > 1 && (
-                <div className={styles.pager}>
-                  <button className={styles.pagerBtn} onClick={() => setPage(safePage - 1)} disabled={safePage === 0} aria-label="Previous page">‹</button>
-                  <span className={styles.pagerNow}>{safePage + 1} / {pageCount}</span>
-                  <button className={styles.pagerBtn} onClick={() => setPage(safePage + 1)} disabled={safePage >= pageCount - 1} aria-label="Next page">›</button>
+                <div className={panels.pager}>
+                  <button className={panels.pagerBtn} onClick={() => setPage(safePage - 1)} disabled={safePage === 0} aria-label="Previous page">‹</button>
+                  <span className={panels.pagerNow}>{safePage + 1} / {pageCount}</span>
+                  <button className={panels.pagerBtn} onClick={() => setPage(safePage + 1)} disabled={safePage >= pageCount - 1} aria-label="Next page">›</button>
                 </div>
               )}
             </div>

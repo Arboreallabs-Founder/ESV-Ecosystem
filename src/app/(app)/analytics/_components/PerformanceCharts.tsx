@@ -1,5 +1,6 @@
 'use client'
 
+import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../analytics.module.css'
 
 /* Charts are hand-rolled SVG/CSS — this app has no charting library and shouldn't gain one for
@@ -85,16 +86,19 @@ export function ContributionBars({ items }: {
 }
 
 /** Headline figure. Not a chart — a single number doesn't need a plot to be understood. */
+// The shared dashboard KPI tile, so a number on Analytics looks like the same kind of number on
+// the Dashboard, the Deal Desk and Task KPIs. `tone` still colours the value, but the label above
+// it always says what the number is, so the tone is emphasis rather than meaning.
 export function ScoreTile({ label, value, sub, tone }: {
   label: string; value: string | number; sub?: string; tone?: 'pos' | 'neg'
 }) {
   return (
-    <div className={styles.tile}>
-      <div className={styles.tileLabel}>{label}</div>
-      <div className={`${styles.tileValue} ${tone === 'pos' ? styles.tonePos : tone === 'neg' ? styles.toneNeg : ''}`}>
+    <div className={panels.kpi}>
+      <div className={panels.kpiLabel}>{label}</div>
+      <div className={`${panels.kpiValue} ${tone === 'pos' ? styles.tonePos : tone === 'neg' ? styles.toneNeg : ''}`}>
         {value}
       </div>
-      {sub && <div className={styles.tileSub}>{sub}</div>}
+      {sub && <span className={panels.kpiFoot}>{sub}</span>}
     </div>
   )
 }

@@ -5,6 +5,7 @@ import type { PerformanceAdjustment, PerformanceRow, PerformanceWeights, ScorePe
 import { ContributionBars, MagnitudeBars, ScoreTile } from './PerformanceCharts'
 import PeriodPicker from './PeriodPicker'
 import Avatar from '@/app/_components/Avatar'
+import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../analytics.module.css'
 
 const CONTRIBUTION_LABELS: Record<string, string> = {
@@ -54,7 +55,7 @@ export default function MyScorecard({ row, adjustments, weights, period }: {
       </div>
 
       <div className={styles.content}>
-        <div className={styles.tileRow}>
+        <div className={panels.kpiStrip}>
           <ScoreTile label="Score" value={row.score} tone={row.score >= 0 ? 'pos' : 'neg'} />
           <ScoreTile label="Kudos received" value={row.kudosReceived} />
           <ScoreTile
@@ -66,9 +67,9 @@ export default function MyScorecard({ row, adjustments, weights, period }: {
         </div>
 
         <div className={styles.chartGrid}>
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>What made up your score</h2>
-            <p className={styles.cardNote}>
+          <section className={panels.panel}>
+            <h2 className={panels.panelTitle}>What made up your score</h2>
+            <p className={panels.panelFoot}>
               Bars run right for points gained, left for points lost. Current weights:
               kudos {weights.kudos_received}, on-time {weights.task_on_time},
               overdue {weights.task_overdue}, pushed {weights.task_pushed}.
@@ -76,17 +77,17 @@ export default function MyScorecard({ row, adjustments, weights, period }: {
             <ContributionBars items={contributions} />
           </section>
 
-          <section className={styles.card}>
-            <h2 className={styles.cardTitle}>Kudos by area</h2>
+          <section className={panels.panel}>
+            <h2 className={panels.panelTitle}>Kudos by area</h2>
             <MagnitudeBars rows={kudosRows} emptyLabel="No kudos in this period yet" />
           </section>
         </div>
 
-        <section className={styles.card}>
-          <h2 className={styles.cardTitle}>Manual adjustments</h2>
-          <p className={styles.cardNote}>Points added or removed by a founder, admin or HR — always with a reason.</p>
+        <section className={panels.panel}>
+          <h2 className={panels.panelTitle}>Manual adjustments</h2>
+          <p className={panels.panelFoot}>Points added or removed by a founder, admin or HR — always with a reason.</p>
           {adjustments.length === 0 ? (
-            <div className={styles.chartEmpty}>None in this period</div>
+            <div className={panels.chartEmpty}>None in this period</div>
           ) : (
             <div className={styles.adjList}>
               {adjustments.map((a) => (
