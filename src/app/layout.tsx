@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Arapey } from "next/font/google";
+import Script from 'next/script'
 import "flag-icons/css/flag-icons.min.css";
 import "./globals.css";
 import { ThemeProvider } from './_components/ThemeProvider'
@@ -42,13 +43,22 @@ export default function RootLayout({
   return (
     <html lang="en" style={{ height: "100%" }} suppressHydrationWarning>
       <head>
-        {/* Runs before React hydrates to prevent theme flash */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          (function(){
+        {/*
+          Sets the theme attribute before React hydrates, so the page never paints in the wrong
+          theme and then snaps.
+
+          Routed through next/script rather than a bare <script> element: React 19 warns when it
+          meets a script tag while rendering, because on a client-side render — as opposed to
+          hydration — the tag is inserted but never executed. That warning is noise for a root
+          layout, but next/script is the supported way to say "this is a real script, hoist it",
+          and it keeps the console clean enough that a genuine warning still stands out.
+        */}
+        <Script id="esv-theme-init" strategy="beforeInteractive">
+          {`(function(){
             var stored = localStorage.getItem('esv-theme');
             document.documentElement.setAttribute('data-theme', stored || 'light');
-          })();
-        `}} />
+          })();`}
+        </Script>
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${arapey.variable}`}
