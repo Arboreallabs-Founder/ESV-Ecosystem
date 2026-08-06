@@ -53,7 +53,7 @@ function PolicyRow({ policy, expanded, canEdit, canDelete, onToggle, onEdit, onD
 export default function HrZoneView({
   policies, clockSettings, birthdays, canEditPolicies, canDeletePolicies, showClockAdmin,
   isApprover, pendingApprovalsCount, myLeaveRequests, myExpenseRequests, myLeaveBalances, orgId, userId,
-  roster, compensation, canManagePeople, managers,
+  roster, compensation, canManagePeople, managers, profilesOk,
   documentTypes, issuableCodes, issuedDocuments, templateFields, currentUserId,
 }: {
   policies: HrPolicy[]; clockSettings: HrClockSettings | null; birthdays: HrBirthday[]
@@ -63,6 +63,7 @@ export default function HrZoneView({
   myLeaveBalances: Record<string, LeaveBalance> | null
   orgId: string; userId: string
   roster: EmployeeRow[]
+  profilesOk: boolean
   compensation: Record<string, EmployeeCompensation[]>
   canManagePeople: boolean
   managers: UserRow[]
@@ -172,6 +173,7 @@ export default function HrZoneView({
             compensation={compensation}
             canSeeCompensation={canManagePeople}
             managers={managers}
+            profilesOk={profilesOk}
           />
         )}
 

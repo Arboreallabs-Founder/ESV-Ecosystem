@@ -13,6 +13,15 @@ async function requirePeopleAdmin() {
   return requireRole(['founder', 'admin', 'hr'])
 }
 
+/**
+ * How many populated fields a single save may blank before it is treated as a mistake.
+ *
+ * Four, because clearing two or three by hand is plausible housekeeping (an exit date and reason,
+ * say) while clearing four or more in one go is the signature of submitting a form that rendered
+ * empty when it shouldn't have.
+ */
+const WIPE_THRESHOLD = 4
+
 export type EmployeeProfileInput = {
   employee_code?: string | null
   date_of_joining?: string | null
@@ -59,6 +68,39 @@ export async function saveEmployeeProfile(userId: string, input: EmployeeProfile
     const value = patch[field] as string | null
     if (doj && value && value < doj) {
       throw new Error(`${field.replace(/_/g, ' ')} cannot be before the joining date.`)
+    }
+  }
+
+  /*
+   * Refuse a save that would wipe most of an existing profile.
+   *
+   * The form submits every field every time, so anything the browser shows as blank is written as
+   * NULL. If the form ever renders blank when it shouldn't — a failed read, a stale tab, a client
+   * bug not yet found — one click destroys hand-entered data with no audit trail to recover it
+   * from. This has already happened once.
+   *
+   * The client has its own guards; this one cannot be bypassed by whatever the client does wrong.
+   * Clearing a few fields deliberately still works, which is the common legitimate case.
+   */
+  const { data: existing } = await supabase
+    .from('employee_profiles')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (existing) {
+    const clearing = Object.keys(patch).filter((k) => {
+      const before = (existing as Record<string, unknown>)[k]
+      return before !== null && before !== undefined && before !== '' && patch[k] === null
+    })
+    if (clearing.length >= WIPE_THRESHOLD) {
+      throw new Error(
+        `This would clear ${clearing.length} fields that currently have values `
+        + `(${clearing.slice(0, 4).map((f) => f.replace(/_/g, ' ')).join(', ')}`
+        + `${clearing.length > 4 ? ', …' : ''}). `
+        + 'If the form looks empty, reload the page rather than saving — the data is probably '
+        + 'still there. To clear fields deliberately, do it a few at a time.',
+      )
     }
   }
 

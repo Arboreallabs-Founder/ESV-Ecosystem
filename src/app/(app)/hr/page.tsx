@@ -32,7 +32,7 @@ export default async function HrZonePage() {
     isApprover ? fetchPendingLeaveRequests() : Promise.resolve([]),
     isApprover ? fetchPendingExpenseRequests() : Promise.resolve([]),
     fetchMyLeaveBalances(user.id),
-    canManagePeople ? fetchEmployeeRoster() : Promise.resolve([]),
+    canManagePeople ? fetchEmployeeRoster() : Promise.resolve({ rows: [], profilesOk: true }),
     canManagePeople ? fetchAllUsers() : Promise.resolve([]),
     canManagePeople ? fetchDocumentTypes() : Promise.resolve([]),
     canManagePeople ? fetchIssuableCodes(user.role ?? '') : Promise.resolve(new Set<string>()),
@@ -49,8 +49,8 @@ export default async function HrZonePage() {
   // needs no separate permission branch beyond not asking at all when nobody can read it.
   const compensation: Record<string, import('@/lib/types').EmployeeCompensation[]> = {}
   if (canManagePeople) {
-    const histories = await Promise.all(roster.map((r) => fetchCompensationHistory(r.user.id)))
-    roster.forEach((r, i) => { compensation[r.user.id] = histories[i] })
+    const histories = await Promise.all(roster.rows.map((r) => fetchCompensationHistory(r.user.id)))
+    roster.rows.forEach((r, i) => { compensation[r.user.id] = histories[i] })
   }
 
   return (
@@ -63,7 +63,8 @@ export default async function HrZonePage() {
       showClockAdmin={showClockAdmin}
       isApprover={isApprover}
       pendingApprovalsCount={pendingLeave.length + pendingExpense.length}
-      roster={roster}
+      roster={roster.rows}
+      profilesOk={roster.profilesOk}
       compensation={compensation}
       canManagePeople={canManagePeople}
       managers={allUsers}

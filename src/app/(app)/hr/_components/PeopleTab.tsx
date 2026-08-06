@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveEmployeeProfile, saveCompensation } from '@/app/actions/employees'
 import {
@@ -27,13 +27,15 @@ function fieldValue(v: string | number | null | undefined): string {
  * receive an empty array.
  */
 export default function PeopleTab({
-  roster, compensation, canSeeCompensation, managers,
+  roster, compensation, canSeeCompensation, managers, profilesOk,
 }: {
   roster: EmployeeRow[]
   /** userId -> their compensation history, newest first. Empty for anyone not permitted. */
   compensation: Record<string, EmployeeCompensation[]>
   canSeeCompensation: boolean
   managers: UserRow[]
+  /** False when the profiles read failed — see fetchEmployeeRoster. */
+  profilesOk: boolean
 }) {
   const router = useRouter()
   const [selectedId, setSelectedId] = useState<string | null>(roster[0]?.user.id ?? null)
@@ -54,9 +56,34 @@ export default function PeopleTab({
   const history = selectedId ? (compensation[selectedId] ?? []) : []
   const current = history[0] ?? null
 
+  /*
+   * The form's defaults come from this snapshot, NOT straight from props.
+   *
+   * The inputs are uncontrolled, so an input the user hasn't typed into still tracks its
+   * defaultValue. If `roster` re-arrives with profile: null — which is what a failed profiles
+   * read produces — every untouched field goes blank mid-edit. That is the "everything got
+   * cleared" report, and someone then saving over the blanks writes the nulls for real.
+   *
+   * Snapshotting per selection means later prop churn cannot blank a form being filled in. It
+   * only re-reads when you pick a different person.
+   */
+  const [snapshot, setSnapshot] = useState<EmployeeRow['profile']>(selected?.profile ?? null)
+  useEffect(() => {
+    setSnapshot(roster.find((r) => r.user.id === selectedId)?.profile ?? null)
+    // Deliberately keyed on the selected person only — re-running on `roster` would reintroduce
+    // exactly the blanking this exists to prevent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId])
+
   function handleProfileSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!selected) return
+    // Belt and braces: if the profiles read failed, the form may be showing blanks that are not
+    // real data. Saving here is what turns a display glitch into permanent loss.
+    if (!profilesOk) {
+      setError('Profiles could not be loaded, so saving is disabled — reload before editing.')
+      return
+    }
     const fd = new FormData(e.currentTarget)
     setError(null); setSaved(false)
 
@@ -123,7 +150,7 @@ export default function PeopleTab({
     })
   }
 
-  const p = selected?.profile
+  const p = snapshot
 
   return (
     <div className={styles.peopleLayout}>
@@ -172,6 +199,12 @@ export default function PeopleTab({
             </div>
           </div>
 
+          {!profilesOk && (
+            <div className={styles.formError}>
+              Employee profiles could not be loaded, so the fields below may appear empty even
+              where data exists. Saving is disabled until you reload.
+            </div>
+          )}
           {error && <div className={styles.formError}>{error}</div>}
 
           <form onSubmit={handleProfileSubmit} key={selected.user.id}>
@@ -271,7 +304,7 @@ export default function PeopleTab({
 
             <div className={styles.formActions}>
               {saved && <span className={styles.savedNote}>Saved ✓</span>}
-              <button type="submit" className={styles.primaryBtn} disabled={isPending}>
+              <button type="submit" className={styles.primaryBtn} disabled={isPending || !profilesOk}>
                 {isPending ? 'Saving…' : 'Save profile'}
               </button>
             </div>

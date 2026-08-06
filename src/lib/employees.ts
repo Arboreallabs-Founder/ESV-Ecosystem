@@ -17,22 +17,43 @@ const STAFF_ROLES = ['admin', 'associate', 'general', 'hr']
 
 const PROFILE_SELECT = '*, reporting_manager:reporting_manager_id(name)'
 
-export const fetchEmployeeRoster = cache(async (): Promise<EmployeeRow[]> => {
+export type EmployeeRoster = {
+  rows: EmployeeRow[]
+  /**
+   * False when the profiles read failed.
+   *
+   * This distinction is load-bearing, not defensive coding. A failed read and "nobody has a
+   * profile yet" are indistinguishable once the error is dropped — both give an empty map — and
+   * the profile form then renders every field blank, which looks exactly like real data. Someone
+   * saves on top of that and the nulls are written for real. Callers must not treat a failure as
+   * empty data.
+   */
+  profilesOk: boolean
+}
+
+export const fetchEmployeeRoster = cache(async (): Promise<EmployeeRoster> => {
   const supabase = await createClient()
-  const [{ data: users }, { data: profiles }] = await Promise.all([
+  const [{ data: users }, { data: profiles, error: profilesError }] = await Promise.all([
     supabase.from('users').select('*').in('role', STAFF_ROLES).order('name'),
     supabase.from('employee_profiles').select(PROFILE_SELECT),
   ])
+
+  if (profilesError) {
+    // Loud, because the silent version of this destroyed a profile.
+    console.error('[employees] profiles read failed:', profilesError.message)
+  }
 
   const byUser = new Map<string, EmployeeProfile>()
   for (const p of (profiles ?? []) as unknown as EmployeeProfile[]) byUser.set(p.user_id, p)
 
   // Everyone on staff appears, with or without a profile — a person with no profile yet is the
   // normal starting state and the roster is where you go to fix that.
-  return (users ?? []).map((u) => ({
+  const rows = (users ?? []).map((u) => ({
     user: u as unknown as UserRow,
     profile: byUser.get((u as { id: string }).id) ?? null,
   }))
+
+  return { rows, profilesOk: !profilesError }
 })
 
 export const fetchEmployeeProfile = cache(async (userId: string): Promise<EmployeeProfile | null> => {
