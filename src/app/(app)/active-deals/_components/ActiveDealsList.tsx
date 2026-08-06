@@ -233,6 +233,13 @@ export default function ActiveDealsList({
                 <div className={styles.dealMeta}>
                   {deal.entry?.submitter_name && <span className={styles.metaPill}>{deal.entry.submitter_name}</span>}
                   <span className={styles.metaPill}>Accepted {formatDate(deal.created_at)}</span>
+                  {/* Only leads see this, and only when it is off — a chip on every visible deal
+                      would be noise, since visible is the norm. */}
+                  {canManage && deal.visible_to_partners === false && (
+                    <span className={styles.hiddenChip} title="Partners cannot see this deal in their portal">
+                      Hidden from partners
+                    </span>
+                  )}
                   {deal.entry?.sourced_via_partner && (
                     <span className={styles.partnerChip}>via {deal.entry.sourced_via_partner.name}</span>
                   )}

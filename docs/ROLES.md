@@ -234,6 +234,14 @@ Approvals below. This is not a user-facing escalations capability.
   edit an event they created but not one someone else made, and cannot pin — pinning is an admin
   decision, so `createEvent` forces `pinned: false` for them and `updateEvent` preserves the
   existing value rather than taking it from the form.
+- **Show/hide an active deal from partners**: Founder/Admin only (added 2026-08-06). Partners see
+  every active deal in the org by default; `active_deals.visible_to_partners` turns one off. It is
+  enforced in RLS via `entry_has_partner_visible_deal()`, which gates the partner read on
+  `pipeline_entries` — the path partners actually reach deals through. **Known gap:** a partner who
+  *sourced* the entry still reaches it through the separate "own sourced entries" policy, so hiding
+  is not yet absolute for that one partner. Closing it needs the name of the pre-existing partner
+  SELECT policy on `active_deals`, which is not in this repo's migration history.
+
 - **Delete/pin (Bulletin) / delete/pin/complete/attendee-manage (Events)**: Founder/Admin only —
   HR does not get this tier, matching the "create/edit, not delete" pattern used everywhere else.
 - **RSVP to an event**: any internal role, including HR — self only, never on someone else's behalf.

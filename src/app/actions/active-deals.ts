@@ -27,6 +27,7 @@ type ActiveDealListRow = {
   created_at: string
   deal_state: DealState | null
   logo_url: string | null
+  visible_to_partners?: boolean | null
   entry?: ActiveDealEntryListRow | ActiveDealEntryListRow[] | null
   categories?: Array<{ category?: DealCategoryRow | null }> | null
   field_values?: FieldValueRow[] | null
@@ -147,7 +148,7 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
   const { supabase, role } = await requireInternalOrPartner()
   const [dealsRes, catsRes] = await Promise.all([
     supabase.from('active_deals').select(`
-      id, pipeline_entry_id, created_at, deal_state, logo_url,
+      id, pipeline_entry_id, created_at, deal_state, logo_url, visible_to_partners,
       entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url))),
       categories:active_deal_categories(category:deal_categories(id, name, description, color, created_at, fields:deal_category_fields(*))),
       field_values:active_deal_field_values(field_id, value)
@@ -162,6 +163,7 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
       created_at: row.created_at,
       deal_state: (row.deal_state ?? 'active') as import('@/lib/types').DealState,
       logo_url: row.logo_url ?? null,
+      visible_to_partners: row.visible_to_partners !== false,
       entry: (() => {
         const e = first(row.entry)
         if (!e) {
@@ -844,4 +846,30 @@ export async function deleteInvestorFee(feeId: string) {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('active_deal_investor_fees').delete().eq('id', feeId)
   if (error) throw error
+}
+
+/**
+ * Show or hide a deal on the partner portal.
+ *
+ * Founder/admin only — associates can edit deals but this is a disclosure decision, which is a
+ * different kind of call from editing a field. RLS enforces the read side; this guards the write.
+ */
+export async function setDealPartnerVisibility(activeDealId: string, visible: boolean) {
+  const { supabase } = await requireAdmin()
+
+  const { data, error } = await supabase
+    .from('active_deals')
+    .update({ visible_to_partners: visible })
+    .eq('id', activeDealId)
+    .select('id')
+
+  if (error) throw error
+  // An UPDATE that RLS filters out succeeds having changed nothing, so the caller would be told
+  // their change saved when it had not.
+  if (!data || data.length === 0) {
+    throw new Error('That deal could not be updated — it may have been removed.')
+  }
+
+  revalidatePath('/active-deals')
+  revalidatePath('/portal')
 }

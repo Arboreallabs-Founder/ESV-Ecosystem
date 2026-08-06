@@ -34,6 +34,7 @@ type ActiveDealRow = {
   created_at: string
   deal_state: DealState | null
   logo_url: string | null
+  visible_to_partners?: boolean | null
   entry?: EntryRow | EntryRow[] | null
   categories?: Array<{ category?: DealCategoryRow | DealCategoryRow[] | null }> | null
   field_values?: FieldValueRow[] | null
@@ -66,6 +67,7 @@ const ACTIVE_DEAL_SELECT = `
   created_at,
   deal_state,
   logo_url,
+  visible_to_partners,
   entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, company_id, company:companies!company_id(id, name, logo_url), assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
   categories:active_deal_categories(
     category:deal_categories(
@@ -89,6 +91,8 @@ function shapeActiveDealRow(row: ActiveDealRow): ActiveDeal {
     pipeline_entry_id: row.pipeline_entry_id,
     created_at: row.created_at,
     deal_state: (row.deal_state ?? 'active') as DealState,
+    // Rows predating the column read as visible, matching the DB default.
+    visible_to_partners: row.visible_to_partners !== false,
     logo_url: row.logo_url ?? null,
     entry: {
       title: entry?.title ?? null,

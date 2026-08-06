@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { createOrLinkCompanyForActiveDeal, deleteActiveDeal, linkActiveDealToCompany, updateActiveDealDetails, updateDealState } from '@/app/actions/active-deals'
+import { createOrLinkCompanyForActiveDeal, deleteActiveDeal, linkActiveDealToCompany, setDealPartnerVisibility, updateActiveDealDetails, updateDealState } from '@/app/actions/active-deals'
 import { addAssignee, removeAssignee } from '@/app/actions/pipelines'
 import type { ActiveDeal, ActiveDealInvestor, ActiveDealInvestorStatus, ActiveDealUpdate, DealCategory, DealState, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
 import { ACTIVE_DEAL_INVESTOR_STATUSES, ACTIVE_DEAL_INVESTOR_STATUS_META, DEAL_STATES, DEAL_STATE_META, SERVICE_TYPE_LABELS } from '@/lib/types'
@@ -99,6 +99,8 @@ export default function ActiveDealPageClient({
 }) {
   const router = useRouter()
   const [dealState, setDealState] = useState<DealState>(deal.deal_state)
+  const [partnerVisible, setPartnerVisible] = useState(deal.visible_to_partners !== false)
+  const [visibilityPending, startVisibilityTransition] = useTransition()
   const [showEdit, setShowEdit] = useState(false)
   const [companyId, setCompanyId] = useState(deal.entry?.company_id ?? '')
   const [linkedCompany, setLinkedCompany] = useState<{ id: string; name: string } | null>(
@@ -109,10 +111,26 @@ export default function ActiveDealPageClient({
   const [linkPending, startLinkTransition] = useTransition()
   const [, startAssigneeTransition] = useTransition()
 
+  function handleTogglePartnerVisibility() {
+    const next = !partnerVisible
+    setPartnerVisible(next)
+    startVisibilityTransition(async () => {
+      try {
+        await setDealPartnerVisibility(deal.id, next)
+        router.refresh()
+      } catch (err) {
+        setPartnerVisible(!next)   // put the switch back if the server refused
+        alert(err instanceof Error ? err.message : String(err))
+      }
+    })
+  }
+
   const canEditState = !['franchise_partner', 'general'].includes(userRole)
   const canManageDeal = !['franchise_partner', 'general'].includes(userRole)
   const canAssignPeople = ['founder', 'admin'].includes(userRole)
   const canDeleteDeal = ['founder', 'admin'].includes(userRole)
+  // Showing a deal to partners is a disclosure decision, not an edit — leads only.
+  const canSetPartnerVisibility = ['founder', 'admin'].includes(userRole)
   const canViewInvestors = userRole !== 'general'
   // Mirrors the active_deal_updates INSERT policy: leaders, or whoever is running the mandate.
   const canPostUpdate = ['founder', 'admin'].includes(userRole)
@@ -248,6 +266,18 @@ export default function ActiveDealPageClient({
             >
               {DEAL_STATES.map((s) => <option key={s} value={s} style={{ color: 'var(--color-text)' }}>{DEAL_STATE_META[s].label}</option>)}
             </select>
+            {canSetPartnerVisibility && (
+              <button
+                className={partnerVisible ? styles.ghostBtn : styles.hiddenFromPartnersBtn}
+                onClick={handleTogglePartnerVisibility}
+                disabled={visibilityPending}
+                title={partnerVisible
+                  ? 'Partners can see this deal in their portal. Click to hide it.'
+                  : 'Hidden from the partner portal. Click to show it.'}
+              >
+                {partnerVisible ? 'Visible to partners' : 'Hidden from partners'}
+              </button>
+            )}
             {canManageDeal && <button className={styles.ghostBtn} onClick={() => setShowEdit(true)}>Edit deal</button>}
             {canDeleteDeal && (
               <button className={styles.dangerBtn} onClick={handleDeleteDeal} disabled={deletePending}>

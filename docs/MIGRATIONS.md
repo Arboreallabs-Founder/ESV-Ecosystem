@@ -151,3 +151,14 @@ would silently have handed them the announcement board too. So the grant is writ
 `WITH CHECK`, an associate could take their own event and convert it into an announcement.
 Editing is narrower than creating — an associate may fix an event they created (`created_by =
 auth.uid()`), not someone else's. Delete, pin, complete and attendee management stay founder/admin.
+
+### `20260828000000_deal_partner_visibility.sql`
+Adds `active_deals.visible_to_partners` (default **true**) so founders/admins can keep a deal off
+the partner portal. Default is true deliberately: partners can see everything today, so defaulting
+to false would empty their portal the moment the migration runs. The control is "hide this one",
+not "share this one".
+
+Enforced by gating `entry_has_partner_visible_deal()` inside the `pipeline_entries` partner policy
+rather than by adding a policy to `active_deals` — permissive policies are OR'd, so a new policy
+could only widen partner access, never narrow it. Partner *shares* are untouched: a share is money
+owed for a deal they brought in, and hiding a deal must not erase the record of it.

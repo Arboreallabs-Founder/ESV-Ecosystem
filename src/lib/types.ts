@@ -771,6 +771,8 @@ export type ActiveDeal = {
   created_at: string
   deal_state: DealState
   logo_url: string | null
+  /** False hides the deal from the partner portal. Internal roles always see it. */
+  visible_to_partners: boolean
   entry: {
     title: string | null
     submitter_name: string | null
