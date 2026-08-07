@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import type { Investor, InvestorContact, InvestmentStage, PortfolioEntry } from '@/lib/types'
 import {
-  INVESTMENT_STAGES, INVESTMENT_STAGE_LABELS, POC_EMPLOYMENT_LABELS,
-  SERVICE_TYPE_LABELS,
+  INVESTMENT_STAGES, INVESTMENT_STAGE_LABELS, POC_COVERAGE_LABELS, POC_EMPLOYMENT_LABELS,
+  SERVICE_TYPE_LABELS, pocCoverage,
 } from '@/lib/types'
 import {
-  addPortfolioEntry, deletePortfolioEntry, setContactEmployment,
-  setContactOutreach, setContactRank,
+  addPortfolioEntry, assignPocSearch, clearPocSearch, deletePortfolioEntry,
+  setContactEmployment, setContactOutreach, setContactRank,
 } from '@/app/actions/investor-profile'
 import panels from '@/app/_components/panels/panels.module.css'
 import profile from './investor-profile.module.css'
@@ -70,6 +70,7 @@ export default function InvestorProfile({
   }, [portfolio])
 
   const linked = portfolio.filter((p) => p.company_id).length
+  const coverage = pocCoverage(contacts)
 
   return (
     <div className={profile.page}>
@@ -96,6 +97,18 @@ export default function InvestorProfile({
       </header>
 
       {error && <div className={profile.error}>{error}</div>}
+
+      {/* The gap, and the way to act on it, in the same place. */}
+      {investor.service_type !== 'angel_investor' && coverage !== 'covered' && (
+        <PocGapBanner
+          investor={investor}
+          coverage={coverage}
+          canManage={canManage}
+          team={team}
+          pending={pending}
+          run={run}
+        />
+      )}
 
       <div className={panels.overview}>
         {/* ── Preferences ── */}
@@ -211,6 +224,63 @@ export default function InvestorProfile({
         pending={pending}
         run={run}
       />
+    </div>
+  )
+}
+
+function PocGapBanner({
+  investor, coverage, canManage, team, pending, run,
+}: {
+  investor: Investor
+  coverage: ReturnType<typeof pocCoverage>
+  canManage: boolean
+  team: Array<{ id: string; name: string }>
+  pending: boolean
+  run: (fn: () => Promise<unknown>) => void
+}) {
+  const [who, setWho] = useState('')
+  const searching = Boolean(investor.poc_search_task_id)
+
+  // The best lead the assignee has: who we knew and where they went.
+  const moved = (investor.contacts ?? [])
+    .filter((c) => c.employment_status === 'moved_on' && c.new_company)
+    .map((c) => `${c.name} → ${c.new_company}`)
+
+  return (
+    <div className={searching ? profile.gapBannerOn : profile.gapBanner}>
+      <div className={profile.gapText}>
+        <strong>{POC_COVERAGE_LABELS[coverage]}.</strong>{' '}
+        {coverage === 'none'
+          ? 'We have no contact on record for this fund.'
+          : coverage === 'all_left'
+            ? 'Everyone we knew here has moved on.'
+            : 'Nobody has checked whether these contacts are still there.'}
+        {moved.length > 0 && (
+          <span className={profile.gapLead}> Last known: {moved.join(', ')}.</span>
+        )}
+        {searching && <span className={profile.gapLead}> Someone is on it — see the task board.</span>}
+      </div>
+      {canManage && (
+        <div className={profile.gapActions}>
+          {searching ? (
+            <button className={profile.miniBtn} disabled={pending}
+              onClick={() => run(() => clearPocSearch(investor.id))}>
+              Call it off
+            </button>
+          ) : (
+            <>
+              <select className={profile.input} value={who} onChange={(e) => setWho(e.target.value)}>
+                <option value="">Assign someone to find one…</option>
+                {team.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
+              <button className={profile.primaryBtn} disabled={pending || !who}
+                onClick={() => run(() => assignPocSearch(investor.id, who))}>
+                Create task
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

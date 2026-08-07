@@ -14,6 +14,7 @@ export const fetchAllInvestors = cache(async (): Promise<Investor[]> => {
       birthday_md, birthday_year,
       excluded_sectors, connect_strength, stage_min, stage_max, stage_raw,
       ticket_currency, esv_poc_names, import_source,
+      poc_search_task_id, poc_search_started_at,
       esv_poc:users!esv_poc_id(name),
       esv_pocs:investor_poc_users(user:users(id, name, photo_url)),
       referred_by_partner:franchise_partners!referred_by_partner_id(name),
@@ -81,6 +82,7 @@ export const fetchInvestor = cache(async (id: string): Promise<Investor | null> 
       birthday_md, birthday_year,
       excluded_sectors, connect_strength, stage_min, stage_max, stage_raw,
       ticket_currency, esv_poc_names, import_source,
+      poc_search_task_id, poc_search_started_at,
       esv_pocs:investor_poc_users(user:users(id, name, photo_url)),
       referred_by_partner:franchise_partners!referred_by_partner_id(name),
       contacts:investor_contacts(

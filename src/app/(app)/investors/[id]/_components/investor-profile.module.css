@@ -42,7 +42,7 @@
   font-size: 0.8125rem;
 }
 .meta { color: var(--color-muted); }
-.link { color: var(--color-primary); text-decoration: none; }
+.link { color: var(--color-primary); text-decoration: none; overflow-wrap: anywhere; min-width: 0; }
 .link:hover { text-decoration: underline; }
 
 .typeBadge {
@@ -94,7 +94,7 @@
   letter-spacing: 0.06em;
   color: var(--color-muted);
 }
-.factValue { margin-top: 0.25rem; font-size: 0.9375rem; color: var(--color-text); }
+.factValue { margin-top: 0.25rem; font-size: 0.9375rem; color: var(--color-text); overflow-wrap: anywhere; }
 .factEmpty { margin-top: 0.25rem; font-size: 0.875rem; color: var(--color-muted); font-style: italic; }
 
 /* ── Tags ── */
@@ -281,3 +281,34 @@
   .addRow > * { width: 100%; }
   .editorRow { align-items: stretch; }
 }
+
+/* ── POC gap banner ───────────────────────────────────────────────────────
+   The gap and the way to act on it in the same place. Sits above everything
+   because a fund you cannot reach is not usable, whatever else is on the page. */
+.gapBanner, .gapBannerOn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  line-height: 1.55;
+}
+/* Nobody reachable. The words say which, so colour is emphasis. */
+.gapBanner {
+  border-left: 3px solid var(--color-accent);
+  background: rgba(213, 174, 143, 0.14);
+  color: var(--color-text);
+}
+/* A hunt is already under way — a state, not a problem. */
+.gapBannerOn {
+  border-left: 3px solid var(--color-primary);
+  background: rgba(var(--color-hover-rgb), 0.08);
+  color: var(--color-text);
+}
+.gapText { flex: 1; min-width: 240px; }
+.gapLead { color: var(--color-muted); }
+.gapActions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }

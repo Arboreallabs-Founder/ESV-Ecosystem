@@ -172,3 +172,94 @@ export async function setContactOutreach(contactId: string, input: {
   if (error) throw error
   if (data?.[0]) revalidate(data[0].investor_id as string)
 }
+
+// ── Finding a new POC ────────────────────────────────────────────────────────
+
+/**
+ * Put someone on finding a new contact at this fund.
+ *
+ * Creates a real Task on the existing board rather than a private to-do: the assignee already
+ * lives there, so it drives their alerts and shows up in their week. The alerts bell is fed by
+ * tasks assigned to you, which means this is the notification too.
+ */
+export async function assignPocSearch(
+  investorId: string,
+  assigneeId: string,
+  note?: string | null,
+): Promise<void> {
+  const { supabase, orgId, userId } = await requireInternal()
+  if (!assigneeId) throw new Error('Choose who is looking.')
+
+  const { data: inv, error: iErr } = await supabase
+    .from('investors')
+    .select('id, name, website, poc_search_task_id, contacts:investor_contacts(name, new_company, employment_status)')
+    .eq('id', investorId)
+    .single()
+  if (iErr) throw iErr
+
+  // Don't stack a second hunt on the same fund; replace any open one.
+  if (inv.poc_search_task_id) {
+    await supabase.from('tasks').delete().eq('id', inv.poc_search_task_id).eq('status', 'To Do')
+  }
+
+  // Who we used to know, and where they went — the most useful lead the assignee has, and the
+  // reason those 62 "moved to" records were worth importing.
+  const gone = ((inv.contacts ?? []) as any[])
+    .filter((c) => c.employment_status === 'moved_on')
+    .map((c) => `${c.name}${c.new_company ? ` (now at ${c.new_company})` : ''}`)
+
+  const description = [
+    `Find a current point of contact at ${inv.name}.`,
+    inv.website ? `Website: ${inv.website}` : null,
+    gone.length > 0
+      ? `\nWho we knew there, and where they went:\n${gone.map((g) => `• ${g}`).join('\n')}`
+      : '\nWe have no contact on record for this fund at all.',
+    note?.trim() ? `\nNote: ${note.trim()}` : null,
+    `\nAdd them on the fund's page and mark them Still there — the "needs a POC" flag clears itself.`,
+  ].filter(Boolean).join('\n')
+
+  const { data: task, error: tErr } = await supabase
+    .from('tasks')
+    .insert({
+      title: `Find a new POC — ${inv.name}`,
+      description,
+      assignee_id: assigneeId,
+      assigned_by_id: userId,
+      link_url: `/investors/${investorId}`,
+      priority: 'Medium',
+      status: 'To Do',
+      created_by: userId,
+      org_id: orgId,
+    })
+    .select('id')
+    .single()
+  if (tErr) throw tErr
+
+  await supabase
+    .from('investors')
+    .update({ poc_search_task_id: task.id, poc_search_started_at: new Date().toISOString() })
+    .eq('id', investorId)
+
+  revalidate(investorId)
+  revalidatePath('/tasks')
+}
+
+/** Call off the hunt — someone found a contact, or the fund is not worth chasing. */
+export async function clearPocSearch(investorId: string): Promise<void> {
+  const { supabase } = await requireInternal()
+  const { data: inv } = await supabase
+    .from('investors').select('poc_search_task_id').eq('id', investorId).single()
+  if (inv?.poc_search_task_id) {
+    await supabase
+      .from('tasks')
+      .update({ status: 'Done', completed_at: new Date().toISOString() })
+      .eq('id', inv.poc_search_task_id)
+      .neq('status', 'Done')
+  }
+  await supabase
+    .from('investors')
+    .update({ poc_search_task_id: null, poc_search_started_at: null })
+    .eq('id', investorId)
+  revalidate(investorId)
+  revalidatePath('/tasks')
+}

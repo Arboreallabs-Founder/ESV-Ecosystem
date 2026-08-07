@@ -1,7 +1,7 @@
 'use client'
 
 import type { Investor, ServiceType } from '@/lib/types'
-import { SERVICE_TYPE_LABELS } from '@/lib/types'
+import { pocCoverage, POC_COVERAGE_LABELS, SERVICE_TYPE_LABELS } from '@/lib/types'
 import { countryFlagCode } from '@/lib/countries'
 import styles from '../investors.module.css'
 
@@ -86,6 +86,7 @@ const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
 }
 
 export default function InvestorCard({ investor, onClick }: { investor: Investor; onClick: () => void }) {
+  const coverage = pocCoverage(investor.contacts)
   const ticket = formatTicket(investor.ticket_size_min, investor.ticket_size_max)
   const visibleSectors = investor.sectors.slice(0, 3)
   const extraSectors = investor.sectors.length - visibleSectors.length
@@ -111,6 +112,12 @@ export default function InvestorCard({ investor, onClick }: { investor: Investor
         >
           {SERVICE_TYPE_LABELS[investor.service_type]}
         </span>
+        {/* Funds only: an angel is their own contact, so "needs a POC" is meaningless for them. */}
+        {investor.service_type !== 'angel_investor' && coverage !== 'covered' && (
+          <span className={coverage === 'none' || coverage === 'all_left' ? styles.pocGap : styles.pocSoft}>
+            {POC_COVERAGE_LABELS[coverage]}
+          </span>
+        )}
       </div>
 
       {(investor.country || investor.stage) && (

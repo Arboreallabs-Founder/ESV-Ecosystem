@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { SERVICE_TYPE_LABELS } from '@/lib/types'
+import { pocCoverage, SERVICE_TYPE_LABELS } from '@/lib/types'
 import type { Investor, ServiceType } from '@/lib/types'
 import InvestorCard from './InvestorCard'
 import InvestorDetail from './InvestorDetail'
@@ -31,9 +31,12 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
   const [showForm, setShowForm] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [editTarget, setEditTarget] = useState<Investor | null>(null)
+  // Off by default. It is a work queue, not a lens you want on every time you open the page.
+  const [needsPocOnly, setNeedsPocOnly] = useState(false)
 
   const filtered = investors.filter((inv) => {
     if (activeTab !== 'all' && inv.service_type !== activeTab) return false
+    if (needsPocOnly && pocCoverage(inv.contacts) === 'covered') return false
     if (!search.trim()) return true
     const q = search.toLowerCase()
     return (
@@ -46,6 +49,12 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
       (inv.referred_by_partner?.name ?? '').toLowerCase().includes(q)
     )
   })
+
+  // Funds with nobody confirmed reachable — the gap worth working through, sized so it is not
+  // a vague worry.
+  const needsPoc = investors.filter(
+    (i) => i.service_type !== 'angel_investor' && pocCoverage(i.contacts) !== 'covered',
+  ).length
 
   function countFor(tab: Tab) {
     return tab === 'all'
@@ -87,6 +96,18 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
         value={activeTab}
         onChange={(v) => setActiveTab(v as Tab)}
       />
+
+      {/* The POC gap, sized. Derived from the contacts each time rather than stored, so it can
+          never be stale — and it disappears entirely once there is nothing to chase. */}
+      {isInternal && needsPoc > 0 && (
+        <button
+          className={needsPocOnly ? styles.pocFilterOn : styles.pocFilter}
+          onClick={() => setNeedsPocOnly(!needsPocOnly)}
+          aria-pressed={needsPocOnly}
+        >
+          {needsPocOnly ? '← All funds' : `${needsPoc} funds need a POC`}
+        </button>
+      )}
 
       {/* Search */}
       <div className={styles.searchWrap}>

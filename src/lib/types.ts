@@ -509,6 +509,9 @@ export type Investor = {
   /** Every ESV person who worked this fund, including those who have since left. */
   esv_poc_names: string[]
   import_source: string | null
+  /** Set while somebody is actively hunting for a new contact at this fund. */
+  poc_search_task_id: string | null
+  poc_search_started_at: string | null
   portfolio?: PortfolioEntry[]
   esv_poc?: { name: string } | null
   esv_pocs?: Array<{ id: string; name: string; photo_url: string | null }>
@@ -1473,4 +1476,31 @@ export type AttendanceStatement = {
   hr_note: string | null
   user?: { name: string; photo_url: string | null } | null
   lines: AttendanceLine[]
+}
+
+/**
+ * Whether a fund has anyone we can actually call.
+ *
+ * DERIVED from the contacts, never stored. A `needs_poc` column would be wrong the moment someone
+ * marks a contact active, and a stale flag on this is worse than none — it would send people to
+ * find a POC for a fund that already has one, or worse, not send them at all.
+ */
+export type PocCoverage = 'covered' | 'all_left' | 'unverified' | 'none'
+
+export const POC_COVERAGE_LABELS: Record<PocCoverage, string> = {
+  covered: 'Contact confirmed',
+  all_left: 'Needs a new POC',
+  unverified: 'POC unverified',
+  none: 'No POC at all',
+}
+
+export function pocCoverage(
+  contacts: Array<{ employment_status: string }> | null | undefined,
+): PocCoverage {
+  const cs = contacts ?? []
+  if (cs.length === 0) return 'none'
+  if (cs.some((c) => c.employment_status === 'active')) return 'covered'
+  // Somebody was there and has gone — that is a different job from never having checked.
+  if (cs.some((c) => c.employment_status === 'moved_on')) return 'all_left'
+  return 'unverified'
 }
