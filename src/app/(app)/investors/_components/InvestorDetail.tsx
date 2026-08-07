@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { deleteContact, getInvestorPortfolio } from '@/app/actions/investors'
 import { DEAL_STATE_META, SERVICE_TYPE_LABELS } from '@/lib/types'
+import { formatTicketRange } from '@/lib/format-money'
 import type { Investor, InvestorContact, InvestorPortfolioItem, ServiceType } from '@/lib/types'
 import { countryFlagCode } from '@/lib/countries'
 import ContactFormModal from './ContactFormModal'
@@ -14,17 +15,6 @@ function formatINR(amount: number) {
   return amount.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })
 }
 
-function formatTicket(min: number | null, max: number | null): string {
-  if (!min && !max) return '—'
-  function fmt(n: number) {
-    if (n >= 10000000) return `₹${(n / 10000000).toFixed(0)}Cr`
-    if (n >= 100000) return `₹${(n / 100000).toFixed(0)}L`
-    return `₹${n.toLocaleString('en-IN')}`
-  }
-  if (min && max) return `${fmt(min)} – ${fmt(max)}`
-  if (min) return `${fmt(min)}+`
-  return `Up to ${fmt(max!)}`
-}
 
 
 const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
@@ -160,7 +150,7 @@ export default function InvestorDetail({ investor, userRole, onClose, onDeleted 
               <div className={styles.detailField}>
                 <div className={styles.detailFieldLabel}>Ticket Size</div>
                 <div className={styles.detailFieldValue}>
-                  {formatTicket(investor.ticket_size_min, investor.ticket_size_max)}
+                  {formatTicketRange(investor.ticket_size_min, investor.ticket_size_max, investor.ticket_currency) ?? '—'}
                 </div>
               </div>
               {(investor.esv_pocs ?? []).length > 0 && (

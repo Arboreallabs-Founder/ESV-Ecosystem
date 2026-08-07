@@ -12,23 +12,13 @@ import {
   addPortfolioEntry, assignPocSearch, clearPocSearch, deletePortfolioEntry,
   setContactEmployment, setContactOutreach, setContactRank, setInvestorLogo, updateInvestorNotes,
 } from '@/app/actions/investor-profile'
+import { formatTicketRange } from '@/lib/format-money'
 import { personInitials as initials } from '@/app/_components/Avatar'
 import ContactFormModal from '../../_components/ContactFormModal'
 import InvestorFormModal from '../../_components/InvestorFormModal'
 import panels from '@/app/_components/panels/panels.module.css'
 import profile from './investor-profile.module.css'
 
-const fmtMoney = (n: number | null, cur: string | null) => {
-  if (n == null) return null
-  if (cur === 'INR') {
-    if (n >= 10_000_000) return `₹${(n / 10_000_000).toFixed(n % 10_000_000 ? 1 : 0)} Cr`
-    if (n >= 100_000) return `₹${(n / 100_000).toFixed(0)} L`
-    return `₹${n.toLocaleString('en-IN')}`
-  }
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(n % 1_000_000 ? 1 : 0)}M`
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(0)}K`
-  return `$${n.toLocaleString('en-US')}`
-}
 
 export default function InvestorProfile({
   investor, canManage, team, internalUsers, franchisePartners, userRole,
@@ -61,12 +51,10 @@ export default function InvestorProfile({
   const contacts = investor.contacts ?? []
   const portfolio = investor.portfolio ?? []
 
-  const ticket = useMemo(() => {
-    const lo = fmtMoney(investor.ticket_size_min, investor.ticket_currency)
-    const hi = fmtMoney(investor.ticket_size_max, investor.ticket_currency)
-    if (!lo) return null
-    return hi ? `${lo} – ${hi}` : lo
-  }, [investor])
+  const ticket = useMemo(
+    () => formatTicketRange(investor.ticket_size_min, investor.ticket_size_max, investor.ticket_currency),
+    [investor],
+  )
 
   const stageRange = investor.stage_min
     ? investor.stage_max && investor.stage_max !== investor.stage_min

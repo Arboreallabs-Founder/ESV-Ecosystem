@@ -1,6 +1,7 @@
 'use client'
 
 import type { Investor, ServiceType } from '@/lib/types'
+import { formatTicketRange } from '@/lib/format-money'
 import { pocCoverage, POC_COVERAGE_LABELS, SERVICE_TYPE_LABELS } from '@/lib/types'
 import { countryFlagCode } from '@/lib/countries'
 import styles from '../investors.module.css'
@@ -58,17 +59,6 @@ function ServiceTypeIcon({ type }: { type: ServiceType }) {
   }
 }
 
-function formatTicket(min: number | null, max: number | null): string {
-  if (!min && !max) return ''
-  function fmt(n: number) {
-    if (n >= 10000000) return `₹${(n / 10000000).toFixed(0)}Cr`
-    if (n >= 100000) return `₹${(n / 100000).toFixed(0)}L`
-    return `₹${n.toLocaleString('en-IN')}`
-  }
-  if (min && max) return `${fmt(min)} – ${fmt(max)}`
-  if (min) return `${fmt(min)}+`
-  return `Up to ${fmt(max!)}`
-}
 
 const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
   vc_fund: 'var(--color-primary)',
@@ -87,7 +77,7 @@ const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
 
 export default function InvestorCard({ investor, onClick }: { investor: Investor; onClick: () => void }) {
   const coverage = pocCoverage(investor.contacts)
-  const ticket = formatTicket(investor.ticket_size_min, investor.ticket_size_max)
+  const ticket = formatTicketRange(investor.ticket_size_min, investor.ticket_size_max, investor.ticket_currency)
   const visibleSectors = investor.sectors.slice(0, 3)
   const extraSectors = investor.sectors.length - visibleSectors.length
   const color = SERVICE_TYPE_COLOR[investor.service_type]
