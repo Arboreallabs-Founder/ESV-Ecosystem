@@ -10,8 +10,9 @@ import {
 } from '@/lib/types'
 import {
   addPortfolioEntry, assignPocSearch, clearPocSearch, deletePortfolioEntry,
-  setContactEmployment, setContactOutreach, setContactRank, updateInvestorNotes,
+  setContactEmployment, setContactOutreach, setContactRank, setInvestorLogo, updateInvestorNotes,
 } from '@/app/actions/investor-profile'
+import { personInitials as initials } from '@/app/_components/Avatar'
 import ContactFormModal from '../../_components/ContactFormModal'
 import InvestorFormModal from '../../_components/InvestorFormModal'
 import panels from '@/app/_components/panels/panels.module.css'
@@ -45,6 +46,8 @@ export default function InvestorProfile({
   const [editing, setEditing] = useState(false)
   const [editingNotes, setEditingNotes] = useState(false)
   const [draftNotes, setDraftNotes] = useState(investor.notes ?? '')
+  const [editingLogo, setEditingLogo] = useState(false)
+  const [draftLogo, setDraftLogo] = useState(investor.logo_url ?? '')
   const [pending, start] = useTransition()
 
   function run(fn: () => Promise<unknown>) {
@@ -88,7 +91,19 @@ export default function InvestorProfile({
       </div>
 
       <header className={profile.header}>
-        <div>
+        <div className={profile.identity}>
+          <button
+            type="button"
+            className={profile.logoWrap}
+            onClick={() => canManage && setEditingLogo(!editingLogo)}
+            title={canManage ? 'Set a logo' : investor.name}
+            disabled={!canManage}
+          >
+            {investor.logo_url
+              ? <img src={investor.logo_url} alt="" className={profile.logo} />
+              : <span className={profile.logoFallback}>{initials(investor.name)}</span>}
+          </button>
+          <div>
           <h1 className={profile.title}>{investor.name}</h1>
           <div className={profile.subRow}>
             <span className={profile.typeBadge}>{SERVICE_TYPE_LABELS[investor.service_type]}</span>
@@ -102,6 +117,7 @@ export default function InvestorProfile({
             {investor.connect_strength === 'warm' && <span className={profile.warm}>Warm</span>}
             {investor.connect_strength === 'cold' && <span className={profile.cold}>Cold</span>}
           </div>
+          </div>
         </div>
         {canManage && (
           <div className={profile.headActions}>
@@ -109,6 +125,30 @@ export default function InvestorProfile({
           </div>
         )}
       </header>
+
+      {editingLogo && canManage && (
+        <div className={profile.logoEditor}>
+          <input
+            className={profile.input}
+            style={{ flex: 1 }}
+            value={draftLogo}
+            onChange={(e) => setDraftLogo(e.target.value)}
+            placeholder="Paste an image URL — it gets copied to our own storage, so it cannot expire"
+            autoFocus
+          />
+          <button className={profile.primaryBtn} disabled={pending}
+            onClick={() => { run(() => setInvestorLogo(investor.id, draftLogo)); setEditingLogo(false) }}>
+            Save
+          </button>
+          {investor.logo_url && (
+            <button className={profile.miniBtn} disabled={pending}
+              onClick={() => { setDraftLogo(''); run(() => setInvestorLogo(investor.id, '')); setEditingLogo(false) }}>
+              Remove
+            </button>
+          )}
+          <button className={profile.miniBtn} onClick={() => setEditingLogo(false)}>Cancel</button>
+        </div>
+      )}
 
       {error && <div className={profile.error}>{error}</div>}
 

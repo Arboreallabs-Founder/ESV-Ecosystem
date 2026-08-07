@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
+import { isAlreadyCached, mirrorImage, ImageCacheError } from '@/lib/image-cache'
 import type { InvestmentStage, PocEmployment, PocRank } from '@/lib/types'
 
 /**
@@ -276,6 +277,46 @@ export async function updateInvestorNotes(investorId: string, notes: string): Pr
     .from('investors')
     .update({ notes: notes.trim() || null })
     .eq('id', investorId)
+  if (error) throw error
+  revalidate(investorId)
+}
+
+/**
+ * Set (or clear) an investor's logo.
+ *
+ * The pasted URL is mirrored into our own bucket rather than hotlinked, because social CDNs serve
+ * signed URLs that expire — a logo that works when you paste it and 404s a month later is worse
+ * than none, since nobody notices it went.
+ *
+ * A mirror failure is not fatal to the save. The source may be behind Cloudflare or simply slow,
+ * and refusing the whole edit for that would be the wrong trade — but the error is surfaced rather
+ * than swallowed, so nobody thinks a broken logo saved fine.
+ */
+export async function setInvestorLogo(investorId: string, url: string): Promise<void> {
+  const { supabase } = await requireInternal()
+  const raw = url.trim()
+
+  if (!raw) {
+    const { error } = await supabase.from('investors').update({ logo_url: null }).eq('id', investorId)
+    if (error) throw error
+    revalidate(investorId)
+    return
+  }
+
+  let stored = raw
+  // Already ours: re-mirroring would just copy our own bucket onto itself.
+  if (!isAlreadyCached(raw)) {
+    try {
+      stored = (await mirrorImage(supabase, raw, 'cached-images', `investors/${investorId}/logo`)).publicUrl
+    } catch (err) {
+      if (err instanceof ImageCacheError) {
+        throw new Error(`That image could not be fetched — ${err.message}`)
+      }
+      throw err
+    }
+  }
+
+  const { error } = await supabase.from('investors').update({ logo_url: stored }).eq('id', investorId)
   if (error) throw error
   revalidate(investorId)
 }

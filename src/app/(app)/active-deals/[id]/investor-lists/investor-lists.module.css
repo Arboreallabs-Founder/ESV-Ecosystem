@@ -337,3 +337,14 @@
   cursor: pointer;
 }
 .agnosticToggle:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+/* Small enough to scan past, big enough to recognise. contain, because these are wordmarks. */
+.rowLogo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-right: 0.4rem;
+  flex-shrink: 0;
+}

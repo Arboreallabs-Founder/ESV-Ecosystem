@@ -16,6 +16,7 @@ export type ListItem = {
     id: string
     name: string
     website: string | null
+    logo_url: string | null
     service_type: ServiceType
     sectors: string[]
     excluded_sectors: string[]
@@ -55,7 +56,7 @@ const LIST_SELECT = `
   items:investor_list_items(
     id, investor_id, approved, decided_at, founder_note, internal_note, sort_order,
     investor:investors!investor_id(
-      id, name, website, service_type, sectors, excluded_sectors, connect_strength,
+      id, name, website, logo_url, service_type, sectors, excluded_sectors, connect_strength,
       contacts:investor_contacts(name, email, rank, employment_status)
     )
   ),
@@ -130,7 +131,7 @@ export const fetchSelectableFunds = cache(async () => {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from('investors')
-    .select('id, name, website, service_type, sectors, excluded_sectors, connect_strength, stage_min, stage_max')
+    .select('id, name, website, logo_url, service_type, sectors, excluded_sectors, connect_strength, stage_min, stage_max')
     .neq('service_type', 'angel_investor')
     .order('name')
   if (error) {
@@ -146,6 +147,7 @@ export type FundSuggestion = {
   id: string
   name: string
   website: string | null
+  logo_url: string | null
   sectors: string[]
   excluded_sectors: string[]
   connect_strength: ConnectStrength
@@ -230,7 +232,7 @@ export const suggestFunds = cache(async (dealId: string): Promise<Suggestions> =
   const [{ data: funds }, { data: onLists }] = await Promise.all([
     supabase
       .from('investors')
-      .select('id, name, website, sectors, excluded_sectors, connect_strength, notes, contacts:investor_contacts(rank, employment_status)')
+      .select('id, name, website, logo_url, sectors, excluded_sectors, connect_strength, notes, contacts:investor_contacts(rank, employment_status)')
       .neq('service_type', 'angel_investor'),
     supabase
       .from('investor_list_items')
@@ -296,7 +298,8 @@ export const suggestFunds = cache(async (dealId: string): Promise<Suggestions> =
     }
 
     const row: FundSuggestion = {
-      id: f.id, name: f.name, website: f.website, sectors, excluded_sectors: excluded,
+      id: f.id, name: f.name, website: f.website, logo_url: f.logo_url ?? null,
+      sectors, excluded_sectors: excluded,
       connect_strength: f.connect_strength, notes: f.notes ?? null,
       score, band: isThematic ? 'thematic' : 'agnostic', reasons,
     }

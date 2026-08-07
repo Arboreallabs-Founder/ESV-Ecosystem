@@ -101,8 +101,11 @@ export default function InvestorCard({ investor, onClick }: { investor: Investor
     >
       <div className={styles.cardTop}>
         <div className={styles.cardTitleRow}>
-          <span className={styles.avatar} style={{ background: color + '1a', color }}>
-            <ServiceTypeIcon type={investor.service_type} />
+          <span className={styles.avatar} style={investor.logo_url ? undefined : { background: color + '1a', color }}>
+            {/* A real logo beats a generic type icon; the icon remains the fallback. */}
+            {investor.logo_url
+              ? <img src={investor.logo_url} alt="" className={styles.avatarImg} />
+              : <ServiceTypeIcon type={investor.service_type} />}
           </span>
           <div className={styles.cardTitle}>{investor.name}</div>
         </div>

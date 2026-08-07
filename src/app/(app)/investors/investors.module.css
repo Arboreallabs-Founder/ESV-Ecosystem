@@ -1246,3 +1246,6 @@
   overflow-wrap: break-word;
   min-width: 0;
 }
+
+/* contain, not cover — most of these are wordmarks, and cropping one to a circle loses the name. */
+.avatarImg { width: 100%; height: 100%; object-fit: contain; border-radius: inherit; }

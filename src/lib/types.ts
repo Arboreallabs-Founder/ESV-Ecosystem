@@ -511,6 +511,8 @@ export type Investor = {
   import_source: string | null
   /** Thesis and free text from the source sheets; also read when ranking thematic matches. */
   notes: string | null
+  /** Mirrored into our own bucket at save time — never a hotlink to a CDN that expires. */
+  logo_url: string | null
   /** Set while somebody is actively hunting for a new contact at this fund. */
   poc_search_task_id: string | null
   poc_search_started_at: string | null

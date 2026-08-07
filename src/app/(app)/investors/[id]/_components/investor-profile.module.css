@@ -358,3 +358,45 @@
   resize: vertical;
 }
 .notesActions { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
+
+/* ── Logo ── */
+.identity { display: flex; align-items: flex-start; gap: 0.9rem; min-width: 0; }
+
+.logoWrap {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-bg);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.logoWrap:disabled { cursor: default; }
+.logoWrap:not(:disabled):hover { border-color: var(--color-primary); }
+
+/* contain, not cover: a fund's wordmark cropped to a square is unreadable, and most of these are
+   wordmarks rather than icons. */
+.logo { width: 100%; height: 100%; object-fit: contain; }
+
+.logoFallback {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  color: var(--color-muted);
+}
+
+.logoEditor {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  padding: 0.7rem 0.85rem;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: rgba(var(--color-hover-rgb), 0.05);
+}

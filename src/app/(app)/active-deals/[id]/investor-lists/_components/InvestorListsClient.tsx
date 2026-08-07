@@ -15,6 +15,7 @@ type Fund = {
   id: string
   name: string
   website: string | null
+  logo_url: string | null
   sectors: string[]
   excluded_sectors: string[]
   connect_strength: 'warm' | 'cold' | 'unknown'
@@ -273,6 +274,7 @@ The founder has already answered this list. Their answer will be discarded and c
                     return (
                       <tr key={item.id} className={!item.approved && list.responded_at ? styles.declinedRow : undefined}>
                         <td>
+                          {inv?.logo_url && <img src={inv.logo_url} alt="" className={styles.rowLogo} />}
                           {inv
                             ? <Link href={`/investors/${inv.id}`} className={styles.link}>{inv.name}</Link>
                             : <span className={styles.muted}>Removed</span>}
@@ -367,6 +369,7 @@ The founder has already answered this list. Their answer will be discarded and c
                           const n = new Set(p); n.has(f.id) ? n.delete(f.id) : n.add(f.id); return n
                         })}
                       />
+                      {f.logo_url && <img src={f.logo_url} alt="" className={styles.rowLogo} />}
                       <span className={styles.resultName}>{f.name}</span>
                       <span className={styles.resultMeta}>{f.sectors.slice(0, 3).join(', ')}</span>
                       {f.connect_strength === 'warm' && <span className={styles.warm}>Warm</span>}
@@ -497,6 +500,7 @@ function SuggestGroup({
                 const n = new Set(p); n.has(f.id) ? n.delete(f.id) : n.add(f.id); return n
               })}
             />
+            {f.logo_url && <img src={f.logo_url} alt="" className={styles.rowLogo} />}
             <span className={styles.resultName}>{f.name}</span>
             {/* The reason, in words. A ranked list nobody can interrogate is not usable. */}
             <span className={styles.resultMeta}>{f.reasons.join(' · ')}</span>

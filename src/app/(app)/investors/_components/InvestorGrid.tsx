@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { pocCoverage, SERVICE_TYPE_LABELS } from '@/lib/types'
 import type { Investor, ServiceType } from '@/lib/types'
@@ -19,8 +19,16 @@ type Props = {
   franchisePartners: Array<{ id: string; name: string }>
 }
 
-const ALL_TABS = ['all', 'vc_fund', 'angel_fund', 'family_office', 'angel_investor'] as const
-type Tab = (typeof ALL_TABS)[number]
+/**
+ * Tabs are DERIVED from the data, not a fixed list.
+ *
+ * The hard-coded five hid 23 investors: merchant banks, PE funds, accelerators, debt funds and a
+ * corporate VC arm had no tab at all and could only be reached by guessing a search term. A fixed
+ * list goes stale the moment a new service type is used, and nothing tells you it has.
+ *
+ * Types with no investors are left out rather than shown at zero — an empty tab is a dead end.
+ */
+type Tab = 'all' | ServiceType
 
 export default function InvestorGrid({ investors, userRole, canManage = true, internalUsers, franchisePartners }: Props) {
   const router = useRouter()
@@ -33,6 +41,13 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
   const [editTarget, setEditTarget] = useState<Investor | null>(null)
   // Off by default. It is a work queue, not a lens you want on every time you open the page.
   const [needsPocOnly, setNeedsPocOnly] = useState(false)
+
+  // Biggest groups first: the tab you want is usually the one with the most in it.
+  const presentTabs = useMemo(() => {
+    const counts = new Map<ServiceType, number>()
+    for (const i of investors) counts.set(i.service_type, (counts.get(i.service_type) ?? 0) + 1)
+    return ['all' as Tab, ...[...counts.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t as Tab)]
+  }, [investors])
 
   const filtered = investors.filter((inv) => {
     if (activeTab !== 'all' && inv.service_type !== activeTab) return false
@@ -83,7 +98,7 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
 
       {/* Tabs */}
       <FilterTabs
-        tabs={ALL_TABS.map((tab) => ({
+        tabs={presentTabs.map((tab) => ({
           value: tab,
           label: tab === 'all' ? 'All' : SERVICE_TYPE_LABELS[tab as ServiceType],
           count: countFor(tab),
