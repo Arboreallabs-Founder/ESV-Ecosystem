@@ -1347,3 +1347,72 @@ export type PartnerCompany = {
   assignee?: { name: string | null; photo_url: string | null } | null
   coordinator?: { name: string | null } | null
 }
+
+// ── Attendance statements (monthly, HR → employee approval) ──────────────────
+
+export const ATTENDANCE_STATUSES = ['draft', 'sent', 'approved', 'disputed', 'locked'] as const
+export type AttendanceStatus = typeof ATTENDANCE_STATUSES[number]
+
+export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
+  draft: 'Draft',
+  sent: 'Awaiting approval',
+  approved: 'Approved',
+  disputed: 'Disputed',
+  locked: 'Locked for payroll',
+}
+
+export const ATTENDANCE_LINE_TYPES = [
+  'late_login', 'half_day', 'wfh', 'no_punch_out', 'leave',
+  'saturday_online', 'saturday_offline', 'saturday_leave',
+  'google_form', 'event', 'other',
+] as const
+export type AttendanceLineType = typeof ATTENDANCE_LINE_TYPES[number]
+
+// Wording follows the sheet HR already uses, so nobody has to learn a new vocabulary.
+export const ATTENDANCE_LINE_LABELS: Record<AttendanceLineType, string> = {
+  late_login: 'Late login',
+  half_day: 'Half day',
+  wfh: 'Work from home',
+  no_punch_out: 'No punch out',
+  leave: 'Leave',
+  saturday_online: 'Saturday — online',
+  saturday_offline: 'Saturday — in office',
+  saturday_leave: 'Saturday — on leave',
+  google_form: 'Google form',
+  event: 'Event attended',
+  other: 'Other',
+}
+
+/** Types the app can fill in from its own records. Everything else is HR's to enter. */
+export const ATTENDANCE_AUTO_TYPES: AttendanceLineType[] = ['leave', 'wfh', 'event']
+
+export type AttendanceLine = {
+  id: string
+  statement_id: string
+  entry_date: string
+  line_type: AttendanceLineType
+  source: 'auto' | 'manual'
+  detail: string | null
+  leave_days: number
+  waived: boolean
+  waived_reason: string | null
+}
+
+export type AttendanceStatement = {
+  id: string
+  user_id: string
+  period_month: string
+  status: AttendanceStatus
+  sent_at: string | null
+  approved_at: string | null
+  disputed_at: string | null
+  dispute_note: string | null
+  resolved_at: string | null
+  resolution_note: string | null
+  locked_at: string | null
+  locked_without_approval: boolean
+  deduction_note: string | null
+  hr_note: string | null
+  user?: { name: string; photo_url: string | null } | null
+  lines: AttendanceLine[]
+}

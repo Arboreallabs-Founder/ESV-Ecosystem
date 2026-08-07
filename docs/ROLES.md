@@ -242,6 +242,12 @@ Approvals below. This is not a user-facing escalations capability.
   is not yet absolute for that one partner. Closing it needs the name of the pre-existing partner
   SELECT policy on `active_deals`, which is not in this repo's migration history.
 
+- **Attendance statements** (`/attendance`, added 2026-08-07): Founder/Admin/HR compile, send, lock
+  and resolve disputes — the same set that decides leave requests. Every other internal role sees
+  only their own statements, and only once sent (a draft is HR's working copy). The employee can
+  approve or dispute their own; a dispute needs a reason. Approval is **required but not blocking** —
+  a month can be locked for payroll unapproved, and the statement records that it was.
+
 - **Delete/pin (Bulletin) / delete/pin/complete/attendee-manage (Events)**: Founder/Admin only —
   HR does not get this tier, matching the "create/edit, not delete" pattern used everywhere else.
 - **RSVP to an event**: any internal role, including HR — self only, never on someone else's behalf.

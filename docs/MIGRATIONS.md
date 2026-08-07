@@ -162,3 +162,22 @@ Enforced by gating `entry_has_partner_visible_deal()` inside the `pipeline_entri
 rather than by adding a policy to `active_deals` — permissive policies are OR'd, so a new policy
 could only widen partner access, never narrow it. Partner *shares* are untouched: a share is money
 owed for a deal they brought in, and hiding a deal must not erase the record of it.
+
+### `20260829000000_attendance_statements.sql`
+Monthly attendance statements — the app version of the sheet HR sends on WhatsApp before payroll.
+`attendance_statements` (one per person per month) plus `attendance_statement_lines` (one row per
+exception, the way the sheet works).
+
+The load-bearing decision is that a statement is a **snapshot, not a live view**. Lines are rows,
+not a query over `leave_requests`; if it recomputed on read, a leave approved after the fact would
+silently change what someone already approved and the approval would mean nothing. Auto lines are
+copied in when HR pulls them and can only be re-pulled while the statement is still editable.
+
+`source` ('auto' | 'manual') is stored because it is shown: leave, WFH and events come from the
+app's records, while late logins, missed punch-outs, half days and Saturday attendance have no
+source here — nothing records a punch, `hr_clock_settings` only defines the windows. Someone being
+asked to approve a deduction should know which lines a person typed.
+
+RLS: managers are `founder/admin/hr` via `is_attendance_manager()` — the same set that already
+decides leave requests, rather than a third definition of "lead". An employee reads their own
+statement but **never a draft**, which is HR's working copy. Locked statements cannot be deleted.

@@ -204,6 +204,14 @@ const NAV_ITEMS: NavEntry[] = [
     icon: <Icon d="M12 4.5v15m7.5-7.5h-15" d2="M3.75 20.25h16.5a1.5 1.5 0 0 0 1.5-1.5V5.25a1.5 1.5 0 0 0-1.5-1.5H3.75a1.5 1.5 0 0 0-1.5 1.5v13.5a1.5 1.5 0 0 0 1.5 1.5Z" />,
   },
   {
+    href: '/attendance',
+    // Everyone internal: managers get the whole month here, everyone else their own statement.
+    label: 'Attendance',
+    roles: ['founder', 'admin', 'associate', 'general', 'hr'],
+    section: 'Team',
+    icon: <Icon d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />,
+  },
+  {
     href: '/approvals',
     label: 'Approvals',
     roles: ['founder', 'admin', 'hr'],
