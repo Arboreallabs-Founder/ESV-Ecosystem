@@ -389,7 +389,9 @@ export default function InvestorFormModal({
           )}
 
           <InlineSection icon={<BuildingIcon />} title="Sectors">
-            <TagSelect options={SECTOR_OPTIONS} value={sectors} onChange={setSectors} placeholder="Search sectors&#8230;" />
+            {/* Pick-only. Free text is how "Fintech", "FinTech" and "Health tech" all came to exist,
+                  and nothing matched across them. */}
+            <TagSelect options={SECTOR_OPTIONS} value={sectors} onChange={setSectors} placeholder="Search sectors&#8230;" allowCustom={false} />
           </InlineSection>
 
           <div className={`${styles.formSection} ${styles.formInlinePair}`}>

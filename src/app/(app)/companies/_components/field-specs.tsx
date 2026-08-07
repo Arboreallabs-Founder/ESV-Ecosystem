@@ -11,7 +11,12 @@ import TagSelect from '@/app/_components/TagSelect'
 import styles from '../companies.module.css'
 
 export type FieldType = 'text' | 'number' | 'percent' | 'textarea' | 'date' | 'tags' | 'status' | 'user' | 'country'
-export type Spec = { key: keyof CompanyPatch; label: string; type?: FieldType; tagOptions?: string[] }
+export type Spec = {
+  key: keyof CompanyPatch; label: string; type?: FieldType; tagOptions?: string[]
+  /** Pick-only. Set on sectors: free text is what let three vocabularies grow, and a company
+   *  tagged "Defense" against funds that say "Defence" matches nothing. */
+  strictTags?: boolean
+}
 
 export function initValue(company: Company, spec: Spec): string {
   const v = (company as Record<string, unknown>)[spec.key as string]
@@ -32,7 +37,7 @@ export const OVERVIEW_SPECS: Spec[] = [
   { key: 'logo_url', label: 'Logo URL' }, { key: 'one_liner', label: 'One-liner' }, { key: 'description', label: 'Description', type: 'textarea' },
   { key: 'hq_city', label: 'HQ city' }, { key: 'hq_country', label: 'HQ country', type: 'country' }, { key: 'founded_date', label: 'Founded', type: 'date' },
   { key: 'incorporation_type', label: 'Incorporation type' }, { key: 'incorporation_no', label: 'Incorporation / CIN' },
-  { key: 'sectors', label: 'Sectors', type: 'tags', tagOptions: SECTOR_OPTIONS }, { key: 'stage', label: 'Stage' }, { key: 'business_model', label: 'Business model' },
+  { key: 'sectors', label: 'Sectors', type: 'tags', tagOptions: SECTOR_OPTIONS, strictTags: true }, { key: 'stage', label: 'Stage' }, { key: 'business_model', label: 'Business model' },
   { key: 'status', label: 'Status', type: 'status' }, { key: 'tags', label: 'Tags', type: 'tags' },
   { key: 'meta_tags', label: 'Meta-tags (themes for investor matching)', type: 'tags', tagOptions: THESIS_TAG_OPTIONS },
   { key: 'esv_poc_id', label: 'ESV point of contact', type: 'user' },
@@ -90,6 +95,7 @@ export function SpecInput({ spec, value, onChange, team }: { spec: Spec; value: 
         value={arr}
         onChange={(vals) => onChange(vals.join(', '))}
         placeholder={`Search ${spec.label.toLowerCase()}…`}
+        allowCustom={!spec.strictTags}
       />
     )
   }

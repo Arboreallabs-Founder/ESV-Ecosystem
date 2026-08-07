@@ -6,13 +6,27 @@ export const STAGE_OPTIONS = [
   'Pre-Seed', 'Seed', 'Bridge', 'Series A', 'Series B', 'Series C', 'Series D+', 'Growth', 'Pre-IPO',
 ]
 
+/**
+ * The ONE sector vocabulary. Companies, investors and portfolio companies all use this list.
+ *
+ * There were three. The picker said "Fintech", investors said "FinTech", companies said
+ * "Health tech" — same idea, three spellings, and nothing matched across them, so an investor list
+ * built for a defence deal found no defence funds. Free text is what let them diverge: the picker
+ * has always existed, but it accepted anything typed past it.
+ *
+ * Compact style ("FinTech", "HealthTech") rather than spaced, because 85 portfolio rows and every
+ * imported fund exclusion are already written that way and rewriting them is the larger risk.
+ *
+ * Adding a sector: add it here, and add any old spelling to ALIASES in src/lib/sector-aliases.ts so
+ * existing records keep resolving.
+ */
 export const SECTOR_OPTIONS = [
-  'Fintech', 'SaaS / Enterprise Software', 'E-commerce', 'Consumer / D2C', 'Healthtech', 'Edtech',
-  'Agritech', 'Deeptech', 'AI / ML', 'Climate Tech / Cleantech', 'Mobility / EV', 'Logistics & Supply Chain',
-  'Foodtech', 'Proptech', 'Gaming', 'Media & Entertainment', 'Cybersecurity', 'Web3 / Crypto',
-  'Biotech / Pharma', 'Manufacturing / Industrial', 'Retail', 'Travel & Hospitality', 'HR Tech',
-  'Legal Tech', 'InsurTech', 'Space Tech', 'Robotics', 'Renewable Energy', 'B2B Marketplace',
-  'Consumer Marketplace', 'Social', 'Devtools / Infra',
+  'Agnostic',
+  'AgriTech', 'AI/ML', 'AR/VR', 'B2B', 'Beauty', 'BioTech', 'ClimateTech', 'Consumer',
+  'Cybersecurity', 'D2C', 'DeepTech', 'Defence', 'Drones', 'E-commerce', 'EdTech', 'Energy',
+  'EV & Mobility', 'Fashion', 'FinTech', 'FoodTech', 'Gaming', 'Hardware', 'HealthTech', 'HRTech',
+  'Infrastructure', 'IoT', 'LegalTech', 'Logistics', 'Manufacturing', 'Marketplace', 'Media',
+  'Real Estate', 'Retail', 'Robotics', 'SaaS', 'SpaceTech', 'Sports', 'Travel', 'Web3',
 ]
 
 export const BUSINESS_TYPE_OPTIONS = [
