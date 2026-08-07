@@ -29,17 +29,25 @@ export default async function InvestorProfilePage({
 
   const canManage = ['founder', 'admin', 'associate', 'hr'].includes(user.role ?? '')
   const supabase = await createClient()
-  const { data: team } = await supabase
-    .from('users')
-    .select('id, name')
-    .in('role', ['founder', 'admin', 'associate', 'general', 'hr'])
-    .order('name')
+  const [{ data: team }, { data: internalUsers }, { data: partners }] = await Promise.all([
+    supabase.from('users').select('id, name')
+      .in('role', ['founder', 'admin', 'associate', 'general', 'hr']).order('name'),
+    // The edit form needs the same option lists the grid gives it, or its dropdowns come up empty.
+    supabase.from('users').select('id, name')
+      .in('role', ['founder', 'admin', 'associate']).order('name'),
+    ['founder', 'admin', 'hr'].includes(user.role ?? '')
+      ? supabase.from('franchise_partners').select('id, name').order('name')
+      : Promise.resolve({ data: [] }),
+  ])
 
   return (
     <InvestorProfile
       investor={investor}
       canManage={canManage}
       team={(team ?? []) as Array<{ id: string; name: string }>}
+      internalUsers={(internalUsers ?? []) as Array<{ id: string; name: string }>}
+      franchisePartners={(partners ?? []) as Array<{ id: string; name: string }>}
+      userRole={user.role ?? 'associate'}
     />
   )
 }

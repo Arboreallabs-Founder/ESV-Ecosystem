@@ -10,9 +10,10 @@ import {
 } from '@/lib/types'
 import {
   addPortfolioEntry, assignPocSearch, clearPocSearch, deletePortfolioEntry,
-  setContactEmployment, setContactOutreach, setContactRank,
+  setContactEmployment, setContactOutreach, setContactRank, updateInvestorNotes,
 } from '@/app/actions/investor-profile'
 import ContactFormModal from '../../_components/ContactFormModal'
+import InvestorFormModal from '../../_components/InvestorFormModal'
 import panels from '@/app/_components/panels/panels.module.css'
 import profile from './investor-profile.module.css'
 
@@ -29,15 +30,21 @@ const fmtMoney = (n: number | null, cur: string | null) => {
 }
 
 export default function InvestorProfile({
-  investor, canManage, team,
+  investor, canManage, team, internalUsers, franchisePartners, userRole,
 }: {
   investor: Investor
   canManage: boolean
   team: Array<{ id: string; name: string }>
+  internalUsers: Array<{ id: string; name: string }>
+  franchisePartners: Array<{ id: string; name: string }>
+  userRole: string
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
   const [addingContact, setAddingContact] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editingNotes, setEditingNotes] = useState(false)
+  const [draftNotes, setDraftNotes] = useState(investor.notes ?? '')
   const [pending, start] = useTransition()
 
   function run(fn: () => Promise<unknown>) {
@@ -96,6 +103,11 @@ export default function InvestorProfile({
             {investor.connect_strength === 'cold' && <span className={profile.cold}>Cold</span>}
           </div>
         </div>
+        {canManage && (
+          <div className={profile.headActions}>
+            <button className={profile.miniBtn} onClick={() => setEditing(true)}>Edit fund</button>
+          </div>
+        )}
       </header>
 
       {error && <div className={profile.error}>{error}</div>}
@@ -164,6 +176,47 @@ export default function InvestorProfile({
         </section>
 
         <div className={panels.overviewSide}>
+          {/* ── Notes / thesis ──
+               The fund's own words. Not a tag, and not something the structured fields can hold —
+               it is also where thematic matching reads from and where the ticket sizes the source
+               never gave a currency for are parked. */}
+          <section className={panels.panel}>
+            <div className={panels.panelHead}>
+              <h2 className={panels.panelTitle}>Notes & thesis</h2>
+              {canManage && !editingNotes && (
+                <button className={panels.panelLink} onClick={() => setEditingNotes(true)}>
+                  {investor.notes ? 'Edit' : 'Add'}
+                </button>
+              )}
+            </div>
+            {editingNotes ? (
+              <>
+                <textarea
+                  className={profile.notesArea}
+                  value={draftNotes}
+                  onChange={(e) => setDraftNotes(e.target.value)}
+                  rows={8}
+                  placeholder="Thesis, cheque structure, fund size, anything the tags cannot hold."
+                  autoFocus
+                />
+                <div className={profile.notesActions}>
+                  <button className={profile.primaryBtn} disabled={pending}
+                    onClick={() => { run(() => updateInvestorNotes(investor.id, draftNotes)); setEditingNotes(false) }}>
+                    Save
+                  </button>
+                  <button className={profile.miniBtn}
+                    onClick={() => { setDraftNotes(investor.notes ?? ''); setEditingNotes(false) }}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : investor.notes ? (
+              <p className={profile.notes}>{investor.notes}</p>
+            ) : (
+              <div className={panels.chartEmpty}>Nothing recorded.</div>
+            )}
+          </section>
+
           {/* ── Portfolio rollup ── */}
           <section className={panels.panel}>
             <div className={panels.panelHead}>
@@ -234,6 +287,18 @@ export default function InvestorProfile({
           </div>
         )}
       </section>
+
+      {editing && (
+        <InvestorFormModal
+          mode="edit"
+          initial={investor}
+          internalUsers={internalUsers}
+          franchisePartners={franchisePartners}
+          userRole={userRole}
+          onClose={() => setEditing(false)}
+          onSaved={() => { setEditing(false); router.refresh() }}
+        />
+      )}
 
       {addingContact && (
         <ContactFormModal

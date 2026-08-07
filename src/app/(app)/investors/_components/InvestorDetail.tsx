@@ -46,11 +46,10 @@ type Props = {
   investor: Investor
   userRole: string
   onClose: () => void
-  onEdit: () => void
   onDeleted: () => void
 }
 
-export default function InvestorDetail({ investor, userRole, onClose, onEdit, onDeleted }: Props) {
+export default function InvestorDetail({ investor, userRole, onClose, onDeleted }: Props) {
   const router = useRouter()
   const [contacts, setContacts] = useState<InvestorContact[]>(investor.contacts ?? [])
   const [contactModal, setContactModal] = useState<{ mode: 'create' } | { mode: 'edit'; contact: InvestorContact } | null>(null)
@@ -100,13 +99,19 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
             </span>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-            {/* The overlay stays the quick look; the portfolio and POC audit need a page. */}
-            <Link href={`/investors/${investor.id}`} className={styles.detailActionBtn}
-              style={{ textDecoration: 'none' }}>
-              Full profile
-            </Link>
-            {canEdit && (
-              <button className={styles.detailActionBtn} onClick={onEdit}>Edit</button>
+            {/* Editing happens on the full profile: it has the notes, the portfolio and the POC
+                audit, which a modal over a grid cannot show. One destination rather than two
+                half-views of the same fund. */}
+            {canEdit ? (
+              <Link href={`/investors/${investor.id}`} className={styles.detailActionBtn}
+                style={{ textDecoration: 'none' }}>
+                Edit / full profile
+              </Link>
+            ) : (
+              <Link href={`/investors/${investor.id}`} className={styles.detailActionBtn}
+                style={{ textDecoration: 'none' }}>
+                Full profile
+              </Link>
             )}
             {canManage && (
               <button

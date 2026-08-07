@@ -509,6 +509,8 @@ export type Investor = {
   /** Every ESV person who worked this fund, including those who have since left. */
   esv_poc_names: string[]
   import_source: string | null
+  /** Thesis and free text from the source sheets; also read when ranking thematic matches. */
+  notes: string | null
   /** Set while somebody is actively hunting for a new contact at this fund. */
   poc_search_task_id: string | null
   poc_search_started_at: string | null

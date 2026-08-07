@@ -330,3 +330,31 @@
   text-underline-offset: 2px;
   cursor: pointer;
 }
+
+.headActions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
+/* Notes are prose, so they get prose treatment: preserved line breaks from the source sheets,
+   and a reading measure rather than the full panel width. */
+.notes {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.65;
+  color: var(--color-text);
+  white-space: pre-wrap;
+  max-width: 68ch;
+}
+
+.notesArea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.6;
+  outline: none;
+  resize: vertical;
+}
+.notesActions { display: flex; gap: 0.5rem; margin-top: 0.6rem; }

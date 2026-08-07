@@ -263,3 +263,19 @@ export async function clearPocSearch(investorId: string): Promise<void> {
   revalidate(investorId)
   revalidatePath('/tasks')
 }
+
+/**
+ * The fund's notes — its thesis, cheque structure, and anything else in prose.
+ *
+ * Worth editing in place rather than only arriving via import: this is where the ticket sizes the
+ * source never gave a currency for are parked for review, and where thematic matching reads from.
+ */
+export async function updateInvestorNotes(investorId: string, notes: string): Promise<void> {
+  const { supabase } = await requireInternal()
+  const { error } = await supabase
+    .from('investors')
+    .update({ notes: notes.trim() || null })
+    .eq('id', investorId)
+  if (error) throw error
+  revalidate(investorId)
+}

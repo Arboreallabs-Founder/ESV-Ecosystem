@@ -67,11 +67,6 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
     setShowForm(true)
   }
 
-  function openEdit(inv: Investor) {
-    setEditTarget(inv)
-    setShowForm(true)
-  }
-
   return (
     <div className={styles.page}>
       {/* Header */}
@@ -139,7 +134,6 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
           investor={selected}
           userRole={userRole}
           onClose={() => setSelected(null)}
-          onEdit={() => { openEdit(selected); setSelected(null) }}
           onDeleted={() => setSelected(null)}
         />
       )}
