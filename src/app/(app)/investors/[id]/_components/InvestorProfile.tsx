@@ -12,6 +12,7 @@ import {
   addPortfolioEntry, assignPocSearch, clearPocSearch, deletePortfolioEntry,
   setContactEmployment, setContactOutreach, setContactRank,
 } from '@/app/actions/investor-profile'
+import ContactFormModal from '../../_components/ContactFormModal'
 import panels from '@/app/_components/panels/panels.module.css'
 import profile from './investor-profile.module.css'
 
@@ -36,6 +37,7 @@ export default function InvestorProfile({
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
+  const [addingContact, setAddingContact] = useState(false)
   const [pending, start] = useTransition()
 
   function run(fn: () => Promise<unknown>) {
@@ -194,12 +196,29 @@ export default function InvestorProfile({
       <section className={panels.panel} style={{ marginTop: '1rem' }}>
         <div className={panels.panelHead}>
           <h2 className={panels.panelTitle}>Who to contact</h2>
-          <span className={panels.panelNote}>
-            {contacts.filter((c) => c.employment_status === 'active').length} confirmed still there
+          <span className={profile.headRight}>
+            <span className={panels.panelNote}>
+              {contacts.filter((c) => c.employment_status === 'active').length} confirmed still there
+            </span>
+            {canManage && (
+              <button className={profile.primaryBtn} onClick={() => setAddingContact(true)}>
+                + Add contact
+              </button>
+            )}
           </span>
         </div>
         {contacts.length === 0 ? (
-          <div className={panels.chartEmpty}>No contacts recorded for this fund.</div>
+          <div className={panels.chartEmpty}>
+            No contacts recorded for this fund.
+            {canManage && (
+              <>
+                {' '}
+                <button className={profile.linkBtn} onClick={() => setAddingContact(true)}>
+                  Add the first one
+                </button>.
+              </>
+            )}
+          </div>
         ) : (
           <div className={profile.contactList}>
             {contacts.map((c) => (
@@ -215,6 +234,15 @@ export default function InvestorProfile({
           </div>
         )}
       </section>
+
+      {addingContact && (
+        <ContactFormModal
+          investorId={investor.id}
+          mode="create"
+          onClose={() => setAddingContact(false)}
+          onSaved={() => { setAddingContact(false); router.refresh() }}
+        />
+      )}
 
       {/* ── Portfolio ── */}
       <PortfolioSection
