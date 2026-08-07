@@ -10,6 +10,7 @@ import {
   reopenStatement, resolveDispute, sendStatement, setLineWaived, setStatementNotes,
 } from '@/app/actions/attendance'
 import Avatar from '@/app/_components/Avatar'
+import MyAttendance from './MyAttendance'
 import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../attendance.module.css'
 
@@ -19,13 +20,15 @@ const fmtDay = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
 
 export default function AttendanceAdmin({
-  period, months, statements, roster,
+  period, months, statements, roster, tab, myStatements,
 }: {
   period: string
   months: string[]
   statements: AttendanceStatement[]
   roster: Person[]
   currentUserId: string
+  tab: 'team' | 'mine'
+  myStatements: AttendanceStatement[]
 }) {
   const router = useRouter()
   const [openId, setOpenId] = useState<string | null>(null)
@@ -53,8 +56,44 @@ export default function AttendanceAdmin({
     locked: statements.filter((s) => s.status === 'locked').length,
   }
 
+  // Managers are employees too. Their own month waits for them exactly like everyone else's, and
+  // the badge is there because the first version gave them no way to reach it at all.
+  const myOpen = myStatements.filter((s) => s.status === 'sent').length
+
+  const tabs = (
+    <div className={styles.tabs} role="tablist">
+      <button
+        role="tab"
+        aria-selected={tab === 'team'}
+        className={`${styles.tab} ${tab === 'team' ? styles.tabActive : ''}`}
+        onClick={() => router.push('/attendance')}
+      >
+        Team
+      </button>
+      <button
+        role="tab"
+        aria-selected={tab === 'mine'}
+        className={`${styles.tab} ${tab === 'mine' ? styles.tabActive : ''}`}
+        onClick={() => router.push('/attendance?tab=mine')}
+      >
+        My attendance
+        {myOpen > 0 && <span className={styles.tabCount}>{myOpen}</span>}
+      </button>
+    </div>
+  )
+
+  if (tab === 'mine') {
+    return (
+      <div className={styles.page}>
+        {tabs}
+        <MyAttendance statements={myStatements} />
+      </div>
+    )
+  }
+
   return (
     <div className={styles.page}>
+      {tabs}
       <header className={styles.header}>
         <div>
           <h1 className={styles.pageTitle}>Attendance</h1>

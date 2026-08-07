@@ -206,9 +206,16 @@ export async function setStatementNotes(statementId: string, input: {
 
 // ── The state machine ────────────────────────────────────────────────────────
 
-/** Hand it to the employee. From here the contents are frozen until someone reopens it. */
+/**
+ * Hand it to the employee. From here the contents are frozen until someone reopens it.
+ *
+ * Also raises a Task assigned to them. That is the notification as well as the to-do: the alerts
+ * bell is fed by tasks assigned to you, so one write both tells them and keeps nagging until it is
+ * answered. Without it people only find out by opening the page, which quietly recreates the
+ * WhatsApp chase this feature exists to end.
+ */
 export async function sendStatement(statementId: string): Promise<void> {
-  const { supabase, userId } = await requireManager()
+  const { supabase, userId, orgId } = await requireManager()
 
   const { data, error } = await supabase
     .from('attendance_statements')
@@ -223,10 +230,64 @@ export async function sendStatement(statementId: string): Promise<void> {
     })
     .eq('id', statementId)
     .in('status', ['draft', 'disputed'])
-    .select('id')
+    .select('id, user_id, period_month, task_id')
   if (error) throw error
   if (!data?.length) throw new Error('Only a draft or a disputed statement can be sent.')
+  const st = data[0]
+
+  // Non-fatal: the statement is sent either way. Failing the send because the notification failed
+  // would be the wrong trade — the employee can still find it on the page.
+  try {
+    // A re-send replaces its task rather than stacking a second one on the same month.
+    if (st.task_id) {
+      await supabase.from('tasks').delete().eq('id', st.task_id).eq('status', 'To Do')
+    }
+    const month = new Date(`${st.period_month}T00:00:00`)
+      .toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })
+    const { data: task } = await supabase
+      .from('tasks')
+      .insert({
+        title: `Approve your ${month} attendance`,
+        description:
+          'HR has sent your attendance statement for this month. Check it and either approve it '
+          + 'or say what is wrong — payroll uses it either way, so a dispute needs to be raised '
+          + 'before the month is locked.',
+        assignee_id: st.user_id,
+        assigned_by_id: userId,
+        link_url: '/attendance',
+        priority: 'High',
+        status: 'To Do',
+        created_by: userId,
+        org_id: orgId,
+      })
+      .select('id')
+      .single()
+    if (task) {
+      await supabase.from('attendance_statements').update({ task_id: task.id }).eq('id', statementId)
+    }
+  } catch (err) {
+    console.error('[attendance] approval task could not be raised:', err)
+  }
+
   revalidate()
+  revalidatePath('/tasks')
+}
+
+/** Close the approval task once the employee has answered, so it stops nagging. */
+async function closeApprovalTask(supabase: any, statementId: string) {
+  try {
+    const { data } = await supabase
+      .from('attendance_statements').select('task_id').eq('id', statementId).single()
+    if (data?.task_id) {
+      await supabase
+        .from('tasks')
+        .update({ status: 'Done', completed_at: new Date().toISOString() })
+        .eq('id', data.task_id)
+        .neq('status', 'Done')
+    }
+  } catch (err) {
+    console.error('[attendance] could not close the approval task:', err)
+  }
 }
 
 /** Put a sent statement back into HR's hands so it can be corrected. */
@@ -258,7 +319,9 @@ export async function approveStatement(statementId: string): Promise<void> {
     .select('id')
   if (error) throw error
   if (!data?.length) throw new Error('This statement is not awaiting your approval.')
+  await closeApprovalTask(supabase, statementId)
   revalidate()
+  revalidatePath('/tasks')
 }
 
 export async function disputeStatement(statementId: string, note: string): Promise<void> {
@@ -276,7 +339,10 @@ export async function disputeStatement(statementId: string, note: string): Promi
     .select('id')
   if (error) throw error
   if (!data?.length) throw new Error('This statement is not open for a dispute.')
+  // A dispute is an answer too — the task has served its purpose and should stop nagging.
+  await closeApprovalTask(supabase, statementId)
   revalidate()
+  revalidatePath('/tasks')
 }
 
 /** HR/founder records how a dispute was settled. Sending the corrected statement is separate. */

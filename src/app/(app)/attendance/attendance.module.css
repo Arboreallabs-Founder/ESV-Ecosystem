@@ -192,3 +192,37 @@
   .rowHead { align-items: flex-start; }
   .addRow > * { width: 100%; }
 }
+
+/* Team / My attendance. A manager has a statement of their own, and no other way to reach it. */
+.tabs {
+  display: inline-flex;
+  gap: 3px;
+  padding: 4px;
+  margin-bottom: 1.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-card);
+}
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.95rem;
+  border: none;
+  border-radius: 9px;
+  background: none;
+  color: var(--color-muted);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tabActive { background: var(--color-primary); color: #fff; }
+.tabCount {
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: rgba(var(--color-hover-rgb), 0.15);
+  font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
+}
+.tabActive .tabCount { background: rgba(255, 255, 255, 0.22); }

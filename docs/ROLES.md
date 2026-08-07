@@ -247,6 +247,11 @@ Approvals below. This is not a user-facing escalations capability.
   only their own statements, and only once sent (a draft is HR's working copy). The employee can
   approve or dispute their own; a dispute needs a reason. Approval is **required but not blocking** —
   a month can be locked for payroll unapproved, and the statement records that it was.
+  Managers get **both** tabs (Team / My attendance): admins and HR are on the People roster and get
+  a statement like everyone else, so branching the page purely on role left them unable to see, let
+  alone approve, their own month. Founders are **not** on the roster and so have no statement.
+  Sending raises a **task assigned to the employee**, which is also the alert — the bell is fed by
+  tasks assigned to you. Approving or disputing closes it.
 
 - **Delete/pin (Bulletin) / delete/pin/complete/attendee-manage (Events)**: Founder/Admin only —
   HR does not get this tier, matching the "create/edit, not delete" pattern used everywhere else.

@@ -8,28 +8,30 @@ import MyAttendance from './_components/MyAttendance'
 /**
  * Monthly attendance statements.
  *
- * Role-branched on one route, the way /deal-desk is: managers get the whole month, everyone else
- * gets their own statements. Two routes would mean two places to remember.
+ * Role-branched on one route, the way /deal-desk is. Managers get a Team tab AND a My attendance
+ * tab: a manager is also an employee with a statement of their own, and the first version branched
+ * exclusively, so HR and admins could never see — let alone approve — their own month.
  */
 const MANAGERS = ['founder', 'admin', 'hr']
 
 export default async function AttendancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ month?: string }>
+  searchParams: Promise<{ month?: string; tab?: string }>
 }) {
   const user = await getUser()
   if (!user) redirect('/login')
   if (user.role === 'franchise_partner') redirect('/portal')
 
-  const { month } = await searchParams
+  const { month, tab } = await searchParams
   const months = recentMonths(12)
   const period = month && months.includes(month) ? month : monthKey()
 
   if (MANAGERS.includes(user.role ?? '')) {
-    const [statements, roster] = await Promise.all([
+    const [statements, roster, mine] = await Promise.all([
       fetchStatementsForMonth(period),
       fetchEmployeeRoster(),
+      fetchMyStatements(user.id),
     ])
     return (
       <AttendanceAdmin
@@ -42,6 +44,8 @@ export default async function AttendancePage({
           photo_url: r.user.photo_url ?? null,
         }))}
         currentUserId={user.id}
+        tab={tab === 'mine' ? 'mine' : 'team'}
+        myStatements={mine}
       />
     )
   }
