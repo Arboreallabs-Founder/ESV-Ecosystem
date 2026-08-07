@@ -266,6 +266,14 @@ export default function ActiveDealPageClient({
             >
               {DEAL_STATES.map((s) => <option key={s} value={s} style={{ color: 'var(--color-text)' }}>{DEAL_STATE_META[s].label}</option>)}
             </select>
+            {/* Only meaningful on IB deals; the page itself explains the gate rather than the
+                button vanishing without a reason. */}
+            {canManageDeal && (
+              <Link href={`/active-deals/${deal.id}/investor-lists`} className={styles.ghostBtn}
+                style={{ textDecoration: 'none' }}>
+                Investor lists
+              </Link>
+            )}
             {canSetPartnerVisibility && (
               <button
                 className={partnerVisible ? styles.ghostBtn : styles.hiddenFromPartnersBtn}

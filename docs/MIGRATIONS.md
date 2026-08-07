@@ -181,3 +181,20 @@ asked to approve a deduction should know which lines a person typed.
 RLS: managers are `founder/admin/hr` via `is_attendance_manager()` — the same set that already
 decides leave requests, rather than a third definition of "lead". An employee reads their own
 statement but **never a draft**, which is HR's working copy. Locked statements cannot be deleted.
+
+### `20260901000000_investor_lists.sql`
+Investor lists: the shortlist a founder approves before we approach anyone. `investor_lists` +
+`investor_list_items` + `investor_list_exclusions` (the founder's own "don't contact these").
+
+Two rules are enforced by **triggers**, not by the UI, because both decide who receives a founder's
+raise plans: lists exist only on deals tagged **Investment Banking**, and **angel investors cannot
+be added** — an angel is a person, often one the founder knows.
+
+The founder has no account, so the public page goes through three SECURITY DEFINER functions keyed
+on the share token: `get_investor_list_public` returns **fund name and website only** (no ticket
+size, stage, sectors or internal notes), `submit_investor_list_response` writes every decision in
+one call, and `mark_investor_list_viewed` records the first open.
+
+Items default to `approved = true`: the founder is removing objections, not building a list from
+scratch. A re-submission ticks everything and then clears the named ones, so it **replaces** the
+previous answer rather than merging with it — changing your mind has to actually work.
