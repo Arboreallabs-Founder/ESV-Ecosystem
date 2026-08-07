@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import type { FundSuggestion, InvestorList } from '@/lib/investor-lists'
+import type { FundSuggestion, InvestorList, Suggestions } from '@/lib/investor-lists'
 import {
   addInvestorsToList, createInvestorList, deleteInvestorList, matchExclusion,
   removeInvestorFromList, renameInvestorList, shareInvestorList, unshareInvestorList,
@@ -21,14 +21,13 @@ type Fund = {
 }
 
 export default function InvestorListsClient({
-  dealId, dealName, lists, funds, suggestions, dealSectors,
+  dealId, dealName, lists, funds, suggestions,
 }: {
   dealId: string
   dealName: string
   lists: InvestorList[]
   funds: Fund[]
-  suggestions: FundSuggestion[]
-  dealSectors: string[]
+  suggestions: Suggestions
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -90,7 +89,6 @@ export default function InvestorListsClient({
             dealName={dealName}
             funds={funds}
             suggestions={suggestions}
-            dealSectors={dealSectors}
             open={openId === list.id}
             onToggle={() => setOpenId(openId === list.id ? null : list.id)}
             pending={pending}
@@ -103,13 +101,12 @@ export default function InvestorListsClient({
 }
 
 function ListPanel({
-  list, dealName, funds, suggestions, dealSectors, open, onToggle, pending, run,
+  list, dealName, funds, suggestions, open, onToggle, pending, run,
 }: {
   list: InvestorList
   dealName: string
   funds: Fund[]
-  suggestions: FundSuggestion[]
-  dealSectors: string[]
+  suggestions: Suggestions
   open: boolean
   onToggle: () => void
   pending: boolean
@@ -122,6 +119,7 @@ function ListPanel({
   const [renaming, setRenaming] = useState(false)
   const [draftName, setDraftName] = useState(list.name)
   const [showAll, setShowAll] = useState(false)
+  const [showAgnostic, setShowAgnostic] = useState(false)
 
   const onList = useMemo(() => new Set(list.items.map((i) => i.investor_id)), [list.items])
   const editable = list.status === 'draft'
@@ -135,10 +133,15 @@ function ListPanel({
   }, [search, funds, onList])
 
   // Suggestions are computed for the deal, so drop anything already on THIS list.
-  const live = useMemo(
-    () => suggestions.filter((f) => !onList.has(f.id)),
-    [suggestions, onList],
+  const themed = useMemo(
+    () => suggestions.thematic.filter((f) => !onList.has(f.id)),
+    [suggestions.thematic, onList],
   )
+  const agnostic = useMemo(
+    () => suggestions.agnostic.filter((f) => !onList.has(f.id)),
+    [suggestions.agnostic, onList],
+  )
+  const dealSectors = suggestions.dealSectors
 
   const approved = list.items.filter((i) => i.approved)
   const declined = list.items.filter((i) => !i.approved)
@@ -311,39 +314,38 @@ The founder has already answered this list. Their answer will be discarded and c
           {/* ── Add funds ── */}
           {editable && (
             <div className={styles.addBlock}>
-              {/* Suggestions before the search box: an empty search box asks you to already know
-                  the answer, and there are 276 funds. */}
-              {live.length > 0 && (
-                <div className={styles.suggestBlock}>
-                  <div className={styles.suggestHead}>
-                    <span className={styles.blockTitle}>Suggested for this deal</span>
-                    <span className={styles.suggestWhy}>
-                      {dealSectors.length > 0
-                        ? `matched on ${dealSectors.join(', ')}`
-                        : 'no sectors on the company yet — ranked on relationship and contactability'}
-                    </span>
-                  </div>
-                  <div className={styles.results}>
-                    {live.slice(0, showAll ? live.length : 8).map((f) => (
-                      <label key={f.id} className={styles.result}>
-                        <input
-                          type="checkbox"
-                          checked={picked.has(f.id)}
-                          onChange={() => setPicked((p) => {
-                            const n = new Set(p); n.has(f.id) ? n.delete(f.id) : n.add(f.id); return n
-                          })}
-                        />
-                        <span className={styles.resultName}>{f.name}</span>
-                        {/* The reason, in words. A ranked list nobody can interrogate is not usable. */}
-                        <span className={styles.resultMeta}>{f.reasons.join(' · ')}</span>
-                        {f.connect_strength === 'warm' && <span className={styles.warm}>Warm</span>}
-                      </label>
-                    ))}
-                  </div>
-                  {live.length > 8 && (
-                    <button className={styles.miniBtnOk} onClick={() => setShowAll(!showAll)}>
-                      {showAll ? 'Show fewer' : `Show all ${live.length}`}
-                    </button>
+              {/* Thematic first, always. A sector-agnostic fund never outranks a fund that
+                  actually says it invests in this, however warm the relationship. */}
+              {themed.length > 0 && (
+                <SuggestGroup
+                  title="Thematic & thesis matches"
+                  why={dealSectors.length > 0
+                    ? `matched on ${dealSectors.join(', ')}`
+                    : 'no sectors tagged on the company — tag them to get real matches'}
+                  items={themed}
+                  picked={picked}
+                  setPicked={setPicked}
+                />
+              )}
+
+              {/* Agnostic funds are a deliberate second wave, not part of the first pass. */}
+              {agnostic.length > 0 && (
+                <div className={styles.agnosticBlock}>
+                  <button
+                    className={styles.agnosticToggle}
+                    onClick={() => setShowAgnostic(!showAgnostic)}
+                    aria-expanded={showAgnostic}
+                  >
+                    {showAgnostic ? '−' : '+'} Sector-agnostic funds ({agnostic.length})
+                  </button>
+                  {showAgnostic && (
+                    <SuggestGroup
+                      title=""
+                      why="these invest across sectors — add them once the thematic list is settled"
+                      items={agnostic}
+                      picked={picked}
+                      setPicked={setPicked}
+                    />
                   )}
                 </div>
               )}
@@ -462,6 +464,52 @@ The founder has already answered this list. Their answer will be discarded and c
         </div>
       )}
     </section>
+  )
+}
+
+function SuggestGroup({
+  title, why, items, picked, setPicked,
+}: {
+  title: string
+  why: string
+  items: FundSuggestion[]
+  picked: Set<string>
+  setPicked: (fn: (p: Set<string>) => Set<string>) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const shown = expanded ? items : items.slice(0, 8)
+  return (
+    <div className={styles.suggestBlock}>
+      {title && (
+        <div className={styles.suggestHead}>
+          <span className={styles.blockTitle}>{title}</span>
+          <span className={styles.suggestWhy}>{why}</span>
+        </div>
+      )}
+      {!title && <div className={styles.suggestWhy} style={{ marginBottom: '0.4rem' }}>{why}</div>}
+      <div className={styles.results}>
+        {shown.map((f) => (
+          <label key={f.id} className={styles.result}>
+            <input
+              type="checkbox"
+              checked={picked.has(f.id)}
+              onChange={() => setPicked((p) => {
+                const n = new Set(p); n.has(f.id) ? n.delete(f.id) : n.add(f.id); return n
+              })}
+            />
+            <span className={styles.resultName}>{f.name}</span>
+            {/* The reason, in words. A ranked list nobody can interrogate is not usable. */}
+            <span className={styles.resultMeta}>{f.reasons.join(' · ')}</span>
+            {f.connect_strength === 'warm' && <span className={styles.warm}>Warm</span>}
+          </label>
+        ))}
+      </div>
+      {items.length > 8 && (
+        <button className={styles.miniBtnOk} onClick={() => setExpanded(!expanded)}>
+          {expanded ? 'Show fewer' : `Show all ${items.length}`}
+        </button>
+      )}
+    </div>
   )
 }
 

@@ -149,9 +149,18 @@ export type FundSuggestion = {
   sectors: string[]
   excluded_sectors: string[]
   connect_strength: ConnectStrength
+  notes: string | null
   score: number
+  /** 'thematic' = they say they invest in this. 'agnostic' = they invest in anything. */
+  band: 'thematic' | 'agnostic'
   /** Why it is being suggested, in words — a ranked list nobody can interrogate is not usable. */
   reasons: string[]
+}
+
+export type Suggestions = {
+  thematic: FundSuggestion[]
+  agnostic: FundSuggestion[]
+  dealSectors: string[]
 }
 
 /** Loose match so "HealthTech" finds "Health Tech" and "healthcare". */
@@ -168,14 +177,44 @@ function sectorsOverlap(a: string[], b: string[]): string[] {
 }
 
 /**
- * Funds worth putting in front of whoever is building the list, ranked.
+ * Does the fund's own writing mention this sector?
+ *
+ * The thesis lives in prose the sheets carried — "more AI, Health tech or IP backed companies" —
+ * and none of it fits a tag. A fund that wrote that about health tech is a thematic match even if
+ * nobody ever tagged it.
+ */
+function thesisMentions(notes: string | null, sectors: string[]): string[] {
+  if (!notes) return []
+  const hay = notes.toLowerCase()
+  const out: string[] = []
+  for (const s of sectors) {
+    // Both spellings, since the sheets write "healthtech" and "health tech" interchangeably.
+    const tight = canon(s)
+    const spaced = s.toLowerCase().replace(/([a-z])([A-Z])/g, '$1 $2')
+    if (tight.length >= 3 && (hay.replace(/[^a-z0-9]/g, '').includes(tight) || hay.includes(spaced))) {
+      out.push(s)
+    }
+  }
+  return out
+}
+
+/**
+ * Funds worth putting in front of whoever is building the list, in two bands.
+ *
+ * Thematic and thesis matches come first and are NEVER outranked by a sector-agnostic fund, however
+ * warm it is. That is a banding, not a bonus: an additive score let a warm agnostic fund with a
+ * live contact (2+3+2) beat a genuine sector match with neither (4), which is backwards — the
+ * whole point of the shortlist is that these funds actually invest in this.
+ *
+ * Agnostic funds are returned separately so they can be added as a deliberate second wave rather
+ * than mixed into the first.
  *
  * Two things this deliberately does NOT do. It does not auto-add anything — an associate decides,
- * and a score is a prompt rather than a verdict. And it does not silently drop the funds it cannot
+ * and a score is a prompt rather than a verdict. And it does not silently drop funds it cannot
  * score: 17 of the 276 have no sectors recorded, and a suggestion engine that hides them would
  * quietly make the thinnest records invisible forever.
  */
-export const suggestFunds = cache(async (dealId: string): Promise<FundSuggestion[]> => {
+export const suggestFunds = cache(async (dealId: string): Promise<Suggestions> => {
   const supabase = await createClient()
 
   const { data: deal } = await supabase
@@ -191,9 +230,8 @@ export const suggestFunds = cache(async (dealId: string): Promise<FundSuggestion
   const [{ data: funds }, { data: onLists }] = await Promise.all([
     supabase
       .from('investors')
-      .select('id, name, website, sectors, excluded_sectors, connect_strength, contacts:investor_contacts(rank, employment_status)')
+      .select('id, name, website, sectors, excluded_sectors, connect_strength, notes, contacts:investor_contacts(rank, employment_status)')
       .neq('service_type', 'angel_investor'),
-    // Already on a list for this deal — suggesting them again is noise.
     supabase
       .from('investor_list_items')
       .select('investor_id, list:investor_lists!list_id(active_deal_id)'),
@@ -208,52 +246,69 @@ export const suggestFunds = cache(async (dealId: string): Promise<FundSuggestion
       .map((r: any) => r.investor_id),
   )
 
-  const out: FundSuggestion[] = []
+  const thematic: FundSuggestion[] = []
+  const agnostic: FundSuggestion[] = []
+
   for (const f of (funds ?? []) as any[]) {
     if (already.has(f.id)) continue
 
     const sectors: string[] = f.sectors ?? []
     const excluded: string[] = f.excluded_sectors ?? []
 
-    // A stated exclusion is disqualifying, not a penalty. This is the whole reason the exclusions
-    // were worth importing: the fund that wrote "no meat" must not appear for a meat startup.
-    const clash = sectorsOverlap(dealSectors, excluded)
-    if (clash.length > 0) continue
+    // A stated exclusion is disqualifying, not a penalty. This is the whole return on importing
+    // excluded sectors: the fund that wrote "no meat" must not appear for a meat startup.
+    if (sectorsOverlap(dealSectors, excluded).length > 0) continue
 
     const reasons: string[] = []
     let score = 0
 
-    const hits = sectorsOverlap(dealSectors, sectors)
-    if (hits.length > 0) {
-      score += hits.length * 4
-      reasons.push(`invests in ${hits.join(', ')}`)
-    } else if (sectors.some((s) => canon(s) === 'agnostic')) {
-      // Sector-agnostic funds are a genuine match for anything, but a weaker signal than a
-      // stated interest, so they rank below a real hit rather than beside it.
-      score += 2
-      reasons.push('sector agnostic')
+    const tagHits = sectorsOverlap(dealSectors, sectors)
+    const thesisHits = thesisMentions(f.notes, dealSectors).filter((h) => !tagHits.includes(h))
+    const isAgnostic = sectors.some((s) => canon(s) === 'agnostic')
+
+    if (tagHits.length > 0) {
+      score += tagHits.length * 4
+      reasons.push(`invests in ${tagHits.join(', ')}`)
+    }
+    if (thesisHits.length > 0) {
+      // Slightly below a tag: prose is a weaker claim than a recorded preference, but it is still
+      // the fund's own words about what it wants.
+      score += thesisHits.length * 3
+      reasons.push(`thesis mentions ${thesisHits.join(', ')}`)
     }
 
-    if (f.connect_strength === 'warm') {
-      score += 3
-      reasons.push('warm relationship')
-    }
+    const isThematic = tagHits.length > 0 || thesisHits.length > 0
+    if (!isThematic && !isAgnostic) continue
+    if (!isThematic) reasons.push('sector agnostic')
+
+    if (f.connect_strength === 'warm') { score += 3; reasons.push('warm relationship') }
 
     const contacts = (f.contacts ?? []) as any[]
-    const livePrimary = contacts.find((c) => c.rank === 'primary' && c.employment_status === 'active')
-    if (livePrimary) {
+    if (contacts.find((c) => c.rank === 'primary' && c.employment_status === 'active')) {
       score += 2
       reasons.push('primary contact still there')
-    } else if (contacts.length > 0 && contacts.every((c) => c.employment_status === 'moved_on')) {
-      // Not disqualifying, but worth knowing before someone builds a list around them.
+    } else if (contacts.length === 0) {
+      score -= 2
+      reasons.push('no contact on record')
+    } else if (contacts.every((c) => c.employment_status === 'moved_on')) {
       score -= 2
       reasons.push('everyone we knew there has left')
     }
 
-    if (score > 0) out.push({ ...f, sectors, excluded_sectors: excluded, score, reasons })
+    const row: FundSuggestion = {
+      id: f.id, name: f.name, website: f.website, sectors, excluded_sectors: excluded,
+      connect_strength: f.connect_strength, notes: f.notes ?? null,
+      score, band: isThematic ? 'thematic' : 'agnostic', reasons,
+    }
+    ;(isThematic ? thematic : agnostic).push(row)
   }
 
-  return out.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)).slice(0, 30)
+  const rank = (a: FundSuggestion, b: FundSuggestion) => b.score - a.score || a.name.localeCompare(b.name)
+  return {
+    thematic: thematic.sort(rank).slice(0, 40),
+    agnostic: agnostic.sort(rank).slice(0, 40),
+    dealSectors,
+  }
 })
 
 /** Sectors the deal's company is tagged with — shown so the ranking is explicable. */

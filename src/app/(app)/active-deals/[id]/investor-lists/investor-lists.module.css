@@ -321,3 +321,19 @@
   margin-bottom: 0.4rem;
 }
 .suggestWhy { font-size: 0.6875rem; color: var(--color-muted); font-style: italic; }
+
+/* Agnostic funds are collapsed by default: they are a deliberate second wave, and leaving them
+   open would bury the thematic matches under a much longer list. */
+.agnosticBlock { width: 100%; }
+.agnosticToggle {
+  padding: 0.4rem 0.75rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.agnosticToggle:hover { border-color: var(--color-primary); color: var(--color-primary); }
