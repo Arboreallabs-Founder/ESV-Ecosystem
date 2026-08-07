@@ -143,6 +143,7 @@ function ListPanel({
     [suggestions.agnostic, onList],
   )
   const dealSectors = suggestions.dealSectors
+  const unmatchedSectors = suggestions.unmatchedSectors
 
   const approved = list.items.filter((i) => i.approved)
   const declined = list.items.filter((i) => !i.approved)
@@ -321,13 +322,27 @@ The founder has already answered this list. Their answer will be discarded and c
               {themed.length > 0 && (
                 <SuggestGroup
                   title="Thematic & thesis matches"
-                  why={dealSectors.length > 0
-                    ? `matched on ${dealSectors.join(', ')}`
-                    : 'no sectors tagged on the company — tag them to get real matches'}
+                  why={`matched on ${dealSectors.join(', ')}`}
                   items={themed}
                   picked={picked}
                   setPicked={setPicked}
                 />
+              )}
+
+              {/* An empty thematic list is a diagnosis, not a shrug: say which of the company's
+                  tags could not be used, so somebody can fix the company rather than assume the
+                  fund database is thin. */}
+              {themed.length === 0 && (
+                <div className={styles.noMatch}>
+                  <strong>No thematic matches.</strong>{' '}
+                  {dealSectors.length === 0 && unmatchedSectors.length === 0
+                    ? 'This deal’s company has no sectors tagged — add them on the company record and matches will appear here.'
+                    : unmatchedSectors.length > 0
+                      ? <>None of this company&apos;s sectors map to how funds describe themselves:{' '}
+                          <em>{unmatchedSectors.join(', ')}</em>. Retag the company, or add an alias
+                          in src/lib/sector-aliases.ts.</>
+                      : <>Nothing in the fund database invests in {dealSectors.join(', ')} yet.</>}
+                </div>
               )}
 
               {/* Agnostic funds are a deliberate second wave, not part of the first pass. */}

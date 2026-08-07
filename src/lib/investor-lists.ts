@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import type { ConnectStrength, ServiceType } from '@/lib/types'
+import { resolveSectors } from '@/lib/sector-aliases'
 
 /** Investor lists — reads. Writes go through src/app/actions/investor-lists.ts. */
 
@@ -162,7 +163,10 @@ export type FundSuggestion = {
 export type Suggestions = {
   thematic: FundSuggestion[]
   agnostic: FundSuggestion[]
+  /** What the deal was matched on, after translation into the investor vocabulary. */
   dealSectors: string[]
+  /** Company tags with no investor equivalent — shown so an empty result is explicable. */
+  unmatchedSectors: string[]
 }
 
 /** Loose match so "HealthTech" finds "Health Tech" and "healthcare". */
@@ -227,7 +231,7 @@ export const suggestFunds = cache(async (dealId: string): Promise<Suggestions> =
 
   const entry = Array.isArray((deal as any)?.entry) ? (deal as any).entry[0] : (deal as any)?.entry
   const company = Array.isArray(entry?.company) ? entry.company[0] : entry?.company
-  const dealSectors: string[] = company?.sectors ?? []
+  const rawSectors: string[] = company?.sectors ?? []
 
   const [{ data: funds }, { data: onLists }] = await Promise.all([
     supabase
@@ -247,6 +251,12 @@ export const suggestFunds = cache(async (dealId: string): Promise<Suggestions> =
       })
       .map((r: any) => r.investor_id),
   )
+
+  // Companies and investors are tagged from different vocabularies — "Defense" vs "Defence",
+  // "FMCG" vs "Consumer" — so the deal's tags are translated before anything is compared. Without
+  // this most deals matched nothing and the page showed only agnostic funds, with no clue why.
+  const investorVocab = [...new Set(((funds ?? []) as any[]).flatMap((f) => f.sectors ?? []))]
+  const { resolved: dealSectors, unresolved: unmatchedSectors } = resolveSectors(rawSectors, investorVocab)
 
   const thematic: FundSuggestion[] = []
   const agnostic: FundSuggestion[] = []
@@ -311,6 +321,7 @@ export const suggestFunds = cache(async (dealId: string): Promise<Suggestions> =
     thematic: thematic.sort(rank).slice(0, 40),
     agnostic: agnostic.sort(rank).slice(0, 40),
     dealSectors,
+    unmatchedSectors,
   }
 })
 
