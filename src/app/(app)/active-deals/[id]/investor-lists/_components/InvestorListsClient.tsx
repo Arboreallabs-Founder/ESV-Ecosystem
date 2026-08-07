@@ -3,10 +3,10 @@
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import type { InvestorList } from '@/lib/investor-lists'
+import type { FundSuggestion, InvestorList } from '@/lib/investor-lists'
 import {
-  addInvestorsToList, createInvestorList, matchExclusion, removeInvestorFromList,
-  shareInvestorList, unshareInvestorList,
+  addInvestorsToList, createInvestorList, deleteInvestorList, matchExclusion,
+  removeInvestorFromList, renameInvestorList, shareInvestorList, unshareInvestorList,
 } from '@/app/actions/investor-lists'
 import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../investor-lists.module.css'
@@ -21,12 +21,14 @@ type Fund = {
 }
 
 export default function InvestorListsClient({
-  dealId, dealName, lists, funds,
+  dealId, dealName, lists, funds, suggestions, dealSectors,
 }: {
   dealId: string
   dealName: string
   lists: InvestorList[]
   funds: Fund[]
+  suggestions: FundSuggestion[]
+  dealSectors: string[]
 }) {
   const router = useRouter()
   const [error, setError] = useState<string | null>(null)
@@ -87,6 +89,8 @@ export default function InvestorListsClient({
             list={list}
             dealName={dealName}
             funds={funds}
+            suggestions={suggestions}
+            dealSectors={dealSectors}
             open={openId === list.id}
             onToggle={() => setOpenId(openId === list.id ? null : list.id)}
             pending={pending}
@@ -99,11 +103,13 @@ export default function InvestorListsClient({
 }
 
 function ListPanel({
-  list, dealName, funds, open, onToggle, pending, run,
+  list, dealName, funds, suggestions, dealSectors, open, onToggle, pending, run,
 }: {
   list: InvestorList
   dealName: string
   funds: Fund[]
+  suggestions: FundSuggestion[]
+  dealSectors: string[]
   open: boolean
   onToggle: () => void
   pending: boolean
@@ -113,6 +119,9 @@ function ListPanel({
   const [picked, setPicked] = useState<Set<string>>(new Set())
   const [intro, setIntro] = useState(list.intro_note ?? '')
   const [copied, setCopied] = useState<string | null>(null)
+  const [renaming, setRenaming] = useState(false)
+  const [draftName, setDraftName] = useState(list.name)
+  const [showAll, setShowAll] = useState(false)
 
   const onList = useMemo(() => new Set(list.items.map((i) => i.investor_id)), [list.items])
   const editable = list.status === 'draft'
@@ -124,6 +133,12 @@ function ListPanel({
       .filter((f) => !onList.has(f.id) && f.name.toLowerCase().includes(q))
       .slice(0, 25)
   }, [search, funds, onList])
+
+  // Suggestions are computed for the deal, so drop anything already on THIS list.
+  const live = useMemo(
+    () => suggestions.filter((f) => !onList.has(f.id)),
+    [suggestions, onList],
+  )
 
   const approved = list.items.filter((i) => i.approved)
   const declined = list.items.filter((i) => !i.approved)
@@ -163,7 +178,35 @@ function ListPanel({
     <section className={panels.panel} style={{ marginBottom: '1rem' }}>
       <div className={styles.listHead}>
         <div>
-          <h2 className={panels.panelTitle}>{list.name}</h2>
+          {renaming ? (
+            <span className={styles.renameRow}>
+              <input
+                className={styles.renameInput}
+                value={draftName}
+                onChange={(e) => setDraftName(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && draftName.trim()) {
+                    run(() => renameInvestorList(list.id, draftName)); setRenaming(false)
+                  }
+                  if (e.key === 'Escape') { setDraftName(list.name); setRenaming(false) }
+                }}
+              />
+              <button className={styles.miniBtnOk} disabled={pending || !draftName.trim()}
+                onClick={() => { run(() => renameInvestorList(list.id, draftName)); setRenaming(false) }}>
+                Save
+              </button>
+              <button className={styles.miniBtnOk}
+                onClick={() => { setDraftName(list.name); setRenaming(false) }}>Cancel</button>
+            </span>
+          ) : (
+            <h2 className={panels.panelTitle}>
+              {list.name}
+              <button className={styles.renameBtn} onClick={() => setRenaming(true)} title="Rename">
+                Rename
+              </button>
+            </h2>
+          )}
           <div className={styles.listMeta}>
             {list.items.length} fund{list.items.length === 1 ? '' : 's'}
             {list.status === 'shared' && ' · shared'}
@@ -179,6 +222,22 @@ function ListPanel({
             {list.responded_at ? 'Answered' : list.status === 'shared' ? 'Awaiting founder' : 'Draft'}
           </span>
           <button className={panels.tableReset} onClick={onToggle}>{open ? 'Close' : 'Open'}</button>
+          <button
+            className={styles.miniBtn}
+            disabled={pending}
+            onClick={() => {
+              // A list the founder answered holds their decision, so deleting it says so out loud
+              // rather than being a quiet click.
+              const warn = list.responded_at
+                ? `Delete "${list.name}"?
+
+The founder has already answered this list. Their answer will be discarded and cannot be recovered.`
+                : `Delete "${list.name}"? This cannot be undone.`
+              if (confirm(warn)) run(() => deleteInvestorList(list.id, Boolean(list.responded_at)))
+            }}
+          >
+            Delete
+          </button>
         </div>
       </div>
 
@@ -252,11 +311,48 @@ function ListPanel({
           {/* ── Add funds ── */}
           {editable && (
             <div className={styles.addBlock}>
+              {/* Suggestions before the search box: an empty search box asks you to already know
+                  the answer, and there are 276 funds. */}
+              {live.length > 0 && (
+                <div className={styles.suggestBlock}>
+                  <div className={styles.suggestHead}>
+                    <span className={styles.blockTitle}>Suggested for this deal</span>
+                    <span className={styles.suggestWhy}>
+                      {dealSectors.length > 0
+                        ? `matched on ${dealSectors.join(', ')}`
+                        : 'no sectors on the company yet — ranked on relationship and contactability'}
+                    </span>
+                  </div>
+                  <div className={styles.results}>
+                    {live.slice(0, showAll ? live.length : 8).map((f) => (
+                      <label key={f.id} className={styles.result}>
+                        <input
+                          type="checkbox"
+                          checked={picked.has(f.id)}
+                          onChange={() => setPicked((p) => {
+                            const n = new Set(p); n.has(f.id) ? n.delete(f.id) : n.add(f.id); return n
+                          })}
+                        />
+                        <span className={styles.resultName}>{f.name}</span>
+                        {/* The reason, in words. A ranked list nobody can interrogate is not usable. */}
+                        <span className={styles.resultMeta}>{f.reasons.join(' · ')}</span>
+                        {f.connect_strength === 'warm' && <span className={styles.warm}>Warm</span>}
+                      </label>
+                    ))}
+                  </div>
+                  {live.length > 8 && (
+                    <button className={styles.miniBtnOk} onClick={() => setShowAll(!showAll)}>
+                      {showAll ? 'Show fewer' : `Show all ${live.length}`}
+                    </button>
+                  )}
+                </div>
+              )}
+
               <input
                 className={panels.tableSearch}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search funds to add…"
+                placeholder="…or search all 276 funds by name"
               />
               {matches.length > 0 && (
                 <div className={styles.results}>

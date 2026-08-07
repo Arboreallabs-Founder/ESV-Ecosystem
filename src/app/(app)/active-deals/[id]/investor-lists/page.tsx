@@ -2,7 +2,10 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getUser } from '@/lib/user'
 import { createClient } from '@/lib/supabase/server'
-import { dealIsInvestmentBanking, fetchListsForDeal, fetchSelectableFunds } from '@/lib/investor-lists'
+import {
+  dealIsInvestmentBanking, fetchDealSectors, fetchListsForDeal,
+  fetchSelectableFunds, suggestFunds,
+} from '@/lib/investor-lists'
 import InvestorListsClient from './_components/InvestorListsClient'
 import styles from './investor-lists.module.css'
 
@@ -51,7 +54,12 @@ export default async function DealInvestorListsPage({
     )
   }
 
-  const [lists, funds] = await Promise.all([fetchListsForDeal(id), fetchSelectableFunds()])
+  const [lists, funds, suggestions, dealSectors] = await Promise.all([
+    fetchListsForDeal(id),
+    fetchSelectableFunds(),
+    suggestFunds(id),
+    fetchDealSectors(id),
+  ])
 
   return (
     <InvestorListsClient
@@ -59,6 +67,8 @@ export default async function DealInvestorListsPage({
       dealName={dealName}
       lists={lists}
       funds={funds as any}
+      suggestions={suggestions}
+      dealSectors={dealSectors}
     />
   )
 }

@@ -139,3 +139,132 @@ export const fetchSelectableFunds = cache(async () => {
   }
   return data ?? []
 })
+
+// ── Suggestions ──────────────────────────────────────────────────────────────
+
+export type FundSuggestion = {
+  id: string
+  name: string
+  website: string | null
+  sectors: string[]
+  excluded_sectors: string[]
+  connect_strength: ConnectStrength
+  score: number
+  /** Why it is being suggested, in words — a ranked list nobody can interrogate is not usable. */
+  reasons: string[]
+}
+
+/** Loose match so "HealthTech" finds "Health Tech" and "healthcare". */
+const canon = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+function sectorsOverlap(a: string[], b: string[]): string[] {
+  const bb = new Map(b.map((x) => [canon(x), x]))
+  const out: string[] = []
+  for (const x of a) {
+    const hit = bb.get(canon(x))
+    if (hit) out.push(hit)
+  }
+  return out
+}
+
+/**
+ * Funds worth putting in front of whoever is building the list, ranked.
+ *
+ * Two things this deliberately does NOT do. It does not auto-add anything — an associate decides,
+ * and a score is a prompt rather than a verdict. And it does not silently drop the funds it cannot
+ * score: 17 of the 276 have no sectors recorded, and a suggestion engine that hides them would
+ * quietly make the thinnest records invisible forever.
+ */
+export const suggestFunds = cache(async (dealId: string): Promise<FundSuggestion[]> => {
+  const supabase = await createClient()
+
+  const { data: deal } = await supabase
+    .from('active_deals')
+    .select('entry:pipeline_entries(company:companies!company_id(sectors, stage))')
+    .eq('id', dealId)
+    .maybeSingle()
+
+  const entry = Array.isArray((deal as any)?.entry) ? (deal as any).entry[0] : (deal as any)?.entry
+  const company = Array.isArray(entry?.company) ? entry.company[0] : entry?.company
+  const dealSectors: string[] = company?.sectors ?? []
+
+  const [{ data: funds }, { data: onLists }] = await Promise.all([
+    supabase
+      .from('investors')
+      .select('id, name, website, sectors, excluded_sectors, connect_strength, contacts:investor_contacts(rank, employment_status)')
+      .neq('service_type', 'angel_investor'),
+    // Already on a list for this deal — suggesting them again is noise.
+    supabase
+      .from('investor_list_items')
+      .select('investor_id, list:investor_lists!list_id(active_deal_id)'),
+  ])
+
+  const already = new Set(
+    (onLists ?? [])
+      .filter((r: any) => {
+        const l = Array.isArray(r.list) ? r.list[0] : r.list
+        return l?.active_deal_id === dealId
+      })
+      .map((r: any) => r.investor_id),
+  )
+
+  const out: FundSuggestion[] = []
+  for (const f of (funds ?? []) as any[]) {
+    if (already.has(f.id)) continue
+
+    const sectors: string[] = f.sectors ?? []
+    const excluded: string[] = f.excluded_sectors ?? []
+
+    // A stated exclusion is disqualifying, not a penalty. This is the whole reason the exclusions
+    // were worth importing: the fund that wrote "no meat" must not appear for a meat startup.
+    const clash = sectorsOverlap(dealSectors, excluded)
+    if (clash.length > 0) continue
+
+    const reasons: string[] = []
+    let score = 0
+
+    const hits = sectorsOverlap(dealSectors, sectors)
+    if (hits.length > 0) {
+      score += hits.length * 4
+      reasons.push(`invests in ${hits.join(', ')}`)
+    } else if (sectors.some((s) => canon(s) === 'agnostic')) {
+      // Sector-agnostic funds are a genuine match for anything, but a weaker signal than a
+      // stated interest, so they rank below a real hit rather than beside it.
+      score += 2
+      reasons.push('sector agnostic')
+    }
+
+    if (f.connect_strength === 'warm') {
+      score += 3
+      reasons.push('warm relationship')
+    }
+
+    const contacts = (f.contacts ?? []) as any[]
+    const livePrimary = contacts.find((c) => c.rank === 'primary' && c.employment_status === 'active')
+    if (livePrimary) {
+      score += 2
+      reasons.push('primary contact still there')
+    } else if (contacts.length > 0 && contacts.every((c) => c.employment_status === 'moved_on')) {
+      // Not disqualifying, but worth knowing before someone builds a list around them.
+      score -= 2
+      reasons.push('everyone we knew there has left')
+    }
+
+    if (score > 0) out.push({ ...f, sectors, excluded_sectors: excluded, score, reasons })
+  }
+
+  return out.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name)).slice(0, 30)
+})
+
+/** Sectors the deal's company is tagged with — shown so the ranking is explicable. */
+export const fetchDealSectors = cache(async (dealId: string): Promise<string[]> => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('active_deals')
+    .select('entry:pipeline_entries(company:companies!company_id(sectors))')
+    .eq('id', dealId)
+    .maybeSingle()
+  const entry = Array.isArray((data as any)?.entry) ? (data as any).entry[0] : (data as any)?.entry
+  const company = Array.isArray(entry?.company) ? entry.company[0] : entry?.company
+  return company?.sectors ?? []
+})

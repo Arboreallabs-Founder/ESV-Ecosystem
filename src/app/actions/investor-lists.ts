@@ -139,3 +139,40 @@ export async function setItemInternalNote(itemId: string, note: string): Promise
     .eq('id', itemId)
   if (error) throw error
 }
+
+export async function renameInvestorList(listId: string, name: string): Promise<void> {
+  const { supabase } = await requireInternal()
+  const title = name.trim()
+  if (!title) throw new Error('A list needs a name.')
+
+  const { data, error } = await supabase
+    .from('investor_lists')
+    .update({ name: title })
+    .eq('id', listId)
+    .select('active_deal_id')
+    .single()
+  if (error) throw error
+  revalidate(data.active_deal_id as string)
+}
+
+/**
+ * Delete a list.
+ *
+ * A list the founder has already answered is a record of what they told us, so deleting it needs
+ * saying out loud rather than being a quiet click — the caller passes `force` once the user has
+ * confirmed. Items and exclusions go with it via ON DELETE CASCADE.
+ */
+export async function deleteInvestorList(listId: string, force = false): Promise<void> {
+  const { supabase } = await requireInternal()
+
+  const { data: list, error: lErr } = await supabase
+    .from('investor_lists').select('active_deal_id, responded_at').eq('id', listId).single()
+  if (lErr) throw lErr
+  if (list.responded_at && !force) {
+    throw new Error('The founder has answered this list. Deleting it discards their answer.')
+  }
+
+  const { error } = await supabase.from('investor_lists').delete().eq('id', listId)
+  if (error) throw error
+  revalidate(list.active_deal_id as string)
+}

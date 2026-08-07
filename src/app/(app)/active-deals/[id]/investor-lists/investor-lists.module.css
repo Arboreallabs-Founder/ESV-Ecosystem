@@ -264,3 +264,60 @@
   .newRow { width: 100%; }
   .newRow > * { width: 100%; }
 }
+
+/* ── Rename ── */
+.renameRow { display: inline-flex; align-items: center; gap: 0.4rem; }
+.renameInput {
+  padding: 0.35rem 0.6rem;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-serif);
+  font-size: 1.0625rem;
+  outline: none;
+  min-width: 220px;
+}
+/* Reveals on hover so the title is not permanently cluttered, but stays reachable by keyboard. */
+.renameBtn {
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.4rem;
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  font-family: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.listHead:hover .renameBtn, .renameBtn:focus-visible { opacity: 1; }
+.renameBtn:hover { color: var(--color-primary); }
+
+.miniBtnOk {
+  padding: 0.25rem 0.6rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.miniBtnOk:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.miniBtnOk:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ── Suggestions ── */
+.suggestBlock { width: 100%; margin-bottom: 0.75rem; }
+.suggestHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
+}
+.suggestWhy { font-size: 0.6875rem; color: var(--color-muted); font-style: italic; }
