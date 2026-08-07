@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { deleteContact, getInvestorPortfolio } from '@/app/actions/investors'
 import { DEAL_STATE_META, SERVICE_TYPE_LABELS } from '@/lib/types'
@@ -99,6 +100,11 @@ export default function InvestorDetail({ investor, userRole, onClose, onEdit, on
             </span>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+            {/* The overlay stays the quick look; the portfolio and POC audit need a page. */}
+            <Link href={`/investors/${investor.id}`} className={styles.detailActionBtn}
+              style={{ textDecoration: 'none' }}>
+              Full profile
+            </Link>
             {canEdit && (
               <button className={styles.detailActionBtn} onClick={onEdit}>Edit</button>
             )}

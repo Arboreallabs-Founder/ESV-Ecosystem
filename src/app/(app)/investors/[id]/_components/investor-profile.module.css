@@ -1,0 +1,283 @@
+/* ── Investor profile page ────────────────────────────────────────────────
+   Panels, tables and KPI tiles come from the shared panel stylesheet; this file holds
+   only what is specific to an investor. */
+
+.page { width: 100%; padding-bottom: 2rem; }
+
+.breadcrumb { margin-bottom: 0.75rem; }
+.backLink {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-decoration: none;
+}
+.backLink:hover { color: var(--color-primary); }
+
+.header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--color-text);
+}
+
+.subRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.45rem;
+  font-size: 0.8125rem;
+}
+.meta { color: var(--color-muted); }
+.link { color: var(--color-primary); text-decoration: none; }
+.link:hover { text-decoration: underline; }
+
+.typeBadge {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(var(--color-hover-rgb), 0.12);
+  color: var(--color-primary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+/* Warm and cold are both stated; "unknown" is simply absent rather than shown as cold, because
+   most funds have no reading and guessing one would be a claim the data does not make. */
+.warm, .cold {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+.warm { background: rgba(213, 174, 143, 0.24); color: #8B6245; }
+.cold { background: rgba(163, 155, 149, 0.18); color: var(--color-muted); }
+
+.error {
+  margin-bottom: 1rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: rgba(192, 57, 43, 0.09);
+  color: var(--color-destructive);
+  font-size: 0.8125rem;
+}
+
+/* ── Facts ── */
+.factGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+.fact {
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+.factLabel {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+.factValue { margin-top: 0.25rem; font-size: 0.9375rem; color: var(--color-text); }
+.factEmpty { margin-top: 0.25rem; font-size: 0.875rem; color: var(--color-muted); font-style: italic; }
+
+/* ── Tags ── */
+.tagBlock { margin-bottom: 0.875rem; }
+.tagLabel {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  margin-bottom: 0.4rem;
+}
+.tags { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
+.tag, .tagSm, .tagNo {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.tag { background: rgba(var(--color-hover-rgb), 0.1); color: var(--color-primary); }
+.tagSm { background: rgba(163, 155, 149, 0.16); color: var(--color-text); font-weight: 500; }
+/* Exclusions read as a prohibition, and the section header says "Will not look at" so the meaning
+   does not rest on the colour. */
+.tagNo {
+  background: rgba(192, 57, 43, 0.1);
+  color: var(--color-destructive);
+  text-decoration: line-through;
+}
+.emptyInline { font-size: 0.75rem; color: var(--color-muted); font-style: italic; }
+
+/* ── Contacts ── */
+.contactList { display: flex; flex-direction: column; gap: 0.5rem; }
+.contact {
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+/* Someone who has left stays readable but recedes — the record still matters, the phone number
+   does not. */
+.contactGone { opacity: 0.75; }
+
+.contactHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.contactWho { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.contactName { font-size: 0.9375rem; font-weight: 600; color: var(--color-text); }
+
+.rankPrimary, .rankSecondary, .empActive, .empGone, .empUnknown {
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.rankPrimary { background: var(--color-primary); color: #fff; }
+.rankSecondary { background: rgba(var(--color-hover-rgb), 0.14); color: var(--color-primary); }
+.empActive { background: rgba(46, 125, 50, 0.14); color: var(--color-success); }
+.empGone { background: rgba(192, 57, 43, 0.12); color: var(--color-destructive); }
+.empUnknown { background: rgba(163, 155, 149, 0.18); color: var(--color-muted); }
+
+.contactMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+}
+
+.movedTo {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-left: 3px solid var(--color-accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: rgba(213, 174, 143, 0.1);
+  font-size: 0.8125rem;
+  color: var(--color-text);
+}
+.auditNote { margin-top: 0.4rem; font-size: 0.75rem; font-style: italic; color: var(--color-muted); }
+
+.contactFoot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.45rem;
+  font-size: 0.6875rem;
+  color: var(--color-muted);
+}
+.unverified { color: var(--color-accent); font-weight: 600; }
+
+/* ── Inline editors ── */
+.editor {
+  margin-top: 0.7rem;
+  padding-top: 0.7rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.editorRow { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+.editorLabel {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  min-width: 68px;
+}
+
+.input {
+  padding: 0.35rem 0.6rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  outline: none;
+  min-width: 130px;
+}
+.input:focus { border-color: var(--color-primary); }
+
+.miniBtn {
+  padding: 0.25rem 0.6rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.miniBtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.miniBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.primaryBtn {
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.primaryBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.addRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.875rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--color-border);
+}
+.addRow .input { flex: 1; }
+
+.trackedTag {
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 4px;
+  background: rgba(46, 125, 50, 0.12);
+  color: var(--color-success);
+  font-size: 0.5625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.num { text-align: right; white-space: nowrap; }
+
+@media (max-width: 640px) {
+  .addRow > * { width: 100%; }
+  .editorRow { align-items: stretch; }
+}

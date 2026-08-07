@@ -412,6 +412,18 @@ export const LINKEDIN_STATUS_OPTIONS = [
 ] as const
 export type LinkedInStatus = typeof LINKEDIN_STATUS_OPTIONS[number]
 
+export const POC_RANKS = ['primary', 'secondary', 'other'] as const
+export type PocRank = typeof POC_RANKS[number]
+
+export const POC_EMPLOYMENT = ['active', 'moved_on', 'unknown'] as const
+export type PocEmployment = typeof POC_EMPLOYMENT[number]
+
+export const POC_EMPLOYMENT_LABELS: Record<PocEmployment, string> = {
+  active: 'Still there',
+  moved_on: 'Moved on',
+  unknown: 'Not verified',
+}
+
 export type InvestorContact = {
   id: string
   investor_id: string
@@ -423,7 +435,42 @@ export type InvestorContact = {
   email: string | null
   sort_order: number
   created_at: string
+  rank: PocRank
+  employment_status: PocEmployment
+  new_company: string | null
+  new_designation: string | null
+  audit_note: string | null
+  last_verified_at: string | null
+  contacted_by_user_id: string | null
+  contacted_by_name: string | null
+  contact_method: string | null
 }
+
+/** One company an investor has backed. Tags are the point — they are what makes the data queryable. */
+export type PortfolioEntry = {
+  id: string
+  investor_id: string
+  company_name: string
+  company_id: string | null
+  sector_tags: string[]
+  business_type_tags: string[]
+  invested_stage: InvestmentStage | null
+  invested_year: number | null
+  notes: string | null
+  created_at: string
+  company?: { id: string; name: string; logo_url: string | null } | null
+}
+
+export const INVESTMENT_STAGES = ['pre_seed', 'seed', 'pre_series_a', 'series_a', 'series_b', 'growth'] as const
+export type InvestmentStage = typeof INVESTMENT_STAGES[number]
+
+export const INVESTMENT_STAGE_LABELS: Record<InvestmentStage, string> = {
+  pre_seed: 'Pre-seed', seed: 'Seed', pre_series_a: 'Pre-Series A',
+  series_a: 'Series A', series_b: 'Series B', growth: 'Growth',
+}
+
+export const CONNECT_STRENGTHS = ['warm', 'cold', 'unknown'] as const
+export type ConnectStrength = typeof CONNECT_STRENGTHS[number]
 
 export type Investor = {
   id: string
@@ -452,6 +499,17 @@ export type Investor = {
   onboarding_form_completed: boolean
   onboarding_form_url: string | null
   kyc_done: boolean
+  /** Sectors the fund explicitly will not look at — "no meat, alcohol, gambling". */
+  excluded_sectors: string[]
+  connect_strength: ConnectStrength
+  stage_min: InvestmentStage | null
+  stage_max: InvestmentStage | null
+  stage_raw: string | null
+  ticket_currency: 'INR' | 'USD' | null
+  /** Every ESV person who worked this fund, including those who have since left. */
+  esv_poc_names: string[]
+  import_source: string | null
+  portfolio?: PortfolioEntry[]
   esv_poc?: { name: string } | null
   esv_pocs?: Array<{ id: string; name: string; photo_url: string | null }>
   referred_by_partner?: { name: string } | null
