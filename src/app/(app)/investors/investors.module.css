@@ -130,17 +130,21 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.5rem 0.75rem;
+  gap: 0.4rem 0.5rem;
   /* Long type names — "Merchant Bank / Investment Bank" — cannot share a line with the fund name.
-     Wrapping puts the badge under the title instead of on top of it. */
+     Wrapping puts the badges under the title instead of on top of it. */
   flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
 .cardTitleRow {
   display: flex;
   align-items: center;
   gap: 0.625rem;
-  flex: 1;
+  /* Takes the whole first line so the badges wrap BELOW it. With `flex: 1` the title competed with
+     two badges for the same row, was squeezed to a few characters, and then broke one letter per
+     line. A name is the thing you read first; it gets the row to itself. */
+  flex: 1 1 100%;
   min-width: 0;
 }
 
@@ -164,7 +168,10 @@
   line-height: 1.35;
   flex: 1;
   min-width: 0;
-  overflow-wrap: anywhere;
+  /* break-word, NOT anywhere. `anywhere` lets the browser break mid-word even when the line has
+     room, which is what turned "Zephyr Management, L.P." into a vertical column of letters.
+     break-word only breaks a word that genuinely cannot fit. */
+  overflow-wrap: break-word;
 }
 
 .serviceTypeBadge {
@@ -1227,10 +1234,15 @@
 }
 
 /* Pasted LinkedIn URLs run to 120+ characters and were pushing the detail panel's grid apart.
-   Breaking anywhere is uglier than breaking on a word boundary, but a URL has no word boundaries
-   and the alternative is a column that no longer lines up. */
-.detailLink,
-.detailFieldValue {
+   `anywhere` is correct for a URL — it has no word boundaries to break on — and wrong for
+   everything else, which is how a fund name ended up rendering one letter per line. */
+.detailLink {
   overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* Ordinary prose: break a word only when it genuinely cannot fit. */
+.detailFieldValue {
+  overflow-wrap: break-word;
   min-width: 0;
 }

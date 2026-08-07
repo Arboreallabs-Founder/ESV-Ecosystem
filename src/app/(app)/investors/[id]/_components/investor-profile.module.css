@@ -42,6 +42,7 @@
   font-size: 0.8125rem;
 }
 .meta { color: var(--color-muted); }
+/* A URL has no word boundaries, so `anywhere` is right HERE and wrong on a name. */
 .link { color: var(--color-primary); text-decoration: none; overflow-wrap: anywhere; min-width: 0; }
 .link:hover { text-decoration: underline; }
 
@@ -94,7 +95,7 @@
   letter-spacing: 0.06em;
   color: var(--color-muted);
 }
-.factValue { margin-top: 0.25rem; font-size: 0.9375rem; color: var(--color-text); overflow-wrap: anywhere; }
+.factValue { margin-top: 0.25rem; font-size: 0.9375rem; color: var(--color-text); overflow-wrap: break-word; }
 .factEmpty { margin-top: 0.25rem; font-size: 0.875rem; color: var(--color-muted); font-style: italic; }
 
 /* ── Tags ── */
