@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createTask, updateTaskStatus, pushTask, deleteTask } from '@/app/actions/tasks'
@@ -197,7 +198,7 @@ export default function TaskBoard({
     setTasks((prev) => prev.filter((t) => t.id !== task.id))
     startTransition(async () => {
       try { await deleteTask(task.id) }
-      catch (err) { alert(String(err)); router.refresh() }
+      catch (err) { alertError(err); router.refresh() }
     })
   }
 
@@ -226,7 +227,7 @@ export default function TaskBoard({
         setTasks((prev) => [newTask, ...prev])
         setShowModal(false)
         resetTaskDraft()
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 
@@ -248,7 +249,7 @@ export default function TaskBoard({
     closePush()
     startTransition(async () => {
       try { await pushTask(target.id, pushDate, payload) }
-      catch (err) { alert(String(err)); router.refresh() }
+      catch (err) { alertError(err); router.refresh() }
     })
   }
 

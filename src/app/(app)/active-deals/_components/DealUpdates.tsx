@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import { addDealUpdate, deleteDealUpdate } from '@/app/actions/active-deal-updates'
 import { formatDateTimeIstLong } from '@/lib/format-datetime'
@@ -43,7 +44,7 @@ export default function DealUpdates({
         setUpdates((prev) => [created, ...prev])
       } catch (err) {
         setBody(text)
-        alert(String(err))
+        alertError(err)
       }
     })
   }
@@ -54,7 +55,7 @@ export default function DealUpdates({
     setUpdates((prev) => prev.filter((u) => u.id !== id))
     startTransition(async () => {
       try { await deleteDealUpdate(id, activeDealId) }
-      catch (err) { setUpdates(previous); alert(String(err)); router.refresh() }
+      catch (err) { setUpdates(previous); alertError(err); router.refresh() }
     })
   }
 

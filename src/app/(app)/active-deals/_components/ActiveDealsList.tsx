@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition, type KeyboardEvent } from 'react'
+import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import type { ActiveDeal, DealCategory, DealState } from '@/lib/types'
 import { DEAL_STATES, DEAL_STATE_META } from '@/lib/types'
@@ -96,7 +97,7 @@ export default function ActiveDealsList({
       try { await updateDealState(deal.id, next) }
       catch (err) {
         setStateOverrides((prev) => ({ ...prev, [deal.id]: prevState }))
-        alert(String(err))
+        alertError(err)
         router.refresh()
       }
     })
@@ -109,7 +110,7 @@ export default function ActiveDealsList({
       try { await deleteActiveDeal(deal.id) }
       catch (err) {
         setDeletedIds((prev) => { const n = new Set(prev); n.delete(deal.id); return n })
-        alert(String(err))
+        alertError(err)
       }
     })
   }

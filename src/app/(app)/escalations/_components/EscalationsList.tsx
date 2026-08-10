@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import {
   createEscalation,
@@ -112,7 +113,7 @@ export default function EscalationsList({
         setShowModal(false)
         resetForm()
         router.refresh()
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 
@@ -122,7 +123,7 @@ export default function EscalationsList({
       : e))
     startTransition(async () => {
       try { await updateEscalationStatus(esc.id, status) }
-      catch (err) { alert(String(err)); router.refresh() }
+      catch (err) { alertError(err); router.refresh() }
     })
   }
 
@@ -131,7 +132,7 @@ export default function EscalationsList({
     setEscalations((prev) => prev.filter((e) => e.id !== esc.id))
     startTransition(async () => {
       try { await deleteEscalation(esc.id) }
-      catch (err) { alert(String(err)); router.refresh() }
+      catch (err) { alertError(err); router.refresh() }
     })
   }
 

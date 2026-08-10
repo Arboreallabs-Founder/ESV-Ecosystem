@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import {
   ReactFlow, Background, Controls, MiniMap,
@@ -248,7 +249,7 @@ export default function FormBuilderClient({ form, dbNodes, dbEdges, pipelines }:
         const origin = window.location.origin
         setGeneratedLink(`${origin}/f/${result.token}`)
       } catch (err) {
-        alert(String(err))
+        alertError(err)
       }
     })
   }

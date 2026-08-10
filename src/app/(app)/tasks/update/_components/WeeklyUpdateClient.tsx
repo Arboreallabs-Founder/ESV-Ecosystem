@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { alertError } from '@/lib/client-errors'
 import Link from 'next/link'
 import type { Task, ActiveDeal, UserRow, PersonalTodo } from '@/lib/types'
 import { weekRange } from '@/lib/week'
@@ -182,7 +183,7 @@ export default function WeeklyUpdateClient({
       await navigator.clipboard.writeText(text)
       setCopied(id)
       setTimeout(() => setCopied((prev) => (prev === id ? null : prev)), 1600)
-    } catch (err) { alert(String(err)) }
+    } catch (err) { alertError(err) }
   }
 
   function copyAll() {

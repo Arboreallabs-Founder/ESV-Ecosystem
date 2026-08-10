@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import { generateFormLink } from '@/app/actions/forms'
 import type { PartnerFormLink } from '@/lib/types'
 import PortalInvestorReferModal from './_components/PortalInvestorReferModal'
@@ -51,7 +52,7 @@ export default function PortalClient({
           pipeline: form?.pipeline ?? null,
         }, ...prev])
         setLinkLabel('')
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 

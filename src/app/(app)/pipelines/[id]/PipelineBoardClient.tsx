@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { addStage, updateStage, deleteStage, moveEntry, deleteEntry, addAssignee, removeAssignee, rejectEntry, getEntryAnswers, saveStageQuestions, moveEntryWithStageAnswers, saveEntryStageAnswers, getEntryStageAnswers } from '@/app/actions/pipelines'
@@ -281,14 +282,14 @@ export default function PipelineBoardClient({
         try {
           await moveEntryWithStageAnswers(entryId, stageId, answers)
           if (selectedEntry?.id === entryId) getEntryStageAnswers(entryId).then(setSelectedStageAnswers)
-        } catch (err) { alert(String(err)); router.refresh() }
+        } catch (err) { alertError(err); router.refresh() }
       })
     } else {
       startAnswerTransition(async () => {
         try {
           await saveEntryStageAnswers(entryId, answers)
           getEntryStageAnswers(entryId).then(setSelectedStageAnswers)
-        } catch (err) { alert(String(err)) }
+        } catch (err) { alertError(err) }
       })
     }
     setAnswerModal(null)

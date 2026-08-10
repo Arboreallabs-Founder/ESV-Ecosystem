@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import {
   createEvent, updateEvent, deleteEvent, toggleEventPin, toggleEventCompleted,
@@ -262,7 +263,7 @@ export default function EventsView({
     }))
     startTransition(async () => {
       try { await toggleEventAttendance(event.id, next) }
-      catch (err) { alert(String(err)) }
+      catch (err) { alertError(err) }
       router.refresh()
     })
   }
@@ -271,7 +272,7 @@ export default function EventsView({
       try {
         const id = await addEventMediaLink(event.id, label || null, url)
         mutateEvent(event.id, (e) => ({ ...e, media: [...e.media, { id, post_id: event.id, label: label || null, url, created_at: new Date().toISOString() }] }))
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
   function handleDeleteMedia(event: BulletinPost, mediaId: string) {
@@ -283,7 +284,7 @@ export default function EventsView({
       try {
         const attendee = await addEventAttendee(event.id, userId)
         mutateEvent(event.id, (e) => ({ ...e, attendees: [...e.attendees, attendee] }))
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
   function handleRemoveAttendee(event: BulletinPost, userId: string) {

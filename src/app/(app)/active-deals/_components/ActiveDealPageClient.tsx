@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createOrLinkCompanyForActiveDeal, deleteActiveDeal, linkActiveDealToCompany, setDealPartnerVisibility, updateActiveDealDetails, updateDealState } from '@/app/actions/active-deals'
@@ -120,7 +121,7 @@ export default function ActiveDealPageClient({
         router.refresh()
       } catch (err) {
         setPartnerVisible(!next)   // put the switch back if the server refused
-        alert(err instanceof Error ? err.message : String(err))
+        alertError(err)
       }
     })
   }
@@ -143,7 +144,7 @@ export default function ActiveDealPageClient({
       try {
         await deleteActiveDeal(deal.id)
         router.push('/active-deals')
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 
@@ -153,7 +154,7 @@ export default function ActiveDealPageClient({
     setAssignees((prev) => [...prev, { user_id: userId, name: member.name, photo_url: member.photo_url }])
     startAssigneeTransition(async () => {
       try { await addAssignee(deal.pipeline_entry_id, userId) }
-      catch (err) { setAssignees((prev) => prev.filter((a) => a.user_id !== userId)); alert(String(err)) }
+      catch (err) { setAssignees((prev) => prev.filter((a) => a.user_id !== userId)); alertError(err) }
     })
   }
 
@@ -162,7 +163,7 @@ export default function ActiveDealPageClient({
     setAssignees((prev) => prev.filter((a) => a.user_id !== userId))
     startAssigneeTransition(async () => {
       try { await removeAssignee(deal.pipeline_entry_id, userId) }
-      catch (err) { setAssignees(prevAssignees); alert(String(err)) }
+      catch (err) { setAssignees(prevAssignees); alertError(err) }
     })
   }
 
@@ -171,7 +172,7 @@ export default function ActiveDealPageClient({
     setDealState(next)
     startStateTransition(async () => {
       try { await updateDealState(deal.id, next) }
-      catch (err) { setDealState(prev); alert(String(err)) }
+      catch (err) { setDealState(prev); alertError(err) }
     })
   }
 
@@ -183,7 +184,7 @@ export default function ActiveDealPageClient({
         setCompanyId(nextCompanyId ?? '')
         setLinkedCompany(company)
         router.refresh()
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 
@@ -194,7 +195,7 @@ export default function ActiveDealPageClient({
         setCompanyId(id)
         setLinkedCompany(companyOptions.find((c) => c.id === id) ?? { id, name: deal.entry?.title ?? 'Company profile' })
         router.refresh()
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 

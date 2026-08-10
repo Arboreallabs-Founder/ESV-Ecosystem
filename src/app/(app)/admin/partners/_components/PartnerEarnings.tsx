@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import Link from 'next/link'
 import { setPartnerDealShare } from '@/app/actions/partners'
 import type { PartnerDealEarning, PartnerShareBase } from '@/lib/types'
@@ -33,7 +34,7 @@ export default function PartnerEarnings({
   function persist(dealId: string, base: PartnerShareBase, splitPct: number | null) {
     startTransition(async () => {
       try { await setPartnerDealShare(dealId, partnerId, base, splitPct) }
-      catch (err) { alert(String(err)) }
+      catch (err) { alertError(err) }
     })
   }
 

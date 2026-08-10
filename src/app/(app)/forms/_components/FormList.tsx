@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createForm, deleteForm, generateFormLink, deleteFormLink } from '@/app/actions/forms'
@@ -37,7 +38,7 @@ export default function FormList({ forms: initial, pipelines, canBuild, canDelet
           links: (f.links ?? []).filter((l) => l.id !== linkId),
         })))
         setViewLinksForm((prev) => prev ? { ...prev, links: (prev.links ?? []).filter((l) => l.id !== linkId) } : null)
-      } catch (err) { alert(String(err)) } finally { setDeletingLinkId(null) }
+      } catch (err) { alertError(err) } finally { setDeletingLinkId(null) }
     })
   }
 
@@ -56,7 +57,7 @@ export default function FormList({ forms: initial, pipelines, canBuild, canDelet
           ...f,
           links: [{ id: result.id, token: result.token, label: linkLabel.trim() || null, created_at: new Date().toISOString(), creator: result.creatorName ? { name: result.creatorName } : null }, ...(f.links ?? [])]
         } : f))
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 

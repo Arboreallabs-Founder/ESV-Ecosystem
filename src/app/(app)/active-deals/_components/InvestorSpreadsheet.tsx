@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import Link from 'next/link'
 import {
   getInvestorsForPicker,
@@ -93,7 +94,7 @@ export default function InvestorSpreadsheet({
       try {
         const newInvs = await addInvestorsToDeal(dealId, investorIds, categoryId)
         setInvestors((prev) => [...prev, ...newInvs])
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 
@@ -102,7 +103,7 @@ export default function InvestorSpreadsheet({
       try {
         await removeInvestorFromDeal(activeDealInvestorId)
         setInvestors((prev) => prev.filter((inv) => inv.id !== activeDealInvestorId))
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 
@@ -115,7 +116,7 @@ export default function InvestorSpreadsheet({
     mutateInvestor(inv.id, (i) => ({ ...i, status: next, is_investing: nextInvesting }))
     startTransition(async () => {
       try { await updateDealInvestor(inv.id, { status: next, is_investing: nextInvesting }) }
-      catch (err) { mutateInvestor(inv.id, (i) => ({ ...i, status: prevStatus, is_investing: prevInvesting })); alert(String(err)) }
+      catch (err) { mutateInvestor(inv.id, (i) => ({ ...i, status: prevStatus, is_investing: prevInvesting })); alertError(err) }
     })
   }
 
@@ -127,7 +128,7 @@ export default function InvestorSpreadsheet({
   function handleAmountBlur(inv: ActiveDealInvestor) {
     startTransition(async () => {
       try { await updateDealInvestor(inv.id, { investment_amount: inv.investment_amount }) }
-      catch (err) { alert(String(err)) }
+      catch (err) { alertError(err) }
     })
   }
 
@@ -139,7 +140,7 @@ export default function InvestorSpreadsheet({
   function handleSharesBlur(inv: ActiveDealInvestor) {
     startTransition(async () => {
       try { await updateDealInvestor(inv.id, { shares: inv.shares }) }
-      catch (err) { alert(String(err)) }
+      catch (err) { alertError(err) }
     })
   }
 
@@ -158,7 +159,7 @@ export default function InvestorSpreadsheet({
     if (!fee) return
     startTransition(async () => {
       try { await upsertInvestorFee(investorId, { id: feeId, label: fee.label, rate: numRate, source_field_id: fee.source_field_id }) }
-      catch (err) { alert(String(err)) }
+      catch (err) { alertError(err) }
     })
   }
 
@@ -169,7 +170,7 @@ export default function InvestorSpreadsheet({
       try { await toggleInvestorFee(fee.id, next) }
       catch (err) {
         mutateInvestor(investorId, (inv) => ({ ...inv, fees: inv.fees.map((f) => f.id === fee.id ? { ...f, is_enabled: !next } : f) }))
-        alert(String(err))
+        alertError(err)
       }
     })
   }
@@ -180,7 +181,7 @@ export default function InvestorSpreadsheet({
         const newId = await upsertInvestorFee(inv.id, { label: col.label, rate: null, source_field_id: col.source_field_id })
         const newFee: ActiveDealInvestorFee = { id: newId!, label: col.label, rate: null, source_field_id: col.source_field_id, is_enabled: true }
         mutateInvestor(inv.id, (i) => ({ ...i, fees: [...i.fees, newFee] }))
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 
@@ -189,7 +190,7 @@ export default function InvestorSpreadsheet({
     mutateInvestor(inv.id, (i) => ({ ...i, fees: i.fees.filter((f) => f.id !== fee.id) }))
     startTransition(async () => {
       try { await deleteInvestorFee(fee.id) }
-      catch (err) { alert(String(err)) }
+      catch (err) { alertError(err) }
     })
   }
 
@@ -208,7 +209,7 @@ export default function InvestorSpreadsheet({
         setShowAddFeeColumn(false)
         setNewColumnLabel('')
         setNewColumnRate('')
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 
@@ -219,7 +220,7 @@ export default function InvestorSpreadsheet({
     setInvestors((prev) => prev.map((inv) => ({ ...inv, fees: inv.fees.filter((f) => !feeIdSet.has(f.id)) })))
     startTransition(async () => {
       try { await Promise.all(feeIds.map((id) => deleteInvestorFee(id))) }
-      catch (err) { alert(String(err)) }
+      catch (err) { alertError(err) }
     })
   }
 
@@ -244,7 +245,7 @@ export default function InvestorSpreadsheet({
         await Promise.all(affected.map(({ investorId, fee }) =>
           upsertInvestorFee(investorId, { id: fee.id, label: newLabel, rate: fee.rate, source_field_id: fee.source_field_id })
         ))
-      } catch (err) { alert(String(err)) }
+      } catch (err) { alertError(err) }
     })
   }
 

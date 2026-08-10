@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { alertError } from '@/lib/client-errors'
 import type { ActivityLogEntry } from '@/lib/types'
 import styles from '../../admin.module.css'
 
@@ -32,7 +33,7 @@ export default function ActivityLogClient({ entries }: { entries: ActivityLogEnt
       await navigator.clipboard.writeText(fullText)
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
-    } catch (err) { alert(String(err)) }
+    } catch (err) { alertError(err) }
   }
 
   function handleDownload() {
