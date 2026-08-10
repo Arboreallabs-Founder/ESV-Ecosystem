@@ -62,6 +62,18 @@ export default function ActiveDealsList({
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [showNew, setShowNew] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  // Collapsed by default. A card's job in a list is to be recognised and compared; the field
+  // values are for after you have chosen one, and showing every deal's fee structure at once
+  // makes the list longer than the screen for no gain.
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+
+  function toggleExpanded(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
   // Optimistic state overrides layered over server data — avoids re-seeding a whole
   // deals array (and a setState-in-effect) when the server refreshes after a new deal.
   const [stateOverrides, setStateOverrides] = useState<Record<string, DealState>>({})
@@ -259,20 +271,43 @@ export default function ActiveDealsList({
                 {/* Who's running this mandate. Faces rather than names: at card scale a name list
                     wraps and competes with the deal title, whereas a stack of faces is scannable
                     at a glance and is the thing people actually look for. */}
-                {(deal.entry?.assignees?.length ?? 0) > 0 && (
-                  <div className={styles.dealTeam}>
-                    <AvatarGroup
-                      people={(deal.entry?.assignees ?? []).map((a) => ({ id: a.user_id, name: a.name, photo_url: a.photo_url }))}
-                      size="sm"
-                    />
-                    <span className={styles.dealTeamLabel}>
-                      {(deal.entry?.assignees ?? []).map((a) => a.name).join(', ')}
-                    </span>
-                  </div>
-                )}
+                {/* The team row doubles as the expander. Field values are the long part of a card
+                    and mostly matter once you have picked a deal, so a wall of them makes the list
+                    harder to scan than the cards it is made of. */}
+                {(() => {
+                  const hasFields = deal.categories.some(({ field_values }) => field_values.some((fv) => fv.value))
+                  const isOpen = expanded.has(deal.id)
+                  if ((deal.entry?.assignees?.length ?? 0) === 0 && !hasFields) return null
+                  return (
+                    <button
+                      type="button"
+                      className={styles.dealTeam}
+                      onClick={(e) => { e.stopPropagation(); toggleExpanded(deal.id) }}
+                      aria-expanded={isOpen}
+                      aria-label={isOpen ? 'Hide deal details' : 'Show deal details'}
+                      disabled={!hasFields}
+                    >
+                      <AvatarGroup
+                        people={(deal.entry?.assignees ?? []).map((a) => ({ id: a.user_id, name: a.name, photo_url: a.photo_url }))}
+                        size="sm"
+                      />
+                      <span className={styles.dealTeamLabel}>
+                        {(deal.entry?.assignees ?? []).map((a) => a.name).join(', ') || 'Unassigned'}
+                      </span>
+                      {hasFields && (
+                        <span className={isOpen ? styles.chevronOpen : styles.chevron} aria-hidden="true">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="m6 9 6 6 6-6" />
+                          </svg>
+                        </span>
+                      )}
+                    </button>
+                  )
+                })()}
 
                 {/* Field values per category */}
-                {deal.categories.map(({ category, field_values }) => {
+                {expanded.has(deal.id) && deal.categories.map(({ category, field_values }) => {
                   const populated = field_values.filter((fv) => fv.value)
                   if (populated.length === 0) return null
                   return (

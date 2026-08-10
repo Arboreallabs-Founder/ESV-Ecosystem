@@ -2114,13 +2114,22 @@
   white-space: pre-wrap;
 }
 
-/* Assignee faces on a deal card. */
+/* Assignee faces on a deal card — and the expander for everything below it. Styled as a row
+   rather than a button: it is still primarily "who is running this", the chevron carries the
+   affordance. border-top is set explicitly AFTER the reset, since `border: none` would otherwise
+   take the divider with it. */
 .dealTeam {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  width: 100%;
   margin-top: 0.75rem;
-  padding-top: 0.75rem;
+  padding: 0.75rem 0 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border: none;
   border-top: 1px solid var(--color-border);
 }
 
@@ -2176,3 +2185,16 @@
   font-weight: 700;
   white-space: nowrap;
 }
+
+.dealTeam:disabled { cursor: default; }
+
+.chevron, .chevronOpen {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-muted);
+  transition: transform 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.chevronOpen { transform: rotate(180deg); color: var(--color-primary); }
+.dealTeam:hover .chevron { color: var(--color-primary); }
