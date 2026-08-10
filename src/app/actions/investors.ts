@@ -69,29 +69,19 @@ export async function createInvestor(params: {
 }): Promise<{ id: string }> {
   const { isPartnerReferral, contacts, ...fields } = params
 
-  let supabase: Awaited<ReturnType<typeof requireRole>>['supabase']
-  let userId: string
-  let orgId: string | null
-  let referredByPartnerId = fields.referred_by_partner_id
-
+  // Partners no longer add investors at all. A partner entering a fund we already hold creates a
+  // duplicate record and a fee-split claim over a relationship that was already ours. They tell us
+  // the name and we attribute the existing fund to them via referred_by_partner_id — which is why
+  // that field is on the internal form's partner dropdown.
   if (isPartnerReferral) {
-    const result = await requireRole(['franchise_partner'])
-    supabase = result.supabase
-    userId = result.userId
-    orgId = result.orgId
-    // Auto-resolve the partner's own franchise_partner_id
-    const { data: userRow } = await supabase
-      .from('users')
-      .select('franchise_partner_id')
-      .eq('id', userId)
-      .single()
-    referredByPartnerId = userRow?.franchise_partner_id ?? null
-  } else {
-    const result = await requireInternal()
-    supabase = result.supabase
-    userId = result.userId
-    orgId = result.orgId
+    throw new Error(
+      'Partners cannot add investors directly. Send us the name and we will link it to you — '
+      + 'this avoids duplicating a fund we may already hold.',
+    )
   }
+
+  const { supabase, userId, orgId } = await requireInternal()
+  const referredByPartnerId = fields.referred_by_partner_id
 
   const username = await generateUniqueUsername(supabase, fields.name)
 
@@ -200,8 +190,8 @@ export async function updateInvestor(
   }
 ): Promise<void> {
   // Partners may edit their own referrals, but never the ESV POC or referral attribution.
-  const { supabase, role, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'franchise_partner', 'hr'])
-  const isPartner = role === 'franchise_partner'
+  const { supabase, role, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'hr'])
+  const isPartner = false
 
   const baseFields = {
     name: params.name,
@@ -390,8 +380,9 @@ export async function addContact(
   investorId: string,
   params: ContactDraft
 ): Promise<InvestorContact> {
-  // Allow franchise_partner too — RLS enforces they can only add to their own referrals
-  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'franchise_partner', 'hr'])
+  // Partners excluded, same reasoning as createInvestor: adding a contact is adding to the
+  // investor database by another door, and the POC records are what the fee conversation rests on.
+  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'hr'])
   const { data, error } = await supabase
     .from('investor_contacts')
     .insert({

@@ -260,3 +260,25 @@
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   border-color: var(--glass-border);
 }
+
+/* Partner visibility per field. States are named, not colour-coded alone — "Private" and
+   "Partners see this" both say what they mean. */
+.partnerOff, .partnerOn {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: none;
+  font-family: inherit;
+  font-size: 0.625rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.partnerOff { color: var(--color-muted); }
+.partnerOff:hover { border-color: var(--color-primary); color: var(--color-primary); }
+/* Open to partners is the exception, so it is the one that carries emphasis. */
+.partnerOn {
+  border-color: var(--color-accent);
+  background: rgba(213, 174, 143, 0.2);
+  color: #8B6245;
+}

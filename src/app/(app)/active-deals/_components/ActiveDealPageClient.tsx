@@ -132,7 +132,12 @@ export default function ActiveDealPageClient({
   const canDeleteDeal = ['founder', 'admin'].includes(userRole)
   // Showing a deal to partners is a disclosure decision, not an edit — leads only.
   const canSetPartnerVisibility = ['founder', 'admin'].includes(userRole)
-  const canViewInvestors = userRole !== 'general'
+  const isPartner = userRole === 'franchise_partner'
+  // A partner sees HOW MUCH has been raised, never BY WHOM. The names on a cap table are the
+  // relationships we are paid for; the progress number is what a referrer legitimately wants to
+  // know about a deal they sourced.
+  const canViewInvestors = userRole !== 'general' && !isPartner
+  const canSeeRaiseProgress = userRole !== 'general'
   // Mirrors the active_deal_updates INSERT policy: leaders, or whoever is running the mandate.
   const canPostUpdate = ['founder', 'admin'].includes(userRole)
     || assignees.some((a) => a.user_id === currentUserId)
@@ -302,6 +307,24 @@ export default function ActiveDealPageClient({
       </div>
 
       {/* ── Investor dashboard (hidden from general) ─────────────────────────── */}
+      {isPartner && canSeeRaiseProgress && (
+        <div className={styles.dashCard}>
+          <div className={styles.detailSectionTitle}>Raise progress</div>
+          <div className={styles.statRow}>
+            <div className={styles.statBlock}>
+              <span className={styles.statLabel}>Committed so far</span>
+              <span className={styles.statValueHero}>{formatINR(totalCommitted)}</span>
+            </div>
+            <div className={styles.statBlock}>
+              <span className={styles.statLabel}>Commitments</span>
+              {/* A count, not a list. Knowing five investors are in tells a partner the deal is
+                  moving; knowing which five is ours. */}
+              <span className={styles.statValue}>{investors.length}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {canViewInvestors && (
         <>
           <div className={styles.statRow}>
@@ -453,16 +476,24 @@ export default function ActiveDealPageClient({
         {deal.categories.length > 0 && (
           <div className={styles.dashCard}>
             <div className={styles.detailSectionTitle}>Category Details</div>
-            {deal.categories.map(({ category, field_values }) => (
+            {deal.categories.map(({ category, field_values }) => {
+              // Partners see only fields explicitly opened to them. A category left with nothing
+              // visible is dropped entirely rather than rendered as an empty heading, which would
+              // advertise that there is something here they cannot see.
+              const visibleFields = isPartner
+                ? category.fields.filter((f) => f.visible_to_partners)
+                : category.fields
+              if (isPartner && visibleFields.length === 0) return null
+              return (
               <div key={category.id} className={styles.detailCategoryBlock}>
                 <div className={styles.detailCategoryName} style={{ color: category.color }}>
                   <span className={styles.catDot} style={{ background: category.color }} />
                   {category.name}
                 </div>
-                {category.fields.length === 0 ? (
+                {visibleFields.length === 0 ? (
                   <div className={styles.detailEmpty}>No fields defined.</div>
                 ) : (
-                  category.fields.map((field) => {
+                  visibleFields.map((field) => {
                     const fv = field_values.find((v) => v.field_id === field.id)
                     return (
                       <div key={field.id} className={styles.fieldValueRow}>
@@ -475,7 +506,8 @@ export default function ActiveDealPageClient({
                   })
                 )}
               </div>
-            ))}
+              )
+            })}
           </div>
         )}
 

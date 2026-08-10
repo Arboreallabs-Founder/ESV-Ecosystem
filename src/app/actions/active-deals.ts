@@ -873,3 +873,21 @@ export async function setDealPartnerVisibility(activeDealId: string, visible: bo
   revalidatePath('/active-deals')
   revalidatePath('/portal')
 }
+
+/**
+ * Open or close a deal field to partners.
+ *
+ * Per-field rather than a fixed list, because the fields are user-defined — someone will add
+ * "Carry %" next month and it must not be visible to referrers by accident. Default is closed,
+ * so the risky direction requires a deliberate click.
+ */
+export async function setFieldPartnerVisibility(fieldId: string, visible: boolean): Promise<void> {
+  const { supabase } = await requireAdmin()
+  const { error } = await supabase
+    .from('deal_category_fields')
+    .update({ visible_to_partners: visible })
+    .eq('id', fieldId)
+  if (error) throw error
+  revalidatePath('/admin/categories')
+  revalidatePath('/active-deals')
+}

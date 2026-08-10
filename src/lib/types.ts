@@ -814,6 +814,9 @@ export type DealCategoryField = {
   field_type: 'text' | 'numeric' | 'percentage' | 'url'
   required: boolean
   position: number
+  /** Partners see this field on a deal. Defaults false — fee structures and mandate links are not
+   *  a referrer's to read, and a field added later stays private until someone decides otherwise. */
+  visible_to_partners: boolean
 }
 
 export type DealCategory = {

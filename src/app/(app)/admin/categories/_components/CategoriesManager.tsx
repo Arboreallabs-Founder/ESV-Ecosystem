@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import {
+import { setFieldPartnerVisibility,
   createCategory, updateCategory, deleteCategory,
   addCategoryField, updateCategoryField, deleteCategoryField,
 } from '@/app/actions/active-deals'
@@ -88,10 +88,30 @@ export default function CategoriesManager({ initialCategories }: { initialCatego
     startTransition(async () => {
       try {
         const fieldId = await addCategoryField(categoryId, draft.label, draft.field_type, draft.required, position)
-        const newField: DealCategoryField = { id: fieldId, category_id: categoryId, label: draft.label.trim(), field_type: draft.field_type, required: draft.required, position }
+        // New fields are private to partners by default. This list holds fee structures and
+        // mandate links; opening a field is a decision someone should make, not the default.
+        const newField: DealCategoryField = { id: fieldId, category_id: categoryId, label: draft.label.trim(), field_type: draft.field_type, required: draft.required, position, visible_to_partners: false }
         setCategories((prev) => prev.map((c) => c.id === categoryId ? { ...c, fields: [...c.fields, newField] } : c))
         setFieldDrafts((prev) => ({ ...prev, [categoryId]: { label: '', field_type: 'text', required: false } }))
       } catch (err) { setFieldError(String(err)) }
+    })
+  }
+
+  function handleTogglePartner(categoryId: string, field: DealCategoryField) {
+    const next = !field.visible_to_partners
+    // Optimistic: the toggle is the whole interaction, and waiting a round trip to see it move
+    // makes it feel broken.
+    setCategories((prev) => prev.map((c) => c.id === categoryId
+      ? { ...c, fields: c.fields.map((f) => f.id === field.id ? { ...f, visible_to_partners: next } : f) }
+      : c))
+    startTransition(async () => {
+      try { await setFieldPartnerVisibility(field.id, next) }
+      catch (err) {
+        setCategories((prev) => prev.map((c) => c.id === categoryId
+          ? { ...c, fields: c.fields.map((f) => f.id === field.id ? { ...f, visible_to_partners: !next } : f) }
+          : c))
+        setFieldError(String(err))
+      }
     })
   }
 
@@ -190,6 +210,18 @@ export default function CategoriesManager({ initialCategories }: { initialCatego
                         <>
                           <span className={catStyles.fieldLabel}>{f.label}{f.required && <span className={catStyles.reqStar}> *</span>}</span>
                           <span className={catStyles.fieldType}>{FIELD_TYPE_LABELS[f.field_type]}</span>
+                          {/* Only marked when open. Most fields are closed, so a chip on every
+                              private one would be noise — the exception is what needs saying. */}
+                          <button
+                            className={f.visible_to_partners ? catStyles.partnerOn : catStyles.partnerOff}
+                            onClick={() => handleTogglePartner(cat.id, f)}
+                            disabled={isPending}
+                            title={f.visible_to_partners
+                              ? 'Partners can see this field on a deal. Click to hide it.'
+                              : 'Hidden from partners. Click to show it.'}
+                          >
+                            {f.visible_to_partners ? 'Partners see this' : 'Private'}
+                          </button>
                           <button className={catStyles.editBtn} onClick={() => openEditField(f)}>Edit</button>
                           <button className={catStyles.deleteBtn} onClick={() => handleDeleteField(cat.id, f.id)}>Remove</button>
                         </>

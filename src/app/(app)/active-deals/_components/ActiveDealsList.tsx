@@ -62,6 +62,7 @@ export default function ActiveDealsList({
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [showNew, setShowNew] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const isPartner = userRole === 'franchise_partner'
   // Collapsed by default. A card's job in a list is to be recognised and compared; the field
   // values are for after you have chosen one, and showing every deal's fee structure at once
   // makes the list longer than the screen for no gain.
@@ -308,7 +309,14 @@ export default function ActiveDealsList({
 
                 {/* Field values per category */}
                 {expanded.has(deal.id) && deal.categories.map(({ category, field_values }) => {
-                  const populated = field_values.filter((fv) => fv.value)
+                  // Partners see only the fields marked visible_to_partners. Filtering here rather
+                  // than in the query keeps one source of truth for "what is on this deal" and one
+                  // rule for who may read each part of it.
+                  const populated = field_values.filter((fv) => {
+                    if (!fv.value) return false
+                    if (!isPartner) return true
+                    return category.fields.find((f) => f.id === fv.field_id)?.visible_to_partners === true
+                  })
                   if (populated.length === 0) return null
                   return (
                     <div key={category.id} className={styles.fieldGroup}>
