@@ -2,23 +2,29 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { submitPartnerCompany } from '@/app/actions/partner-companies'
+import { submitCompanyToPipeline } from '@/app/actions/partner-companies'
 import { SGP_INTAKE_ACTION_LABELS } from '@/lib/types'
-import type { PartnerCompany, UserRow } from '@/lib/types'
+import type { UserRow } from '@/lib/types'
+import type { PartnerSubmission } from '@/lib/partner-companies'
 import Avatar from '@/app/_components/Avatar'
 import { formatDateTimeIst } from '@/lib/format-datetime'
 import styles from '../my-companies.module.css'
 
-const STATUS_META: Record<PartnerCompany['status'], { label: string; className: string; hint: string }> = {
-  submitted: { label: 'With the coordinator', className: 'statusSubmitted', hint: 'Waiting to be picked up.' },
-  assigned: { label: 'Being worked on', className: 'statusAssigned', hint: 'Someone has been assigned to it.' },
-  closed: { label: 'Closed', className: 'statusClosed', hint: '' },
+/* Stage colour by type, not by name — an org can rename a stage and this should keep working. */
+function stageClass(t: string | undefined) {
+  if (t === 'accepted') return 'statusAssigned'
+  if (t === 'rejected') return 'statusClosed'
+  if (t === 'lead') return 'statusSubmitted'
+  return 'statusAssigned'
 }
 
+
 export default function MyCompaniesClient({
-  submissions, coordinators,
+  submissions, coordinators, stages, pipelineReady,
 }: {
-  submissions: PartnerCompany[]
+  submissions: PartnerSubmission[]
+  stages: Array<{ id: string; name: string; stage_type: string; color: string | null }>
+  pipelineReady: boolean
   coordinators: UserRow[]
 }) {
   const router = useRouter()
@@ -35,7 +41,7 @@ export default function MyCompaniesClient({
 
     startTransition(async () => {
       try {
-        await submitPartnerCompany({
+        await submitCompanyToPipeline({
           name: fd.get('name') as string,
           website: fd.get('website') as string,
           sector: fd.get('sector') as string,
@@ -43,7 +49,7 @@ export default function MyCompaniesClient({
           contact_name: fd.get('contact_name') as string,
           contact_email: fd.get('contact_email') as string,
           contact_phone: fd.get('contact_phone') as string,
-          partner_comments: fd.get('partner_comments') as string,
+          notes: fd.get('partner_comments') as string,
         })
         form.reset()
         setOpen(false)
@@ -154,46 +160,54 @@ export default function MyCompaniesClient({
         </div>
       ) : (
         <div className={styles.list}>
-          {submissions.map((s) => {
-            const meta = STATUS_META[s.status]
-            return (
-              <article key={s.id} className={styles.card}>
-                <div className={styles.cardHead}>
-                  <div>
-                    <h2 className={styles.cardName}>{s.name}</h2>
-                    <div className={styles.cardMeta}>
-                      {[s.sector, s.hq_city].filter(Boolean).join(' · ') || 'No sector given'}
-                      {' · added '}{formatDateTimeIst(s.created_at)}
-                    </div>
+          {submissions.map((s) => (
+            <article key={s.id} className={styles.card}>
+              <div className={styles.cardHead}>
+                <div>
+                  <h2 className={styles.cardName}>{s.title ?? 'Untitled'}</h2>
+                  <div className={styles.cardMeta}>
+                    added {formatDateTimeIst(s.submitted_at)}
                   </div>
-                  <span className={`${styles.status} ${styles[meta.className]}`}>{meta.label}</span>
                 </div>
+                {/* The live stage, straight off the entry. When a coordinator moves the card on
+                    the board, this moves with it — there is no second status to fall behind. */}
+                <span className={`${styles.status} ${styles[stageClass(s.stage?.stage_type)]}`}>
+                  {s.stage?.name ?? 'Submitted'}
+                </span>
+              </div>
 
-                {s.partner_comments && <p className={styles.comments}>{s.partner_comments}</p>}
+              {s.partner_notes && <p className={styles.comments}>{s.partner_notes}</p>}
 
-                {/* Partners see that it moved and who has it — not the internal notes or links. */}
-                {s.status === 'assigned' && (
-                  <div className={styles.progress}>
-                    <span className={styles.progressAction}>
-                      {s.intake_action ? SGP_INTAKE_ACTION_LABELS[s.intake_action] : 'In progress'}
-                    </span>
-                    {s.assignee?.name && (
-                      <span className={styles.progressWho}>
-                        <Avatar name={s.assignee.name} photoUrl={s.assignee.photo_url} size="xs" />
-                        {s.assignee.name}
-                      </span>
-                    )}
-                  </div>
-                )}
+              {/* Where it sits in the run of stages, so "First level call" means something to
+                  somebody who has never seen the board. */}
+              {stages.length > 0 && s.stage && s.stage.stage_type !== 'rejected' && (
+                <div className={styles.progress}>
+                  {stages
+                    .filter((st) => st.stage_type !== 'rejected')
+                    .map((st) => {
+                      const here = st.name === s.stage!.name
+                      const idx = stages.findIndex((x) => x.name === s.stage!.name)
+                      const done = stages.findIndex((x) => x.name === st.name) < idx
+                      return (
+                        <span
+                          key={st.id}
+                          className={here ? styles.stepNow : done ? styles.stepDone : styles.step}
+                          title={st.name}
+                        >
+                          {st.name}
+                        </span>
+                      )
+                    })}
+                </div>
+              )}
 
-                {s.status === 'closed' && (
-                  <div className={styles.closed}>
-                    {s.closed_reason || 'Closed without a reason given.'}
-                  </div>
-                )}
-              </article>
-            )
-          })}
+              {s.stage?.stage_type === 'rejected' && (
+                <div className={styles.closed}>
+                  {s.rejection_reason || 'Not taken forward.'}
+                </div>
+              )}
+            </article>
+          ))}
         </div>
       )}
     </div>

@@ -208,3 +208,74 @@ export async function setSgpCoordinator(targetUserId: string, isCoordinator: boo
   revalidatePath('/admin/users')
   revalidatePath('/sgp-desk')
 }
+
+// ── The single partner intake route ──────────────────────────────────────────
+
+/**
+ * A partner submits a company.
+ *
+ * Creates a pipeline entry at Lead on the partner-intake pipeline — the same object a form
+ * submission creates, so one board, one set of stages, one approval path. The old route wrote a
+ * partner_companies row that had no stages and no way to record what happened after intake.
+ *
+ * The stage and pipeline are chosen here AND enforced in RLS. Belt and braces on purpose: the
+ * policy is what actually stops a partner posting an entry straight into "Accepted", which is the
+ * bypass this replaces.
+ */
+export async function submitCompanyToPipeline(input: {
+  name: string
+  website?: string | null
+  sector?: string | null
+  contact_name?: string | null
+  contact_email?: string | null
+  contact_phone?: string | null
+  hq_city?: string | null
+  notes?: string | null
+}): Promise<{ id: string }> {
+  const { supabase, userId } = await requireRole(['franchise_partner', 'founder', 'admin', 'associate'])
+  const name = input.name.trim()
+  if (!name) throw new Error('The company name is required.')
+
+  const { data: pipeline, error: pErr } = await supabase
+    .from('pipelines')
+    .select('id, stages:pipeline_stages(id, stage_type)')
+    .eq('is_partner_intake', true)
+    .maybeSingle()
+  if (pErr) throw pErr
+  if (!pipeline) {
+    throw new Error('No partner pipeline has been set up yet. Ask an admin to create one.')
+  }
+  const lead = ((pipeline as any).stages ?? []).find((s: any) => s.stage_type === 'lead')
+  if (!lead) throw new Error('The partner pipeline has no Lead stage.')
+
+  const { data: me } = await supabase
+    .from('users').select('franchise_partner_id, name').eq('id', userId).single()
+
+  const { data, error } = await supabase
+    .from('pipeline_entries')
+    .insert({
+      pipeline_id: pipeline.id,
+      stage_id: lead.id,
+      title: name,
+      submitter_name: input.contact_name?.trim() || null,
+      submitter_email: input.contact_email?.trim() || null,
+      sourced_by_partner_id: me?.franchise_partner_id ?? null,
+      // Everything the partner typed, kept together. Whoever picks this up should not have to
+      // hunt across fields for the one useful sentence.
+      partner_notes: [
+        input.notes?.trim(),
+        input.website?.trim() ? `Website: ${input.website.trim()}` : null,
+        input.sector?.trim() ? `Sector: ${input.sector.trim()}` : null,
+        input.hq_city?.trim() ? `Based in: ${input.hq_city.trim()}` : null,
+        input.contact_phone?.trim() ? `Phone: ${input.contact_phone.trim()}` : null,
+      ].filter(Boolean).join('\n') || null,
+    })
+    .select('id')
+    .single()
+  if (error) throw error
+
+  revalidatePath('/my-companies')
+  revalidatePath('/sgp-desk')
+  revalidatePath('/pipelines')
+  return { id: data.id as string }
+}

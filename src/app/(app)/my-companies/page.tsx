@@ -1,14 +1,18 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
-import { fetchPartnerCompanies, fetchCoordinators } from '@/lib/partner-companies'
+import { fetchCoordinators, fetchMySubmissions, fetchPartnerPipeline } from '@/lib/partner-companies'
 import MyCompaniesClient from './_components/MyCompaniesClient'
 
 /**
- * The partner's own company database.
+ * The partner's own companies.
  *
- * RLS returns only what this person submitted, so the same query that gives a coordinator the
- * whole queue gives a partner their own list — no separate endpoint, and no way for one partner
- * to see another's leads.
+ * Submissions are pipeline entries now, not a separate partner_companies table. That change is
+ * what makes the stage on each card real: it is read from the entry, so when a coordinator moves
+ * the card on the board the partner's view follows with nothing to keep in step.
+ *
+ * RLS returns only what this partner sourced, so the same query that gives a coordinator the whole
+ * pipeline gives a partner their own list — no separate endpoint, and no way for one partner to
+ * see another's leads.
  */
 export default async function MyCompaniesPage() {
   const user = await getUser()
@@ -17,14 +21,18 @@ export default async function MyCompaniesPage() {
     redirect('/dashboard')
   }
 
-  const [submissions, coordinators] = await Promise.all([
-    fetchPartnerCompanies(),
+  const [submissions, coordinators, pipeline] = await Promise.all([
+    fetchMySubmissions(),
     fetchCoordinators(),
+    fetchPartnerPipeline(),
   ])
 
-  // Internal staff can log a company on a partner's behalf, but this page is their own list —
-  // the full queue lives on the SGP Desk.
-  const mine = submissions.filter((s) => s.submitted_by === user.id)
-
-  return <MyCompaniesClient submissions={mine} coordinators={coordinators} />
+  return (
+    <MyCompaniesClient
+      submissions={submissions}
+      coordinators={coordinators}
+      stages={pipeline?.stages ?? []}
+      pipelineReady={Boolean(pipeline)}
+    />
+  )
 }

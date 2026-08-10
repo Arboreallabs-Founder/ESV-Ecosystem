@@ -69,3 +69,60 @@ export const fetchCoordinators = cache(async (): Promise<UserRow[]> => {
     .order('name')
   return (data ?? []) as unknown as UserRow[]
 })
+
+// ── The single partner intake route ──────────────────────────────────────────
+// Partner submissions are pipeline entries now, not partner_companies rows. Both used to exist and
+// behaved differently: one was manual with no stages, the other skipped the coordinator entirely.
+
+export type PartnerSubmission = {
+  id: string
+  title: string | null
+  submitted_at: string
+  partner_notes: string | null
+  submitter_name: string | null
+  submitter_email: string | null
+  stage: { name: string; stage_type: string; color: string | null } | null
+  rejection_reason: string | null
+}
+
+/** The org's partner-intake pipeline, with its stages. */
+export const fetchPartnerPipeline = cache(async () => {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('pipelines')
+    .select('id, name, stages:pipeline_stages(id, name, position, stage_type, color)')
+    .eq('is_partner_intake', true)
+    .maybeSingle()
+  if (error) {
+    console.error('[partner-intake] pipeline read failed:', error.message)
+    return null
+  }
+  if (!data) return null
+  return {
+    ...data,
+    stages: ((data as any).stages ?? []).sort((a: any, b: any) => a.position - b.position),
+  }
+})
+
+/**
+ * What this partner has submitted, with the stage each one is on.
+ *
+ * The stage is read from the entry rather than tracked separately, which is the point of routing
+ * through a pipeline: when a coordinator moves a card, the partner's view updates with no second
+ * thing to keep in step.
+ */
+export const fetchMySubmissions = cache(async (): Promise<PartnerSubmission[]> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('pipeline_entries')
+    .select('id, title, submitted_at, partner_notes, submitter_name, submitter_email, rejection_reason, stage:pipeline_stages!stage_id(name, stage_type, color)')
+    .order('submitted_at', { ascending: false })
+  if (error) {
+    console.error('[partner-intake] submissions read failed:', error.message)
+    return []
+  }
+  return ((data ?? []) as any[]).map((r) => ({
+    ...r,
+    stage: Array.isArray(r.stage) ? r.stage[0] ?? null : r.stage ?? null,
+  }))
+})
