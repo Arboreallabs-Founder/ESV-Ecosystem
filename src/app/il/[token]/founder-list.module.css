@@ -102,8 +102,24 @@
   cursor: pointer;
   flex-shrink: 0;
 }
-.rowName { font-size: 0.9375rem; font-weight: 600; color: var(--color-text); }
-.rowLink { font-size: 0.75rem; color: var(--color-primary); text-decoration: none; }
+.rowName { font-size: 0.9375rem; font-weight: 600; color: var(--color-text); min-width: 0; overflow-wrap: break-word; }
+
+/* This is what broke the card open.
+ *
+ * The link is a flex sibling of the name, and a flex item's default min-width is `auto` — it will
+ * not shrink below its own content. A URL has no spaces, so it is one unbreakable word: with a
+ * long one the row simply refused to be narrower than the address, and pushed itself past the
+ * 680px card. More funds on the list, more chance of hitting one.
+ *
+ * `anywhere` is right here and only here: a URL has no word boundaries to break on, which is the
+ * exact case it exists for. Names next door keep `break-word`. */
+.rowLink {
+  font-size: 0.75rem;
+  color: var(--color-primary);
+  text-decoration: none;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .rowLink:hover { text-decoration: underline; }
 
 .tally {
@@ -231,11 +247,4 @@
 @media (max-width: 560px) {
   .card { padding: 1.5rem 1.25rem 2rem; }
   .negRow { flex-wrap: wrap; }
-}
-
-/* A long fund name must wrap inside its row rather than push the checkbox and the website link off
-   the card. break-word, not `anywhere`: names have word boundaries and should break on them. */
-.rowName {
-  overflow-wrap: break-word;
-  min-width: 0;
 }
