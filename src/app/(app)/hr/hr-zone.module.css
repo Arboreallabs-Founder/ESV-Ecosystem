@@ -475,3 +475,13 @@
   padding-top: 1.25rem;
   border-top: 2px solid var(--color-border);
 }
+
+/* DocumentsTab and PeopleTab both use styles.label; only .fieldLabel existed, so every field
+   caption in those two tabs rendered as plain body text. */
+.label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0.3rem;
+}

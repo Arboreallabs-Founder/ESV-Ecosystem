@@ -7,14 +7,14 @@ import ActiveDealsList from './_components/ActiveDealsList'
 
 export default async function ActiveDealsPage() {
   const supabase = await createClient()
-  const [user, deals, categories, companyOptions, { data: teamRows }] = await Promise.all([
+  const [user, deals, categories, companyOptions, { data: teamRows }, documentsByDeal] = await Promise.all([
     getUser(), fetchActiveDeals(), fetchCategories(), fetchCompanyOptions(),
     // Contact details for the people on these deals. `pipeline_entry_assignees` carries a name and
     // a photo; "how do I reach them" needs the rest.
     supabase.from('users').select('id, name, photo_url, designation, email, phone'),
+    // The share message is built from the deal's own links, so the list needs them per card.
+    fetchAllDealDocuments(),
   ])
-  // The share message is built from the deal's own links, so the list needs them per card.
-  const documentsByDeal = await fetchAllDealDocuments()
   if (!user || !['founder', 'admin', 'associate', 'franchise_partner', 'general'].includes(user.role ?? '')) redirect('/login')
   const team = (teamRows ?? []) as Array<{ id: string; name: string | null; photo_url: string | null; designation: string | null; email: string | null; phone: string | null }>
 

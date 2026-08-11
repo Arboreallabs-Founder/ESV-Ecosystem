@@ -11,6 +11,7 @@ import { weekRange } from '@/lib/week'
 import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import styles from '../my-todos.module.css'
+import { alertError } from '@/lib/client-errors'
 
 /* Work weeks offered on an item: a couple back for catching up, a few forward for planning.
    Filing an item into a week is also what publishes it to that week's update, so the option list
@@ -121,7 +122,7 @@ export default function MyTodosClient({ todos, myTasks }: { todos: PersonalTodo[
     setOptimisticDone((s) => ({ ...s, [todo.id]: next }))
     startTransition(async () => {
       try { await togglePersonalTodo(todo.id, next); router.refresh() }
-      catch (e) { alert((e as Error).message); setOptimisticDone((s) => ({ ...s, [todo.id]: todo.done })) }
+      catch (err) { alertError(err); setOptimisticDone((s) => ({ ...s, [todo.id]: todo.done })) }
     })
   }
 

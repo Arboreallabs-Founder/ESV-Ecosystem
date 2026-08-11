@@ -9,11 +9,14 @@ export default async function PartnerDetailPage({ params }: { params: Promise<{ 
   const user = await getUser()
   if (!user || !['founder', 'admin'].includes(user.role)) redirect('/dashboard')
 
-  const partnerUsers = await fetchPartnerUsers()
+  // The roster and the earnings have nothing to do with each other, so they go together rather
+  // than one waiting on the other.
+  const [partnerUsers, earnings] = await Promise.all([
+    fetchPartnerUsers(),
+    getPartnerEarnings(partnerId),
+  ])
   const partnerUser = partnerUsers.find((u) => u.franchise_partner_id === partnerId)
   if (!partnerUser || !partnerUser.franchise_partners) redirect('/admin/partners')
-
-  const earnings = await getPartnerEarnings(partnerId)
 
   return (
     <PartnerEarnings

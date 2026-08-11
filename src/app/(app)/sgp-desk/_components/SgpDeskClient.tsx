@@ -2,49 +2,71 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { intakePartnerCompany, closePartnerCompany } from '@/app/actions/partner-companies'
+import { alertError } from '@/lib/client-errors'
+import { intakePartnerEntry } from '@/app/actions/partner-companies'
 import {
   SGP_INTAKE_ACTIONS, SGP_INTAKE_ACTION_LABELS, SGP_INTAKE_ACTION_HINTS,
 } from '@/lib/types'
-import type { PartnerCompany, SgpIntakeAction, SupportingLink, UserRow } from '@/lib/types'
+import type { SgpIntakeAction, SupportingLink, UserRow } from '@/lib/types'
 import Avatar from '@/app/_components/Avatar'
 import { formatDateTimeIst } from '@/lib/format-datetime'
 import styles from '../sgp-desk.module.css'
 import { WikiButton } from '@/app/_components/WikiPanel'
 
-type Tab = 'queue' | 'assigned' | 'closed'
+/**
+ * Partner-sourced companies awaiting triage.
+ *
+ * These are pipeline entries, not partner_companies rows. The Desk used to render both, which
+ * listed every submission twice: 20260906 moved intake onto the Partner Sourced pipeline and
+ * carried the old rows across, but the old table was still being fetched and tabbed over. Nothing
+ * new has arrived there since, so it was a frozen duplicate of the live board.
+ *
+ * Deciding here moves the card *and* raises the task. The stage is what the partner sees on their
+ * own page, so the two cannot disagree.
+ */
+
+export type QueueEntry = {
+  id: string
+  title: string | null
+  submitted_at: string | null
+  partner_notes: string | null
+  submitter_name: string | null
+  submitter_email: string | null
+  partner: { name: string } | null
+  stage: { id: string; name: string; position: number; stage_type: string } | null
+}
+
+type Tab = 'queue' | 'moving' | 'done'
 
 export default function SgpDeskClient({
-  submissions, assignable, currentUserId,
+  entries, assignable,
 }: {
-  submissions: PartnerCompany[]
+  entries: QueueEntry[]
   assignable: UserRow[]
-  currentUserId: string
 }) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('queue')
-  const [intakeTarget, setIntakeTarget] = useState<PartnerCompany | null>(null)
+  const [intakeTarget, setIntakeTarget] = useState<QueueEntry | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  // Intake form state
   const [action, setAction] = useState<SgpIntakeAction>('first_call')
   const [assignedTo, setAssignedTo] = useState('')
   const [notes, setNotes] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [links, setLinks] = useState<SupportingLink[]>([{ label: '', url: '' }])
 
+  // Grouped by where the card actually is, rather than by a status column kept in step by hand.
   const byTab = useMemo(() => ({
-    queue: submissions.filter((s) => s.status === 'submitted'),
-    assigned: submissions.filter((s) => s.status === 'assigned'),
-    closed: submissions.filter((s) => s.status === 'closed'),
-  }), [submissions])
+    queue: entries.filter((e) => e.stage?.stage_type === 'lead'),
+    moving: entries.filter((e) => e.stage && !['lead', 'accepted', 'rejected'].includes(e.stage.stage_type)),
+    done: entries.filter((e) => e.stage && ['accepted', 'rejected'].includes(e.stage.stage_type)),
+  }), [entries])
 
   const shown = byTab[tab]
 
-  function openIntake(s: PartnerCompany) {
-    setIntakeTarget(s)
+  function openIntake(e: QueueEntry) {
+    setIntakeTarget(e)
     setAction('first_call')
     setAssignedTo('')
     setNotes('')
@@ -53,16 +75,16 @@ export default function SgpDeskClient({
     setError(null)
   }
 
-  function handleIntake(e: React.FormEvent) {
-    e.preventDefault()
+  function handleIntake(ev: React.FormEvent) {
+    ev.preventDefault()
     if (!intakeTarget) return
     setError(null)
     if (!assignedTo) { setError('Choose who this goes to.'); return }
 
     startTransition(async () => {
       try {
-        await intakePartnerCompany({
-          submissionId: intakeTarget.id,
+        await intakePartnerEntry({
+          entryId: intakeTarget.id,
           action,
           assignedTo,
           supportingLinks: links.filter((l) => l.url.trim()),
@@ -70,20 +92,12 @@ export default function SgpDeskClient({
           dueDate: dueDate || null,
         })
         setIntakeTarget(null)
-        setTab('assigned')
+        setTab('moving')
         router.refresh()
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err))
+        alertError(err)
       }
-    })
-  }
-
-  function handleClose(s: PartnerCompany) {
-    const reason = prompt(`Close "${s.name}"?\n\nThe partner will see this reason.`)
-    if (!reason?.trim()) return
-    startTransition(async () => {
-      try { await closePartnerCompany(s.id, reason); router.refresh() }
-      catch (err) { setError(err instanceof Error ? err.message : String(err)) }
     })
   }
 
@@ -97,7 +111,7 @@ export default function SgpDeskClient({
           </div>
           <p className={styles.pageSub}>
             Companies sourced by partners. Decide what happens next and hand it to someone — the
-            assignee gets it as a task on their board.
+            assignee gets it as a task, and the card moves to match.
           </p>
         </div>
       </header>
@@ -105,8 +119,8 @@ export default function SgpDeskClient({
       <div className={styles.tabs}>
         {([
           ['queue', 'To triage', byTab.queue.length],
-          ['assigned', 'Assigned', byTab.assigned.length],
-          ['closed', 'Closed', byTab.closed.length],
+          ['moving', 'In progress', byTab.moving.length],
+          ['done', 'Settled', byTab.done.length],
         ] as Array<[Tab, string, number]>).map(([value, label, count]) => (
           <button
             key={value}
@@ -119,90 +133,43 @@ export default function SgpDeskClient({
         ))}
       </div>
 
-      {error && <div className={styles.error}>{error}</div>}
-
       {shown.length === 0 ? (
         <div className={styles.empty}>
           {tab === 'queue'
-            ? 'Nothing waiting. Companies submitted by partners land here.'
-            : tab === 'assigned' ? 'Nothing assigned yet.' : 'Nothing closed.'}
+            ? 'Nothing waiting. Anything a partner submits — typed in or through their link — arrives here.'
+            : tab === 'moving'
+              ? 'Nothing in progress.'
+              : 'Nothing settled yet.'}
         </div>
       ) : (
         <div className={styles.list}>
-          {shown.map((s) => (
-            <article key={s.id} className={styles.card}>
+          {shown.map((e) => (
+            <article key={e.id} className={styles.card}>
               <div className={styles.cardHead}>
-                <div className={styles.cardWho}>
-                  <h2 className={styles.cardName}>{s.name}</h2>
+                <div>
+                  <h2 className={styles.cardName}>{e.title ?? 'Untitled'}</h2>
                   <div className={styles.cardMeta}>
-                    {[s.sector, s.hq_city].filter(Boolean).join(' · ') || 'No sector given'}
-                    {s.website && (
-                      <>
-                        {' · '}
-                        <a href={s.website} target="_blank" rel="noopener noreferrer" className={styles.link}>
-                          {s.website.replace(/^https?:\/\//, '').replace(/\/$/, '')}
-                        </a>
-                      </>
-                    )}
+                    {e.partner?.name && <span className={styles.partnerTag}>{e.partner.name}</span>}
+                    {e.submitted_at && <span>{formatDateTimeIst(e.submitted_at)}</span>}
                   </div>
                 </div>
-                <div className={styles.cardSource}>
-                  <Avatar name={s.submitter?.name} photoUrl={s.submitter?.photo_url} size="sm" />
-                  <span className={styles.sourceText}>
-                    {s.partner?.name || s.submitter?.name || 'Unknown'}
-                    <span className={styles.sourceDate}>{formatDateTimeIst(s.created_at)}</span>
-                  </span>
-                </div>
+                {e.stage && <span className={styles.stagePill}>{e.stage.name}</span>}
               </div>
 
-              {s.partner_comments && (
-                <blockquote className={styles.comments}>{s.partner_comments}</blockquote>
-              )}
-
-              {(s.contact_name || s.contact_email || s.contact_phone) && (
-                <div className={styles.contact}>
-                  <span className={styles.contactLabel}>Contact</span>
-                  {[s.contact_name, s.contact_email, s.contact_phone].filter(Boolean).join(' · ')}
+              {(e.submitter_name || e.submitter_email) && (
+                <div className={styles.cardContact}>
+                  {[e.submitter_name, e.submitter_email].filter(Boolean).join(' · ')}
                 </div>
               )}
 
-              {s.status === 'assigned' && (
-                <div className={styles.outcome}>
-                  <span className={styles.outcomeAction}>
-                    {s.intake_action ? SGP_INTAKE_ACTION_LABELS[s.intake_action] : 'Assigned'}
-                  </span>
-                  <span className={styles.outcomeWho}>
-                    <Avatar name={s.assignee?.name} photoUrl={s.assignee?.photo_url} size="xs" />
-                    {s.assignee?.name ?? 'Unknown'}
-                    {s.assigned_at ? ` · ${formatDateTimeIst(s.assigned_at)}` : ''}
-                  </span>
-                  {s.task_id && (
-                    <Link href={`/tasks?open=${s.task_id}`} className={styles.taskLink}>
-                      Open task →
-                    </Link>
-                  )}
-                </div>
-              )}
+              {/* The partner's own words. The most useful thing in the submission and the reason
+                  they bothered — so it is shown in full rather than truncated. */}
+              {e.partner_notes && <p className={styles.comments}>{e.partner_notes}</p>}
 
-              {s.status === 'closed' && s.closed_reason && (
-                <div className={styles.closed}>Closed — {s.closed_reason}</div>
-              )}
-
-              {s.supporting_links?.length > 0 && (
-                <div className={styles.links}>
-                  {s.supporting_links.map((l, i) => (
-                    <a key={i} href={l.url} target="_blank" rel="noopener noreferrer" className={styles.linkChip}>
-                      {l.label || 'Link'}
-                    </a>
-                  ))}
-                </div>
-              )}
-
-              {s.status === 'submitted' && (
+              {e.stage?.stage_type === 'lead' && (
                 <div className={styles.cardActions}>
-                  <button className={styles.primaryBtn} onClick={() => openIntake(s)}>Intake</button>
-                  <button className={styles.ghostBtn} onClick={() => handleClose(s)} disabled={isPending}>
-                    Close
+                  <button className={styles.primaryBtn} onClick={() => openIntake(e)}>
+                    Decide what happens next
                   </button>
                 </div>
               )}
@@ -211,47 +178,38 @@ export default function SgpDeskClient({
         </div>
       )}
 
-      {/* ── Intake ── */}
       {intakeTarget && (
+        // onMouseDown, not onClick: a drag that starts inside and ends on the backdrop should not
+        // discard what has been typed.
         <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setIntakeTarget(null)}>
-          <form className={styles.modal} onMouseDown={(e) => e.stopPropagation()} onSubmit={handleIntake}>
-            <h2 className={styles.modalTitle}>Intake — {intakeTarget.name}</h2>
+          <form className={styles.modal} onSubmit={handleIntake} onMouseDown={(e) => e.stopPropagation()}>
+            <div className={styles.modalTitle}>{intakeTarget.title ?? 'Untitled'}</div>
             <p className={styles.modalSub}>
-              Picking an action creates a task for the assignee, carrying the partner&apos;s notes
-              and any links you add below.
+              This raises a task for whoever you pick, carrying the partner&apos;s notes, and moves
+              the card so the partner sees where it got to.
             </p>
 
             <div className={styles.field}>
-              <span className={styles.label}>What happens next *</span>
-              <div className={styles.actionChoices}>
+              <span className={styles.label}>What happens next</span>
+              <div className={styles.actionList}>
                 {SGP_INTAKE_ACTIONS.map((a) => (
-                  <label key={a} className={`${styles.choice} ${action === a ? styles.choiceActive : ''}`}>
-                    <input
-                      type="radio"
-                      name="action"
-                      value={a}
-                      checked={action === a}
-                      onChange={() => setAction(a)}
-                    />
+                  <label key={a} className={`${styles.actionOption} ${action === a ? styles.actionOptionOn : ''}`}>
+                    <input type="radio" name="action" checked={action === a} onChange={() => setAction(a)} />
                     <span>
-                      <span className={styles.choiceLabel}>{SGP_INTAKE_ACTION_LABELS[a]}</span>
-                      <span className={styles.choiceHint}>{SGP_INTAKE_ACTION_HINTS[a]}</span>
+                      <span className={styles.actionLabel}>{SGP_INTAKE_ACTION_LABELS[a]}</span>
+                      <span className={styles.actionHint}>{SGP_INTAKE_ACTION_HINTS[a]}</span>
                     </span>
                   </label>
                 ))}
               </div>
             </div>
 
-            <div className={styles.formRow}>
+            <div className={styles.fieldRow}>
               <label className={styles.field}>
-                <span className={styles.label}>Assign to *</span>
+                <span className={styles.label}>Who picks it up *</span>
                 <select className={styles.input} value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
-                  <option value="">Choose someone…</option>
-                  {assignable.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name || u.email}{u.id === currentUserId ? ' (me)' : ''}
-                    </option>
-                  ))}
+                  <option value="">Choose someone</option>
+                  {assignable.map((u) => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
                 </select>
               </label>
               <label className={styles.field}>
@@ -260,6 +218,11 @@ export default function SgpDeskClient({
               </label>
             </div>
 
+            <label className={styles.field}>
+              <span className={styles.label}>Anything they should know</span>
+              <textarea className={styles.textarea} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </label>
+
             <div className={styles.field}>
               <span className={styles.label}>Supporting links</span>
               {links.map((l, i) => (
@@ -267,7 +230,7 @@ export default function SgpDeskClient({
                   <input
                     className={styles.input}
                     placeholder="Label"
-                    value={l.label}
+                    value={l.label ?? ''}
                     onChange={(e) => setLinks((ls) => ls.map((x, j) => j === i ? { ...x, label: e.target.value } : x))}
                   />
                   <input
@@ -276,36 +239,19 @@ export default function SgpDeskClient({
                     value={l.url}
                     onChange={(e) => setLinks((ls) => ls.map((x, j) => j === i ? { ...x, url: e.target.value } : x))}
                   />
-                  <button
-                    type="button"
-                    className={styles.rowBtn}
-                    onClick={() => setLinks((ls) => ls.length === 1 ? [{ label: '', url: '' }] : ls.filter((_, j) => j !== i))}
-                    title="Remove"
-                  >×</button>
                 </div>
               ))}
               <button type="button" className={styles.ghostBtn} onClick={() => setLinks((ls) => [...ls, { label: '', url: '' }])}>
-                + Add another
+                + Another link
               </button>
             </div>
-
-            <label className={styles.field}>
-              <span className={styles.label}>Notes for the assignee</span>
-              <textarea
-                className={styles.textarea}
-                rows={3}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Anything they should know before they start"
-              />
-            </label>
 
             {error && <div className={styles.error}>{error}</div>}
 
             <div className={styles.modalActions}>
               <button type="button" className={styles.ghostBtn} onClick={() => setIntakeTarget(null)}>Cancel</button>
-              <button type="submit" className={styles.primaryBtn} disabled={isPending || !assignedTo}>
-                {isPending ? 'Assigning…' : 'Assign & create task'}
+              <button type="submit" className={styles.primaryBtn} disabled={isPending}>
+                {isPending ? 'Handing over…' : 'Hand it over'}
               </button>
             </div>
           </form>

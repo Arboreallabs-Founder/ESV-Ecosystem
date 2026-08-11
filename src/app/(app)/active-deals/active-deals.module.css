@@ -1790,7 +1790,9 @@
   color: var(--color-text);
   line-height: 1.05;
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  /* A formatted amount has no word boundaries, so `anywhere` would break ₹1,08,00,000 across two
+     lines at a narrow width. Let it overflow its box instead; the tile is sized for it. */
+  overflow-wrap: normal;
 }
 
 .chartRow {
@@ -2727,4 +2729,19 @@
   font-size: 0.75rem;
   color: var(--color-muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* Referenced by the deal page but never defined, so these rendered unstyled — invisible to the
+   typechecker and to the build, which is why it survived. .statBlock is the partner's raise
+   progress; .statTileHero is the emphasised first tile of the internal strip. */
+.statBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.statTileHero {
+  border-color: rgba(var(--color-hover-rgb), 0.35);
+  background: var(--color-card-raised);
 }

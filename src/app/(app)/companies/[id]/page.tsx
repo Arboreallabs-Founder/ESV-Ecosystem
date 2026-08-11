@@ -8,11 +8,10 @@ import CompanyProfileClient from '../_components/CompanyProfileClient'
 
 export default async function CompanyPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const user = await getUser()
+  // Independent of each other: fetched together rather than one after the other.
+  const [user, company] = await Promise.all([getUser(), fetchCompany(id)])
   if (!user) redirect('/login')
   if (!['founder', 'admin', 'associate', 'super_admin', 'general'].includes(user.role ?? '')) redirect('/dashboard')
-
-  const company = await fetchCompany(id)
   if (!company) notFound()
 
   const supabase = await createClient()

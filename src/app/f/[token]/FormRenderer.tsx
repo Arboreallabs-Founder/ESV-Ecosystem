@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { submitForm } from '@/app/actions/forms'
+import { describeError } from '@/lib/client-errors'
 import { renderFormattedText } from '@/app/(app)/forms/[id]/builder/utils'
 import styles from './form.module.css'
 
@@ -123,7 +124,8 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
       )
       setSubmitted(true)
     } catch (err) {
-      setSubmitError(String(err))
+      // A stranger is reading this. Never a stack trace, and a stale deployment gets told to reload.
+      setSubmitError(describeError(err).message)
     } finally {
       setSubmitting(false)
     }

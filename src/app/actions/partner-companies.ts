@@ -319,3 +319,114 @@ export async function getOrCreateMyReferralLink(): Promise<{ token: string }> {
   revalidatePath('/my-companies')
   return { token: data.token as string }
 }
+
+// ─── Intake, against the pipeline ────────────────────────────────────────────
+// The Desk used to triage partner_companies rows. 20260906 moved every partner submission onto the
+// Partner Sourced pipeline, so nothing new has arrived in that table since — but the Desk kept
+// rendering it alongside the live queue, listing each submission twice.
+//
+// This is the same decision applied to the entry: move it to the stage that matches the action, and
+// raise the task that carries the partner's notes to whoever picks it up. The stage is what the
+// partner sees on their card, so the two can no longer disagree.
+
+/** The stage each intake action moves the entry to. */
+const INTAKE_STAGE: Record<SgpIntakeAction, string> = {
+  first_call: 'First level call',
+  prefunding_proposal: 'Prefunding proposal',
+  discuss_with_founder: 'Founder discussion',
+}
+
+export async function intakePartnerEntry(input: {
+  entryId: string
+  action: SgpIntakeAction
+  assignedTo: string
+  supportingLinks?: SupportingLink[]
+  coordinatorNotes?: string
+  dueDate?: string | null
+}): Promise<void> {
+  const { supabase, userId, orgId } = await requireCoordinator()
+  if (!orgId) throw new Error('No organization found for this account.')
+  if (!input.assignedTo) throw new Error('Choose who this goes to.')
+
+  const { data: entry } = await supabase
+    .from('pipeline_entries')
+    .select('id, title, partner_notes, pipeline_id, submitter_name, submitter_email')
+    .eq('id', input.entryId)
+    .maybeSingle()
+  if (!entry) throw new Error('That submission could not be found.')
+  const e = entry as {
+    id: string; title: string | null; partner_notes: string | null
+    pipeline_id: string; submitter_name: string | null; submitter_email: string | null
+  }
+
+  const links = (input.supportingLinks ?? [])
+    .map((l) => ({ label: l.label?.trim() || '', url: l.url?.trim() || '' }))
+    .filter((l) => l.url)
+  for (const l of links) {
+    if (!/^https?:\/\//i.test(l.url)) {
+      throw new Error(`Supporting links must start with http:// or https:// — "${l.url}" does not.`)
+    }
+  }
+
+  const name = e.title ?? 'Untitled'
+  const actionLabel = SGP_INTAKE_ACTION_LABELS[input.action]
+
+  // Everything the assignee needs, so they never have to come back here to find out what they are
+  // being asked to do. The partner's own notes are the most useful part.
+  const description = [
+    `Partner-sourced company: ${name}.`,
+    e.submitter_name || e.submitter_email
+      ? `Contact: ${[e.submitter_name, e.submitter_email].filter(Boolean).join(' — ')}` : null,
+    e.partner_notes ? `\nPartner's notes:\n${e.partner_notes}` : null,
+    input.coordinatorNotes?.trim() ? `\nCoordinator:\n${input.coordinatorNotes.trim()}` : null,
+    links.length ? `\nSupporting links:\n${links.map((l) => `- ${l.label || 'Link'}: ${l.url}`).join('\n')}` : null,
+  ].filter(Boolean).join('\n')
+
+  const { data: task, error: taskError } = await supabase
+    .from('tasks')
+    .insert({
+      org_id: orgId,
+      title: `${actionLabel} — ${name}`,
+      description,
+      assignee_id: input.assignedTo,
+      assigned_by_id: userId,
+      created_by: userId,
+      link_url: links[0]?.url ?? null,
+      due_date: input.dueDate || null,
+      priority: input.action === 'discuss_with_founder' ? 'High' : 'Medium',
+      status: 'To Do',
+    })
+    .select('id')
+    .single()
+  if (taskError) throw taskError
+
+  // Move the card. This is what the partner sees, so it is the part that must not be skipped —
+  // and it is why the task is created first: a task with no stage move is recoverable, a stage
+  // move with no task silently drops the handoff.
+  const { data: stage } = await supabase
+    .from('pipeline_stages')
+    .select('id')
+    .eq('pipeline_id', e.pipeline_id)
+    .eq('name', INTAKE_STAGE[input.action])
+    .maybeSingle()
+
+  if (stage) {
+    const { data: moved, error: moveErr } = await supabase
+      .from('pipeline_entries')
+      .update({ stage_id: (stage as { id: string }).id })
+      .eq('id', input.entryId)
+      .select('id')
+    if (moveErr) throw moveErr
+    // An RLS-filtered update reports success having changed nothing.
+    if (!moved || moved.length === 0) throw new Error('That submission could not be moved.')
+  }
+
+  // Also add the assignee to the entry, so "who is on this" is answerable from the board.
+  await supabase
+    .from('pipeline_entry_assignees')
+    .upsert({ entry_id: input.entryId, user_id: input.assignedTo }, { onConflict: 'entry_id,user_id' })
+
+  revalidatePath('/sgp-desk')
+  revalidatePath('/my-companies')
+  revalidatePath('/tasks')
+}

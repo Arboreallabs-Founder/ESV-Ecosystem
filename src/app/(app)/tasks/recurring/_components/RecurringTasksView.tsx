@@ -12,6 +12,7 @@ import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import Avatar from '@/app/_components/Avatar'
 import styles from '../../tasks.module.css'
+import { alertError } from '@/lib/client-errors'
 
 type RecTask = RecurringTask & { status: RecurringTaskStatus }
 
@@ -41,7 +42,7 @@ export default function RecurringTasksView({ tasks, users, isAdmin }: { tasks: R
     setOptimisticDone((s) => new Set(s).add(id))
     startTransition(async () => {
       try { await completeRecurringTask(id); router.refresh() }
-      catch (e) { alert((e as Error).message); setOptimisticDone((s) => { const n = new Set(s); n.delete(id); return n }) }
+      catch (err) { alertError(err); setOptimisticDone((s) => { const n = new Set(s); n.delete(id); return n }) }
     })
   }
 

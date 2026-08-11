@@ -1,0 +1,177 @@
+/* Loading placeholders.
+ *
+ * A skeleton's job is to hold the shape of what is coming, so the page does not jump when it
+ * arrives. These match the real layouts — the same auto-fill grid, the same KPI strip, the same
+ * row heights — rather than being generic grey boxes. */
+
+.bar {
+  display: block;
+  background: linear-gradient(
+    90deg,
+    var(--color-border) 0%,
+    var(--color-card-raised) 40%,
+    var(--color-border) 80%
+  );
+  background-size: 300% 100%;
+  animation: skeletonSweep 1.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes skeletonSweep {
+  0%   { background-position: 120% 0; }
+  100% { background-position: -60% 0; }
+}
+
+/* Anyone who has asked not to see motion gets a still placeholder rather than a pulsing page. */
+@media (prefers-reduced-motion: reduce) {
+  .bar { animation: none; background: var(--color-border); }
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.headText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+}
+
+/* Cards, in the same auto-fill grid the real pages use, so the reflow on arrival is minimal. */
+.grid {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1.125rem 1.25rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.cardTitle {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.chips {
+  display: flex;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 1.125rem 1.25rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.table {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.row:last-child { border-bottom: none; }
+.rowHead { background: var(--color-bg); }
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.listRow {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1.125rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.listRowText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.board {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  flex: 0 0 260px;
+  padding: 0.875rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.boardCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+  padding: 0.75rem 0.875rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}

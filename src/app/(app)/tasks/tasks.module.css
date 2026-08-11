@@ -1089,3 +1089,11 @@ a.linkChipTag:hover { background: rgba(var(--color-hover-rgb),0.16); }
   /* Wrap so a long explainer label doesn't shove the "i" hint off the edge. */
   .checkRow { flex-wrap: wrap; }
 }
+
+/* Referenced by TaskBoard but never defined — the grouped list view had no spacing. */
+.listGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}

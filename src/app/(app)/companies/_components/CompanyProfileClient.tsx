@@ -136,7 +136,7 @@ export default function CompanyProfileClient({
   function handleCreateCard() {
     startCard(async () => {
       try { await createDeskDealFromCompany(company.id); router.push('/deal-desk') }
-      catch (e) { alert((e as Error).message) }
+      catch (err) { alertError(err) }
     })
   }
 

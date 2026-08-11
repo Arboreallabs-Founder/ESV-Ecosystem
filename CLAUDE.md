@@ -94,7 +94,9 @@ The app must feel premium, using rich aesthetics and smooth interactions.
 ## Key Conventions
 - Server actions live in `/src/app/actions/` and are the only place DB writes happen.
 - `requireAdmin()` / `requireInternal()` guards are at the top of every mutating action.
-- No `revalidatePath` in actions — components call `router.refresh()` after mutations.
+- Mutating actions call `revalidatePath` for the routes they affect, and components additionally
+  call `router.refresh()` where they need the current view updated immediately. (This file used to
+  claim the opposite; 26 of 34 action files use `revalidatePath`, so the code was the truth.)
 - CSS variables are defined in `src/app/globals.css`. Always use them, never hardcode colours.
 - **Pages fill the screen.** Never put `max-width` on a page container or `.page > *`. Content
   adapts to the viewport; where a grid would otherwise stretch, add columns

@@ -426,3 +426,14 @@
   color: var(--color-text);
   cursor: pointer;
 }
+
+/* Referenced by CategoriesManager but never defined — the failed-save message had no styling. */
+.errorMsg {
+  margin-top: 0.625rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: rgba(192, 57, 43, 0.1);
+  color: #C0392B;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}

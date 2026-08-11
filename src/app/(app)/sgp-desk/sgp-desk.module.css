@@ -553,3 +553,84 @@
 
 .referralOk { color: #2E7D32; font-weight: 600; font-size: 0.75rem; }
 .referralNo { color: #C0392B; font-weight: 600; font-size: 0.75rem; }
+
+/* ─── Triage card + intake form ─────────────────────────────────────────────
+   The Desk now works on pipeline entries, so the card carries the live stage and the partner who
+   sourced it rather than a status column kept in step by hand. */
+.partnerTag {
+  padding: 0.0625rem 0.5rem;
+  border-radius: 100px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.stagePill {
+  padding: 0.1875rem 0.625rem;
+  border-radius: 100px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.cardContact {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  /* break-word, not `anywhere` — an email has boundaries and a name must not be split. */
+  overflow-wrap: break-word;
+}
+
+.fieldRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.875rem;
+}
+
+/* The three intake actions, as real options rather than a dropdown: each one carries a sentence
+   saying what the assignee will actually be asked to do. */
+.actionList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.actionOption {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.actionOption:hover { border-color: var(--color-primary); }
+
+.actionOptionOn {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.actionLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.actionHint {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+  margin-top: 0.125rem;
+}

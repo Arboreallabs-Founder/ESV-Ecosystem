@@ -14,13 +14,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const demoPersona = store.get('demo_persona')?.value ?? 'founder'
 
   const canHaveTasks = ['founder', 'admin', 'associate', 'general', 'hr'].includes(user.role ?? '')
-  const myTaskAlerts = canHaveTasks ? await fetchMyOpenTaskAlerts(user.id) : []
-
   // Narrowed to founder/admin/hr only — associate/general lost clock-widget visibility
   // when the 'hr' role was introduced.
   const canSeeHrClock = ['founder', 'admin', 'hr'].includes(user.role ?? '')
-  const clockSettings = canSeeHrClock ? await fetchClockSettings() : null
-  const birthdaysToday = canSeeHrClock ? await fetchTodaysBirthdays() : []
+
+  // In flight together. This layout renders before every page in the app, and these three were
+  // awaited one after another — three sequential round trips to ap-south-1 on every single
+  // navigation, before the page's own data had even been asked for.
+  const [myTaskAlerts, clockSettings, birthdaysToday] = await Promise.all([
+    canHaveTasks ? fetchMyOpenTaskAlerts(user.id) : Promise.resolve([]),
+    canSeeHrClock ? fetchClockSettings() : Promise.resolve(null),
+    canSeeHrClock ? fetchTodaysBirthdays() : Promise.resolve([]),
+  ])
 
   return (
     <AppShell
