@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { alertError } from '@/lib/client-errors'
 import { updateCompanyShareIntro } from '@/app/actions/active-deal-documents'
@@ -41,6 +42,13 @@ export default function SharePitch({
   const [draft, setDraft] = useState(intro ?? '')
   const [editing, setEditing] = useState(false)
   const [saving, startSave] = useTransition()
+  // The dialog is portalled to <body>. On the deals list this component sits inside a card that
+  // lifts on hover with a transform — and a transformed ancestor becomes the containing block for
+  // its position:fixed descendants. The "fixed" dialog was therefore anchored to the card and moved
+  // as it lifted, which pulled the button out from under the cursor, which dropped the hover, which
+  // put it back: the flicker. Mounted-guarded because document does not exist during SSR.
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
 
   const message = buildDealPitch({ companyName, intro: editing ? draft : intro, website, documents })
   const shareable = hasShareableDocuments(documents)
@@ -71,10 +79,19 @@ export default function SharePitch({
         {!compact && 'Share on WhatsApp'}
       </button>
 
-      {open && (
-        // onMouseDown, not onClick: a drag that starts inside the preview and ends on the backdrop
-        // should not close it — selecting a line of the message does exactly that.
-        <div className={styles.shareBackdrop} onMouseDown={() => setOpen(false)} role="presentation">
+      {open && mounted && createPortal(
+        // onMouseDown, not onClick, for the close: a drag that starts inside the preview and ends
+        // on the backdrop should not close it — selecting a line of the message does exactly that.
+        //
+        // onClick is stopped separately. A React portal still propagates events through the React
+        // tree rather than the DOM one, so without this a click on "Copy text" reaches the card's
+        // own onClick and opens the deal underneath.
+        <div
+          className={styles.shareBackdrop}
+          onMouseDown={() => setOpen(false)}
+          onClick={(e) => e.stopPropagation()}
+          role="presentation"
+        >
           <div className={styles.shareModal} onMouseDown={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Share this deal">
             <div className={styles.shareHead}>
               <div className={styles.shareTitle}>Share {companyName}</div>
@@ -147,7 +164,8 @@ export default function SharePitch({
               </a>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   )
