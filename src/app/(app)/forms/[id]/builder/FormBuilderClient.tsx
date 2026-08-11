@@ -138,6 +138,7 @@ export default function FormBuilderClient({ form, dbNodes, dbEdges, pipelines }:
   const [generatedLink, setGeneratedLink] = useState<string | null>(null)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
   const [settingsTitle, setSettingsTitle] = useState(form.title)
+  const [settingsDisplayName, setSettingsDisplayName] = useState(form.display_name ?? '')
   const [settingsDesc, setSettingsDesc] = useState(form.description ?? '')
   const [settingsPipelineId, setSettingsPipelineId] = useState(form.pipeline_id ?? '')
   const [settingsSaving, setSettingsSaving] = useState(false)
@@ -234,7 +235,7 @@ export default function FormBuilderClient({ form, dbNodes, dbEdges, pipelines }:
   async function handleSaveSettings() {
     setSettingsSaving(true)
     try {
-      await updateFormMeta(form.id, settingsTitle, settingsDesc, settingsPipelineId || null)
+      await updateFormMeta(form.id, settingsTitle, settingsDesc, settingsPipelineId || null, settingsDisplayName)
       setShowSettingsModal(false)
       router.refresh()
     } finally {
@@ -332,6 +333,19 @@ export default function FormBuilderClient({ form, dbNodes, dbEdges, pipelines }:
             <div className={styles.field}>
               <label className={styles.label}>Title *</label>
               <input className={styles.input} value={settingsTitle} onChange={(e) => setSettingsTitle(e.target.value)} required />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label}>Display name</label>
+              <input
+                className={styles.input}
+                value={settingsDisplayName}
+                onChange={(e) => setSettingsDisplayName(e.target.value)}
+                placeholder={settingsTitle || 'Same as the title'}
+              />
+              <p className={styles.panelHint}>
+                What people filling in the form see at the top of it. The title above stays internal
+                — leave this blank to use it.
+              </p>
             </div>
             <div className={styles.field}>
               <label className={styles.label}>Description</label>

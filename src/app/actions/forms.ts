@@ -45,11 +45,24 @@ export async function createForm(title: string, description: string, pipelineId:
   return form.id
 }
 
-export async function updateFormMeta(formId: string, title: string, description: string, pipelineId: string | null) {
+export async function updateFormMeta(
+  formId: string,
+  title: string,
+  description: string,
+  pipelineId: string | null,
+  displayName: string,
+) {
   const { supabase } = await requireBuilder()
   const { error } = await supabase
     .from('forms')
-    .update({ title: title.trim(), description: description.trim() || null, pipeline_id: pipelineId || null })
+    .update({
+      title: title.trim(),
+      // Blank means "use the title" rather than "show nothing", so it is stored as NULL and the
+      // fallback lives in one place instead of being an empty header on the public page.
+      display_name: displayName.trim() || null,
+      description: description.trim() || null,
+      pipeline_id: pipelineId || null,
+    })
     .eq('id', formId)
   if (error) throw error
 }

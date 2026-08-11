@@ -198,3 +198,53 @@ one call, and `mark_investor_list_viewed` records the first open.
 Items default to `approved = true`: the founder is removing objections, not building a list from
 scratch. A re-submission ticks everything and then clears the named ones, so it **replaces** the
 previous answer rather than merging with it — changing your mind has to actually work.
+
+### `20260903000000_investor_notes.sql` / `20260904000000_investor_logo.sql`
+`investors.notes` — the fund's own words, and where an ambiguous ticket size is parked rather than
+guessed at (198 funds had text the loader had been silently dropping). `pg_trgm` so the notes are
+searchable. `investors.logo_url` takes a URL rather than an upload: no Vercel compute, no Supabase
+storage, and a broken logo is a cosmetic failure.
+
+### `20260905000000_partner_deal_visibility.sql`
+`deal_category_fields.visible_to_partners`, defaulting **false**. Deal fields are user-defined, so
+which ones a partner may see cannot be hardcoded — and a field added tomorrow must be private until
+someone decides otherwise, because that list includes fee structures and mandate links.
+
+Also **drops** the partner INSERT policies on `investors` and `investor_contacts`. A partner adding
+an investor we already hold creates a duplicate record and a fee-split claim over a relationship
+that was already ours. `partner_visible_deal_fields` answers "what does a partner see" in one query.
+
+### `20260906000000_partner_pipeline.sql`
+One route for partner-sourced companies. There were two: `/my-companies` wrote a `partner_companies`
+row with no stages, and a pipeline form link went straight onto a board, skipping the coordinator
+entirely. Both now land as `pipeline_entries` on the **Partner Sourced** pipeline (`is_partner_intake`,
+one per org).
+
+The INSERT policy pins the stage to the pipeline's `lead` stage and the partner to themselves;
+there is deliberately **no UPDATE policy**, because a partner advancing their own referral to
+"Accepted" is the bypass this replaces. Existing `partner_companies` rows are carried across.
+
+### `20260907000000_partner_form.sql`
+`forms.is_partner_form` — one per org, the only form partners may issue links from. A trigger
+refuses to point it at any pipeline other than the partner-intake one: without that, the bypass
+returns by an *edit* rather than a new form, silently. `attribute_entry_to_partner()` sets
+`sourced_by_partner_id` from the link's creator at insert time, because the submitting form is
+public and unauthenticated and cannot be trusted to say who referred it.
+
+### `20260908000000_partner_form_questions.sql`
+The real Partner Form — the questions the old JotForm collected — replacing 20260907's six-question
+placeholder, plus `forms.display_name`: what the public page shows, separate from the internal
+title. "Partner Form" tells the team where a submission came from and tells a founder nothing.
+
+`get_public_form(token)` **wraps** `get_form_for_submission` rather than replacing it. That function
+is the only thing between an anonymous visitor and the `forms` table, and rewriting it to add one
+field is more risk than the field is worth; a NULL from the inner call stays NULL, so the public
+page's error handling is untouched.
+
+Conditional questions are asked by **branching**, not by trusting people to skip: the renderer
+requires an answer to every question it shows, so a question that does not apply is a dead end.
+mcq edges match on the **option id** — the renderer sends the id back, and an edge conditioned on
+the label silently falls through to the default path.
+
+The rebuild refuses to run if any `pipeline_entry_answers` reference the form's nodes: replacing
+the questions would take the answers with them.

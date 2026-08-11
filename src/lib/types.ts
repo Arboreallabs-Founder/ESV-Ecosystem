@@ -766,6 +766,13 @@ export type PipelineEntryStageHistory = {
 export type Form = {
   id: string
   title: string
+  /**
+   * What the public form shows at the top of itself. Null falls back to `title`.
+   *
+   * The title is an internal label — "Partner Form" tells the team where a submission came from
+   * and tells a founder filling it in nothing at all.
+   */
+  display_name: string | null
   description: string | null
   pipeline_id: string | null
   created_by: string | null

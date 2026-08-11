@@ -26,6 +26,7 @@ interface FormData {
   link_id: string
   form_id: string
   form_title: string
+  form_display_name: string | null
   form_description: string | null
   pipeline_id: string | null
   first_stage_id: string | null
@@ -149,7 +150,9 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
             <span className={styles.brandDot} />
             <span className={styles.brandName}>Earlyseed Ventures</span>
           </div>
-          <div className={styles.formTitle}>{formData.form_title}</div>
+          {/* The title is the team's internal label; the display name is what this audience
+              should read. Blank means they are the same thing. */}
+          <div className={styles.formTitle}>{formData.form_display_name || formData.form_title}</div>
           {formData.form_description && <div className={styles.formDesc}>{formData.form_description}</div>}
         </div>
 
