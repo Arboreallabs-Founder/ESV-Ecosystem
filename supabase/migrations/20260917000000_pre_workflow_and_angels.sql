@@ -11,6 +11,11 @@
 -- the next status is a one-line constraint change rather than a two-migration dance. Safe to do
 -- now: there are no fundraise entries yet.
 
+-- investor_rejections (20260914) selects fundraise_entries.status, and Postgres will not alter the
+-- type of a column a view depends on. Dropped here and rebuilt at the end of this migration with
+-- the same definition — the view is derived, so nothing is lost by recreating it.
+DROP VIEW IF EXISTS public.investor_rejections;
+
 ALTER TABLE public.fundraise_entries
   ALTER COLUMN status DROP DEFAULT,
   ALTER COLUMN status TYPE TEXT USING status::TEXT,
@@ -356,3 +361,23 @@ AS $$
 $$;
 
 GRANT EXECUTE ON FUNCTION public.get_fundraise_public(TEXT) TO anon, authenticated;
+
+-- ─── Rebuilt after the type change ──────────────────────────────────────────
+-- Same definition as 20260914. It reads status as text now, which it always did in effect.
+CREATE OR REPLACE VIEW public.investor_rejections AS
+  SELECT
+    fe.investor_id,
+    inv.name          AS investor_name,
+    COALESCE(c.name, pe.title) AS company_name,
+    fe.rejection_sector,
+    fe.rejection_reason,
+    fe.status_changed_at AS rejected_at,
+    l.active_deal_id
+  FROM public.fundraise_entries fe
+  JOIN public.fundraise_lists l  ON l.id = fe.list_id
+  JOIN public.investors inv      ON inv.id = fe.investor_id
+  JOIN public.active_deals d     ON d.id = l.active_deal_id
+  JOIN public.pipeline_entries pe ON pe.id = d.pipeline_entry_id
+  LEFT JOIN public.companies c   ON c.id = pe.company_id
+  WHERE fe.status = 'rejected'
+    AND fe.rejection_reason IS NOT NULL;
