@@ -1,20 +1,33 @@
 /* The full wiki.
  *
- * It used to be a 760px column centred on the page, which broke the rule the rest of the app
- * follows and wasted most of a wide screen — and with thirty sections it was also one long scroll
- * with no way to get anywhere. Now: an index that sticks, and cards that flow into as many columns
- * as the viewport can hold. The only thing capped is paragraph measure, on the paragraph itself. */
+ * Fills the screen: nothing here caps the container. The only thing with a max-width is a
+ * paragraph's measure, set on the paragraph itself.
+ *
+ * The layout is flex rather than grid on purpose. It was a two-column grid with a fixed 216px nav
+ * track, and because a display:none grid item is not placed at all, the cards fell into the *nav*
+ * track at narrow widths and left the rest of the screen empty. Flex has no such trap. */
 
 .page {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1.25rem;
 }
+
+/* ─── Header ──────────────────────────────────────────────────────────────── */
 
 .head {
   display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1.5rem 2rem;
+  flex-wrap: wrap;
+}
+
+.headText {
+  display: flex;
   flex-direction: column;
   gap: 0.375rem;
+  min-width: 0;
 }
 
 .title {
@@ -28,122 +41,283 @@
   color: var(--color-muted);
   font-size: 0.9375rem;
   line-height: 1.6;
-  max-width: 62ch;   /* measure, on the paragraph — not on anything that holds layout */
+  max-width: 64ch;   /* measure, on the paragraph — never on anything holding layout */
 }
 
-/* Flex, not grid, and deliberately.
- *
- * This was `grid-template-columns: 216px minmax(0, 1fr)` with the index hidden below 1080px. A
- * display:none grid item is not placed at all, so auto-placement dropped the *cards* into the 216px
- * nav track and left the whole right-hand side of the screen empty. Flex has no such trap: when the
- * index is not rendered, the sections simply take the row. */
+.subtitle strong { color: var(--color-text); }
+
+/* Search is first because it is how anyone with a specific question actually arrives. */
+.searchWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.875rem;
+  color: var(--color-muted);
+  pointer-events: none;
+}
+
+.search {
+  width: 100%;
+  padding: 0.625rem 2.5rem 0.625rem 2.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 100px;
+  background: var(--color-card);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search::placeholder { color: var(--color-muted); }
+
+.search:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(116, 95, 253, 0.15);
+}
+
+.kbd {
+  position: absolute;
+  right: 0.75rem;
+  padding: 0.0625rem 0.375rem;
+  border: 1px solid var(--color-border);
+  border-radius: 5px;
+  background: var(--color-bg);
+  color: var(--color-muted);
+  font-family: inherit;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.searchClear {
+  position: absolute;
+  right: 0.625rem;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-bg);
+  color: var(--color-muted);
+  font-size: 0.6875rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.searchClear:hover { color: var(--color-text); }
+
+.resultLine {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  padding: 0.625rem 0.875rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.resultLine strong { color: var(--color-text); }
+
+/* ─── Layout ──────────────────────────────────────────────────────────────── */
+
 .layout {
   display: flex;
-  gap: 1.5rem;
+  gap: 2rem;
   align-items: flex-start;
 }
 
-.index {
-  display: none;
-  max-height: calc(100vh - 3rem);
-  overflow-y: auto;
-  padding: 0.75rem;
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+/* Below the breakpoint the nav becomes a horizontal scroller above the content, rather than
+   disappearing — thirty sections with no index is the thing this replaced. */
+.nav {
+  display: flex;
+  gap: 0.75rem;
+  order: -1;
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: thin;
 }
 
-/* The index only earns its column when there is room for it; below that the cards get everything.
-   This has to come after the base rule, or the `display: none` above wins on equal specificity —
-   which is exactly how the nav came to be invisible at every width. */
-@media (min-width: 1080px) {
-  .index {
-    display: block;
-    flex: 0 0 216px;
+.navGroup {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+}
+
+.navGroupTitle {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  white-space: nowrap;
+  padding-right: 0.25rem;
+}
+
+.navLink,
+.navLinkActive {
+  padding: 0.3125rem 0.75rem;
+  border-radius: 100px;
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  /* inline-flex + an explicit line-height: an inline-block button carries line-box descender space
+     and clips its own bottom border at some zoom levels. */
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.4;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.navLink:hover { color: var(--color-text); border-color: var(--color-primary); }
+
+.navLinkActive {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+@media (min-width: 1024px) {
+  .nav {
+    order: 0;
+    flex: 0 0 232px;
+    width: auto;
+    flex-direction: column;
+    gap: 1.25rem;
     position: sticky;
     top: 0;
+    max-height: calc(100vh - 5rem);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 1rem;
   }
+
+  .navGroup {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.125rem;
+  }
+
+  .navGroupTitle { padding: 0 0.75rem 0.375rem; }
+
+  /* In a column the pills become a plain list — thirty outlined pills stacked is noise. */
+  .navLink,
+  .navLinkActive {
+    border: none;
+    background: none;
+    border-radius: var(--radius-sm);
+    text-align: left;
+    padding: 0.375rem 0.75rem;
+    white-space: normal;
+  }
+
+  .navLink:hover { background: var(--color-card); border: none; }
+  .navLinkActive { background: var(--color-primary-light); }
 }
 
-.indexLabel {
+.content {
+  flex: 1;
+  min-width: 0;   /* a flex item defaults to min-content width; without this nothing can shrink */
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+/* ─── Groups & sections ───────────────────────────────────────────────────── */
+
+.groupBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.groupHeading {
   font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   color: var(--color-muted);
-  padding: 0 0.5rem 0.5rem;
-}
-
-.indexLink {
-  display: block;
-  padding: 0.3125rem 0.5rem;
-  border-radius: var(--radius-sm);
-  font-size: 0.8125rem;
-  color: var(--color-muted);
-  text-decoration: none;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.indexLink:hover {
-  background: var(--color-card-raised);
-  color: var(--color-text);
-}
-
-/* Cards, as many across as fit. Nothing here caps the container. */
-.sections {
-  flex: 1;
-  min-width: 0;   /* a flex item defaults to min-content width; without this the grid cannot shrink */
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 1.25rem;
-  align-items: start;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .section {
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  box-shadow: var(--shadow-card);
   /* An anchor jump would otherwise put the heading flush against the top of the viewport. */
   scroll-margin-top: 1.5rem;
 }
 
-.sectionTitle {
-  font-size: 1.125rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  color: var(--color-text);
-  margin-bottom: 0.5rem;
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
 }
+
+.sectionTitle {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+/* A per-section link, so an answer can be sent to someone rather than described. */
+.anchor {
+  color: var(--color-border);
+  text-decoration: none;
+  font-weight: 700;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.section:hover .anchor { opacity: 1; }
+.anchor:hover { color: var(--color-primary); }
 
 .sectionSummary {
   font-size: 0.9375rem;
   color: var(--color-muted);
   line-height: 1.65;
-  margin-bottom: 1.25rem;
+  margin: 0.375rem 0 1rem;
+  max-width: 76ch;
 }
 
+/* As many across as fit. This is what fills a wide screen without stretching a line of prose
+   across it. */
 .items {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 0.875rem;
+  align-items: start;
 }
 
 .item {
   padding: 0.875rem 1rem;
-  background: var(--color-bg);
+  background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
 }
 
 .itemHeading {
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--color-text);
-  margin-bottom: 0.25rem;
-  /* Headings are prose, so they break between words. Never `anywhere` — that splits a name one
-     letter per line the moment the column is narrow. */
+  margin-bottom: 0.3125rem;
+  /* break-word, never `anywhere` — the latter splits a name one letter per line the moment the
+     column is narrow. */
   overflow-wrap: break-word;
 }
 
@@ -157,9 +331,9 @@
 /* Sketches keep their own alignment and scroll inside their own box, so a wide diagram never makes
    the page scroll sideways. */
 .snippet {
-  margin: 0.6rem 0 0;
+  margin: 0.625rem 0 0;
   padding: 0.7rem 0.85rem;
-  background: var(--color-card-raised);
+  background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   font-size: 0.75rem;
@@ -167,4 +341,29 @@
   color: var(--color-text);
   white-space: pre;
   overflow-x: auto;
+}
+
+/* ─── Empty search ────────────────────────────────────────────────────────── */
+
+.empty {
+  padding: 3rem 1.5rem;
+  text-align: center;
+  background: var(--color-card);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.emptyTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0.375rem;
+}
+
+.emptyBody {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  line-height: 1.6;
+  max-width: 52ch;
+  margin: 0 auto;
 }

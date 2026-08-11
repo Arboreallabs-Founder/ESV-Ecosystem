@@ -416,3 +416,29 @@ export const WIKI: Record<string, WikiSection> = {
 }
 
 export const WIKI_SECTIONS = Object.keys(WIKI) as Array<keyof typeof WIKI>
+
+/**
+ * The navigation grouping.
+ *
+ * Thirty sections in one flat list is a wall, not an index — and the order they were written in
+ * (roughly, the order they were built) is not the order anyone looks for them. Grouped by the area
+ * of the app you are actually in, with the two things a new person needs first at the top.
+ *
+ * Adding a section: put its key in a group here, or it will not appear in the nav. That is
+ * deliberate — a section nobody can navigate to is a section nobody reads.
+ */
+export const WIKI_GROUPS: Array<{ title: string; keys: string[] }> = [
+  { title: 'Start here', keys: ['dashboard', 'faq'] },
+  { title: 'Deals', keys: ['dealDesk', 'activeDeals', 'dealDetail', 'pipeline', 'pipelines'] },
+  { title: 'Companies & investors', keys: ['companies', 'investors', 'investorProfile', 'investorLists'] },
+  { title: 'Your work', keys: ['tasks', 'myTodos', 'recurringTasks', 'taskKpis', 'escalations', 'analytics'] },
+  { title: 'Partners (SGP)', keys: ['partners', 'sgpDesk', 'myCompanies', 'portal', 'earnings'] },
+  { title: 'Intake forms', keys: ['forms', 'formBuilder'] },
+  { title: 'People & HR', keys: ['hr', 'attendance', 'attendanceHr', 'documents'] },
+  { title: 'Company-wide', keys: ['bulletin', 'admin'] },
+]
+
+/** Sections defined in WIKI but missing from WIKI_GROUPS, so nothing silently disappears. */
+export const UNGROUPED_WIKI_KEYS = Object.keys(WIKI).filter(
+  (k) => !WIKI_GROUPS.some((g) => g.keys.includes(k)),
+)
