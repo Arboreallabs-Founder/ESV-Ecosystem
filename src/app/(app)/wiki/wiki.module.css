@@ -31,23 +31,16 @@
   max-width: 62ch;   /* measure, on the paragraph — not on anything that holds layout */
 }
 
+/* Flex, not grid, and deliberately.
+ *
+ * This was `grid-template-columns: 216px minmax(0, 1fr)` with the index hidden below 1080px. A
+ * display:none grid item is not placed at all, so auto-placement dropped the *cards* into the 216px
+ * nav track and left the whole right-hand side of the screen empty. Flex has no such trap: when the
+ * index is not rendered, the sections simply take the row. */
 .layout {
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
   gap: 1.5rem;
-  align-items: start;
-}
-
-/* The index only earns its column when there is room for it; below that the cards get everything. */
-@media (min-width: 1080px) {
-  .layout {
-    grid-template-columns: 216px minmax(0, 1fr);
-  }
-  .index {
-    position: sticky;
-    top: 1.5rem;
-    display: block;
-  }
+  align-items: flex-start;
 }
 
 .index {
@@ -58,6 +51,18 @@
   background: var(--color-card);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
+}
+
+/* The index only earns its column when there is room for it; below that the cards get everything.
+   This has to come after the base rule, or the `display: none` above wins on equal specificity —
+   which is exactly how the nav came to be invisible at every width. */
+@media (min-width: 1080px) {
+  .index {
+    display: block;
+    flex: 0 0 216px;
+    position: sticky;
+    top: 0;
+  }
 }
 
 .indexLabel {
@@ -86,8 +91,10 @@
 
 /* Cards, as many across as fit. Nothing here caps the container. */
 .sections {
+  flex: 1;
+  min-width: 0;   /* a flex item defaults to min-content width; without this the grid cannot shrink */
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 1.25rem;
   align-items: start;
 }
