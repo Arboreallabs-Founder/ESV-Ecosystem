@@ -550,6 +550,36 @@ export const WIKI: Record<string, WikiSection> = {
     ],
   },
 
+  gettingToAContact: {
+    title: 'Getting to a contact',
+    summary: 'What happens before the raise starts, when we hold no reachable person at a fund — and the two routes where somebody introduces us.',
+    items: [
+      { heading: 'Why it is its own set of statuses', body: 'A deal that never reached a human at the fund has not really been sent, however green the list looks. Keeping these apart from the funnel is what stops "we approached 40 funds" meaning "we emailed 40 addresses, twelve of which bounced".' },
+      { heading: 'No contact → Reaching out → Converted to POC', body: 'The fund sits outside the workflow until somebody is actually reachable there. Recording the contact writes them onto the fund\'s own profile as primary — a POC that exists only inside one mandate is one the next mandate has to find again.' },
+      { heading: 'Who found them', body: 'Whoever records the contact is stored against it. That is the person to ask about the relationship later, and the reason the field exists at all.' },
+      { heading: 'Founder introductions', body: 'Sent to founder → Founder has connected → Founder looped us in → the regular workflow. For contacts who are a connection of Monica Gupta, Manan Patel, Nimit Shah, Rahul Hingmire or Sudhir Mehta.' },
+      { heading: 'Partner introductions', body: 'Sent to partner → Partner has connected → Partner looped us in → the regular workflow. The partner stays tagged on the contact, because the fee is eventually calculated from that attribution.' },
+      { heading: 'Tagging the connection', body: 'On the contact, not the fund. A fund has several people at it and only one of them is anybody\'s connection — putting it on the fund would lose which relationship it actually is.' },
+      { heading: 'Nothing here counts toward health', body: 'A fund we cannot reach, or an introduction we are waiting on, contributes nothing to the raise however busy it makes us look. Nor can any of it be "ghosted" — an introduction we are waiting on is our problem, not theirs.' },
+      { heading: 'They are chased too', body: 'A contact search sitting more than a week, or an introduction waiting more than a week, raises an automatic task. An introduction nobody follows up is the easiest thing in this process to forget.' },
+    ],
+  },
+
+  angelReachout: {
+    title: 'Angel reachout',
+    summary: 'Our own angel network, for syndicate deals. Internal only — there is no founder-facing side to this at all.',
+    items: [
+      { heading: 'Only on syndicate deals', body: 'Checked against the deal\'s categories rather than a separate flag, so it cannot drift when somebody retags a deal. An investment-banking mandate runs through the fundraise status list instead.' },
+      { heading: 'Not a status funnel', body: 'An angel does not run an institutional process, so there is nothing to track them through. Who reached out, how, when, and what came back is the whole record worth keeping.' },
+      { heading: 'One list, one task', body: 'The list is a single collaborative task rather than one per investor — forty angels would be forty cards nobody can see the shape of. Everyone assigned works the same list and ticks people off as they go.',
+        snippet: 'Angel reachout — WhatsApp blast     12/34 reached · 5 replied\n  [x] Ankit Shah      Reached (Sakshay)   \"Send me the deck\"\n  [x] Meera Iyer      Reached (Karan)     \"Not this one\"\n  [ ] Rohan Gupta     Mark reached' },
+      { heading: 'Four methods', body: 'In person, WhatsApp blast, email blast, or other — and "other" makes you say which. "Other" on its own is a record of nothing three months later.' },
+      { heading: 'Everyone starts ticked', body: 'The list is something you narrow, not something you build. Untick anyone you are not approaching this round; they stay visible but recede, because seeing who you left out is part of the decision.' },
+      { heading: 'What they said', body: 'Free text beside each name. It is archived against that investor\'s profile, so their history builds up across deals rather than being trapped in the list it came from.' },
+      { heading: 'When they commit', body: '"They\'re in" adds them to the deal\'s own investor list with the amount, so the totals on the deal page stay true — the same place every other commitment lives.' },
+    ],
+  },
+
   faq: {
     audience: 'all',
     title: 'FAQ',
@@ -584,7 +614,7 @@ export const WIKI_SECTIONS = Object.keys(WIKI) as Array<keyof typeof WIKI>
 export const WIKI_GROUPS: Array<{ title: string; keys: string[] }> = [
   { title: 'Start here', keys: ['dashboard', 'faq'] },
   { title: 'Deals', keys: ['dealDesk', 'activeDeals', 'dealDetail', 'dealDocuments', 'pipeline', 'pipelines'] },
-  { title: 'Companies & investors', keys: ['companies', 'investors', 'investorProfile', 'investorLists', 'fundraiseStatus', 'mandateHealth'] },
+  { title: 'Companies & investors', keys: ['companies', 'investors', 'investorProfile', 'investorLists', 'fundraiseStatus', 'gettingToAContact', 'mandateHealth', 'angelReachout'] },
   { title: 'Your work', keys: ['tasks', 'automaticTasks', 'myTodos', 'recurringTasks', 'taskKpis', 'escalations', 'analytics'] },
   { title: 'Partners (SGP)', keys: ['partners', 'sgpDesk', 'myCompanies', 'portal', 'earnings', 'partnerDeals', 'partnerInvestors', 'partnerDocuments'] },
   { title: 'Intake forms', keys: ['forms', 'formBuilder'] },

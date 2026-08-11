@@ -350,6 +350,14 @@ export default function ActiveDealPageClient({
                 Fundraise status
               </Link>
             )}
+            {/* Syndicate deals work the angel network instead. The page itself checks the
+                category, so this link is a way in rather than the gate. */}
+            {canManageDeal && (
+              <Link href={`/active-deals/${deal.id}/angels`} className={styles.ghostBtn}
+                style={{ textDecoration: 'none' }}>
+                Angel reachout
+              </Link>
+            )}
             {canSetPartnerVisibility && (
               <button
                 className={partnerVisible ? styles.ghostBtn : styles.hiddenFromPartnersBtn}

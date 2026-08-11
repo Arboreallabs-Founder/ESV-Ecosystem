@@ -373,3 +373,39 @@ buys; `add_fundraise_founder_comment` is their only write, and it verifies the t
 
 `investor_rejections` answers "what has this fund passed on, and why" without re-deriving it from
 the mandates later.
+
+### `20260915000000_automatic_tasks.sql` / `20260916000000_fix_automatic_task_priority.sql`
+Automatic Tasks: work raised by a fund's status rather than typed by someone. `tasks.source`,
+`auto_rule`, `fundraise_entry_id`, `escalated_at`, and a partial unique index giving one *open*
+task per rule per fund — without it every page load would add another.
+
+New policies were required, not optional: the existing associate rules are `assignee_id =
+auth.uid()`, so an **unowned** task would have been invisible to exactly the people whose work this
+is. Internal roles can now see, complete and comment on automatic tasks without gaining access to
+anyone else's manual ones.
+
+`20260916` fixes a real defect in `20260915`: `tasks.priority` is an enum, and the generator built
+it with a `CASE` expression, which is `text`. A bare literal coerces from `unknown`; a `CASE` result
+does not. The function raised for any fund that matched a rule and returned cleanly when nothing
+matched — so the success case was the one that did nothing, and calling it once against an empty
+table proved nothing.
+
+### `20260917000000_pre_workflow_and_angels.sql`
+The pre-workflow statuses, connection tagging, and Angel Reachout.
+
+**`fundraise_entries.status` becomes TEXT with a CHECK.** Nine new statuses sit *before* the
+existing nine, and `ALTER TYPE … ADD VALUE` cannot be used in the transaction that adds it — which
+is exactly what the Supabase SQL editor gives you. TEXT with a CHECK has the same guarantees, no
+transaction trap, and adding the next status is a one-line change. Free to do while
+`fundraise_entries` was still empty.
+
+`investor_contacts.connected_partner_id` and `connected_founder` sit on the **contact**, not the
+fund: a fund has several people at it and only one of them is anybody's connection. The partner
+attribution is what fees are eventually calculated from.
+
+`angel_reachout_lists` + `angel_reachout_members` — one list is one collaborative task. Members
+default to `included = true` (§15): the list is something you narrow. `investor_angel_interactions`
+is a view rather than a copy, so an investor's history cannot drift from what was recorded.
+
+Two more automatic rules: a contact search stalled past a week, and an introduction waiting past a
+week. Both are the failure mode §9 and §10 exist to prevent.

@@ -180,3 +180,127 @@ export async function unshareFundraiseList(listId: string, activeDealId: string)
   if (error) throw new Error(error.message)
   revalidatePath(`/active-deals/${activeDealId}/fundraise`)
 }
+
+// ─── Getting to a contact, before the workflow starts ────────────────────────
+// §9: where we hold no reachable person at a fund, the deal has not really been sent however good
+// the list looks. This is the part that makes "we approached 40 funds" mean something.
+
+/**
+ * Record that a contact has been established, and who established it.
+ *
+ * Writes the person onto the fund's profile as well, because a POC that exists only inside one
+ * mandate is one the next mandate has to find again.
+ */
+export async function establishPoc(input: {
+  entryId: string
+  investorId: string
+  name: string
+  role?: string | null
+  email?: string | null
+  phone?: string | null
+  linkedinUrl?: string | null
+  activeDealId: string
+}) {
+  const ctx = await requireDeskUser()
+  const name = input.name.trim()
+  if (!name) throw new Error('Who did you reach?')
+
+  const { data: entry } = await ctx.supabase
+    .from('fundraise_entries').select('org_id, status').eq('id', input.entryId).maybeSingle()
+  if (!entry) throw new Error('That fund is no longer on this list.')
+  const e = entry as { org_id: string; status: string }
+
+  // Primary, because it is now the way in. Any incumbent primary is demoted first — two primaries
+  // is the state where nobody knows who to call.
+  await ctx.supabase
+    .from('investor_contacts')
+    .update({ rank: 'secondary' })
+    .eq('investor_id', input.investorId)
+    .eq('rank', 'primary')
+
+  const { data: contact, error: contactErr } = await ctx.supabase
+    .from('investor_contacts')
+    .insert({
+      investor_id: input.investorId,
+      name,
+      role: input.role?.trim() || null,
+      email: input.email?.trim() || null,
+      phone: input.phone?.trim() || null,
+      linkedin_url: input.linkedinUrl?.trim() || null,
+      rank: 'primary',
+      employment_status: 'active',
+      last_verified_at: new Date().toISOString(),
+      contacted_by_user_id: ctx.userId,
+    })
+    .select('id')
+    .single()
+  if (contactErr) throw new Error(contactErr.message)
+
+  const now = new Date().toISOString()
+  const { data: updated, error } = await ctx.supabase
+    .from('fundraise_entries')
+    .update({
+      status: 'converted_poc',
+      status_changed_at: now,
+      poc_established_by: ctx.userId,
+      poc_established_at: now,
+    })
+    .eq('id', input.entryId)
+    .select('id')
+  if (error) throw new Error(error.message)
+  if (!updated || updated.length === 0) throw new Error('That fund could not be updated.')
+
+  await ctx.supabase.from('fundraise_events').insert({
+    org_id: e.org_id,
+    entry_id: input.entryId,
+    kind: 'status_change',
+    from_status: e.status,
+    to_status: 'converted_poc',
+    body: `Contact established: ${name}${input.role ? `, ${input.role}` : ''}. Added to the fund's profile as primary.`,
+    founder_visible: false,
+    created_by: ctx.userId,
+  })
+
+  revalidatePath(`/active-deals/${input.activeDealId}/fundraise`)
+  return (contact as { id: string }).id
+}
+
+/**
+ * Tag a fund's contact as somebody's connection.
+ *
+ * On the contact rather than the fund: a fund has several people at it, and only one of them is
+ * Monica's. Putting it on the fund would lose which relationship it actually is — and the partner
+ * attribution here is what fees are eventually calculated from (§11).
+ */
+export async function setContactConnection(input: {
+  contactId: string
+  connectedFounder?: string | null
+  connectedPartnerId?: string | null
+  activeDealId?: string
+}) {
+  const ctx = await requireDeskUser()
+  const { data, error } = await ctx.supabase
+    .from('investor_contacts')
+    .update({
+      connected_founder: input.connectedFounder || null,
+      connected_partner_id: input.connectedPartnerId || null,
+    })
+    .eq('id', input.contactId)
+    .select('id')
+  if (error) throw new Error(error.message)
+  if (!data || data.length === 0) throw new Error('That contact could not be updated.')
+  if (input.activeDealId) revalidatePath(`/active-deals/${input.activeDealId}/fundraise`)
+}
+
+/** Which introduction route a fund is on, so the pre-workflow statuses mean something specific. */
+export async function setIntroRoute(entryId: string, route: string | null, activeDealId: string) {
+  const ctx = await requireDeskUser()
+  const { data, error } = await ctx.supabase
+    .from('fundraise_entries')
+    .update({ intro_route: route })
+    .eq('id', entryId)
+    .select('id')
+  if (error) throw new Error(error.message)
+  if (!data || data.length === 0) throw new Error('That fund could not be updated.')
+  revalidatePath(`/active-deals/${activeDealId}/fundraise`)
+}

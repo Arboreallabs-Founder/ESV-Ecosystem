@@ -1669,6 +1669,13 @@ export function pocCoverage(
  * the moment anything moves it stops being true on its own.
  */
 export const FUNDRAISE_STATUSES = [
+  // Before anything can be sent: we hold no reachable contact at this fund.
+  'no_contact', 'reaching_out', 'converted_poc',
+  // The contact is a founder's connection.
+  'sent_to_founder', 'founder_connected', 'founder_looped_in',
+  // The contact is a partner's connection. The partner stays tagged, because the fee follows it.
+  'sent_to_partner', 'partner_connected', 'partner_looped_in',
+  // The regular workflow.
   'not_sent', 'deal_sent', 'data_requested', 'call_request',
   'due_diligence', 'accepted', 'rejected', 'closed',
 ] as const
@@ -1678,6 +1685,15 @@ export type FundraiseStatus = typeof FUNDRAISE_STATUSES[number]
 export type FundraiseDisplayStatus = FundraiseStatus | 'ghosted'
 
 export const FUNDRAISE_STATUS_LABELS: Record<FundraiseDisplayStatus, string> = {
+  no_contact: 'No contact yet',
+  reaching_out: 'Reaching out to a new contact',
+  converted_poc: 'Converted to POC',
+  sent_to_founder: 'Sent to founder',
+  founder_connected: 'Founder has connected',
+  founder_looped_in: 'Founder looped us in',
+  sent_to_partner: 'Sent to partner',
+  partner_connected: 'Partner has connected',
+  partner_looped_in: 'Partner looped us in',
   not_sent: 'Not sent yet',
   deal_sent: 'Deal sent',
   data_requested: 'Data requested by fund',
@@ -1690,13 +1706,45 @@ export const FUNDRAISE_STATUS_LABELS: Record<FundraiseDisplayStatus, string> = {
 }
 
 /**
+ * The three groups a status belongs to.
+ *
+ * The pre-workflow ones exist because a deal that never reached a human at the fund has not really
+ * been sent, however green the list looks. Keeping them apart from the funnel is what stops
+ * "we approached 40 funds" meaning "we emailed 40 addresses, 12 of which bounced".
+ */
+export const FUNDRAISE_STATUS_GROUP: Record<FundraiseStatus, 'contact' | 'intro' | 'workflow'> = {
+  no_contact: 'contact', reaching_out: 'contact', converted_poc: 'contact',
+  sent_to_founder: 'intro', founder_connected: 'intro', founder_looped_in: 'intro',
+  sent_to_partner: 'intro', partner_connected: 'intro', partner_looped_in: 'intro',
+  not_sent: 'workflow', deal_sent: 'workflow', data_requested: 'workflow',
+  call_request: 'workflow', due_diligence: 'workflow', accepted: 'workflow',
+  rejected: 'workflow', closed: 'workflow',
+}
+
+export const FUNDRAISE_GROUP_LABELS: Record<'contact' | 'intro' | 'workflow', string> = {
+  contact: 'Finding a contact',
+  intro: 'Waiting on an introduction',
+  workflow: 'The raise',
+}
+
+/**
  * A sequential ramp for the funnel, and semantic colours for the three outcomes.
  *
  * The in-flight statuses are ordered, so they take a lightness ramp rather than unrelated hues —
  * you should be able to see depth without reading the legend. Accepted, rejected and ghosted are
- * outcomes, not depths, so they get their own colours.
+ * outcomes, not depths, so they get their own colours. The pre-workflow statuses take the warm
+ * accent: they are a different kind of thing, not an earlier rung of the same ladder.
  */
 export const FUNDRAISE_STATUS_COLORS: Record<FundraiseDisplayStatus, string> = {
+  no_contact: '#C0392B',
+  reaching_out: '#D5AE8F',
+  converted_poc: '#B08968',
+  sent_to_founder: '#D5AE8F',
+  founder_connected: '#C39B78',
+  founder_looped_in: '#B08968',
+  sent_to_partner: '#D5AE8F',
+  partner_connected: '#C39B78',
+  partner_looped_in: '#B08968',
   not_sent: '#A39B95',
   deal_sent: '#B9AEFE',
   data_requested: '#9C8BFD',
@@ -1708,7 +1756,8 @@ export const FUNDRAISE_STATUS_COLORS: Record<FundraiseDisplayStatus, string> = {
   closed: '#6B6B7B',
 }
 
-/** Only these can ghost: a fund never sent cannot go quiet, nor can one that already answered. */
+/** Only these can ghost: a fund never sent cannot go quiet, nor can one that already answered —
+ *  and an introduction we are waiting on is our problem, not theirs. */
 export const FUNDRAISE_IN_FLIGHT: FundraiseStatus[] = [
   'deal_sent', 'data_requested', 'call_request', 'due_diligence',
 ]
@@ -1726,6 +1775,53 @@ export function fundraiseDisplayStatus(
   status: FundraiseStatus, statusChangedAt: string,
 ): FundraiseDisplayStatus {
   return isFundraiseGhosted(status, statusChangedAt) ? 'ghosted' : status
+}
+
+/** The five whose networks we route introductions through. Hardcoded, per the decision. */
+export const CONNECTED_FOUNDERS = [
+  'Monica Gupta', 'Manan Patel', 'Nimit Shah', 'Rahul Hingmire', 'Sudhir Mehta',
+] as const
+export type ConnectedFounder = typeof CONNECTED_FOUNDERS[number]
+
+// ─── Angel Reachout ──────────────────────────────────────────────────────────
+// Syndicate deals, internal only. Not a status funnel: an angel does not run a process, so what
+// matters is who reached out, how, when, and what came back.
+
+export const ANGEL_METHODS = ['in_person', 'whatsapp', 'email', 'other'] as const
+export type AngelMethod = typeof ANGEL_METHODS[number]
+
+export const ANGEL_METHOD_LABELS: Record<AngelMethod, string> = {
+  in_person: 'In person',
+  whatsapp: 'WhatsApp blast',
+  email: 'Email blast',
+  other: 'Other',
+}
+
+export type AngelReachoutMember = {
+  id: string
+  list_id: string
+  investor_id: string
+  included: boolean
+  done: boolean
+  done_by: string | null
+  done_at: string | null
+  response: string | null
+  responded_at: string | null
+  investor?: { id: string; name: string; service_type: string } | null
+  done_by_user?: { name: string | null; photo_url: string | null } | null
+}
+
+export type AngelReachoutList = {
+  id: string
+  active_deal_id: string
+  method: AngelMethod
+  method_other: string | null
+  title: string | null
+  task_id: string | null
+  created_by: string | null
+  created_at: string
+  members: AngelReachoutMember[]
+  created_by_user?: { name: string | null } | null
 }
 
 export const FUNDRAISE_EVENT_KINDS = [

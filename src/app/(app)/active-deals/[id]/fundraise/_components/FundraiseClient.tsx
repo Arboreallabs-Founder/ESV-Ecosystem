@@ -5,12 +5,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { alertError } from '@/lib/client-errors'
 import {
-  addFundraiseEvent, setEventFounderVisible, setFundraiseStatus, setReachoutTemplate,
+  addFundraiseEvent, establishPoc, setEventFounderVisible, setFundraiseStatus, setReachoutTemplate,
   shareFundraiseList, syncFromInvestorList, unshareFundraiseList,
 } from '@/app/actions/fundraise'
 import {
   FUNDRAISE_STATUSES, FUNDRAISE_STATUS_LABELS, FUNDRAISE_STATUS_COLORS, FUNDRAISE_EVENT_LABELS,
-  FUNDRAISE_GHOST_DAYS, fundraiseDisplayStatus,
+  FUNDRAISE_GHOST_DAYS, FUNDRAISE_STATUS_GROUP, FUNDRAISE_GROUP_LABELS, fundraiseDisplayStatus,
 } from '@/lib/types'
 import type {
   FundraiseEntry, FundraiseEventKind, FundraiseList, FundraiseStatus,
@@ -273,6 +273,11 @@ function EntryRow({
   const [eventKind, setEventKind] = useState<Exclude<FundraiseEventKind, 'status_change' | 'founder_comment'>>('outreach')
   const [eventBody, setEventBody] = useState('')
   const [eventVisible, setEventVisible] = useState(false)
+  const [showPoc, setShowPoc] = useState(false)
+  const [pocName, setPocName] = useState('')
+  const [pocRole, setPocRole] = useState('')
+  const [pocEmail, setPocEmail] = useState('')
+  const [pocPhone, setPocPhone] = useState('')
 
   const daysStill = Math.floor(
     (Date.now() - new Date(entry.status_changed_at).getTime()) / 86_400_000,
@@ -309,8 +314,49 @@ function EntryRow({
         <div className={styles.entryBody}>
           {!primary && (
             <div className={styles.warnInline}>
-              No confirmed contact at this fund. Establishing one comes before the rest of the
-              workflow — otherwise there is no evidence the deal ever reached them.
+              <strong>No confirmed contact at this fund.</strong> Establishing one comes before the
+              rest of the workflow — otherwise there is no evidence the deal ever reached them. Move
+              it to &ldquo;Reaching out to a new contact&rdquo;, and record the person here once you
+              have one.
+              <button className={styles.linkBtn} onClick={() => setShowPoc((v) => !v)}>
+                {showPoc ? 'Cancel' : 'Record a contact'}
+              </button>
+            </div>
+          )}
+
+          {showPoc && (
+            <div className={styles.pocForm}>
+              <div className={styles.blockTitle}>Who did you reach?</div>
+              <div className={styles.pocGrid}>
+                <input className={styles.select} placeholder="Name *" value={pocName}
+                  onChange={(e) => setPocName(e.target.value)} />
+                <input className={styles.select} placeholder="Role" value={pocRole}
+                  onChange={(e) => setPocRole(e.target.value)} />
+                <input className={styles.select} placeholder="Email" value={pocEmail}
+                  onChange={(e) => setPocEmail(e.target.value)} />
+                <input className={styles.select} placeholder="Phone" value={pocPhone}
+                  onChange={(e) => setPocPhone(e.target.value)} />
+              </div>
+              <p className={styles.hint}>
+                Saved onto the fund&apos;s own profile as its primary contact, not just onto this
+                mandate — a POC that exists in one deal is one the next deal has to find again. You
+                are recorded as whoever established it.
+              </p>
+              <button
+                className={styles.primaryBtn}
+                disabled={pending || !pocName.trim() || !entry.investor}
+                onClick={() => onRun(async () => {
+                  await establishPoc({
+                    entryId: entry.id,
+                    investorId: entry.investor!.id,
+                    name: pocName, role: pocRole, email: pocEmail, phone: pocPhone,
+                    activeDealId: dealId,
+                  })
+                  setPocName(''); setPocRole(''); setPocEmail(''); setPocPhone(''); setShowPoc(false)
+                })}
+              >
+                {pending ? 'Saving…' : 'Record the contact'}
+              </button>
             </div>
           )}
 
@@ -318,13 +364,22 @@ function EntryRow({
             {/* Move the status. */}
             <div className={styles.panel}>
               <div className={styles.blockTitle}>Move it on</div>
+              {/* Grouped, because the three routes are genuinely different jobs — finding a way
+                  in, waiting on somebody's introduction, and working the raise. Seventeen options
+                  in one flat list reads as a wall. */}
               <select
                 className={styles.select}
                 value={statusDraft}
                 onChange={(e) => setStatusDraft(e.target.value as FundraiseStatus)}
               >
-                {FUNDRAISE_STATUSES.map((s) => (
-                  <option key={s} value={s}>{FUNDRAISE_STATUS_LABELS[s]}</option>
+                {(['contact', 'intro', 'workflow'] as const).map((group) => (
+                  <optgroup key={group} label={FUNDRAISE_GROUP_LABELS[group]}>
+                    {FUNDRAISE_STATUSES
+                      .filter((s) => FUNDRAISE_STATUS_GROUP[s] === group)
+                      .map((s) => (
+                        <option key={s} value={s}>{FUNDRAISE_STATUS_LABELS[s]}</option>
+                      ))}
+                  </optgroup>
                 ))}
               </select>
 

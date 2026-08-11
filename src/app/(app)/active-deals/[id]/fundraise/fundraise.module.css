@@ -140,3 +140,20 @@
   background: var(--color-card); border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
 }
+
+/* Recording a contact: the step §9 says comes before everything else. */
+.linkBtn {
+  display: inline-block; margin-left: 0.4rem;
+  border: none; background: none; padding: 0;
+  font-family: inherit; font-size: 0.8125rem; font-weight: 600;
+  color: var(--color-primary); cursor: pointer; line-height: 1.4;
+}
+.linkBtn:hover { text-decoration: underline; }
+
+.pocForm {
+  display: flex; flex-direction: column; gap: 0.625rem;
+  padding: 0.875rem 1rem; margin-bottom: 1rem;
+  background: var(--color-bg); border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+.pocGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem; }

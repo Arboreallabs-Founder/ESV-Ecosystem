@@ -23,6 +23,13 @@ import {
 
 /** How far a fund has got. Ordered, because the funnel is. */
 export const HEALTH_DEPTH: Record<FundraiseStatus, number> = {
+  // Nothing before the deal is sent counts. A fund we cannot reach, or an introduction we are
+  // waiting on, contributes nothing to the raise however busy it makes us look — which is the
+  // whole reason these statuses are separate from the funnel.
+  no_contact: 0, reaching_out: 0, converted_poc: 0,
+  sent_to_founder: 0, founder_connected: 0, founder_looped_in: 0,
+  sent_to_partner: 0, partner_connected: 0, partner_looped_in: 0,
+
   not_sent: 0,        // approved and sitting there — contributes nothing
   deal_sent: 1,
   data_requested: 3,  // they asked us for something: the first real signal
@@ -103,7 +110,9 @@ export function mandateHealth(entries: HealthInput[]): MandateHealth {
     if (e.status === 'accepted') accepted++
     else if (e.status === 'rejected') rejected++
     else if (isGhost) ghosted++
-    else if (e.status !== 'not_sent' && e.status !== 'closed') live++
+    // "In conversation" means the fund is actually talking to us. Everything before the deal
+    // goes out is us organising ourselves, and counting it would flatter the summary.
+    else if (HEALTH_DEPTH[e.status] > 0) live++
   }
 
   const score = Math.round((total / (entries.length * MAX_DEPTH)) * 100)
