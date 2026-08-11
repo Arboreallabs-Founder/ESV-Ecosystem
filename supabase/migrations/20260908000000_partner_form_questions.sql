@@ -89,6 +89,15 @@ DECLARE
     'Real Estate', 'Retail', 'Robotics', 'SaaS', 'SpaceTech', 'Sports', 'Travel', 'Web3', 'Other'
   ];
 BEGIN
+  -- Run out of order and Postgres reports `column "is_partner_form" does not exist` from inside a
+  -- plpgsql block, which says nothing about what to do. Say it.
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = 'forms' AND column_name = 'is_partner_form'
+  ) THEN
+    RAISE EXCEPTION 'Run 20260907000000_partner_form.sql first — it creates forms.is_partner_form and the Partner Referral form this migration rewrites.';
+  END IF;
+
   FOR v_org IN SELECT id FROM public.organizations LOOP
     SELECT id INTO v_form
       FROM public.forms WHERE org_id = v_org AND is_partner_form LIMIT 1;

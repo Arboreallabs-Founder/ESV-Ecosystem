@@ -206,7 +206,9 @@ searchable. `investors.logo_url` takes a URL rather than an upload: no Vercel co
 storage, and a broken logo is a cosmetic failure.
 
 ### `20260905000000_partner_deal_visibility.sql`
-`deal_category_fields.visible_to_partners`, defaulting **false**. Deal fields are user-defined, so
+`deal_category_fields.visible_to_partners`, defaulting **false**. The column holding a field's name
+is `label`, not `name` — the first version of this migration used `name` and failed outright, which
+is how it came to be skipped while the ones after it were applied. Deal fields are user-defined, so
 which ones a partner may see cannot be hardcoded — and a field added tomorrow must be private until
 someone decides otherwise, because that list includes fee structures and mandate links.
 

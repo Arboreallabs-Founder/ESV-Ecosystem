@@ -14,15 +14,25 @@ ALTER TABLE public.deal_category_fields
 COMMENT ON COLUMN public.deal_category_fields.visible_to_partners IS
   'Partners see this field on the deal. Default false — fee structures and mandate links are not theirs to read.';
 
--- Open the fields a partner legitimately needs: what is being raised, and the company''s numbers.
--- Matched on name because these are user-created rows with no stable identifier; anything not
--- matched simply stays private, which is the harmless direction.
+-- Open the fields a partner legitimately needs: what is being raised, and the company's numbers.
+-- Matched on the label because these are user-created rows with no stable identifier, and matched
+-- case-insensitively because the same field exists as both "Total Capital Being Raised" and
+-- "Total Capital Being raised" on two different categories.
+--
+-- Deal *terms* are deliberately absent — pre-money valuation, equity %, our ticket size, instrument,
+-- round details. A partner is told what the company is raising, not what we are getting. Anything
+-- not listed here simply stays private, which is the harmless direction, and can be opened one
+-- field at a time in Admin → Deal Categories.
 UPDATE public.deal_category_fields
    SET visible_to_partners = true
- WHERE lower(btrim(name)) IN (
-   'total capital being raised', 'total capital being raised ', 'capital being raised',
-   'sector', 'arr', 'mrr', 'revenue', 'ebitda', 'gross margin', 'burn', 'runway',
-   'instrument', 'valuation', 'pre-money', 'post-money'
+ WHERE lower(btrim(label)) IN (
+   -- what is being raised
+   'total capital being raised', 'capital being raised',
+   -- the company's own numbers
+   'arr', 'mrr', 'monthly revenue (usd)', 'runway (months)',
+   'revenue', 'ebitda', 'gross margin', 'burn', 'runway',
+   -- what it does
+   'sector'
  );
 
 -- ─── 2. Partners no longer create investors ─────────────────────────────────
@@ -43,7 +53,7 @@ DROP POLICY IF EXISTS "Partners manage own referral contacts" ON public.investor
 -- Which fields a partner can see, in one query, because "what does a partner see" should be
 -- answerable without reading the UI.
 CREATE OR REPLACE VIEW public.partner_visible_deal_fields AS
-  SELECT f.id, f.category_id, c.name AS category_name, f.name AS field_name
+  SELECT f.id, f.category_id, c.name AS category_name, f.label AS field_name
     FROM public.deal_category_fields f
     JOIN public.deal_categories c ON c.id = f.category_id
    WHERE f.visible_to_partners;
