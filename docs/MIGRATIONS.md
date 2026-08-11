@@ -250,3 +250,24 @@ the label silently falls through to the default path.
 
 The rebuild refuses to run if any `pipeline_entry_answers` reference the form's nodes: replacing
 the questions would take the answers with them.
+
+### `20260909000000_partner_deal_summary.sql`
+`get_partner_deal_summary(deal_id)` — the projection a partner is allowed on a deal, as one
+SECURITY DEFINER call.
+
+20260905 decided which deal *fields* a partner may read, and that works. But raise progress, the
+ESV point of contact, the company logo and the linked company profile were all coming back empty
+for partners — not because anyone decided they should, but because the page derives them from rows
+RLS correctly hides. Raise progress in particular read "₹0 committed, 0 commitments" on a deal that
+was ₹1.08 Cr in from eleven investors: the one thing the spec explicitly promised them was the one
+thing showing zero.
+
+The fix is **not** to widen those policies. A partner must not read investor rows, the user
+directory, or the company database. The function returns **aggregates instead of rows** — a total
+and a count, never a list — plus assignee names and photos and the logo. It re-checks everything
+itself rather than leaning on RLS: caller is a partner, deal is in their org, deal is actually
+marked visible to partners. Any of those failing returns NULL.
+
+The raise **percentage** is deliberately not returned. It is computed client-side from the target
+field the partner can already see, so the denominator is always on the page — and if that field is
+closed to partners the bar disappears with it.

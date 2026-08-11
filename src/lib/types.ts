@@ -840,6 +840,21 @@ export type ActiveDealCategoryData = {
   field_values: Array<{ field_id: string; value: string | null }>
 }
 
+/**
+ * What a partner is allowed to know about a deal, assembled server-side.
+ *
+ * The page derives everything else from rows RLS hides from partners — investor rows, the user
+ * directory, the company database — so for them those panels came back empty rather than
+ * restricted. This is the projection they may have: aggregates instead of rows.
+ */
+export type PartnerDealSummary = {
+  logo_url: string | null
+  company_name: string | null
+  committed_total: number
+  commitment_count: number
+  assignees: Array<{ user_id: string; name: string | null; photo_url: string | null }>
+}
+
 export type ActiveDeal = {
   id: string
   pipeline_entry_id: string

@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { ActiveDeal, ActiveDealCategoryData, DealCategory, DealState } from '@/lib/types'
+import type { ActiveDeal, ActiveDealCategoryData, DealCategory, DealState, PartnerDealSummary } from '@/lib/types'
 
 type FieldValueRow = { field_id: string; value: string | null }
 type DealCategoryFieldRow = DealCategory['fields'][number]
@@ -166,6 +166,25 @@ export const fetchActiveDealSummary = cache(async (id: string): Promise<{
     .map((c) => first(c?.category ?? null))
     .filter((c): c is { id: string; name: string; color: string } => c !== null)
   return { id: data.id as string, title: entry?.title ?? null, categories }
+})
+
+/**
+ * The partner-safe view of a deal, from a SECURITY DEFINER function.
+ *
+ * Everything in here is derived from rows a partner cannot select — investor commitments, the user
+ * directory, the company record — so the page cannot compute it client-side. Asking the database
+ * for the aggregate is the only way to show "how much has been raised" without also showing by whom.
+ *
+ * Returns null if the caller is not a partner, the deal is not theirs, or it has not been made
+ * visible to partners. The page falls back to what it can render on its own.
+ */
+export const fetchPartnerDealSummary = cache(async (activeDealId: string): Promise<PartnerDealSummary | null> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('get_partner_deal_summary', { p_deal_id: activeDealId })
+  // Missing function means the migration has not run yet. That is a degraded page, not a broken
+  // one, so it renders without the summary rather than failing the whole route.
+  if (error || !data) return null
+  return data as PartnerDealSummary
 })
 
 // Lightweight investor count + committed total for the deal page's summary card

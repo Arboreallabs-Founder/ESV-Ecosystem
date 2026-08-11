@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
-import { fetchActiveDeal, fetchCategories } from '@/lib/active-deals'
+import { fetchActiveDeal, fetchCategories, fetchPartnerDealSummary } from '@/lib/active-deals'
 import { fetchCompanyOptions } from '@/lib/companies'
 import { getDealInvestors } from '@/app/actions/active-deals'
 import { createClient } from '@/lib/supabase/server'
@@ -25,13 +25,17 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
   // `general` can't view investors (getDealInvestors' guard rejects them), so skip the fetch
   // entirely for that role — the dashboard hides the investor section for them anyway.
   const canViewInvestors = user.role !== 'general'
-  const [answers, history, stageAnswers, investorData, updates] = await Promise.all([
+  const isPartner = user.role === 'franchise_partner'
+  const [answers, history, stageAnswers, investorData, updates, partnerSummary] = await Promise.all([
     getEntryAnswers(deal.pipeline_entry_id),
     getEntryStageHistory(deal.pipeline_entry_id),
     getEntryStageAnswers(deal.pipeline_entry_id),
     canViewInvestors ? getDealInvestors(id) : Promise.resolve({ investors: [], dealFieldValues: [] }),
     // Partners aren't internal, so the updates policy would reject them anyway — skip the round trip.
-    user.role === 'franchise_partner' ? Promise.resolve([]) : getDealUpdates(id),
+    isPartner ? Promise.resolve([]) : getDealUpdates(id),
+    // Aggregates a partner is allowed but cannot compute: raise progress, the ESV contact, the
+    // logo. Every source row behind them is hidden from partners by RLS, correctly.
+    isPartner ? fetchPartnerDealSummary(id) : Promise.resolve(null),
   ])
 
   const teamMembers = (teamRows ?? []) as Array<{ id: string; name: string; photo_url: string | null }>
@@ -50,6 +54,7 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
       teamMembers={teamMembers}
       updates={updates}
       currentUserId={user.id}
+      partnerSummary={partnerSummary}
     />
   )
 }

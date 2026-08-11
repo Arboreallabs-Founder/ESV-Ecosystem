@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createOrLinkCompanyForActiveDeal, deleteActiveDeal, linkActiveDealToCompany, setDealPartnerVisibility, updateActiveDealDetails, updateDealState } from '@/app/actions/active-deals'
 import { addAssignee, removeAssignee } from '@/app/actions/pipelines'
-import type { ActiveDeal, ActiveDealInvestor, ActiveDealInvestorStatus, ActiveDealUpdate, DealCategory, DealState, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
+import type { ActiveDeal, ActiveDealInvestor, ActiveDealInvestorStatus, ActiveDealUpdate, DealCategory, DealState, PartnerDealSummary, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
 import { ACTIVE_DEAL_INVESTOR_STATUSES, ACTIVE_DEAL_INVESTOR_STATUS_META, DEAL_STATES, DEAL_STATE_META, SERVICE_TYPE_LABELS } from '@/lib/types'
 import { computeFeeAmount } from '@/lib/deal-fees'
 import { StatusGauge, StatusDonut, type DonutSegment } from './DealCharts'
@@ -84,6 +84,7 @@ export default function ActiveDealPageClient({
   teamMembers,
   updates,
   currentUserId,
+  partnerSummary,
 }: {
   deal: ActiveDeal
   userRole: string
@@ -97,6 +98,8 @@ export default function ActiveDealPageClient({
   teamMembers: Array<{ id: string; name: string; photo_url: string | null }>
   updates: ActiveDealUpdate[]
   currentUserId: string
+  /** Partners only, and null for everyone else. See fetchPartnerDealSummary. */
+  partnerSummary: PartnerDealSummary | null
 }) {
   const router = useRouter()
   const [dealState, setDealState] = useState<DealState>(deal.deal_state)
@@ -107,7 +110,15 @@ export default function ActiveDealPageClient({
   const [linkedCompany, setLinkedCompany] = useState<{ id: string; name: string } | null>(
     deal.entry?.company ? { id: deal.entry.company.id, name: deal.entry.company.name } : null,
   )
-  const [assignees, setAssignees] = useState(deal.entry?.assignees ?? [])
+  // Partners cannot read the user directory, so the join comes back empty for them and the panel
+  // said "No one assigned" on a deal that has an owner. The summary carries name and photo only.
+  const [assignees, setAssignees] = useState(
+    (deal.entry?.assignees?.length ? deal.entry.assignees : partnerSummary?.assignees ?? []).map((a) => ({
+      user_id: a.user_id,
+      name: a.name ?? 'Unknown',
+      photo_url: a.photo_url ?? null,
+    })),
+  )
   const [, startStateTransition] = useTransition()
   const [linkPending, startLinkTransition] = useTransition()
   const [, startAssigneeTransition] = useTransition()
@@ -205,7 +216,9 @@ export default function ActiveDealPageClient({
   }
 
   // A logo set directly on the deal wins; otherwise fall back to the linked company's logo.
-  const displayLogoUrl = deal.logo_url || deal.entry?.company?.logo_url || null
+  // A partner cannot read `companies`, so the company logo arrives through the summary instead.
+  // Without this the deal wore a coloured initial for them and its real mark for us.
+  const displayLogoUrl = deal.logo_url || deal.entry?.company?.logo_url || partnerSummary?.logo_url || null
 
   const stageAnswerGroups: Array<{ stage_id: string; stage_name: string; items: StageAnswerView[] }> = []
   for (const a of stageAnswers) {
@@ -217,8 +230,31 @@ export default function ActiveDealPageClient({
   const meta = DEAL_STATE_META[dealState]
   const visibleAnswers = answers.filter((a) => a.node?.question_text)
 
-  // ── Investor aggregates (all current-state; RLS scopes rows for partners) ──────
-  const totalCommitted = investors.reduce((s, i) => s + (i.investment_amount ?? 0), 0)
+  // ── Investor aggregates ───────────────────────────────────────────────────────
+  // RLS hides every investor row from partners, correctly — but these sums were derived from those
+  // rows, so a partner was shown "₹0 committed, 0 commitments" on a deal that was ₹1.08 Cr in. The
+  // summary carries the totals computed server-side; the rows stay hidden.
+  const totalCommitted = partnerSummary
+    ? partnerSummary.committed_total
+    : investors.reduce((s, i) => s + (i.investment_amount ?? 0), 0)
+  const commitmentCount = partnerSummary ? partnerSummary.commitment_count : investors.length
+
+  // What the company is raising, read off a field the partner can already see. Deliberately not
+  // sent by the summary: a percentage whose denominator is not on the page is a number nobody can
+  // check, and if the field is closed to partners the bar should disappear with it.
+  const partnerTarget = (() => {
+    if (!isPartner) return null
+    for (const { category, field_values } of deal.categories) {
+      for (const f of category.fields) {
+        if (!f.visible_to_partners) continue
+        if (!/capital being raised/i.test(f.label)) continue
+        const raw = field_values.find((v) => v.field_id === f.id)?.value
+        const n = raw ? Number(String(raw).replace(/[^0-9.]/g, '')) : NaN
+        if (Number.isFinite(n) && n > 0) return n
+      }
+    }
+    return null
+  })()
   const totalShares = investors.reduce((s, i) => s + (i.shares ?? 0), 0)
   const totalEarnings = investors.reduce(
     (s, i) => s + i.fees.reduce((fs, f) => fs + (computeFeeAmount(f, i.investment_amount, dealFieldValues) ?? 0), 0),
@@ -310,6 +346,22 @@ export default function ActiveDealPageClient({
       {isPartner && canSeeRaiseProgress && (
         <div className={styles.dashCard}>
           <div className={styles.detailSectionTitle}>Raise progress</div>
+          {/* The percentage is the thing a partner actually wants: "is this deal nearly done".
+              Only shown when the target is a field they can already see, so the bar never implies
+              a number that is not on the page. */}
+          {partnerTarget != null && partnerTarget > 0 && (
+            <div className={styles.raiseBarWrap}>
+              <div className={styles.raiseBar}>
+                <div
+                  className={styles.raiseBarFill}
+                  style={{ width: `${Math.min(100, Math.round((totalCommitted / partnerTarget) * 100))}%` }}
+                />
+              </div>
+              <span className={styles.raiseBarLabel}>
+                {Math.round((totalCommitted / partnerTarget) * 100)}% of {formatINR(partnerTarget)}
+              </span>
+            </div>
+          )}
           <div className={styles.statRow}>
             <div className={styles.statBlock}>
               <span className={styles.statLabel}>Committed so far</span>
@@ -319,7 +371,7 @@ export default function ActiveDealPageClient({
               <span className={styles.statLabel}>Commitments</span>
               {/* A count, not a list. Knowing five investors are in tells a partner the deal is
                   moving; knowing which five is ours. */}
-              <span className={styles.statValue}>{investors.length}</span>
+              <span className={styles.statValue}>{commitmentCount}</span>
             </div>
           </div>
         </div>
@@ -334,7 +386,7 @@ export default function ActiveDealPageClient({
             </div>
             <div className={styles.statTile}>
               <span className={styles.statLabel}>Investors</span>
-              <span className={styles.statValue}>{investors.length}</span>
+              <span className={styles.statValue}>{commitmentCount}</span>
             </div>
             <div className={styles.statTile}>
               <span className={styles.statLabel}>Total Shares</span>
@@ -402,7 +454,10 @@ export default function ActiveDealPageClient({
 
       {/* ── Deal detail cards ────────────────────────────────────────────────── */}
       <div className={styles.supportGrid}>
-        {/* Company Profile */}
+        {/* Company Profile — internal only. A partner cannot read the company database, so for
+            them this panel could only ever say "none linked", which reads as broken rather than as
+            a boundary. The company's name is already the title of the deal. */}
+        {!isPartner && (
         <div className={styles.dashCard}>
           <div className={styles.detailSectionHead}>
             <div className={styles.detailSectionTitle}>Company Profile</div>
@@ -429,6 +484,7 @@ export default function ActiveDealPageClient({
             <div className={styles.detailEmpty}>No company profile linked.</div>
           )}
         </div>
+        )}
 
         {/* Assigned To */}
         <div className={styles.dashCard}>
@@ -542,7 +598,9 @@ export default function ActiveDealPageClient({
           />
         )}
 
-        {/* Stage history */}
+        {/* Stage history — internal only. It is a record of our own process, and the query behind
+            it returns nothing for a partner anyway. */}
+        {!isPartner && (
         <div className={styles.dashCard}>
           <div className={styles.detailSectionTitle}>Stage History</div>
           {history.length === 0 ? (
@@ -564,8 +622,11 @@ export default function ActiveDealPageClient({
             </div>
           )}
         </div>
+        )}
 
-        {/* Form Q&A */}
+        {/* Form Q&A — internal only, for the same reason: it is the founder's application, not
+            something a referrer is owed. */}
+        {!isPartner && (
         <div className={styles.dashCard}>
           <div className={styles.detailSectionTitle}>Form Responses</div>
           {visibleAnswers.length === 0 ? (
@@ -581,6 +642,7 @@ export default function ActiveDealPageClient({
             </div>
           )}
         </div>
+        )}
       </div>
 
       {showEdit && (

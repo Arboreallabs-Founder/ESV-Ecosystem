@@ -2198,3 +2198,38 @@
 }
 .chevronOpen { transform: rotate(180deg); color: var(--color-primary); }
 .dealTeam:hover .chevron { color: var(--color-primary); }
+
+/* ─── Raise progress bar (partner view) ─────────────────────────────────────
+   The one number a referrer actually wants is "how close is this to done". The bar only renders
+   when the target is a field the partner can already see — a percentage whose denominator is not
+   on the page is a number nobody can check. */
+.raiseBarWrap {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0.25rem 0 1rem;
+  flex-wrap: wrap;
+}
+
+.raiseBar {
+  flex: 1 1 220px;
+  min-width: 160px;
+  height: 8px;
+  border-radius: 100px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.raiseBarFill {
+  height: 100%;
+  border-radius: 100px;
+  background: var(--color-primary);
+  transition: width 0.3s ease;
+}
+
+.raiseBarLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
