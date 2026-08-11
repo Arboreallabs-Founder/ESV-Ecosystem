@@ -1,6 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { ActiveDeal, ActiveDealCategoryData, DealCategory, DealState, PartnerDealSummary } from '@/lib/types'
+import type { ActiveDeal, ActiveDealCategoryData, ActiveDealDocument, DealCategory, DealState, PartnerDealSummary } from '@/lib/types'
 
 type FieldValueRow = { field_id: string; value: string | null }
 type DealCategoryFieldRow = DealCategory['fields'][number]
@@ -199,6 +199,29 @@ export const fetchPartnerDealSummaries = cache(async (): Promise<Record<string, 
   const { data, error } = await supabase.rpc('get_partner_deal_summaries')
   if (error || !data) return {}
   return data as Record<string, PartnerDealSummary>
+})
+
+/**
+ * The IM / financials / deck / MIS / dataroom links on a deal.
+ *
+ * RLS does the scoping: internal roles get everything, a partner gets only the documents marked
+ * shared on a deal that has been opened to them. One query serves both.
+ */
+export const fetchDealDocuments = cache(async (activeDealId: string): Promise<ActiveDealDocument[]> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('active_deal_documents')
+    .select('*, created_by_user:users!created_by(name)')
+    .eq('active_deal_id', activeDealId)
+    .order('created_at', { ascending: true })
+  if (error) {
+    // The table arrives with 20260911; until then the page renders without the panel rather than
+    // failing the whole route.
+    console.error('[active-deals] documents read failed:', error.message)
+    return []
+  }
+  const one = <T,>(v: T | T[] | null) => (Array.isArray(v) ? v[0] ?? null : v ?? null)
+  return (data ?? []).map((r: any) => ({ ...r, created_by_user: one(r.created_by_user) })) as ActiveDealDocument[]
 })
 
 // Lightweight investor count + committed total for the deal page's summary card

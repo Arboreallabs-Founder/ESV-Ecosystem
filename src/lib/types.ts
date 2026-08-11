@@ -903,6 +903,46 @@ export type PartnerInvestorReferral = {
   decided_by_user?: { name: string | null } | null
 }
 
+/**
+ * The five links every deal needs, in the order people ask for them.
+ *
+ * A fixed set on purpose: the point is that everyone looks in the same place for the same thing,
+ * and free text here would give us "Dataroom", "Data room" and "DataRoom" inside a fortnight.
+ */
+export const DEAL_DOCUMENT_KINDS = ['im', 'financials', 'deck', 'mis', 'dataroom'] as const
+export type DealDocumentKind = typeof DEAL_DOCUMENT_KINDS[number]
+
+export const DEAL_DOCUMENT_LABELS: Record<DealDocumentKind, string> = {
+  im: 'Information Memorandum',
+  financials: 'Financials',
+  deck: 'Pitch Deck',
+  mis: 'MIS',
+  dataroom: 'Data Room',
+}
+
+/** The short form, for chips and tight columns. */
+export const DEAL_DOCUMENT_SHORT: Record<DealDocumentKind, string> = {
+  im: 'IM',
+  financials: 'Financials',
+  deck: 'Deck',
+  mis: 'MIS',
+  dataroom: 'Data Room',
+}
+
+export type ActiveDealDocument = {
+  id: string
+  active_deal_id: string
+  kind: DealDocumentKind
+  /** What to call this one when there is more than one of a kind: "MIS — July", "Deck v3". */
+  label: string | null
+  url: string
+  /** Per document, so a deal can share its deck and hold back one MIS month. */
+  visible_to_partners: boolean
+  created_by: string | null
+  created_at: string
+  created_by_user?: { name: string | null } | null
+}
+
 export type ActiveDeal = {
   id: string
   pipeline_entry_id: string

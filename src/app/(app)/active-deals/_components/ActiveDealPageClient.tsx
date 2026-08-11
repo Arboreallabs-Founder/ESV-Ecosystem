@@ -6,11 +6,12 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createOrLinkCompanyForActiveDeal, deleteActiveDeal, linkActiveDealToCompany, setDealPartnerVisibility, updateActiveDealDetails, updateDealState } from '@/app/actions/active-deals'
 import { addAssignee, removeAssignee } from '@/app/actions/pipelines'
-import type { ActiveDeal, ActiveDealInvestor, ActiveDealInvestorStatus, ActiveDealUpdate, DealCategory, DealState, PartnerDealSummary, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
+import type { ActiveDeal, ActiveDealDocument, ActiveDealInvestor, ActiveDealInvestorStatus, ActiveDealUpdate, DealCategory, DealState, PartnerDealSummary, PipelineEntryStageHistory, StageAnswerView } from '@/lib/types'
 import { ACTIVE_DEAL_INVESTOR_STATUSES, ACTIVE_DEAL_INVESTOR_STATUS_META, DEAL_STATES, DEAL_STATE_META, SERVICE_TYPE_LABELS } from '@/lib/types'
 import { computeFeeAmount } from '@/lib/deal-fees'
 import { StatusGauge, StatusDonut, type DonutSegment } from './DealCharts'
 import DealUpdates from './DealUpdates'
+import DealDocuments from './DealDocuments'
 import Avatar from '@/app/_components/Avatar'
 import PersonCard, { type PersonDetail } from '@/app/_components/PersonCard'
 import styles from '../active-deals.module.css'
@@ -86,6 +87,7 @@ export default function ActiveDealPageClient({
   updates,
   currentUserId,
   partnerSummary,
+  documents,
 }: {
   deal: ActiveDeal
   userRole: string
@@ -104,6 +106,8 @@ export default function ActiveDealPageClient({
   currentUserId: string
   /** Partners only, and null for everyone else. See fetchPartnerDealSummary. */
   partnerSummary: PartnerDealSummary | null
+  /** IM / financials / deck / MIS / data room. Already scoped by RLS to what this role may read. */
+  documents: ActiveDealDocument[]
 }) {
   const router = useRouter()
   const [dealState, setDealState] = useState<DealState>(deal.deal_state)
@@ -566,6 +570,15 @@ export default function ActiveDealPageClient({
             </div>
           )}
         </div>
+
+        {/* Documents. The one panel a partner opens this page for, so it sits with the facts
+            rather than at the bottom with our own process. */}
+        <DealDocuments
+          dealId={deal.id}
+          documents={documents}
+          canEdit={['founder', 'admin', 'associate'].includes(userRole)}
+          isPartner={isPartner}
+        />
 
         {/* Category fields */}
         {deal.categories.length > 0 && (

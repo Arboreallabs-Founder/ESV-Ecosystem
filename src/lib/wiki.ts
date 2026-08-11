@@ -480,6 +480,30 @@ export const WIKI: Record<string, WikiSection> = {
     ],
   },
 
+  dealDocuments: {
+    title: 'Deal documents',
+    summary: 'The IM, financials, deck, MIS and data room for a deal, in one place on its page. Founders, admins and associates add them; partners can be given any of them.',
+    items: [
+      { heading: 'Links, not uploads', body: 'The file stays in Drive where it is edited. Copying it here would give us two versions and no way to tell which is current.' },
+      { heading: 'Five fixed slots', body: 'IM, Financials, Deck, MIS, Data Room. Fixed because the point is that everyone looks in the same place for the same thing — free text would give us "Dataroom", "Data room" and "DataRoom" inside a fortnight.' },
+      { heading: 'More than one of a kind', body: 'A deal has several MIS months and more than one version of a deck. Add another and label it — "July", "v3" — and they stack under the same heading.',
+        snippet: 'MIS                                        + Add another\n  MIS — July      drive.google.com   Shared    ×\n  MIS — June      drive.google.com   Internal  ×' },
+      { heading: 'Sharing with partners', body: 'Each link is Shared or Internal on its own, so a deal can hand over its deck and hold back one MIS month. New links are Shared by default — these five were opened to partners deliberately.' },
+      { heading: 'Who can add', body: 'Founders, admins and associates. Associates work the deals, and making them ask someone else to paste a link is how links stay in WhatsApp. Partners read only.' },
+    ],
+  },
+
+  partnerDocuments: {
+    audience: 'partner',
+    title: 'Deal documents',
+    summary: 'The paperwork Earlyseed Ventures has shared with you on a deal.',
+    items: [
+      { heading: 'What can be here', body: 'The information memorandum, financials, pitch deck, MIS and data room. Each one is shared per deal and per document, so what you see on one deal says nothing about another.' },
+      { heading: 'A heading you cannot see', body: 'Nothing is listed greyed-out. If a kind of document is not on the panel, it has not been shared — an empty row saying "Data Room" would only tell you one exists and you cannot have it.' },
+      { heading: 'They are links', body: 'They open the file where it actually lives, so what you read is the current version rather than a copy taken on some earlier day.' },
+    ],
+  },
+
   faq: {
     audience: 'all',
     title: 'FAQ',
@@ -513,10 +537,10 @@ export const WIKI_SECTIONS = Object.keys(WIKI) as Array<keyof typeof WIKI>
  */
 export const WIKI_GROUPS: Array<{ title: string; keys: string[] }> = [
   { title: 'Start here', keys: ['dashboard', 'faq'] },
-  { title: 'Deals', keys: ['dealDesk', 'activeDeals', 'dealDetail', 'pipeline', 'pipelines'] },
+  { title: 'Deals', keys: ['dealDesk', 'activeDeals', 'dealDetail', 'dealDocuments', 'pipeline', 'pipelines'] },
   { title: 'Companies & investors', keys: ['companies', 'investors', 'investorProfile', 'investorLists'] },
   { title: 'Your work', keys: ['tasks', 'myTodos', 'recurringTasks', 'taskKpis', 'escalations', 'analytics'] },
-  { title: 'Partners (SGP)', keys: ['partners', 'sgpDesk', 'myCompanies', 'portal', 'earnings', 'partnerDeals', 'partnerInvestors'] },
+  { title: 'Partners (SGP)', keys: ['partners', 'sgpDesk', 'myCompanies', 'portal', 'earnings', 'partnerDeals', 'partnerInvestors', 'partnerDocuments'] },
   { title: 'Intake forms', keys: ['forms', 'formBuilder'] },
   { title: 'People & HR', keys: ['hr', 'attendance', 'attendanceHr', 'documents'] },
   { title: 'Company-wide', keys: ['bulletin', 'admin'] },

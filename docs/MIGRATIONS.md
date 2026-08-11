@@ -299,3 +299,25 @@ the write, because two partners claiming one relationship is a fee question, not
 **`get_partner_deal_summaries()`** — 20260909 did one deal; the Active Deals list had the identical
 problem on every card. The ESV contact now also carries email, phone and designation: telling a
 partner who their point of contact is with no way to reach them is a name, not a contact.
+
+### `20260911000000_active_deal_documents.sql`
+`active_deal_documents` — IM, financials, deck, MIS and data room on a deal, as **links rather than
+uploads**. The files already live where they are edited; copying them here would give us two
+versions and no way to tell which is current.
+
+The kind is a fixed five-value CHECK. Free text would give us "Dataroom", "Data room" and
+"DataRoom" inside a fortnight — the same drift that produced three sector vocabularies. Several of
+a kind are expected and allowed: a deal has multiple MIS months and more than one deck.
+
+Category fields were the wrong home for these. They are per-category, so the same link had to be
+re-entered on a deal tagged both Syndicate and Investment Banking, and there was room for exactly
+one of each.
+
+RLS: founders/admins/**associates** write — associates work the deals, and making them ask someone
+else to paste a link is how links stay in WhatsApp. `general` reads. Partners read only, and only
+where three separate conditions hold: they are a partner, the deal is open to them, and that
+particular document is marked shared.
+
+**This opens the IM to partners, which `20260905` deliberately did not.** That was the right default
+for an unclassified field; this is an explicit decision to share these five, and `visible_to_partners`
+is per document so any single one can still be withheld.

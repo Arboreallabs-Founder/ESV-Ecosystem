@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
-import { fetchActiveDeal, fetchCategories, fetchPartnerDealSummary } from '@/lib/active-deals'
+import { fetchActiveDeal, fetchCategories, fetchDealDocuments, fetchPartnerDealSummary } from '@/lib/active-deals'
 import { fetchCompanyOptions } from '@/lib/companies'
 import { getDealInvestors } from '@/app/actions/active-deals'
 import { createClient } from '@/lib/supabase/server'
@@ -28,7 +28,7 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
   // entirely for that role — the dashboard hides the investor section for them anyway.
   const canViewInvestors = user.role !== 'general'
   const isPartner = user.role === 'franchise_partner'
-  const [answers, history, stageAnswers, investorData, updates, partnerSummary] = await Promise.all([
+  const [answers, history, stageAnswers, investorData, updates, partnerSummary, documents] = await Promise.all([
     getEntryAnswers(deal.pipeline_entry_id),
     getEntryStageHistory(deal.pipeline_entry_id),
     getEntryStageAnswers(deal.pipeline_entry_id),
@@ -38,6 +38,7 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
     // Aggregates a partner is allowed but cannot compute: raise progress, the ESV contact, the
     // logo. Every source row behind them is hidden from partners by RLS, correctly.
     isPartner ? fetchPartnerDealSummary(id) : Promise.resolve(null),
+    fetchDealDocuments(id),
   ])
 
   const teamMembers = (teamRows ?? []) as Array<{
@@ -60,6 +61,7 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
       updates={updates}
       currentUserId={user.id}
       partnerSummary={partnerSummary}
+      documents={documents}
     />
   )
 }

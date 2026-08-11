@@ -2344,3 +2344,178 @@
 }
 
 .assigneeChipOpen:hover { color: var(--color-primary); }
+
+/* ─── Deal documents ────────────────────────────────────────────────────────
+   Five fixed rows so "where is the deck" is answered by looking at the row called Deck, rather
+   than scanning a feed sorted by date. */
+.docHint {
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.docList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  margin-top: 0.75rem;
+}
+
+.docGroup {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.docGroup:last-child { border-bottom: none; padding-bottom: 0; }
+
+.docGroupHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.375rem;
+}
+
+.docKind {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+.docAdd {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.docAdd:hover { text-decoration: underline; }
+
+.docEmpty {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  font-style: italic;
+}
+
+.docRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3125rem 0;
+}
+
+.docLink {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-decoration: none;
+  /* break-word, never `anywhere` — a label should not split one letter per line. */
+  overflow-wrap: break-word;
+}
+
+.docLink:hover { color: var(--color-primary); text-decoration: underline; }
+
+/* Where the link points, so a Drive folder is distinguishable from a Notion page at a glance. */
+.docHost {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+
+.docShared,
+.docPrivate {
+  padding: 0.0625rem 0.5rem;
+  border-radius: 100px;
+  font-family: inherit;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1.6;
+  border: 1px solid transparent;
+}
+
+.docShared { background: rgba(46, 125, 50, 0.12); color: #2E7D32; }
+.docPrivate { background: var(--color-bg); color: var(--color-muted); border-color: var(--color-border); }
+
+.docRemove {
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 6px;
+  background: none;
+  color: var(--color-muted);
+  font-size: 1rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.docRemove:hover { background: rgba(192, 57, 43, 0.1); color: #C0392B; }
+
+.docForm {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.375rem;
+}
+
+.docInput,
+.docInputSmall {
+  padding: 0.375rem 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+}
+
+.docInput { flex: 1 1 220px; min-width: 0; }
+.docInputSmall { flex: 0 1 140px; min-width: 0; }
+
+.docInput:focus,
+.docInputSmall:focus { outline: none; border-color: var(--color-primary); }
+
+.docShareToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.docSave {
+  padding: 0.375rem 0.875rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.docSave:disabled { opacity: 0.5; cursor: default; }
