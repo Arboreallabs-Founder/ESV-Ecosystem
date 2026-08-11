@@ -13,6 +13,7 @@ import Avatar from '@/app/_components/Avatar'
 import MyAttendance from './MyAttendance'
 import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../attendance.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 type Person = { id: string; name: string; photo_url: string | null }
 
@@ -96,7 +97,10 @@ export default function AttendanceAdmin({
       {tabs}
       <header className={styles.header}>
         <div>
-          <h1 className={styles.pageTitle}>Attendance</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 className={styles.pageTitle}>Attendance</h1>
+            <WikiButton sectionKey="attendanceHr" />
+          </div>
           <p className={styles.pageSub}>
             The monthly statement each person approves before payroll. Leave, WFH and events come
             from the app&apos;s own records; late logins, missed punch-outs, half days and Saturdays

@@ -7,6 +7,7 @@ import PeriodPicker from './PeriodPicker'
 import Avatar from '@/app/_components/Avatar'
 import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../analytics.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 const CONTRIBUTION_LABELS: Record<string, string> = {
   kudos_received: 'Kudos received',
@@ -29,7 +30,10 @@ export default function MyScorecard({ row, adjustments, weights, period }: {
       <div className={styles.page}>
         <div className={styles.header}>
           <div>
-            <div className={styles.pageTitle}>My scorecard</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div className={styles.pageTitle}>My scorecard</div>
+              <WikiButton sectionKey="analytics" />
+            </div>
             <div className={styles.pageSub}>No activity recorded yet</div>
           </div>
         </div>
@@ -48,7 +52,10 @@ export default function MyScorecard({ row, adjustments, weights, period }: {
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <div className={styles.pageTitle}>My scorecard</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className={styles.pageTitle}>My scorecard</div>
+            <WikiButton sectionKey="analytics" />
+          </div>
           <div className={styles.pageSub}>{SCORE_PERIOD_LABELS[period]}</div>
         </div>
         <PeriodPicker period={period} />

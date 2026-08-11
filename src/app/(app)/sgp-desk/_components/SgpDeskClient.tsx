@@ -11,6 +11,7 @@ import type { PartnerCompany, SgpIntakeAction, SupportingLink, UserRow } from '@
 import Avatar from '@/app/_components/Avatar'
 import { formatDateTimeIst } from '@/lib/format-datetime'
 import styles from '../sgp-desk.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 type Tab = 'queue' | 'assigned' | 'closed'
 
@@ -90,7 +91,10 @@ export default function SgpDeskClient({
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.pageTitle}>SGP Desk</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 className={styles.pageTitle}>SGP Desk</h1>
+            <WikiButton sectionKey="sgpDesk" />
+          </div>
           <p className={styles.pageSub}>
             Companies sourced by partners. Decide what happens next and hand it to someone — the
             assignee gets it as a task on their board.

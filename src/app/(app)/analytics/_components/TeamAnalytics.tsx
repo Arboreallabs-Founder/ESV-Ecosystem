@@ -10,6 +10,7 @@ import WeightsPanel from './WeightsPanel'
 import Avatar from '@/app/_components/Avatar'
 import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../analytics.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 type SortKey = 'score' | 'kudosReceived' | 'onTimeRate' | 'tasksOverdue'
 
@@ -56,7 +57,10 @@ export default function TeamAnalytics({
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <div className={styles.pageTitle}>Team analytics</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className={styles.pageTitle}>Team analytics</div>
+            <WikiButton sectionKey="analytics" />
+          </div>
           <div className={styles.pageSub}>{SCORE_PERIOD_LABELS[period]} · {active.length} people with activity</div>
         </div>
         <div className={styles.headerActions}>

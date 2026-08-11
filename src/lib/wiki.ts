@@ -1,10 +1,24 @@
+export type WikiItem = {
+  heading: string
+  body: string
+  /**
+   * A small picture of the thing being described, in monospace.
+   *
+   * Half of what people get stuck on is not "what does this do" but "where is it and what does it
+   * look like when it is working". A sentence cannot answer that; a sketch of the actual screen
+   * can, and costs nothing to keep current compared with a screenshot.
+   */
+  snippet?: string
+}
+
 export type WikiSection = {
   title: string
   summary: string
-  items: Array<{ heading: string; body: string }>
+  items: WikiItem[]
 }
 
 export const WIKI: Record<string, WikiSection> = {
+
   dashboard: {
     title: 'Dashboard',
     summary: 'The command centre for Earlyseed Ventures. Shows live pipeline health and recent activity across all deals.',
@@ -132,12 +146,15 @@ export const WIKI: Record<string, WikiSection> = {
     title: 'Investors',
     summary: 'ESV\'s database of investors and funds. Add them to Active Deals to track commitments and fees.',
     items: [
-      { heading: 'Adding an Investor', body: 'Click "+ Add Investor". Fill in the name, type (VC Fund, Angel Fund, Family Office, or Angel Investor), country, website, stage preference, ticket size range (₹), and sectors.' },
+      { heading: 'Adding an Investor', body: 'Click "+ Add Investor". Name, type (VC Fund, Angel Fund, Family Office, or Angel Investor), country, website, stage preference, ticket size range, and sectors. Internal team only — partners cannot add investors; they tell us, and we link them to the fund we already hold.' },
       { heading: 'ESV POC', body: 'Select one or more internal team members as the Point of Contact for this investor. Type a name to search and click to select. Multiple POCs are supported — each appears as a chip.' },
       { heading: 'Referred by Partner', body: 'If this investor was introduced by an SGP, select the partner here (admin/founder only). The investor will show a Referral badge when added to any deal.' },
       { heading: 'Contacts', body: 'For funds (not angel investors), you can add individual contacts — name, role, email, phone, and LinkedIn URL. Contacts are managed from the investor detail drawer after creation.' },
       { heading: 'Search', body: 'The search bar filters by name, country, sector, stage, or ESV POC name. No need to scroll.' },
-      { heading: 'Cheque Range', body: 'Amounts are in Indian Rupees. The system auto-formats large amounts (e.g. ₹50L, ₹2.5Cr) for display.' },
+      { heading: 'Cheque Range', body: 'Pick the currency alongside the amount. A dollar fund displayed in rupees is out by roughly 80x, which is how "$2M – $6M" once read as "₹2L – ₹6L". Where the source never said which currency it meant, the range is withheld rather than guessed at, and the original wording is kept in the fund\'s notes.',
+        snippet: '$2M – $6M\n2,00,000 – 6,00,000  (currency not recorded)' },
+      { heading: 'The full profile', body: 'The card is a summary. "Edit / full profile" opens the fund\'s own page — excluded sectors, POC audit, portfolio, notes. See the Investor profile section.' },
+      { heading: 'Filtering by type', body: 'Filter by fund type — VC, corporate VC arm, family office, angel network — alongside the search box, for when the question is "which corporate arms do we know" rather than a name.' },
       { heading: 'Adding to a deal', body: 'Investors are attached to deals from the Active Deals panel, not from here. Open an active deal, go to the Investors panel (right column), and click "+ Add Investor".' },
     ],
   },
@@ -150,7 +167,9 @@ export const WIKI: Record<string, WikiSection> = {
       { heading: 'Deals & earnings', body: 'Click "Deals & earnings" on a partner to open their per-partner page. It lists every deal they are tied to — deals sourced via their link, or deals where one of their referred investors appears — with the org total earning, the earning via their referred investors, and their computed share.' },
       { heading: 'Share base', body: 'For each deal, choose where the partner\'s share is calculated from: "Referred earning" (just their referred investors\' fees) or "Total earning" (the deal\'s whole org earning). Defaults to referred.' },
       { heading: 'Per-deal split override', body: 'Each deal uses the partner\'s Standard Fee Split by default. Override the split % on any individual deal — leave the field blank to fall back to the standard. The partner\'s share recalculates immediately.' },
-      { heading: 'Linking to a Portal Account', body: 'A partner record is linked to an SGP user account from User Management. This gives them access to their scoped views (Active Deals, Investors, My Submissions, My Earnings, My Links).' },
+      { heading: 'Linking to a Portal Account', body: 'A partner record is linked to an SGP user account from User Management. That gives them their scoped views: Active Deals, Investors (read-only), My Companies, and My Earnings.' },
+      { heading: 'What a partner sees on a deal', body: 'Only the fields marked visible to partners — the ESV POC, total capital being raised, the company\'s financial metrics, sector, and how much of the raise is done. Never fees, mandate links, or which investors have committed. A newly added deal field is private until someone opens it.' },
+      { heading: 'Linking a partner to an investor', body: 'Partners cannot create investors. When one introduces a fund we already hold, set "Referred by Partner" on that investor — one record, one relationship, and the fee split follows it.' },
     ],
   },
 
@@ -168,7 +187,8 @@ export const WIKI: Record<string, WikiSection> = {
     title: 'Admin',
     summary: 'User management for Earlyseed Ventures\' internal team. Visible to the Admin role only.',
     items: [
-      { heading: 'Roles', body: 'Founder: full access including financials. Admin: full access + user management. Associate: pipeline, tasks, investors (no financials). SGP: portal only.' },
+      { heading: 'Roles', body: 'Founder: full access including financials. Admin: full access plus user management. Associate: pipeline, tasks, investors, no financials. General: tasks and their own work, no deal book. HR: the HR Zone, people, and attendance. SGP: the partner portal only. The full matrix is in docs/ROLES.md.' },
+      { heading: 'SGP Coordinator', body: 'A flag on an associate or general user, not a role of its own. It adds the SGP Desk so they can triage partner-sourced companies. Several people can hold it; founders and admins always can.' },
       { heading: 'Changing a Role', body: 'Use the dropdown in the Role column to change any user\'s role. Takes effect immediately on their next page load.' },
       { heading: 'Creating Accounts', body: 'Click "+ Create Account" to add a new team member. Set their email, name, temporary password, and role. They can change their password after logging in.' },
       { heading: 'Your Own Account', body: 'You cannot change your own role (to prevent accidental lock-out). Contact another admin if needed.' },
@@ -182,7 +202,8 @@ export const WIKI: Record<string, WikiSection> = {
     items: [
       { heading: 'Creating a Form', body: 'Click "+ New Form". Give it a title, optional description, and optionally link it to a pipeline at creation. Only admins and founders can create or edit forms.' },
       { heading: 'Linking to a Pipeline', body: 'A form must be linked to a pipeline before submissions create entries. Link or change the pipeline from the form settings (⚙ button in the builder). Linking a form that already has submissions will automatically backfill all existing entries into the new pipeline\'s Lead stage.' },
-      { heading: 'Generating Links', body: 'Any team member (including associates and partners) can generate a personalised shareable link. Click "+ Get Link" on any published form. Each link records the creator\'s name so entries show "via [Name]\'s link" in the pipeline.' },
+      { heading: 'Generating Links', body: 'Any internal team member can generate a personalised shareable link from any published form. Click "+ Get Link". Each link records its creator, so entries show "via [Name]\'s link" in the pipeline.' },
+      { heading: 'The partner form', body: 'One form is marked as the partner form, and it is the only one partners may issue links from. It always feeds the Partner Sourced pipeline — the database refuses to point it elsewhere, because repointing it would send every referral past the SGP Coordinator. Its questions are editable in the builder like any other form.' },
       { heading: 'Published vs Draft', body: 'A form must be Published before public links work. Toggle this from the builder toolbar. Draft forms return an error page if anyone visits their link.' },
       { heading: 'Submission outcomes', body: 'If a founder reaches a "Submitted" end node, their contact info is collected and a pipeline entry is created in the Lead stage. If they reach a "Not Eligible" end node, a rejection screen is shown and nothing is recorded.' },
     ],
@@ -222,8 +243,8 @@ export const WIKI: Record<string, WikiSection> = {
     title: 'SGP Portal',
     summary: 'The view for external SGPs. Submit deals and track their progress.',
     items: [
-      { heading: 'Submitting a Deal', body: 'Click "+ Submit Deal". Fill in the company name, sector, and funding stage. ESV\'s team will pick it up and move it through the pipeline.' },
-      { heading: 'Tracking Referrals', body: 'The table shows all deals you\'ve referred and their current stage. Stages auto-update as the ESV team moves them.' },
+      { heading: 'Submitting a Deal', body: 'Go to My Companies. Add a company yourself, or send your referral link and let the founder submit. Both land in the same queue in front of an SGP Coordinator.' },
+      { heading: 'Tracking Referrals', body: 'Each card shows the stage it is on, and the run of stages so the name means something on its own. It updates when the ESV team moves the card — there is no separate status to chase.' },
       { heading: 'Setup Notice', body: 'If you see "Account not set up", your portal account hasn\'t been linked to a partner record yet. Contact Earlyseed Ventures to resolve this.' },
       { heading: 'Confidentiality', body: 'You only see your own referred deals, not the broader ESV pipeline. All data is governed by your franchise agreement.' },
     ],
@@ -241,10 +262,154 @@ export const WIKI: Record<string, WikiSection> = {
 
   hr: {
     title: 'HR Zone',
-    summary: 'Company policies, published by founders/admins and readable by the whole internal team.',
+    summary: 'Policies, leave and expense requests, employee records, generated letters, and birthdays. What you see depends on your role — everyone gets Policies and Requests; People and Documents are HR, founders and admins.',
     items: [
+      { heading: 'The tabs', body: 'Policies, Requests, People, Documents, Birthdays. The subtitle and the action button change with the tab — a "+ New policy" button above the birthday list would be a trap.' },
+      { heading: 'Requests', body: 'Your own leave and expense requests, and the count of anything waiting on you. Approved leave is what the attendance statement pulls in at the end of the month.' },
+      { heading: 'People', body: 'Employee records — the data every generated letter is filled from. A letter is only as right as the record behind it, so fix it here rather than editing the document.' },
       { heading: 'Reading a policy', body: 'Click any policy title to expand it in place. Each policy shows an optional category tag and when it was last updated (and by whom).' },
       { heading: 'Publishing & editing', body: 'Founders/admins click "+ New policy" to publish one, or "Edit" on an existing one. A policy has a title, an optional category (e.g. Leave, Conduct, Expenses), and the full policy text.' },
+    ],
+  },
+
+  attendance: {
+    title: 'Attendance',
+    summary: 'The monthly attendance statement each person approves before payroll. Replaces the sheet that used to go round on WhatsApp — the point is that "I approved it" is findable afterwards.',
+    items: [
+      { heading: 'Two tabs if you manage it', body: 'Founders, admins and HR get Team and My attendance. Managers are on the People roster too, so you have a statement of your own to approve like everyone else.' },
+      { heading: 'How a month runs', body: 'HR opens the month, adds anything that deviates from a normal day, and sends it. You approve or dispute. HR locks it once payroll is done.',
+        snippet: 'draft ──► sent ──► approved ──► locked\n            │                  ▲\n            └──► disputed ─────┘' },
+      { heading: 'From records vs Entered by HR', body: 'Every line says which it is. Leave, WFH and events come from the app’s own records. Late logins, missed punch-outs, half days and Saturdays are typed in — nothing in the app records a punch, so there is nothing to pull them from.',
+        snippet: '02 Aug  Half day        2.00 pm (2nd half)   Entered by HR   0.5\n05 Aug  Leave           Earned leave         From records    1\n09 Aug  Work from home  WFH                  From records    0' },
+      { heading: 'Disputing', body: 'Name the date and what it should say. "Wrong" starts another WhatsApp thread; a specific dispute can be settled. Approving or disputing both close the task HR raised.' },
+      { heading: 'Considered', body: 'HR can waive a line: it stays on the record but stops counting, and the reason is required. That is the "considered" column from the old sheet.' },
+      { heading: 'Approval is required but not blocking', body: 'Payroll can lock a month you have not answered. When that happens the statement says so rather than looking approved.' },
+    ],
+  },
+
+  attendanceHr: {
+    title: 'Attendance — running a month',
+    summary: 'For whoever compiles it. The order matters: pull first, then type, then send.',
+    items: [
+      { heading: 'Open the month', body: 'Pick the month, then "Open the month for N more" to create a statement for everyone on the roster who has not got one.' },
+      { heading: 'Pull from records', body: 'Fills in approved leave, WFH and events attended. Only works while the statement is still a draft — re-pulling after it has been sent would change what somebody is being asked to approve.' },
+      { heading: 'Add what the app cannot know', body: 'Late logins, half days, no punch-out, Saturday attendance. Date, type, a free-text detail like "2.00 pm (2nd half)", and how much leave it costs — 0, 0.5 or 1.' },
+      { heading: 'Totals are computed', body: 'The chargeable total comes from the lines. There is no separate number to keep in step, which is how the old sheet ended up disagreeing with itself.' },
+      { heading: 'Locking', body: 'Send, then lock once payroll has run. A disputed month cannot be locked — settle it first.' },
+    ],
+  },
+
+  sgpDesk: {
+    title: 'SGP Desk',
+    summary: 'Where partner-sourced companies are triaged. Founders, admins, and any associate flagged as an SGP Coordinator in Admin.',
+    items: [
+      { heading: 'One queue now', body: 'Everything a partner submits — typed into My Companies or arriving through their referral link — lands on the Partner Sourced pipeline at Lead. There is no route that skips this.' },
+      { heading: 'The board is where the stage moves', body: 'Open the board from the Desk. Moving a card is what updates the partner’s own view — there is no second status to keep in step.',
+        snippet: 'Lead ─► First level call ─► Prefunding proposal ─► Founder discussion ─► Accepted\n                                                                       └─► Rejected' },
+      { heading: 'Intake', body: 'Choose what happens next and hand it to an associate or general user. That creates a real task on their board carrying the partner’s notes and any links, so it lands in their normal workflow.' },
+      { heading: 'Becoming a coordinator', body: 'Admin → User Management → edit a user → SGP Coordinator. Several people can hold it. Founders and admins can always triage.' },
+    ],
+  },
+
+  myCompanies: {
+    title: 'My Companies',
+    summary: 'For partners: the companies you have brought in, and where each one has got to.',
+    items: [
+      { heading: 'Two ways in', body: 'Add a company yourself, or send your referral link and let them submit. Both arrive in the same queue, both credited to you.' },
+      { heading: 'Your referral link', body: 'One link, yours, always on the partner form. Anyone who submits through it is attributed to you automatically — there is nothing to remember.' },
+      { heading: 'Following it', body: 'Each card shows the stage it is on and the run of stages, so "First level call" means something without having seen the board.',
+        snippet: 'Acme Corp                              First level call\n  Lead   [First level call]   Prefunding   Founder discussion' },
+      { heading: 'Only the name is required', body: 'The point is to capture a lead while it is in front of you, not to make you complete a form first. Your comments are passed through verbatim to whoever picks it up.' },
+      { heading: 'What you see', body: 'Your own submissions only. Another partner’s leads are never visible to you, and yours are not visible to them.' },
+    ],
+  },
+
+  investorProfile: {
+    title: 'Investor profile',
+    summary: 'A fund’s own page: what it invests in, who to call, and what it has backed. Open it from any investor card via "Edit / full profile".',
+    items: [
+      { heading: 'Will not look at', body: 'Sectors a fund has explicitly ruled out, shown directly under the sectors it wants. Small list, high cost of missing — it is what keeps a meat startup off the list of a fund that wrote "no meat".' },
+      { heading: 'Who to contact', body: 'Primary and secondary, each marked Still there, Moved on or Not verified. A contact nobody has checked says "Never verified" rather than looking confirmed.',
+        snippet: 'Hemang Vaidya   Primary    Still there\n  Sr Investment Associate · hemang@gvfl.com\n  Verified 7 Aug 2026\n\nJay Dhadhal     Moved on\n  Now at Blume Ventures — Associate' },
+      { heading: 'Where they went', body: 'When a POC leaves we record where to. Someone who moved to another fund is a warm introduction at the new one, not a dead record.' },
+      { heading: 'Needs a POC', body: 'A fund with nobody confirmed reachable is flagged, and you can assign someone to find one — that becomes a task on their board carrying the last-known contacts as leads.' },
+      { heading: 'Invested in', body: 'Their portfolio. Companies we already track are linked; the rest are free text. The tags are the point — they are what makes "which funds actually back D2C at seed" answerable.' },
+      { heading: 'Notes & thesis', body: 'The fund’s own words — cheque structure, fund size, what they are looking for. Also what thematic matching reads when building an investor list.' },
+    ],
+  },
+
+  investorLists: {
+    title: 'Investor lists',
+    summary: 'A shortlist of funds a founder approves before you approach anyone. Only on deals tagged Investment Banking.',
+    items: [
+      { heading: 'Building one', body: 'Suggestions come first, split into thematic matches and sector-agnostic funds. Thematic never sits below agnostic however warm the relationship.',
+        snippet: 'Thematic & thesis matches      matched on FinTech, SaaS\n  [x] Blume Ventures    invests in FinTech · warm relationship\n  [ ] Prime Ventures    thesis mentions SaaS\n\n+ Sector-agnostic funds (24)' },
+      { heading: 'Why each fund is suggested', body: 'In words, next to the name. A ranked list nobody can interrogate is not usable.' },
+      { heading: 'What the founder sees', body: 'Fund name and website only. No ticket size, stage, sector focus or internal notes — they are deciding who may be approached, not evaluating funds.' },
+      { heading: 'Everything starts ticked', body: 'They are removing objections, not building a list from scratch. An empty list someone has to fill in comes back empty.' },
+      { heading: 'Their own exclusions', body: 'Founders can name anyone else to avoid, whether or not they are on the list. You then link those names to funds we hold — unmatched ones are flagged, because an exclusion we cannot resolve is one the outreach cannot be checked against.' },
+      { heading: 'The email', body: 'Generated from the list, so the link and the fund count can never disagree with what was actually shared.' },
+      { heading: 'No angels', body: 'Funds only, enforced in the database. An angel is a person, often one the founder already knows.' },
+    ],
+  },
+
+  dealDesk: {
+    title: 'Deal Desk',
+    summary: 'The reviewer’s landing page: who has submitted what, and everything on the desk in one filterable table.',
+    items: [
+      { heading: 'Deals by stage', body: 'The company’s FUNDING stage — MVP through Series A+ — not review progress. Where a deal has got to in review is its status, in the table.' },
+      { heading: 'Waiting on you', body: 'Unopened cards, longest first. Anything unopened a week is marked. This is the actual to-do on the page.' },
+      { heading: '"vs last month"', body: 'Only on new deals. A deal created in June can be rejected in August, so a month-on-month count of rejections keyed on creation date would report something nobody asked about.' },
+    ],
+  },
+
+  documents: {
+    title: 'HR Documents',
+    summary: 'Generated letters — offer, experience, salary, NOC and the rest — on ESV letterhead with a document ID and public verification.',
+    items: [
+      { heading: 'Issuing', body: 'HR Zone → Documents. Pick a person and a document type; the fields come from their employee profile and compensation record.' },
+      { heading: 'Verification', body: 'Every document carries an ID and a public /verify link. Anyone holding the letter can confirm it is genuine — and nothing else. The verify page shows only that this ID was issued, to whom, and when.',
+        snippet: 'ESV/EXP/2026/0184\n  Experience Letter · issued 4 Aug 2026\n  ✓ Genuine — issued by Earlyseed Ventures' },
+      { heading: 'Signature', body: 'Set per document type: System-generated, Visual signature, or Requires physical signature. The mode is recorded on the issued document, so a letter that still needs wet ink says so rather than looking complete.' },
+      { heading: 'The file', body: 'Stored in a private bucket. Opening one mints a short-lived signed URL — the link in your address bar expires, which is deliberate: a document URL that never dies is a document that leaks.' },
+    ],
+  },
+
+  analytics: {
+    title: 'KPI & Analytics',
+    summary: 'Scores for the period: your own if you are an associate, the whole team if you are a founder or admin.',
+    items: [
+      { heading: 'My scorecard vs Team analytics', body: 'Same numbers, different scope. Associates see themselves; founders and admins see everyone and can compare.' },
+      { heading: 'The period picker', body: 'Everything on the page moves together. A chart on one period beside a table on another is how two people end up quoting different figures for the same month.' },
+      { heading: 'Weights', body: 'What each component contributes to the score, editable by founders and admins. Changing them re-scores the period being viewed — the score is derived, never stored.' },
+      { heading: 'Adjustments', body: 'A manual correction with a reason attached. The reason is required, because an unexplained adjustment is indistinguishable from a mistake six weeks later.' },
+    ],
+  },
+
+  taskKpis: {
+    title: 'Task KPIs',
+    summary: 'Completion, lateness and pushes per person. Founders and admins see everyone; everyone else sees their own.',
+    items: [
+      { heading: 'Pushed', body: 'How often a task\'s date moved. Every push carries a required reason, so the count is answerable rather than just alarming.' },
+      { heading: 'Why things slip', body: 'A push can be flagged as blocked by an external party, or by a named internal person. That is what turns "we are always late" into something that can be fixed.' },
+      { heading: 'The reason is a comment too', body: 'It is posted to the task thread as well, so the history sits with the task rather than only in a report nobody opens.' },
+    ],
+  },
+
+  faq: {
+    title: 'FAQ',
+    summary: 'The questions that actually come up.',
+    items: [
+      { heading: 'I got "Server Action was not found on the server"', body: 'The app was updated while your page was open. Nothing was saved, so reloading and trying again will not duplicate anything. If it keeps happening, tell an admin — it means deploys are outrunning open tabs.' },
+      { heading: 'Why can I not add an investor as a partner?', body: 'Because we probably already have them. A duplicate record splits the relationship and the fee for no reason. Send us the name and we will link the existing fund to you.' },
+      { heading: 'Why does a fund show no ticket size?', body: 'The source did not say which currency it was in, and guessing between dollars and rupees is an 80x error. The original text is in that fund’s notes for someone to check.' },
+      { heading: 'My investor list shows only agnostic funds', body: 'The company on the deal has no sectors that match how funds describe themselves. The page names the tags it could not use — retag the company and the matches appear.' },
+      { heading: 'Why can I not type a new sector?', body: 'Sectors are a fixed list. Free text is how "Fintech", "FinTech" and "Health tech" all came to exist, and nothing matched across them. Ask an admin to add one if it is genuinely missing.' },
+      { heading: 'Who can see a deal I am working on?', body: 'Internal staff see everything. Partners see only what has been opened to them — capital being raised, sector, financial metrics, raise progress — never fees, mandate links, or who has invested.' },
+      { heading: 'A contact bounced', body: 'Mark them Moved on on the fund’s profile and, if you know, where they went. Then assign someone to find a replacement — it becomes a task with the old contacts attached as leads.' },
+      { heading: 'Where did My Companies submissions go?', body: 'They are pipeline entries now, on the Partner Sourced pipeline. Same list, but with real stages that update when a coordinator moves the card.' },
+      { heading: 'Do founders need an account to answer an investor list?', body: 'No. The link is the key. It can be withdrawn at any time, and re-submitting replaces their previous answer rather than adding to it.' },
+      { heading: 'Something looks wrong on a page', body: 'Say which screen, what you were doing, and what happened instead. That is usually enough to find it; a screenshot makes it faster.' },
     ],
   },
 }

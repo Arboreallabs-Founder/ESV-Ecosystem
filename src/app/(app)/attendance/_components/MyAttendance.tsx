@@ -8,6 +8,7 @@ import { monthLabel, totalLeaveDays } from '@/lib/attendance-format'
 import { approveStatement, disputeStatement } from '@/app/actions/attendance'
 import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../attendance.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 const fmtDay = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
@@ -34,7 +35,10 @@ export default function MyAttendance({ statements }: { statements: AttendanceSta
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.pageTitle}>My attendance</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 className={styles.pageTitle}>My attendance</h1>
+            <WikiButton sectionKey="attendance" />
+          </div>
           <p className={styles.pageSub}>
             HR sends a statement each month before payroll. Check it and either approve it or say
             what is wrong — your answer is recorded against the month.

@@ -6,6 +6,7 @@ import type { ShareLink, ShareableForm } from '@/lib/share-links'
 import FormList from './FormList'
 import ShareClient from './ShareClient'
 import styles from '../forms.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 /**
  * Forms and Share as two tabs on one page.
@@ -39,7 +40,10 @@ export default function FormsShell({
   return (
     <div className={styles.page}>
       <header className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Forms</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <h1 className={styles.pageTitle}>Forms</h1>
+          <WikiButton sectionKey="forms" />
+        </div>
       </header>
 
       {canShare && (

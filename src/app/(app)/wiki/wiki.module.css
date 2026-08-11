@@ -1,0 +1,163 @@
+/* The full wiki.
+ *
+ * It used to be a 760px column centred on the page, which broke the rule the rest of the app
+ * follows and wasted most of a wide screen — and with thirty sections it was also one long scroll
+ * with no way to get anywhere. Now: an index that sticks, and cards that flow into as many columns
+ * as the viewport can hold. The only thing capped is paragraph measure, on the paragraph itself. */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--color-text);
+}
+
+.subtitle {
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  max-width: 62ch;   /* measure, on the paragraph — not on anything that holds layout */
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* The index only earns its column when there is room for it; below that the cards get everything. */
+@media (min-width: 1080px) {
+  .layout {
+    grid-template-columns: 216px minmax(0, 1fr);
+  }
+  .index {
+    position: sticky;
+    top: 1.5rem;
+    display: block;
+  }
+}
+
+.index {
+  display: none;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+  padding: 0.75rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.indexLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  padding: 0 0.5rem 0.5rem;
+}
+
+.indexLink {
+  display: block;
+  padding: 0.3125rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.indexLink:hover {
+  background: var(--color-card-raised);
+  color: var(--color-text);
+}
+
+/* Cards, as many across as fit. Nothing here caps the container. */
+.sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.section {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-card);
+  /* An anchor jump would otherwise put the heading flush against the top of the viewport. */
+  scroll-margin-top: 1.5rem;
+}
+
+.sectionTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+.sectionSummary {
+  font-size: 0.9375rem;
+  color: var(--color-muted);
+  line-height: 1.65;
+  margin-bottom: 1.25rem;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.item {
+  padding: 0.875rem 1rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.itemHeading {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 0.25rem;
+  /* Headings are prose, so they break between words. Never `anywhere` — that splits a name one
+     letter per line the moment the column is narrow. */
+  overflow-wrap: break-word;
+}
+
+.itemBody {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  line-height: 1.6;
+  overflow-wrap: break-word;
+}
+
+/* Sketches keep their own alignment and scroll inside their own box, so a wide diagram never makes
+   the page scroll sideways. */
+.snippet {
+  margin: 0.6rem 0 0;
+  padding: 0.7rem 0.85rem;
+  background: var(--color-card-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--color-text);
+  white-space: pre;
+  overflow-x: auto;
+}

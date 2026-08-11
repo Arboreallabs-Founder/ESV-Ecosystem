@@ -10,6 +10,7 @@ import InvestorFormModal from './InvestorFormModal'
 import InvestorsImportModal from './InvestorsImportModal'
 import FilterTabs from '@/app/_components/FilterTabs'
 import styles from '../investors.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 type Props = {
   investors: Investor[]
@@ -87,7 +88,10 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
       {/* Header */}
       <div className={styles.pageHeader}>
         <div>
-          <h1 className={styles.pageTitle}>Investors</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 className={styles.pageTitle}>Investors</h1>
+            <WikiButton sectionKey="investors" />
+          </div>
           <p className={styles.pageSubtitle}>Fund database and relationship tracking</p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>

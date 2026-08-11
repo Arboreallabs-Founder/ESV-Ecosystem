@@ -20,6 +20,7 @@ function Panel({ section, onClose }: { section: WikiSection; onClose: () => void
             <div key={item.heading} className={styles.item}>
               <div className={styles.itemHeading}>{item.heading}</div>
               <div className={styles.itemBody}>{item.body}</div>
+              {item.snippet && <pre className={styles.snippet}>{item.snippet}</pre>}
             </div>
           ))}
           <Link href="/wiki" className={styles.wikiLink} onClick={onClose}>
@@ -108,6 +109,7 @@ export function WikiSidebarButton() {
                 <div key={item.heading} className={styles.item}>
                   <div className={styles.itemHeading}>{item.heading}</div>
                   <div className={styles.itemBody}>{item.body}</div>
+                  {item.snippet && <pre className={styles.snippet}>{item.snippet}</pre>}
                 </div>
               ))}
               <Link href="/wiki" className={styles.wikiLink} onClick={() => setOpen(false)}>

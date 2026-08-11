@@ -10,6 +10,7 @@ import {
 } from '@/app/actions/investor-lists'
 import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../investor-lists.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 type Fund = {
   id: string
@@ -50,7 +51,10 @@ export default function InvestorListsClient({
 
       <header className={styles.header}>
         <div>
-          <h1 className={styles.title}>Investor lists</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 className={styles.title}>Investor lists</h1>
+            <WikiButton sectionKey="investorLists" />
+          </div>
           <p className={styles.sub}>
             Build a shortlist, send the founder a link, and they untick anyone they&apos;d rather
             we didn&apos;t approach. They see fund names and websites only.

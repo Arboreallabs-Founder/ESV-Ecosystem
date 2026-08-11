@@ -18,6 +18,7 @@ import ContactFormModal from '../../_components/ContactFormModal'
 import InvestorFormModal from '../../_components/InvestorFormModal'
 import panels from '@/app/_components/panels/panels.module.css'
 import profile from './investor-profile.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 
 export default function InvestorProfile({
@@ -92,7 +93,10 @@ export default function InvestorProfile({
               : <span className={profile.logoFallback}>{initials(investor.name)}</span>}
           </button>
           <div>
-          <h1 className={profile.title}>{investor.name}</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 className={profile.title}>{investor.name}</h1>
+            <WikiButton sectionKey="investorProfile" />
+          </div>
           <div className={profile.subRow}>
             <span className={profile.typeBadge}>{SERVICE_TYPE_LABELS[investor.service_type]}</span>
             {investor.country && <span className={profile.meta}>{investor.country}</span>}

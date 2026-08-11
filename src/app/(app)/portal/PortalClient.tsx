@@ -6,6 +6,7 @@ import { generateFormLink } from '@/app/actions/forms'
 import type { PartnerFormLink } from '@/lib/types'
 import PortalInvestorReferModal from './_components/PortalInvestorReferModal'
 import styles from './portal.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 type PublishedForm = { id: string; title: string; pipeline: { name: string } | null }
 
@@ -60,7 +61,10 @@ export default function PortalClient({
     <>
       <div className={styles.header}>
         <div>
-          <h1 className={styles.title}>Partner Portal</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 className={styles.title}>Partner Portal</h1>
+            <WikiButton sectionKey="portal" />
+          </div>
           <p className={styles.sub}>Welcome, {partnerName}.</p>
         </div>
       </div>

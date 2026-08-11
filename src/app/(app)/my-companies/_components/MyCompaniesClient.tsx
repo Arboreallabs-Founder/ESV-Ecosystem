@@ -10,6 +10,7 @@ import type { PartnerSubmission } from '@/lib/partner-companies'
 import Avatar from '@/app/_components/Avatar'
 import { formatDateTimeIst } from '@/lib/format-datetime'
 import styles from '../my-companies.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 /* Stage colour by type, not by name — an org can rename a stage and this should keep working. */
 function stageClass(t: string | undefined) {
@@ -81,7 +82,10 @@ export default function MyCompaniesClient({
     <div className={styles.page}>
       <header className={styles.header}>
         <div>
-          <h1 className={styles.pageTitle}>My Companies</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 className={styles.pageTitle}>My Companies</h1>
+            <WikiButton sectionKey="myCompanies" />
+          </div>
           <p className={styles.pageSub}>
             Companies you&apos;ve brought in. Add one with your notes and it goes to the SGP
             Coordinator, who decides what happens next.

@@ -9,6 +9,7 @@ import { formatDateTimeIst } from '@/lib/format-datetime'
 import Donut from '@/app/_components/charts/Donut'
 import panels from '@/app/_components/panels/panels.module.css'
 import styles from '../../tasks.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 // computeKpis lives in @/lib/task-kpi so /analytics scores punctuality with exactly the same
 // maths — the two pages must never disagree about someone's numbers.
@@ -98,7 +99,10 @@ export default function TaskKpiView({
       <div className={styles.page}>
         <div className={styles.header}>
           <div>
-            <div className={styles.pageTitle}>My KPIs</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <div className={styles.pageTitle}>My KPIs</div>
+              <WikiButton sectionKey="taskKpis" />
+            </div>
             <div className={styles.pageSub}>{k.total} task{k.total !== 1 ? 's' : ''} assigned to you</div>
           </div>
         </div>
@@ -157,7 +161,10 @@ export default function TaskKpiView({
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <div className={styles.pageTitle}>Team KPIs</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className={styles.pageTitle}>Team KPIs</div>
+            <WikiButton sectionKey="taskKpis" />
+          </div>
           <div className={styles.pageSub}>{orgK.total} task{orgK.total !== 1 ? 's' : ''} across the team</div>
         </div>
       </div>

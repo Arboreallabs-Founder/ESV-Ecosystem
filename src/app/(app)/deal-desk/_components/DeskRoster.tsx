@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { DeskAssociateSummary } from '@/lib/types'
 import { initials } from './format'
 import styles from './deal-desk.module.css'
+import { WikiButton } from '@/app/_components/WikiPanel'
 
 // Reviewer landing: pick an associate to open their card feed (spec §2).
 // `selfAuthorId` is set for reviewers who can also author (admins) — gives them a direct
@@ -17,7 +18,10 @@ export default function DeskRoster({
     <div className={styles.wrap}>
       <div className={styles.header}>
         <div className={styles.headTitles}>
-          <h1 className={styles.title}>Deal Desk</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h1 className={styles.title}>Deal Desk</h1>
+            <WikiButton sectionKey="dealDesk" />
+          </div>
           <div className={styles.subtitle}>Central hub to review and manage every deal on the desk.</div>
         </div>
         {selfAuthorId && (
