@@ -3,7 +3,7 @@
 import { useState, useTransition, type KeyboardEvent } from 'react'
 import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
-import type { ActiveDeal, DealCategory, DealState, PartnerDealSummary } from '@/lib/types'
+import type { ActiveDeal, ActiveDealDocument, DealCategory, DealState, PartnerDealSummary } from '@/lib/types'
 import { DEAL_STATES, DEAL_STATE_META } from '@/lib/types'
 import { updateDealState, deleteActiveDeal } from '@/app/actions/active-deals'
 import NewDealModal from './NewDealModal'
@@ -12,6 +12,7 @@ import FilterTabs from '@/app/_components/FilterTabs'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import Avatar, { AvatarGroup } from '@/app/_components/Avatar'
 import PersonCard, { type PersonDetail } from '@/app/_components/PersonCard'
+import SharePitch from './SharePitch'
 import styles from '../active-deals.module.css'
 
 // Group a plain number with Indian digit separators (e.g. 100000000 → 10,00,00,000).
@@ -54,6 +55,7 @@ export default function ActiveDealsList({
   userRole,
   partnerSummaries = {},
   team = [],
+  documentsByDeal = {},
 }: {
   deals: ActiveDeal[]
   categories: DealCategory[]
@@ -63,6 +65,8 @@ export default function ActiveDealsList({
   partnerSummaries?: Record<string, PartnerDealSummary>
   /** Contact details, so an assignee chip can answer "how do I reach them". */
   team?: Array<{ id: string; name: string | null; photo_url: string | null; designation: string | null; email: string | null; phone: string | null }>
+  /** The deal's IM / financials / deck / MIS / data room links, for the share message. */
+  documentsByDeal?: Record<string, ActiveDealDocument[]>
 }) {
   const router = useRouter()
   const [stateFilter, setStateFilter] = useState<StateFilter>('open')
@@ -76,6 +80,8 @@ export default function ActiveDealsList({
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   // Clicking a face answers "how do I reach them" without leaving the list.
   const [person, setPerson] = useState<PersonDetail | null>(null)
+  // Partners and associates are the two who forward deals; `general` has no outward-facing role.
+  const canShare = userRole !== 'general'
   const teamById = new Map(team.map((t) => [t.id, t]))
 
   function toggleExpanded(id: string) {
@@ -243,6 +249,17 @@ export default function ActiveDealsList({
                       <div className={styles.dealTitle}>{deal.entry?.title ?? 'Untitled'}</div>
                       <div className={styles.openHint}>Open record</div>
                     </div>
+                    {/* Sending a deal on is the thing people leave this page to do, so it is on the
+                        card rather than one click further in. stopPropagation lives in the button:
+                        the whole card is a link to the record. */}
+                    {canShare && (
+                      <SharePitch
+                        compact
+                        companyName={deal.entry?.title ?? 'this company'}
+                        intro={deal.entry?.company?.one_liner ?? summary?.company_one_liner ?? null}
+                        documents={documentsByDeal[deal.id] ?? []}
+                      />
+                    )}
                   </div>
                   <div className={styles.cardHeadRight}>
                     {canEditState ? (

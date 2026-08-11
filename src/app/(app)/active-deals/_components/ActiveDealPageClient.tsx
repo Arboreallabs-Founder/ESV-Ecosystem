@@ -578,6 +578,9 @@ export default function ActiveDealPageClient({
           documents={documents}
           canEdit={['founder', 'admin', 'associate'].includes(userRole)}
           isPartner={isPartner}
+          companyName={deal.entry?.title ?? 'this company'}
+          intro={deal.entry?.company?.one_liner ?? partnerSummary?.company_one_liner ?? null}
+          canShare={userRole !== 'general'}
         />
 
         {/* Category fields */}

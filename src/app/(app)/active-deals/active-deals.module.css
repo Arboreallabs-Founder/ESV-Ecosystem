@@ -2519,3 +2519,164 @@
 }
 
 .docSave:disabled { opacity: 0.5; cursor: default; }
+
+/* ─── Share on WhatsApp ─────────────────────────────────────────────────────
+   Sending a deal on is what people leave this page to do, so it is on the card as well as the
+   record. The preview is not decoration: it is the one action here whose output someone else
+   reads, and sending it blind is how last month's deck gets forwarded to forty people. */
+.docHeadRight {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.shareBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3125rem 0.75rem;
+  border-radius: 100px;
+  border: 1px solid #25D366;
+  background: none;
+  color: #128C4A;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1.4;
+  white-space: nowrap;
+}
+
+.shareBtn:hover { background: #25D366; color: #fff; }
+
+/* On a card: an icon and nothing else, so it never competes with the company name. */
+.shareChip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.shareChip:hover { border-color: #25D366; color: #128C4A; }
+
+.shareBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.shareModal {
+  width: 100%;
+  /* A floating artifact, so it caps — unlike a page. */
+  max-width: 560px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  /* --glass-panel, not --color-card: a card surface at 0.55 alpha would show the page through the
+     message someone is about to send. */
+  background: var(--glass-panel);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-elevated);
+}
+
+.shareHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.375rem;
+}
+
+.shareTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  overflow-wrap: break-word;
+}
+
+.shareClose {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.shareClose:hover { background: var(--color-bg); color: var(--color-text); }
+
+.shareNote {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  line-height: 1.55;
+  margin-bottom: 0.875rem;
+}
+
+.sharePreview {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.875rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  /* pre-wrap, not pre: the message contains long URLs and wrapping them beats a sideways scroll
+     in something people are reading to check. */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.shareActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.shareGhost,
+.sharePrimary {
+  padding: 0.4375rem 0.875rem;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  line-height: 1.4;
+  display: inline-flex;
+  align-items: center;
+}
+
+.shareGhost { background: none; border: 1px solid var(--color-border); color: var(--color-muted); }
+.shareGhost:hover { color: var(--color-text); }
+.sharePrimary { background: #25D366; border: 1px solid #25D366; color: #fff; }
+.sharePrimary:hover { background: #128C4A; border-color: #128C4A; }

@@ -321,3 +321,10 @@ particular document is marked shared.
 **This opens the IM to partners, which `20260905` deliberately did not.** That was the right default
 for an unclassified field; this is an explicit decision to share these five, and `visible_to_partners`
 is per document so any single one can still be withheld.
+
+### `20260912000000_partner_deal_intro.sql`
+Adds `company_one_liner` to `get_partner_deal_summary` and `get_partner_deal_summaries`.
+
+"Earlyseed Ventures presents this exciting investment opportunity — *X* — <intro>" needs the intro,
+and the intro is `companies.one_liner`, which a partner cannot read. One more field on a projection
+that already exists, rather than a policy handing them the company database.

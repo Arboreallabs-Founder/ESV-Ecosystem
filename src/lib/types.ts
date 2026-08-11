@@ -850,6 +850,8 @@ export type ActiveDealCategoryData = {
 export type PartnerDealSummary = {
   logo_url: string | null
   company_name: string | null
+  /** What they do, in one line. The sentence a partner is being asked to forward. */
+  company_one_liner: string | null
   committed_total: number
   commitment_count: number
   assignees: Array<{
@@ -958,7 +960,7 @@ export type ActiveDeal = {
     submitted_at: string
     pipeline_id: string
     company_id?: string | null
-    company?: { id: string; name: string; logo_url: string | null } | null
+    company?: { id: string; name: string; logo_url: string | null; one_liner?: string | null } | null
     assignees?: Array<{ user_id: string; name: string; photo_url: string | null }>
     sourced_via_partner?: { id: string; name: string } | null
   }

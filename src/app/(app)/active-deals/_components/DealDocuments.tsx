@@ -10,6 +10,7 @@ import {
   DEAL_DOCUMENT_KINDS, DEAL_DOCUMENT_LABELS, DEAL_DOCUMENT_SHORT,
   type ActiveDealDocument, type DealDocumentKind,
 } from '@/lib/types'
+import SharePitch from './SharePitch'
 import styles from '../active-deals.module.css'
 
 /**
@@ -23,12 +24,15 @@ import styles from '../active-deals.module.css'
  * row called Deck instead of scanning a feed.
  */
 export default function DealDocuments({
-  dealId, documents, canEdit, isPartner,
+  dealId, documents, canEdit, isPartner, companyName, intro, canShare,
 }: {
   dealId: string
   documents: ActiveDealDocument[]
   canEdit: boolean
   isPartner: boolean
+  companyName: string
+  intro?: string | null
+  canShare: boolean
 }) {
   const router = useRouter()
   const [adding, setAdding] = useState<DealDocumentKind | null>(null)
@@ -66,9 +70,12 @@ export default function DealDocuments({
     <div className={styles.dashCard}>
       <div className={styles.detailSectionHead}>
         <div className={styles.detailSectionTitle}>Documents</div>
-        {!isPartner && (
-          <span className={styles.docHint}>Links, not uploads — the file stays where it is edited.</span>
-        )}
+        <div className={styles.docHeadRight}>
+          {!isPartner && (
+            <span className={styles.docHint}>Links, not uploads — the file stays where it is edited.</span>
+          )}
+          {canShare && <SharePitch companyName={companyName} intro={intro} documents={documents} />}
+        </div>
       </div>
 
       <div className={styles.docList}>

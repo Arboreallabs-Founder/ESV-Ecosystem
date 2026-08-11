@@ -489,6 +489,9 @@ export const WIKI: Record<string, WikiSection> = {
       { heading: 'More than one of a kind', body: 'A deal has several MIS months and more than one version of a deck. Add another and label it — "July", "v3" — and they stack under the same heading.',
         snippet: 'MIS                                        + Add another\n  MIS — July      drive.google.com   Shared    ×\n  MIS — June      drive.google.com   Internal  ×' },
       { heading: 'Sharing with partners', body: 'Each link is Shared or Internal on its own, so a deal can hand over its deck and hold back one MIS month. New links are Shared by default — these five were opened to partners deliberately.' },
+      { heading: 'Share on WhatsApp', body: 'Builds the message from the deal itself — the company\'s one-liner and every link marked Shared, numbered in the fixed order. Available on the deal card as well as here, because sending a deal on is what people leave this page to do.',
+        snippet: 'Earlyseed Ventures presents this exciting investment opportunity.\n\n*ElectriQ* — India\'s fastest-scaling clean-label food brand\n\nTo know more, refer to the material below:\n1. Information Memorandum — https://…\n2. Financials — https://…\n\nTerms & conditions apply. Private equity is a high-risk investment.' },
+      { heading: 'What the message carries', body: 'Only documents marked Shared. The message leaves the app, and an Internal document is one we withhold from partners — a WhatsApp forward is at least as exposed as a partner is. You see the exact text before it goes.' },
       { heading: 'Who can add', body: 'Founders, admins and associates. Associates work the deals, and making them ask someone else to paste a link is how links stay in WhatsApp. Partners read only.' },
     ],
   },
@@ -500,6 +503,7 @@ export const WIKI: Record<string, WikiSection> = {
     items: [
       { heading: 'What can be here', body: 'The information memorandum, financials, pitch deck, MIS and data room. Each one is shared per deal and per document, so what you see on one deal says nothing about another.' },
       { heading: 'A heading you cannot see', body: 'Nothing is listed greyed-out. If a kind of document is not on the panel, it has not been shared — an empty row saying "Data Room" would only tell you one exists and you cannot have it.' },
+      { heading: 'Passing a deal on', body: 'The WhatsApp button on a deal card, or on the deal itself, writes the message for you — the company\'s introduction, every document shared with you, and the risk note. Check it and send.' },
       { heading: 'They are links', body: 'They open the file where it actually lives, so what you read is the current version rather than a copy taken on some earlier day.' },
     ],
   },

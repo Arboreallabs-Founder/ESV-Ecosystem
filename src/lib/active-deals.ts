@@ -8,7 +8,7 @@ type DealCategoryRow = Omit<DealCategory, 'fields'> & { fields?: DealCategoryFie
 type UserNameRow = { name: string | null; photo_url: string | null }
 type EntryAssigneeRow = { user_id: string; user?: UserNameRow | UserNameRow[] | null }
 type PartnerRow = { id: string; name: string }
-type CompanyRefRow = { id: string; name: string; logo_url: string | null }
+type CompanyRefRow = { id: string; name: string; logo_url: string | null; one_liner: string | null }
 type EntryRow = {
   title: string | null
   submitter_name: string | null
@@ -68,7 +68,7 @@ const ACTIVE_DEAL_SELECT = `
   deal_state,
   logo_url,
   visible_to_partners,
-  entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, company_id, company:companies!company_id(id, name, logo_url), assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
+  entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, company_id, company:companies!company_id(id, name, logo_url, one_liner), assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
   categories:active_deal_categories(
     category:deal_categories(
       id, name, description, color, created_at,
@@ -101,7 +101,7 @@ function shapeActiveDealRow(row: ActiveDealRow): ActiveDeal {
       submitted_at: entry?.submitted_at ?? row.created_at,
       pipeline_id: entry?.pipeline_id ?? '',
       company_id: entry?.company_id ?? null,
-      company: company ? { id: company.id, name: company.name, logo_url: company.logo_url ?? null } : null,
+      company: company ? { id: company.id, name: company.name, logo_url: company.logo_url ?? null, one_liner: company.one_liner ?? null } : null,
       assignees: (entry?.assignees ?? []).map((a) => {
         const user = first(a.user)
         return { user_id: a.user_id, name: user?.name ?? 'Unknown', photo_url: user?.photo_url ?? null }
@@ -222,6 +222,29 @@ export const fetchDealDocuments = cache(async (activeDealId: string): Promise<Ac
   }
   const one = <T,>(v: T | T[] | null) => (Array.isArray(v) ? v[0] ?? null : v ?? null)
   return (data ?? []).map((r: any) => ({ ...r, created_by_user: one(r.created_by_user) })) as ActiveDealDocument[]
+})
+
+/**
+ * Every deal's documents in one query, keyed by deal id, for the Active Deals list.
+ *
+ * RLS scopes the rows, so a partner gets only what has been shared with them on deals opened to
+ * them — the same filter the deal page relies on, applied once instead of per card.
+ */
+export const fetchAllDealDocuments = cache(async (): Promise<Record<string, ActiveDealDocument[]>> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('active_deal_documents')
+    .select('*')
+    .order('created_at', { ascending: true })
+  if (error) {
+    console.error('[active-deals] documents read failed:', error.message)
+    return {}
+  }
+  const out: Record<string, ActiveDealDocument[]> = {}
+  for (const row of (data ?? []) as ActiveDealDocument[]) {
+    (out[row.active_deal_id] ??= []).push(row)
+  }
+  return out
 })
 
 // Lightweight investor count + committed total for the deal page's summary card
