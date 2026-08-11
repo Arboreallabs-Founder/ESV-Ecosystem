@@ -1,6 +1,18 @@
+/**
+ * Who a piece of the wiki is written for.
+ *
+ * `internal` is the default and the safe direction: a section nobody has classified stays with the
+ * team. Partners were being shown all thirty sections — the SGP Desk they are triaged by, the fee
+ * splits calculated on them, HR, attendance, admin — which is both confusing and none of their
+ * business.
+ */
+export type WikiAudience = 'internal' | 'partner' | 'all'
+
 export type WikiItem = {
   heading: string
   body: string
+  /** Defaults to the section's audience. Set it to carve one item out of a shared section. */
+  audience?: WikiAudience
   /**
    * A small picture of the thing being described, in monospace.
    *
@@ -14,7 +26,47 @@ export type WikiItem = {
 export type WikiSection = {
   title: string
   summary: string
+  /** Defaults to 'internal'. Nothing reaches a partner unless it says so. */
+  audience?: WikiAudience
   items: WikiItem[]
+}
+
+/** Everyone who is not a franchise partner is internal, including super_admin. */
+export function isPartnerRole(role: string | null | undefined): boolean {
+  return role === 'franchise_partner'
+}
+
+/**
+ * Internal staff read everything, including the partner-facing sections — an admin who cannot see
+ * what a partner sees cannot answer a question about it. The scoping exists to stop partners
+ * reading our side, not to stop us reading theirs.
+ */
+function audienceAllows(audience: WikiAudience | undefined, partner: boolean): boolean {
+  if (!partner) return true
+  return (audience ?? 'internal') !== 'internal'
+}
+
+/**
+ * The wiki as this role should see it — sections and the items inside them.
+ *
+ * Filtering at the data layer rather than in each of the fifteen places the wiki is rendered: the
+ * side panel, the sidebar browser and the full page all read this, so there is one answer to "can
+ * they see this" instead of three that can drift.
+ */
+export function wikiFor(role: string | null | undefined): Record<string, WikiSection> {
+  const partner = isPartnerRole(role)
+  const out: Record<string, WikiSection> = {}
+  for (const [key, section] of Object.entries(WIKI)) {
+    if (!audienceAllows(section.audience, partner)) continue
+    // An item in a shared section falls back to `internal`, not to the section's own audience.
+    // Otherwise marking a section 'all' quietly opens every item in it — which is exactly how the
+    // whole internal FAQ ended up in front of partners the first time.
+    const fallback: WikiAudience = section.audience === 'all' ? 'internal' : (section.audience ?? 'internal')
+    const items = section.items.filter((i) => audienceAllows(i.audience ?? fallback, partner))
+    if (items.length === 0) continue
+    out[key] = { ...section, items }
+  }
+  return out
 }
 
 export const WIKI: Record<string, WikiSection> = {
@@ -98,14 +150,15 @@ export const WIKI: Record<string, WikiSection> = {
   },
 
   escalations: {
+    audience: 'all',
     title: 'Escalations',
     summary: 'A direct channel for raising a query or blocker to a single founder or partner, optionally tied to a specific deal, entry, task, or investor.',
     items: [
-      { heading: 'Who can raise', body: 'Associates and admins raise escalations. Founders and partners cannot raise — they are the recipients. Each escalation goes to exactly one recipient (a founder or a partner).' },
-      { heading: 'Raising one', body: 'Click "+ New Escalation". Give it a subject, optional details, pick the one recipient, and optionally link it to an active deal, pipeline entry, task, or investor. A snapshot of the linked item\'s title is stored so partners can see "re: X" without needing access to it.' },
-      { heading: 'Status workflow', body: 'Open → Acknowledged → Resolved (there is no reply thread). The status can be changed by the recipient, the person who raised it, or any founder/admin. Resolving stamps the resolution time.' },
-      { heading: 'Visibility', body: 'Founders and admins see every escalation in the organisation (oversight). Associates see only the ones they raised. Partners see only the ones addressed to them.' },
-      { heading: 'Deleting', body: 'The person who raised an escalation, or any founder/admin, can delete it.' },
+      { audience: 'all', heading: 'Who can raise', body: 'Associates and admins raise escalations. Founders and partners cannot raise — they are the recipients. Each escalation goes to exactly one recipient (a founder or a partner).' },
+      { audience: 'all', heading: 'Raising one', body: 'Click "+ New Escalation". Give it a subject, optional details, pick the one recipient, and optionally link it to an active deal, pipeline entry, task, or investor. A snapshot of the linked item\'s title is stored so partners can see "re: X" without needing access to it.' },
+      { audience: 'all', heading: 'Status workflow', body: 'Open → Acknowledged → Resolved (there is no reply thread). The status can be changed by the recipient, the person who raised it, or any founder/admin. Resolving stamps the resolution time.' },
+      { audience: 'all', heading: 'Visibility', body: 'Founders and admins see every escalation in the organisation (oversight). Associates see only the ones they raised. Partners see only the ones addressed to them.' },
+      { audience: 'all', heading: 'Deleting', body: 'The person who raised an escalation, or any founder/admin, can delete it.' },
     ],
   },
 
@@ -174,6 +227,7 @@ export const WIKI: Record<string, WikiSection> = {
   },
 
   earnings: {
+    audience: 'partner',
     title: 'My Earnings (Partners)',
     summary: 'A partner\'s view of what they earn from each deal. Read-only and scoped to the partner.',
     items: [
@@ -241,6 +295,7 @@ export const WIKI: Record<string, WikiSection> = {
   },
 
   portal: {
+    audience: 'partner',
     title: 'SGP Portal',
     summary: 'The view for external SGPs. Submit deals and track their progress.',
     items: [
@@ -313,6 +368,7 @@ export const WIKI: Record<string, WikiSection> = {
   },
 
   myCompanies: {
+    audience: 'partner',
     title: 'My Companies',
     summary: 'For partners: the companies you have brought in, and where each one has got to.',
     items: [
@@ -397,20 +453,48 @@ export const WIKI: Record<string, WikiSection> = {
     ],
   },
 
+  partnerDeals: {
+    audience: 'partner',
+    title: 'Active Deals (what you see)',
+    summary: 'The deals Earlyseed Ventures has opened to you. A referrer\'s view — enough to know how a deal you sourced is going, and no more.',
+    items: [
+      { heading: 'Which deals appear', body: 'Only ones we have marked visible to partners. A deal missing from your list has not been opened rather than gone away.' },
+      { heading: 'What is on a deal', body: 'The ESV point of contact, total capital being raised, the company\'s own financial metrics, its sector, and how much of the raise is done.' },
+      { heading: 'What is not', body: 'Who has invested, fees, mandate and IM links, term sheets. The names on a cap table are the relationships Earlyseed Ventures is paid for; the progress number is the part that legitimately tells you how your referral is going.' },
+      { heading: 'Raise progress', body: 'The amount committed so far and how many commitments — a count, never a list. Where the target is on the page you also get a percentage.',
+        snippet: '████████░░░░░░░░  43% of ₹2.50 Cr\nCommitted so far  ₹1.08 Cr      Commitments  11' },
+      { heading: 'Contacting your ESV point of contact', body: 'Click their name on any deal card for their designation, email and phone.' },
+    ],
+  },
+
+  partnerInvestors: {
+    audience: 'partner',
+    title: 'Investors (referring one)',
+    summary: 'The funds credited to you, and how to introduce a new one.',
+    items: [
+      { heading: 'Why you cannot add one directly', body: 'Because we probably already hold them. A second record splits the relationship and the fee for no reason, and nobody can tell afterwards which of the two is the real one.' },
+      { heading: 'Referring instead', body: '"+ Refer an investor" — the name is the only required field. Say how you know them; that is the part that decides how we approach them.' },
+      { heading: 'What happens next', body: 'An SGP Coordinator checks it against the funds we hold. If we have them, the existing record is tagged to you. If not, it is added credited to you. Either way you end up credited and the database stays clean.' },
+      { heading: 'If it comes back', body: 'A referral that is not taken forward always carries a reason. If a fund is already credited to another partner we will tell you rather than quietly reassigning it.' },
+      { heading: 'Your list', body: 'The Investors page shows the funds credited to you and any referral still waiting on a decision.' },
+    ],
+  },
+
   faq: {
+    audience: 'all',
     title: 'FAQ',
     summary: 'The questions that actually come up.',
     items: [
-      { heading: 'I got "Server Action was not found on the server"', body: 'The app was updated while your page was open. Nothing was saved, so reloading and trying again will not duplicate anything. If it keeps happening, tell an admin — it means deploys are outrunning open tabs.' },
-      { heading: 'Why can I not add an investor as a partner?', body: 'Because we probably already have them. A duplicate record splits the relationship and the fee for no reason. Send us the name and we will link the existing fund to you.' },
+      { audience: 'all', heading: 'I got "Server Action was not found on the server"', body: 'The app was updated while your page was open. Nothing was saved, so reloading and trying again will not duplicate anything. If it keeps happening, tell an admin — it means deploys are outrunning open tabs.' },
+      { audience: 'all', heading: 'Why can I not add an investor as a partner?', body: 'Because we probably already have them. A duplicate record splits the relationship and the fee for no reason. Send us the name and we will link the existing fund to you.' },
       { heading: 'Why does a fund show no ticket size?', body: 'The source did not say which currency it was in, and guessing between dollars and rupees is an 80x error. The original text is in that fund’s notes for someone to check.' },
       { heading: 'My investor list shows only agnostic funds', body: 'The company on the deal has no sectors that match how funds describe themselves. The page names the tags it could not use — retag the company and the matches appear.' },
       { heading: 'Why can I not type a new sector?', body: 'Sectors are a fixed list. Free text is how "Fintech", "FinTech" and "Health tech" all came to exist, and nothing matched across them. Ask an admin to add one if it is genuinely missing.' },
-      { heading: 'Who can see a deal I am working on?', body: 'Internal staff see everything. Partners see only what has been opened to them — capital being raised, sector, financial metrics, raise progress — never fees, mandate links, or who has invested.' },
+      { audience: 'all', heading: 'Who can see a deal I am working on?', body: 'Internal staff see everything. Partners see only what has been opened to them — capital being raised, sector, financial metrics, raise progress — never fees, mandate links, or who has invested.' },
       { heading: 'A contact bounced', body: 'Mark them Moved on on the fund’s profile and, if you know, where they went. Then assign someone to find a replacement — it becomes a task with the old contacts attached as leads.' },
-      { heading: 'Where did My Companies submissions go?', body: 'They are pipeline entries now, on the Partner Sourced pipeline. Same list, but with real stages that update when a coordinator moves the card.' },
+      { audience: 'all', heading: 'Where did My Companies submissions go?', body: 'They are pipeline entries now, on the Partner Sourced pipeline. Same list, but with real stages that update when a coordinator moves the card.' },
       { heading: 'Do founders need an account to answer an investor list?', body: 'No. The link is the key. It can be withdrawn at any time, and re-submitting replaces their previous answer rather than adding to it.' },
-      { heading: 'Something looks wrong on a page', body: 'Say which screen, what you were doing, and what happened instead. That is usually enough to find it; a screenshot makes it faster.' },
+      { audience: 'all', heading: 'Something looks wrong on a page', body: 'Say which screen, what you were doing, and what happened instead. That is usually enough to find it; a screenshot makes it faster.' },
     ],
   },
 }
@@ -432,7 +516,7 @@ export const WIKI_GROUPS: Array<{ title: string; keys: string[] }> = [
   { title: 'Deals', keys: ['dealDesk', 'activeDeals', 'dealDetail', 'pipeline', 'pipelines'] },
   { title: 'Companies & investors', keys: ['companies', 'investors', 'investorProfile', 'investorLists'] },
   { title: 'Your work', keys: ['tasks', 'myTodos', 'recurringTasks', 'taskKpis', 'escalations', 'analytics'] },
-  { title: 'Partners (SGP)', keys: ['partners', 'sgpDesk', 'myCompanies', 'portal', 'earnings'] },
+  { title: 'Partners (SGP)', keys: ['partners', 'sgpDesk', 'myCompanies', 'portal', 'earnings', 'partnerDeals', 'partnerInvestors'] },
   { title: 'Intake forms', keys: ['forms', 'formBuilder'] },
   { title: 'People & HR', keys: ['hr', 'attendance', 'attendanceHr', 'documents'] },
   { title: 'Company-wide', keys: ['bulletin', 'admin'] },

@@ -5,7 +5,7 @@ import { createPortal } from 'react-dom'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { WikiSidebarButton } from '@/app/_components/WikiPanel'
+import { WikiSidebarButton, WikiRoleProvider } from '@/app/_components/WikiPanel'
 import { useTheme } from '@/app/_components/ThemeProvider'
 import { switchDemoPersona, exitDemoMode } from '@/app/actions/demo'
 import HrClockWidget from '@/app/_components/HrClockWidget'
@@ -559,6 +559,9 @@ export default function AppShell({
   )
 
   return (
+    // The shell is the one place that knows who is looking, so it is where the wiki is told. Every
+    // WikiButton below reads it from context rather than being handed a role it has no other use for.
+    <WikiRoleProvider role={role}>
     <div className={`${styles.shell} ${mobileOpen ? styles.shellDrawerOpen : ''}`}>
       {mobileOpen && <div className={styles.backdrop} onClick={() => setMobileOpen(false)} />}
       <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ''} ${sidebarCollapsed ? styles.sidebarCollapsed : ''}`}>
@@ -921,5 +924,6 @@ export default function AppShell({
         </main>
       </div>
     </div>
+    </WikiRoleProvider>
   )
 }

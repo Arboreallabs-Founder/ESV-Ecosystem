@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { WIKI, WIKI_GROUPS, UNGROUPED_WIKI_KEYS, type WikiItem, type WikiSection } from '@/lib/wiki'
+import { wikiFor, WIKI_GROUPS, type WikiItem, type WikiSection } from '@/lib/wiki'
 import styles from '../wiki.module.css'
 
 /**
@@ -19,12 +19,6 @@ import styles from '../wiki.module.css'
 
 type Group = { title: string; keys: string[] }
 
-const GROUPS: Group[] = [
-  ...WIKI_GROUPS,
-  // Anything added to WIKI but not to a group still shows up, rather than vanishing quietly.
-  ...(UNGROUPED_WIKI_KEYS.length ? [{ title: 'More', keys: UNGROUPED_WIKI_KEYS }] : []),
-]
-
 function matches(section: WikiSection, q: string): boolean {
   if (!q) return true
   const hay = [
@@ -41,21 +35,32 @@ function itemMatches(item: WikiItem, q: string): boolean {
   return q.split(/\s+/).filter(Boolean).every((word) => hay.includes(word))
 }
 
-export default function WikiClient() {
+export default function WikiClient({ role }: { role: string | null }) {
   const [query, setQuery] = useState('')
-  const [active, setActive] = useState<string>(GROUPS[0]?.keys[0] ?? '')
   const searchRef = useRef<HTMLInputElement>(null)
   const q = query.trim().toLowerCase()
 
+  // What this role may read. Sections and items both, filtered once at the data layer.
+  const wiki = useMemo(() => wikiFor(role), [role])
+
+  const groups: Group[] = useMemo(() => {
+    const grouped = WIKI_GROUPS
+      .map((g) => ({ title: g.title, keys: g.keys.filter((k) => wiki[k]) }))
+      .filter((g) => g.keys.length > 0)
+    // Anything in the wiki but not in a group still appears, rather than vanishing quietly.
+    const seen = new Set(grouped.flatMap((g) => g.keys))
+    const rest = Object.keys(wiki).filter((k) => !seen.has(k))
+    return rest.length ? [...grouped, { title: 'More', keys: rest }] : grouped
+  }, [wiki])
+
+  const [active, setActive] = useState<string>('')
+
   // Which sections survive the search, grouped, with empty groups dropped.
   const shown = useMemo(() => {
-    return GROUPS
-      .map((g) => ({
-        title: g.title,
-        keys: g.keys.filter((k) => WIKI[k] && matches(WIKI[k], q)),
-      }))
+    return groups
+      .map((g) => ({ title: g.title, keys: g.keys.filter((k) => matches(wiki[k], q)) }))
       .filter((g) => g.keys.length > 0)
-  }, [q])
+  }, [q, groups, wiki])
 
   const hitCount = shown.reduce((n, g) => n + g.keys.length, 0)
 
@@ -155,7 +160,7 @@ export default function WikiClient() {
                   className={key === active ? styles.navLinkActive : styles.navLink}
                   onClick={() => jump(key)}
                 >
-                  {WIKI[key].title}
+                  {wiki[key].title}
                 </button>
               ))}
             </div>
@@ -177,7 +182,7 @@ export default function WikiClient() {
                 <h2 className={styles.groupHeading}>{group.title}</h2>
 
                 {group.keys.map((key) => {
-                  const section = WIKI[key]
+                  const section = wiki[key]
                   // Inside a matching section, narrow to the matching items — landing on a section
                   // and still having to read all of it is barely better than no search.
                   const items = q ? section.items.filter((i) => itemMatches(i, q)) : section.items

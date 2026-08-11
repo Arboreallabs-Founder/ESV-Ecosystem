@@ -1,12 +1,15 @@
+import { redirect } from 'next/navigation'
+import { getUser } from '@/lib/user'
 import WikiClient from './_components/WikiClient'
 
 /**
- * The full wiki.
+ * The full wiki, scoped to the caller.
  *
- * Client-rendered because the two things that make thirty sections usable — search and knowing
- * where you are in them — are both interactions. The content itself is a static module, so there
- * is no data fetch to lose by doing it here.
+ * The role is resolved here rather than in the browser: a partner should not be shipped the
+ * internal sections and told not to look at them.
  */
 export default async function WikiPage() {
-  return <WikiClient />
+  const user = await getUser()
+  if (!user) redirect('/login')
+  return <WikiClient role={user.role ?? null} />
 }

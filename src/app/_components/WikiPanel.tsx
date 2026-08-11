@@ -1,9 +1,30 @@
 'use client'
 
-import { useState } from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { WIKI, type WikiSection } from '@/lib/wiki'
+import { wikiFor, type WikiSection } from '@/lib/wiki'
 import styles from './wiki-panel.module.css'
+
+/**
+ * Whose wiki this is.
+ *
+ * WikiButton is dropped into thirteen screens, none of which knows the caller's role, and threading
+ * it through all of them to answer one question is the kind of prop drilling nobody maintains. The
+ * app shell knows the role, so it says so once here.
+ *
+ * Defaults to the partner view rather than the internal one: if a provider is ever missed, the
+ * failure shows the *less* privileged wiki.
+ */
+const WikiRoleContext = createContext<string | null>('franchise_partner')
+
+export function WikiRoleProvider({ role, children }: { role: string | null; children: React.ReactNode }) {
+  return <WikiRoleContext.Provider value={role}>{children}</WikiRoleContext.Provider>
+}
+
+function useScopedWiki() {
+  const role = useContext(WikiRoleContext)
+  return useMemo(() => wikiFor(role), [role])
+}
 
 function Panel({ section, onClose }: { section: WikiSection; onClose: () => void }) {
   return (
@@ -34,7 +55,10 @@ function Panel({ section, onClose }: { section: WikiSection; onClose: () => void
 
 export function WikiButton({ sectionKey }: { sectionKey: string }) {
   const [open, setOpen] = useState(false)
-  const section = WIKI[sectionKey]
+  const wiki = useScopedWiki()
+  // No section for this role means no button. A partner on a screen whose help is written for the
+  // team should get nothing rather than our internal notes on how we triage them.
+  const section = wiki[sectionKey]
   if (!section) return null
 
   return (
@@ -55,13 +79,15 @@ export function WikiButton({ sectionKey }: { sectionKey: string }) {
 export function WikiSidebarButton() {
   const [open, setOpen] = useState(false)
   const [activeKey, setActiveKey] = useState<string | null>(null)
+  const wiki = useScopedWiki()
 
   function handleOpen() {
-    setActiveKey('dashboard')
+    // Whatever this role's wiki starts with — 'dashboard' does not exist in a partner's.
+    setActiveKey(Object.keys(wiki)[0] ?? null)
     setOpen(true)
   }
 
-  const section = activeKey ? WIKI[activeKey] : null
+  const section = activeKey ? wiki[activeKey] : null
 
   return (
     <>
@@ -83,7 +109,7 @@ export function WikiSidebarButton() {
             </div>
             <div className={styles.panelBody}>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-                {Object.entries(WIKI).map(([key, s]) => (
+                {Object.entries(wiki).map(([key, s]) => (
                   <button
                     key={key}
                     onClick={() => setActiveKey(key)}
