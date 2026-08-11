@@ -6,7 +6,7 @@ export default async function RootPage() {
   if (!user) redirect('/login')
 
   if (user.role === 'franchise_partner') {
-    redirect('/submissions')
+    redirect('/my-companies')
   } else if (user.role === 'associate') {
     redirect('/pipelines')
   } else if (user.role === 'general' || user.role === 'hr') {

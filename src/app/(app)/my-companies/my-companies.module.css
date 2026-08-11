@@ -144,10 +144,15 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: 0.75rem;
-  align-items: start;
+  /* stretch, not start. A rejected company has no stage run to show, so with `start` its card was
+     half the height of the one beside it and the row looked broken. Every card now fills its row
+     and pushes its footer to the bottom. */
+  align-items: stretch;
 }
 
 .card {
+  display: flex;
+  flex-direction: column;
   padding: 1rem 1.125rem;
   background: var(--color-card);
   border: 1.5px solid var(--glass-border, var(--color-border));
@@ -194,6 +199,13 @@
   line-height: 1.55;
   color: var(--color-text);
   white-space: pre-wrap;
+}
+
+/* Whatever ends a card sits at the bottom of it, so the titles and notes above stay aligned
+   across a row however much each one has to say. */
+.progress,
+.closed {
+  margin-top: auto;
 }
 
 .progress {

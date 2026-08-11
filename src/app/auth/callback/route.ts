@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   const role = publicUser.role
   const destination =
     role === 'super_admin'       ? '/super-admin/orgs'
-    : role === 'franchise_partner' ? '/submissions'
+    : role === 'franchise_partner' ? '/my-companies'
     : role === 'associate'         ? '/pipelines'
     : role === 'general'           ? '/tasks'
     : role === 'hr'                ? '/tasks'

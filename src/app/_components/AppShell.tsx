@@ -296,12 +296,6 @@ const NAV_ITEMS: NavEntry[] = [
     icon: <Icon d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />,
   },
   {
-    href: '/submissions',
-    label: 'My Submissions',
-    roles: ['franchise_partner'],
-    icon: <Icon d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 0 2-2h2a2 2 0 0 0 2 2" />,
-  },
-  {
     href: '/companies',
     label: 'Companies',
     roles: ['founder', 'admin', 'associate', 'general'],
@@ -520,7 +514,7 @@ export default function AppShell({
     startPersonaTransition(async () => {
       await switchDemoPersona(persona)
       if (persona === 'franchise_partner') {
-        router.push('/submissions')
+        router.push('/my-companies')
       } else if (demoPersona === 'franchise_partner') {
         router.push('/dashboard')
       } else {
@@ -750,7 +744,7 @@ export default function AppShell({
             }
             const isActive =
               pathname === entry.href ||
-              (entry.href !== '/dashboard' && entry.href !== '/portal' && entry.href !== '/submissions' && pathname.startsWith(entry.href))
+              (entry.href !== '/dashboard' && entry.href !== '/portal' && pathname.startsWith(entry.href))
             return (
               <Fragment key={entry.href}>
                 {header}
