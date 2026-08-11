@@ -1657,3 +1657,138 @@ export function pocCoverage(
   if (cs.some((c) => c.employment_status === 'moved_on')) return 'all_left'
   return 'unverified'
 }
+
+// ─── Fundraise Status List ───────────────────────────────────────────────────
+// What happens after a founder approves an investor list: each approved fund becomes a row we work.
+
+/**
+ * The eight stored statuses.
+ *
+ * "Ghosted" is the ninth the team talks about and is deliberately not one of these — it is derived
+ * from how long a fund has sat still, so it cannot disagree with the timeline it is read from, and
+ * the moment anything moves it stops being true on its own.
+ */
+export const FUNDRAISE_STATUSES = [
+  'not_sent', 'deal_sent', 'data_requested', 'call_request',
+  'due_diligence', 'accepted', 'rejected', 'closed',
+] as const
+export type FundraiseStatus = typeof FUNDRAISE_STATUSES[number]
+
+/** What a status is called, including the derived one. */
+export type FundraiseDisplayStatus = FundraiseStatus | 'ghosted'
+
+export const FUNDRAISE_STATUS_LABELS: Record<FundraiseDisplayStatus, string> = {
+  not_sent: 'Not sent yet',
+  deal_sent: 'Deal sent',
+  data_requested: 'Data requested by fund',
+  call_request: 'Call request',
+  due_diligence: 'Fund due diligence',
+  accepted: 'Accepted',
+  rejected: 'Rejected',
+  ghosted: 'Ghosted',
+  closed: 'Closed',
+}
+
+/**
+ * A sequential ramp for the funnel, and semantic colours for the three outcomes.
+ *
+ * The in-flight statuses are ordered, so they take a lightness ramp rather than unrelated hues —
+ * you should be able to see depth without reading the legend. Accepted, rejected and ghosted are
+ * outcomes, not depths, so they get their own colours.
+ */
+export const FUNDRAISE_STATUS_COLORS: Record<FundraiseDisplayStatus, string> = {
+  not_sent: '#A39B95',
+  deal_sent: '#B9AEFE',
+  data_requested: '#9C8BFD',
+  call_request: '#8371FD',
+  due_diligence: '#745FFD',
+  accepted: '#2E7D32',
+  rejected: '#C0392B',
+  ghosted: '#8A7F78',
+  closed: '#6B6B7B',
+}
+
+/** Only these can ghost: a fund never sent cannot go quiet, nor can one that already answered. */
+export const FUNDRAISE_IN_FLIGHT: FundraiseStatus[] = [
+  'deal_sent', 'data_requested', 'call_request', 'due_diligence',
+]
+
+export const FUNDRAISE_GHOST_DAYS = 30
+
+/** The same rule as is_fundraise_ghosted() in the database, for rendering without a round trip. */
+export function isFundraiseGhosted(status: FundraiseStatus, statusChangedAt: string): boolean {
+  if (!FUNDRAISE_IN_FLIGHT.includes(status)) return false
+  const days = (Date.now() - new Date(statusChangedAt).getTime()) / 86_400_000
+  return days > FUNDRAISE_GHOST_DAYS
+}
+
+export function fundraiseDisplayStatus(
+  status: FundraiseStatus, statusChangedAt: string,
+): FundraiseDisplayStatus {
+  return isFundraiseGhosted(status, statusChangedAt) ? 'ghosted' : status
+}
+
+export const FUNDRAISE_EVENT_KINDS = [
+  'status_change', 'outreach', 'follow_up', 'note', 'request', 'response', 'founder_comment',
+] as const
+export type FundraiseEventKind = typeof FUNDRAISE_EVENT_KINDS[number]
+
+export const FUNDRAISE_EVENT_LABELS: Record<FundraiseEventKind, string> = {
+  status_change: 'Status change',
+  outreach: 'Outreach',
+  follow_up: 'Follow-up',
+  note: 'Note',
+  request: 'They asked for something',
+  response: 'They replied',
+  founder_comment: 'Founder',
+}
+
+export type FundraiseEvent = {
+  id: string
+  entry_id: string
+  kind: FundraiseEventKind
+  body: string | null
+  from_status: FundraiseStatus | null
+  to_status: FundraiseStatus | null
+  /** False by default: an event nobody classified stays with the team. */
+  founder_visible: boolean
+  created_by: string | null
+  author_label: string | null
+  created_at: string
+  created_by_user?: { name: string | null; photo_url: string | null } | null
+}
+
+export type FundraiseEntry = {
+  id: string
+  list_id: string
+  investor_id: string
+  status: FundraiseStatus
+  /** The ghosting clock. A comment must not reset it, or a silent fund would look alive. */
+  status_changed_at: string
+  sent_at: string | null
+  rejection_reason: string | null
+  rejection_sector: string | null
+  sort_order: number
+  created_at: string
+  investor?: {
+    id: string
+    name: string
+    website: string | null
+    logo_url: string | null
+    sectors: string[]
+    connect_strength: string | null
+    contacts: Array<{ id: string; name: string; rank: string | null; employment_status: string }>
+  } | null
+  events?: FundraiseEvent[]
+}
+
+export type FundraiseList = {
+  id: string
+  active_deal_id: string
+  share_token: string
+  shared_at: string | null
+  first_viewed_at: string | null
+  reachout_template: string | null
+  created_at: string
+  entries: FundraiseEntry[]
+}

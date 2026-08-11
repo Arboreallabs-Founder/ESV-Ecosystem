@@ -344,6 +344,12 @@ export default function ActiveDealPageClient({
                 Investor lists
               </Link>
             )}
+            {canManageDeal && (
+              <Link href={`/active-deals/${deal.id}/fundraise`} className={styles.ghostBtn}
+                style={{ textDecoration: 'none' }}>
+                Fundraise status
+              </Link>
+            )}
             {canSetPartnerVisibility && (
               <button
                 className={partnerVisible ? styles.ghostBtn : styles.hiddenFromPartnersBtn}

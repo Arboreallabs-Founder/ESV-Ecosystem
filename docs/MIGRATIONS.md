@@ -345,3 +345,31 @@ thing as nobody reading it. The cap is a column CHECK, a constant in `deal-pitch
 
 The fallback is resolved **in the RPC** (`COALESCE(NULLIF(btrim(share_intro), ''), one_liner)`), so
 a partner and an associate looking at the same deal never see different introductions.
+
+### `20260914000000_fundraise_status.sql`
+The Fundraise Status List — what happens after a founder approves an investor list. Each approved
+fund becomes a row we work: `fundraise_lists` (one per deal, own share token), `fundraise_entries`
+(the fund + its major status), `fundraise_events` (the full internal timeline).
+
+**Eight stored statuses, nine spoken of.** "Ghosted" is *derived* by `is_fundraise_ghosted()` —
+30 days since the status last changed, and only while the fund is in flight. Nothing is written, so
+it cannot disagree with the timeline it is read from, and it stops being true the moment anything
+moves. There is no scheduler in this app; a stored flag would need one and could drift.
+
+`status_changed_at` is separate from any "updated at" on purpose: it is the ghosting clock, and a
+comment or a logged call must **not** reset it, or a fund nobody has heard from would look alive
+because we talked about it among ourselves.
+
+**Two audiences, one table.** `fundraise_events.founder_visible` defaults **false** — an event
+nobody has classified stays with the team. Rejection reasons are always the founder's to see, and
+the action forces one: "they passed" with no reason teaches nobody anything and cannot enrich the
+fund's profile.
+
+The founder link is its **own token**, separate from `investor_lists.share_token`. They answer
+different questions at different times, and one link that silently changes meaning after approval
+is worse than two that each do one thing. `get_fundraise_public` decides exactly what the token
+buys; `add_fundraise_founder_comment` is their only write, and it verifies the token owns the entry
+— without that check a valid token for one mandate could comment on any fund on any other.
+
+`investor_rejections` answers "what has this fund passed on, and why" without re-deriving it from
+the mandates later.

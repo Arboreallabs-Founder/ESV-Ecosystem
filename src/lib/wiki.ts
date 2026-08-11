@@ -508,6 +508,22 @@ export const WIKI: Record<string, WikiSection> = {
     ],
   },
 
+  fundraiseStatus: {
+    title: 'Fundraise status',
+    summary: 'What happens after a founder approves an investor list. Every approved fund becomes a row you work: where it has got to, and everything that has happened to it.',
+    items: [
+      { heading: 'Getting there', body: 'Active deal → Investor lists → the founder approves → Fundraise status. Approved funds are pulled across on a button, so names you add after approval come too.' },
+      { heading: 'The nine statuses', body: 'Not sent yet, Deal sent, Data requested by fund, Call request, Fund due diligence, Accepted, Rejected, Ghosted, Closed.',
+        snippet: 'Not sent → Deal sent → Data requested → Call request\n                                  → Due diligence → Accepted\n                                                  → Rejected / Closed\n\nno status change for 30 days  →  Ghosted (worked out, not set)' },
+      { heading: 'Ghosted is worked out, not set', body: 'A fund shows as Ghosted after 30 days with no status change, and only while it is actually in flight — one never sent cannot go quiet, and neither can one that already answered. Nothing is stored, so it can never disagree with the timeline, and the moment anything moves it stops being true.' },
+      { heading: 'What resets the clock', body: 'A status change, and only a status change. Logging a call or leaving a note deliberately does not — talking about a fund among ourselves must not make a silent one look alive.' },
+      { heading: 'Two audiences, one record', body: 'Each timeline entry is Internal or Founder-visible, and new ones are internal until you say otherwise. The founder always sees the major status and any rejection reason; everything else is a choice you make per update.' },
+      { heading: 'Rejections need a reason', body: 'Moving a fund to Rejected requires one. It is what the founder sees, and it is what builds the fund’s own profile over time — what they looked at, and what they say no to.' },
+      { heading: 'The reachout email', body: 'The wording the team agreed, pinned at the top and internal only. The point is that whoever sends this deal out next copies it rather than writing their own.' },
+      { heading: 'The founder link', body: 'Its own token, separate from the approval list’s. They see status, the updates you shared, and rejection reasons — and can comment against any one fund. Withdrawing it keeps their comments; only their access ends.' },
+    ],
+  },
+
   faq: {
     audience: 'all',
     title: 'FAQ',
@@ -542,7 +558,7 @@ export const WIKI_SECTIONS = Object.keys(WIKI) as Array<keyof typeof WIKI>
 export const WIKI_GROUPS: Array<{ title: string; keys: string[] }> = [
   { title: 'Start here', keys: ['dashboard', 'faq'] },
   { title: 'Deals', keys: ['dealDesk', 'activeDeals', 'dealDetail', 'dealDocuments', 'pipeline', 'pipelines'] },
-  { title: 'Companies & investors', keys: ['companies', 'investors', 'investorProfile', 'investorLists'] },
+  { title: 'Companies & investors', keys: ['companies', 'investors', 'investorProfile', 'investorLists', 'fundraiseStatus'] },
   { title: 'Your work', keys: ['tasks', 'myTodos', 'recurringTasks', 'taskKpis', 'escalations', 'analytics'] },
   { title: 'Partners (SGP)', keys: ['partners', 'sgpDesk', 'myCompanies', 'portal', 'earnings', 'partnerDeals', 'partnerInvestors', 'partnerDocuments'] },
   { title: 'Intake forms', keys: ['forms', 'formBuilder'] },
