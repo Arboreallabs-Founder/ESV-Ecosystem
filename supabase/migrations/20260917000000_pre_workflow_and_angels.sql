@@ -16,6 +16,16 @@
 -- the same definition — the view is derived, so nothing is lost by recreating it.
 DROP VIEW IF EXISTS public.investor_rejections;
 
+-- Everything that names the enum has to go before the type does. is_fundraise_ghosted takes it as a
+-- parameter; get_fundraise_public reads the column and calls that function. Both are recreated
+-- further down, so this is a reorder rather than a loss.
+--
+-- Deliberately not DROP TYPE ... CASCADE: cascade would silently remove anything else that turned
+-- out to depend on it, and finding that out from a failed migration is far better than finding out
+-- from a missing object weeks later.
+DROP FUNCTION IF EXISTS public.get_fundraise_public(TEXT);
+DROP FUNCTION IF EXISTS public.is_fundraise_ghosted(fundraise_status, TIMESTAMPTZ);
+
 ALTER TABLE public.fundraise_entries
   ALTER COLUMN status DROP DEFAULT,
   ALTER COLUMN status TYPE TEXT USING status::TEXT,
@@ -307,7 +317,6 @@ GRANT EXECUTE ON FUNCTION public.generate_fundraise_tasks() TO authenticated;
 -- is_fundraise_ghosted took the enum; it takes TEXT now. Ghosting still applies only to the four
 -- statuses where a fund could actually be ignoring us — an introduction we are waiting on is our
 -- problem, not theirs, and calling it "ghosted" would point the blame the wrong way.
-DROP FUNCTION IF EXISTS public.is_fundraise_ghosted(fundraise_status, TIMESTAMPTZ);
 CREATE OR REPLACE FUNCTION public.is_fundraise_ghosted(
   p_status TEXT,
   p_status_changed_at TIMESTAMPTZ
