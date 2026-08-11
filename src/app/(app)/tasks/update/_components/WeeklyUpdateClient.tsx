@@ -8,6 +8,8 @@ import { weekRange } from '@/lib/week'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import Avatar from '@/app/_components/Avatar'
 import styles from '../weekly-update.module.css'
+import AutomaticTasks from '@/app/_components/AutomaticTasks'
+import type { AutomaticTask } from '@/lib/automatic-tasks-shared'
 
 type TaskRef = { id: string; title: string }
 /** `update` is empty when nothing has been posted on the deal yet. */
@@ -91,7 +93,7 @@ function Section({
 }
 
 export default function WeeklyUpdateClient({
-  tasks, activeDeals, users, dealUpdates, weekTodos, currentUserId, currentUserRole,
+  tasks, activeDeals, users, dealUpdates, weekTodos, currentUserId, currentUserRole, automaticTasks,
 }: {
   tasks: Task[]
   activeDeals: ActiveDeal[]
@@ -101,6 +103,8 @@ export default function WeeklyUpdateClient({
   weekTodos: PersonalTodo[]
   currentUserId: string
   currentUserRole: string
+  /** Unowned by design, so they sit above the per-person cards rather than inside one. */
+  automaticTasks: AutomaticTask[]
 }) {
   const [weekOffset, setWeekOffset] = useState(0)
   const founders = useMemo(() => users.filter((u) => ['founder', 'admin'].includes(u.role)), [users])
@@ -229,6 +233,10 @@ export default function WeeklyUpdateClient({
           </select>
         )}
       </div>
+
+      {/* Above the cards, not inside one. Nobody owns an automatic task, so putting it on a
+          person's card would be claiming somebody does. */}
+      <AutomaticTasks tasks={automaticTasks} title="Automatic tasks" />
 
       {!report ? (
         <div className={styles.empty}>

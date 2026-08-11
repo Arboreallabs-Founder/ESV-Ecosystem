@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
 import { fetchActiveDeal } from '@/lib/active-deals'
 import { fetchFundraiseList, countApprovedNotOnFundraiseList } from '@/lib/fundraise'
+import { fetchAutomaticTasksForDeal } from '@/lib/automatic-tasks'
 import { fetchCompany } from '@/lib/companies'
 import FundraiseClient from './_components/FundraiseClient'
 
@@ -18,10 +19,11 @@ export default async function FundraisePage({ params }: { params: Promise<{ id: 
   if (!['founder', 'admin', 'associate'].includes(user.role ?? '')) redirect('/dashboard')
 
   // Independent of each other, so they go together rather than one waiting on the next.
-  const [deal, list, pending] = await Promise.all([
+  const [deal, list, pending, autoTasks] = await Promise.all([
     fetchActiveDeal(id),
     fetchFundraiseList(id),
     countApprovedNotOnFundraiseList(id),
+    fetchAutomaticTasksForDeal(id),
   ])
   if (!deal) notFound()
 
@@ -38,6 +40,7 @@ export default async function FundraisePage({ params }: { params: Promise<{ id: 
       companySector={company?.sectors?.[0] ?? null}
       pendingApproved={pending.approved}
       investorListId={pending.listId}
+      automaticTasks={autoTasks}
     />
   )
 }

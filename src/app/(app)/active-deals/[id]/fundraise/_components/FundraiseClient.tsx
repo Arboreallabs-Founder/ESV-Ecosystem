@@ -17,6 +17,8 @@ import type {
 } from '@/lib/types'
 import { formatDateTimeIst } from '@/lib/format-datetime'
 import { WikiButton } from '@/app/_components/WikiPanel'
+import AutomaticTasks from '@/app/_components/AutomaticTasks'
+import type { AutomaticTask } from '@/lib/automatic-tasks-shared'
 import styles from '../fundraise.module.css'
 
 /**
@@ -30,7 +32,7 @@ import styles from '../fundraise.module.css'
  * and stops being true the moment anything moves.
  */
 export default function FundraiseClient({
-  list, dealId, dealName, companySector, pendingApproved, investorListId,
+  list, dealId, dealName, companySector, pendingApproved, investorListId, automaticTasks,
 }: {
   list: FundraiseList | null
   dealId: string
@@ -39,6 +41,8 @@ export default function FundraiseClient({
   /** Funds the founder approved that are not on the list yet. */
   pendingApproved: number
   investorListId: string | null
+  /** Raised by the statuses on this mandate. Nobody owns one until it has sat a week. */
+  automaticTasks: AutomaticTask[]
 }) {
   const router = useRouter()
   const [openEntry, setOpenEntry] = useState<string | null>(null)
@@ -201,6 +205,10 @@ export default function FundraiseClient({
               </button>
             )}
           </section>
+
+          {/* What the statuses have asked for. Above the funds because it is the work, and the
+              list below is the reference. */}
+          <AutomaticTasks tasks={automaticTasks} title="What needs doing" />
 
           {/* Where the mandate stands, in one line. */}
           {entries.length > 0 && (

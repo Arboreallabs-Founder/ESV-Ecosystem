@@ -1,0 +1,85 @@
+/* Automatic Tasks. Nobody owns one, so the row leads with the work rather than with a face. */
+
+.block {
+  padding: 1.125rem 1.25rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+}
+
+.head { display: flex; align-items: center; gap: 0.5rem; }
+.title { font-size: 1rem; font-weight: 700; color: var(--color-text); }
+.count {
+  padding: 0.0625rem 0.5rem; border-radius: 100px;
+  background: var(--color-primary-light); color: var(--color-primary);
+  font-size: 0.6875rem; font-weight: 700;
+}
+.sub {
+  margin: 0.375rem 0 0.875rem;
+  font-size: 0.8125rem; line-height: 1.55; color: var(--color-muted);
+  max-width: 74ch;
+}
+
+.list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.task {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; flex-wrap: wrap;
+  padding: 0.75rem 0.9rem;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.taskMain { flex: 1; min-width: 0; }
+/* break-word: a title carries a fund name, which has word boundaries. */
+.taskTitle { font-size: 0.875rem; font-weight: 600; color: var(--color-text); overflow-wrap: break-word; }
+
+.taskMeta {
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  margin-top: 0.3125rem; font-size: 0.75rem; color: var(--color-muted);
+}
+
+.ruleTag {
+  padding: 0.0625rem 0.4rem; border-radius: 100px;
+  background: var(--color-card-raised); border: 1px solid var(--color-border);
+  font-size: 0.625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+}
+
+.due { white-space: nowrap; }
+.dueLate { color: #C0392B; font-weight: 600; white-space: nowrap; }
+
+.link { color: var(--color-primary); text-decoration: none; font-weight: 600; overflow-wrap: break-word; }
+.link:hover { text-decoration: underline; }
+
+.owner { display: inline-flex; align-items: center; gap: 0.3125rem; }
+.escalated {
+  padding: 0.0625rem 0.375rem; border-radius: 100px;
+  background: rgba(213, 174, 143, 0.28); color: #8a5a2b;
+  font-size: 0.5625rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;
+}
+
+.taskActions { display: flex; gap: 0.375rem; flex-shrink: 0; }
+
+.ghostBtn, .doneBtn {
+  padding: 0.3125rem 0.7rem; border-radius: var(--radius-sm);
+  font-family: inherit; font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; line-height: 1.4;
+  display: inline-flex; align-items: center;
+}
+.ghostBtn { background: none; border: 1px solid var(--color-border); color: var(--color-muted); }
+.ghostBtn:hover { color: var(--color-text); }
+.doneBtn { background: var(--color-primary); border: 1px solid var(--color-primary); color: #fff; }
+.doneBtn:disabled { opacity: 0.5; cursor: default; }
+
+.commentRow { display: flex; gap: 0.5rem; width: 100%; margin-top: 0.5rem; }
+.input {
+  flex: 1; min-width: 0;
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  background: var(--color-card); color: var(--color-text);
+  font-family: inherit; font-size: 0.8125rem;
+}
+.input:focus { outline: none; border-color: var(--color-primary); }
+
+.empty { font-size: 0.8125rem; color: var(--color-muted); font-style: italic; }
