@@ -472,6 +472,33 @@ export const INVESTMENT_STAGE_LABELS: Record<InvestmentStage, string> = {
 export const CONNECT_STRENGTHS = ['warm', 'cold', 'unknown'] as const
 export type ConnectStrength = typeof CONNECT_STRENGTHS[number]
 
+/**
+ * What the investors *list* needs, and nothing else.
+ *
+ * The full record is ~33 columns plus every contact; across 430 funds that is 660 KB to draw cards
+ * showing a name, a country, some tags and a ticket range. The drawer fetches the rest for the one
+ * investor it is actually showing.
+ *
+ * `contacts` is here only so the POC-coverage badge can be computed, so it carries the one field
+ * pocCoverage() reads rather than the twenty a contact has.
+ */
+export type InvestorListItem = {
+  id: string
+  name: string
+  country: string | null
+  sectors: string[]
+  service_type: ServiceType
+  stage: string | null
+  ticket_size_min: number | null
+  ticket_size_max: number | null
+  ticket_currency: 'INR' | 'USD' | null
+  logo_url: string | null
+  esv_poc: { name: string } | null
+  esv_pocs: Array<{ id: string; name: string; photo_url: string | null }>
+  referred_by_partner: { name: string } | null
+  contacts: Array<{ id: string; employment_status: PocEmployment }>
+}
+
 export type Investor = {
   id: string
   name: string

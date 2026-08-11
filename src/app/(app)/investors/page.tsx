@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
-import { fetchAllInvestors } from '@/lib/investors'
+import { fetchInvestorsForList } from '@/lib/investors'
 import { fetchMyInvestorReferrals } from '@/lib/partner-companies'
 import { createClient } from '@/lib/supabase/server'
 import InvestorGrid from './_components/InvestorGrid'
 
 export default async function InvestorsPage() {
-  const [user, investors] = await Promise.all([getUser(), fetchAllInvestors()])
+  const [user, investors] = await Promise.all([getUser(), fetchInvestorsForList()])
   if (!user) redirect('/login')
   if (!['founder', 'admin', 'associate', 'franchise_partner', 'general', 'hr'].includes(user.role ?? '')) redirect('/login')
 

@@ -1,6 +1,6 @@
 'use client'
 
-import type { Investor, ServiceType } from '@/lib/types'
+import type { InvestorListItem, ServiceType } from '@/lib/types'
 import { formatTicketRange } from '@/lib/format-money'
 import { pocCoverage, POC_COVERAGE_LABELS, SERVICE_TYPE_LABELS } from '@/lib/types'
 import { countryFlagCode } from '@/lib/countries'
@@ -75,7 +75,7 @@ const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
   merchant_bank: '#6b4226',
 }
 
-export default function InvestorCard({ investor, onClick }: { investor: Investor; onClick: () => void }) {
+export default function InvestorCard({ investor, onClick }: { investor: InvestorListItem; onClick: () => void }) {
   const coverage = pocCoverage(investor.contacts)
   const ticket = formatTicketRange(investor.ticket_size_min, investor.ticket_size_max, investor.ticket_currency)
   const visibleSectors = investor.sectors.slice(0, 3)

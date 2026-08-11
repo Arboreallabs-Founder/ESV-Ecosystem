@@ -1,58 +1,43 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { Investor, InvestorEditLogEntry } from './types'
+import type { Investor, InvestorListItem, InvestorEditLogEntry } from './types'
 
-export const fetchAllInvestors = cache(async (): Promise<Investor[]> => {
+/**
+ * The investors list.
+ *
+ * Only the columns the cards, the search, the tabs and the POC badge actually read. The full
+ * record — notes, business types, onboarding, every contact — is fetched by the drawer for the one
+ * investor being looked at, which is the only time it is needed.
+ *
+ * This was one query returning everything: 660 KB and ~1.4s for 430 funds, of which the contacts
+ * sub-select alone was 251 KB.
+ */
+export const fetchInvestorsForList = cache(async (): Promise<InvestorListItem[]> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('investors')
     .select(`
-      id, name, country, website, sectors, business_types, meta_tags, service_type,
-      esv_poc_id, ticket_size_min, ticket_size_max, stage,
-      referred_by_partner_id, created_by, created_at, username,
-      onboarding_form_completed, onboarding_form_url, kyc_done,
-      birthday_md, birthday_year,
-      excluded_sectors, connect_strength, stage_min, stage_max, stage_raw,
-      ticket_currency, esv_poc_names, import_source,
-      poc_search_task_id, poc_search_started_at, notes, logo_url,
+      id, name, country, sectors, service_type, stage,
+      ticket_size_min, ticket_size_max, ticket_currency, logo_url,
       esv_poc:users!esv_poc_id(name),
       esv_pocs:investor_poc_users(user:users(id, name, photo_url)),
       referred_by_partner:franchise_partners!referred_by_partner_id(name),
-      contacts:investor_contacts(
-        id, investor_id, name, role, linkedin_url, linkedin_status,
-        phone, email, sort_order, created_at,
-        rank, employment_status, new_company, new_designation, audit_note,
-        last_verified_at, contacted_by_user_id, contacted_by_name, contact_method
-      )
+      contacts:investor_contacts(id, employment_status)
     `)
     .order('created_at', { ascending: false })
 
+  const one = <T,>(v: T | T[] | null | undefined) => (Array.isArray(v) ? v[0] ?? null : v ?? null)
   return (data ?? []).map((row: any) => ({
     ...row,
     sectors: row.sectors ?? [],
-    business_types: row.business_types ?? [],
-    meta_tags: row.meta_tags ?? [],
-    excluded_sectors: row.excluded_sectors ?? [],
-    connect_strength: row.connect_strength ?? 'unknown',
-    esv_poc_names: row.esv_poc_names ?? [],
-    onboarding_form_completed: row.onboarding_form_completed ?? false,
-    onboarding_form_url: row.onboarding_form_url ?? null,
-    kyc_done: row.kyc_done ?? false,
-    birthday_md: row.birthday_md ?? null,
-    birthday_year: row.birthday_year ?? null,
-    esv_poc: Array.isArray(row.esv_poc) ? (row.esv_poc[0] ?? null) : (row.esv_poc ?? null),
-    esv_pocs: (row.esv_pocs ?? []).map((p: any) => {
-      const user = Array.isArray(p.user) ? p.user[0] : p.user
-      return { id: user?.id, name: user?.name }
-    }).filter((p: any) => p.id),
-    referred_by_partner: Array.isArray(row.referred_by_partner)
-      ? (row.referred_by_partner[0] ?? null)
-      : (row.referred_by_partner ?? null),
-    contacts: (row.contacts ?? []).sort((a: any, b: any) => a.sort_order - b.sort_order),
-  })) as Investor[]
+    esv_poc: one(row.esv_poc),
+    esv_pocs: (row.esv_pocs ?? []).map((p: any) => one(p.user)).filter(Boolean),
+    referred_by_partner: one(row.referred_by_partner),
+    contacts: row.contacts ?? [],
+  })) as InvestorListItem[]
 })
 
-// Founder/admin-only audit trail of investor edits (RLS restricts the SELECT to those roles).
+/** Who changed what on an investor. Capped at 500 — it is a recent-activity view, not an archive. */
 export const fetchInvestorEditLog = cache(async (): Promise<InvestorEditLogEntry[]> => {
   const supabase = await createClient()
   const { data } = await supabase
@@ -66,9 +51,9 @@ export const fetchInvestorEditLog = cache(async (): Promise<InvestorEditLogEntry
 /**
  * One investor, with contacts and portfolio, for the profile page.
  *
- * Separate from fetchAllInvestors rather than reusing it: the list does not need the portfolio,
- * and pulling every investor to render one is the kind of thing that is fine at 162 rows and not
- * at 436.
+ * Separate from the list query rather than reusing it: the list does not need the portfolio, and
+ * pulling every investor to render one is the kind of thing that is fine at 162 rows and not at
+ * 430.
  */
 export const fetchInvestor = cache(async (id: string): Promise<Investor | null> => {
   const supabase = await createClient()

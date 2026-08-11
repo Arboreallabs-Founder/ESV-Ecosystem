@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireRole } from '@/lib/guards'
 import { createClient } from '@/lib/supabase/server'
 import { parseInvestorsCsv } from '@/lib/investors-csv'
-import type { InvestorContact, InvestorPortfolioItem } from '@/lib/types'
+import type { Investor, InvestorContact, InvestorPortfolioItem } from '@/lib/types'
 
 type ContactDraft = {
   name: string
@@ -424,4 +424,57 @@ export async function deleteContact(contactId: string): Promise<void> {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('investor_contacts').delete().eq('id', contactId)
   if (error) throw error
+}
+
+/**
+ * One investor, in full, for the detail drawer.
+ *
+ * The list no longer carries the whole record — 430 funds x 33 columns plus every contact was
+ * 660 KB to draw cards. The drawer needs all of it, but only for the one investor being looked at,
+ * so it asks when it opens.
+ *
+ * RLS scopes the row: a partner reading this gets a fund credited to them or nothing at all.
+ */
+export async function getInvestorFull(investorId: string): Promise<Investor | null> {
+  const { supabase } = await requireRole(['founder', 'admin', 'associate', 'hr', 'franchise_partner'])
+  const { data } = await supabase
+    .from('investors')
+    .select(`
+      id, name, country, website, sectors, business_types, meta_tags, service_type,
+      esv_poc_id, ticket_size_min, ticket_size_max, stage,
+      referred_by_partner_id, created_by, created_at, username,
+      onboarding_form_completed, onboarding_form_url, kyc_done,
+      birthday_md, birthday_year,
+      excluded_sectors, connect_strength, stage_min, stage_max, stage_raw,
+      ticket_currency, esv_poc_names, import_source,
+      poc_search_task_id, poc_search_started_at, notes, logo_url,
+      esv_poc:users!esv_poc_id(name),
+      esv_pocs:investor_poc_users(user:users(id, name, photo_url)),
+      referred_by_partner:franchise_partners!referred_by_partner_id(name),
+      contacts:investor_contacts(
+        id, investor_id, name, role, linkedin_url, linkedin_status,
+        phone, email, sort_order, created_at,
+        rank, employment_status, new_company, new_designation, audit_note,
+        last_verified_at, contacted_by_user_id, contacted_by_name, contact_method
+      )
+    `)
+    .eq('id', investorId)
+    .maybeSingle()
+
+  if (!data) return null
+  const row = data as any
+  const one = <T,>(v: T | T[] | null | undefined) => (Array.isArray(v) ? v[0] ?? null : v ?? null)
+  return {
+    ...row,
+    sectors: row.sectors ?? [],
+    business_types: row.business_types ?? [],
+    meta_tags: row.meta_tags ?? [],
+    excluded_sectors: row.excluded_sectors ?? [],
+    esv_poc: one(row.esv_poc),
+    esv_pocs: (row.esv_pocs ?? []).map((p: any) => one(p.user)).filter(Boolean),
+    referred_by_partner: one(row.referred_by_partner),
+    contacts: (row.contacts ?? []).sort(
+      (a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+    ),
+  } as Investor
 }

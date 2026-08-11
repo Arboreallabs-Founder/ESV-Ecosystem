@@ -1,9 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { pocCoverage, SERVICE_TYPE_LABELS } from '@/lib/types'
-import type { PartnerInvestorReferral, Investor, ServiceType } from '@/lib/types'
+import type { PartnerInvestorReferral, Investor, InvestorListItem, ServiceType } from '@/lib/types'
 import InvestorCard from './InvestorCard'
 import InvestorDetail from './InvestorDetail'
 import InvestorFormModal from './InvestorFormModal'
@@ -12,9 +12,13 @@ import FilterTabs from '@/app/_components/FilterTabs'
 import styles from '../investors.module.css'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import ReferInvestorPanel from './ReferInvestorPanel'
+import InvestorDetailSkeleton from './InvestorDetailSkeleton'
+import { getInvestorFull } from '@/app/actions/investors'
+import { alertError } from '@/lib/client-errors'
 
 type Props = {
-  investors: Investor[]
+  /** The lean projection. The drawer asks for the full record when it opens. */
+  investors: InvestorListItem[]
   userRole: string
   canManage?: boolean
   internalUsers: Array<{ id: string; name: string }>
@@ -40,12 +44,16 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
   const isPartner = userRole === 'franchise_partner'
   const [activeTab, setActiveTab] = useState<Tab>('all')
   const [search, setSearch] = useState('')
+  // The id is what a click gives us; the record is fetched. Holding both means the drawer can
+  // open immediately with a skeleton rather than waiting for a round trip before anything happens.
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selected, setSelected] = useState<Investor | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [editTarget, setEditTarget] = useState<Investor | null>(null)
   // Off by default. It is a work queue, not a lens you want on every time you open the page.
   const [needsPocOnly, setNeedsPocOnly] = useState(false)
+  const [, startDetail] = useTransition()
 
   // Biggest groups first: the tab you want is usually the one with the most in it.
   const presentTabs = useMemo(() => {
@@ -80,6 +88,26 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
     return tab === 'all'
       ? investors.length
       : investors.filter((i) => i.service_type === tab).length
+  }
+
+  function openDetail(id: string) {
+    setSelectedId(id)
+    setSelected(null)
+    startDetail(async () => {
+      try {
+        const full = await getInvestorFull(id)
+        // Ignore a response for an investor the user has already clicked away from.
+        setSelected((prev) => (full && full.id === id ? full : prev))
+      } catch (err) {
+        alertError(err)
+        setSelectedId(null)
+      }
+    })
+  }
+
+  function closeDetail() {
+    setSelectedId(null)
+    setSelected(null)
   }
 
   function openCreate() {
@@ -152,19 +180,23 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
       ) : (
         <div className={styles.grid}>
           {filtered.map((inv) => (
-            <InvestorCard key={inv.id} investor={inv} onClick={() => setSelected(inv)} />
+            <InvestorCard key={inv.id} investor={inv} onClick={() => openDetail(inv.id)} />
           ))}
         </div>
       )}
 
-      {/* Detail drawer */}
-      {selected && (
-        <InvestorDetail
-          investor={selected}
-          userRole={userRole}
-          onClose={() => setSelected(null)}
-          onDeleted={() => setSelected(null)}
-        />
+      {/* Detail drawer. Opens on the click and fills in when the record lands. */}
+      {selectedId && (
+        selected
+          ? (
+            <InvestorDetail
+              investor={selected}
+              userRole={userRole}
+              onClose={closeDetail}
+              onDeleted={closeDetail}
+            />
+          )
+          : <InvestorDetailSkeleton onClose={closeDetail} />
       )}
 
       {/* Create / Edit modal */}
