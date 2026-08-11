@@ -126,3 +126,45 @@ export const fetchMySubmissions = cache(async (): Promise<PartnerSubmission[]> =
     stage: Array.isArray(r.stage) ? r.stage[0] ?? null : r.stage ?? null,
   }))
 })
+
+/** The one form partners issue links from, and this partner's own links. */
+export const fetchPartnerForm = cache(async () => {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('forms')
+    .select('id, title, published, links:form_links(id, token, label, created_by, created_at)')
+    .eq('is_partner_form', true)
+    .maybeSingle()
+  if (error) {
+    console.error('[partner-intake] form read failed:', error.message)
+    return null
+  }
+  return data as { id: string; title: string; published: boolean; links: Array<{ id: string; token: string; label: string | null; created_by: string; created_at: string }> } | null
+})
+
+/**
+ * The partner pipeline's entries for the SGP Desk — the whole queue, not one partner's.
+ *
+ * Same rows the partner sees on their own card; RLS is what makes one query serve both.
+ */
+export const fetchPartnerQueue = cache(async () => {
+  const supabase = await createClient()
+  const { data: pipeline } = await supabase
+    .from('pipelines').select('id').eq('is_partner_intake', true).maybeSingle()
+  if (!pipeline) return []
+  const { data, error } = await supabase
+    .from('pipeline_entries')
+    .select('id, title, submitted_at, partner_notes, submitter_name, submitter_email, sourced_by_partner_id, partner:franchise_partners!sourced_by_partner_id(name), stage:pipeline_stages!stage_id(id, name, position, stage_type)')
+    .eq('pipeline_id', pipeline.id)
+    .order('submitted_at', { ascending: false })
+  if (error) {
+    console.error('[partner-intake] queue read failed:', error.message)
+    return []
+  }
+  const one = <T,>(v: T | T[] | null) => (Array.isArray(v) ? v[0] ?? null : v ?? null)
+  return (data ?? []).map((r: any) => ({
+    ...r,
+    partner: one(r.partner),
+    stage: one(r.stage),
+  }))
+})

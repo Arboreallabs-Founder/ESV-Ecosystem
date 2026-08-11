@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
-import { submitCompanyToPipeline } from '@/app/actions/partner-companies'
+import { getOrCreateMyReferralLink, submitCompanyToPipeline } from '@/app/actions/partner-companies'
 import { SGP_INTAKE_ACTION_LABELS } from '@/lib/types'
 import type { UserRow } from '@/lib/types'
 import type { PartnerSubmission } from '@/lib/partner-companies'
@@ -20,8 +21,10 @@ function stageClass(t: string | undefined) {
 
 
 export default function MyCompaniesClient({
-  submissions, coordinators, stages, pipelineReady,
+  submissions, coordinators, stages, pipelineReady, formReady, myLinkToken,
 }: {
+  formReady: boolean
+  myLinkToken: string | null
   submissions: PartnerSubmission[]
   stages: Array<{ id: string; name: string; stage_type: string; color: string | null }>
   pipelineReady: boolean
@@ -29,6 +32,18 @@ export default function MyCompaniesClient({
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [token, setToken] = useState(myLinkToken)
+  const [copied, setCopied] = useState(false)
+  const [linkPending, startLink] = useTransition()
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+
+  async function copy(text: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1600)
+    } catch { /* clipboard blocked — the link is on screen either way */ }
+  }
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -151,6 +166,40 @@ export default function MyCompaniesClient({
             </button>
           </div>
         </form>
+      )}
+
+      {/* The partner's own link. One per partner, always on the partner form, so a referral that
+          arrives this way lands in the same queue as one they type in themselves — and is
+          attributed to them without anyone having to remember to do it. */}
+      {formReady && (
+        <div className={styles.linkBlock}>
+          <div>
+            <div className={styles.linkTitle}>Your referral link</div>
+            <div className={styles.linkSub}>
+              Send this to a company and they can submit themselves. It arrives here credited to
+              you, exactly like one you add above.
+            </div>
+          </div>
+          {token ? (
+            <div className={styles.linkRow}>
+              <code className={styles.linkBox}>{`${origin}/f/${token}`}</code>
+              <button className={styles.linkBtn} onClick={() => copy(`${origin}/f/${token}`)}>
+                {copied ? 'Copied' : 'Copy'}
+              </button>
+            </div>
+          ) : (
+            <button
+              className={styles.linkBtn}
+              disabled={linkPending}
+              onClick={() => startLink(async () => {
+                try { setToken((await getOrCreateMyReferralLink()).token) }
+                catch (err) { alertError(err) }
+              })}
+            >
+              {linkPending ? 'Creating…' : 'Get my link'}
+            </button>
+          )}
+        </div>
       )}
 
       {submissions.length === 0 ? (

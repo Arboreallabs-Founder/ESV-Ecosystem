@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
-import { fetchCoordinators, fetchMySubmissions, fetchPartnerPipeline } from '@/lib/partner-companies'
+import {
+  fetchCoordinators, fetchMySubmissions, fetchPartnerForm, fetchPartnerPipeline,
+} from '@/lib/partner-companies'
 import MyCompaniesClient from './_components/MyCompaniesClient'
 
 /**
@@ -21,11 +23,16 @@ export default async function MyCompaniesPage() {
     redirect('/dashboard')
   }
 
-  const [submissions, coordinators, pipeline] = await Promise.all([
+  const [submissions, coordinators, pipeline, form] = await Promise.all([
     fetchMySubmissions(),
     fetchCoordinators(),
     fetchPartnerPipeline(),
+    fetchPartnerForm(),
   ])
+
+  // A partner's own link, if they have already made one. Creating it is a click rather than
+  // automatic — most partners submit on their own behalf and never need one.
+  const myLink = (form?.links ?? []).find((l) => l.created_by === user.id)?.token ?? null
 
   return (
     <MyCompaniesClient
@@ -33,6 +40,8 @@ export default async function MyCompaniesPage() {
       coordinators={coordinators}
       stages={pipeline?.stages ?? []}
       pipelineReady={Boolean(pipeline)}
+      formReady={Boolean(form?.published)}
+      myLinkToken={myLink}
     />
   )
 }

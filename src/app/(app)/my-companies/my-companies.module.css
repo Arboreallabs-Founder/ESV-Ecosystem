@@ -222,3 +222,60 @@
   .header { align-items: stretch; }
   .primaryBtn { width: 100%; }
 }
+
+/* ── The partner's referral link ──────────────────────────────────────────
+   One per partner, on the one partner form. Sits above their submissions because it is the
+   thing they hand out; the list below is what came back. */
+.linkBlock {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  padding: 0.9rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-card);
+}
+.linkTitle { font-size: 0.9375rem; font-weight: 600; color: var(--color-text); }
+.linkSub { margin-top: 0.2rem; font-size: 0.75rem; line-height: 1.55; color: var(--color-muted); max-width: 60ch; }
+
+.linkRow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.linkBox {
+  padding: 0.4rem 0.65rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  font-size: 0.75rem;
+  color: var(--color-text);
+  overflow-x: auto;
+  white-space: nowrap;
+  max-width: 340px;
+}
+.linkBtn {
+  padding: 0.45rem 1rem;
+  border: 1.5px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-primary);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.linkBtn:hover { background: rgba(var(--color-hover-rgb), 0.08); }
+.linkBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Stage strip on each submission — where it sits in the run, not just its name. */
+.step, .stepDone, .stepNow {
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.step { background: rgba(163, 155, 149, 0.14); color: var(--color-muted); }
+.stepDone { background: rgba(46, 125, 50, 0.12); color: var(--color-success); }
+.stepNow { background: var(--color-primary); color: #fff; }

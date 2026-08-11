@@ -333,3 +333,31 @@
   .modal { padding: 1.25rem 1.125rem; }
   .cardSource { width: 100%; }
 }
+
+/* ── The pipeline this desk works ─────────────────────────────────────────
+   The Desk decides what happens; the board is where the stage moves and where the partner's
+   view is read from. Saying so here stops the two being treated as separate systems. */
+.pipelineBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.25rem;
+  padding: 0.85rem 1rem;
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: rgba(var(--color-hover-rgb), 0.07);
+}
+.pipelineTitle { font-size: 0.9375rem; font-weight: 600; color: var(--color-text); }
+.pipelineSub { margin-top: 0.2rem; font-size: 0.75rem; line-height: 1.55; color: var(--color-muted); max-width: 64ch; }
+.pipelineBtn {
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}

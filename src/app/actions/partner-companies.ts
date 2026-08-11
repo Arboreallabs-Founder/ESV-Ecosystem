@@ -279,3 +279,43 @@ export async function submitCompanyToPipeline(input: {
   revalidatePath('/pipelines')
   return { id: data.id as string }
 }
+
+/**
+ * A partner's own referral link.
+ *
+ * Always on the partner form — the RLS policy refuses any other form_id, so this cannot be pointed
+ * at an internal pipeline even by mistake. Idempotent: a partner gets one link and keeps it, rather
+ * than accumulating a drawer of them that all do the same thing.
+ */
+export async function getOrCreateMyReferralLink(): Promise<{ token: string }> {
+  const { supabase, userId } = await requireRole(['franchise_partner', 'founder', 'admin', 'associate'])
+
+  const { data: form, error: fErr } = await supabase
+    .from('forms').select('id, published').eq('is_partner_form', true).maybeSingle()
+  if (fErr) throw fErr
+  if (!form) throw new Error('No partner form exists yet. Ask an admin to set one up.')
+  if (!form.published) {
+    // A link to an unpublished form returns an error to whoever opens it, which reads to the
+    // recipient as us being broken.
+    throw new Error('The partner form is unpublished, so a link would not work. Ask an admin to publish it.')
+  }
+
+  const { data: existing } = await supabase
+    .from('form_links')
+    .select('token')
+    .eq('form_id', form.id)
+    .eq('created_by', userId)
+    .limit(1)
+    .maybeSingle()
+  if (existing) return { token: existing.token as string }
+
+  const { data: me } = await supabase.from('users').select('name').eq('id', userId).single()
+  const { data, error } = await supabase
+    .from('form_links')
+    .insert({ form_id: form.id, created_by: userId, label: me?.name ? `${me.name} — referrals` : 'Partner referrals' })
+    .select('token')
+    .single()
+  if (error) throw error
+  revalidatePath('/my-companies')
+  return { token: data.token as string }
+}
