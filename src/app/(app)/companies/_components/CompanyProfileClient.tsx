@@ -44,9 +44,11 @@ const FUNDING_ROUND_PALETTE = [
 
 // ── Generic scalar-fields edit modal ──────────────────────────────────────────
 function EditFieldsModal({
-  title, company, specs, team, onClose, onSaved,
+  title, company, specs, team, partners, onClose, onSaved,
 }: {
-  title: string; company: Company; specs: Spec[]; team: Team; onClose: () => void; onSaved: () => void
+  title: string; company: Company; specs: Spec[]; team: Team
+  partners: Array<{ id: string; name: string }>
+  onClose: () => void; onSaved: () => void
 }) {
   const [form, setForm] = useState<Record<string, string>>(() => {
     const f: Record<string, string> = {}
@@ -74,7 +76,7 @@ function EditFieldsModal({
         <div className={styles.modalHead}><h2 className={styles.modalTitle}>{title}</h2><button className={styles.closeBtn} onClick={onClose}>×</button></div>
         <div className={styles.modalBody}>
           {specs.map((s) => (
-            <SpecField key={s.key as string} spec={s} value={form[s.key as string] ?? ''} onChange={(v) => set(s.key as string, v)} team={team} />
+            <SpecField key={s.key as string} spec={s} value={form[s.key as string] ?? ''} onChange={(v) => set(s.key as string, v)} team={team} partners={partners} />
           ))}
           {error && <div className={styles.errBox}>{error}</div>}
         </div>
@@ -115,10 +117,11 @@ export default function CompanyProfileClient({
 }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
-  const [referringPartner, setReferringPartner] = useState<string | null>(
-    (company as unknown as { referred_by_partner_id?: string | null }).referred_by_partner_id ?? null,
-  )
-  const [creditPending, startCredit] = useTransition()
+  const referringPartnerId =
+    (company as unknown as { referred_by_partner_id?: string | null }).referred_by_partner_id ?? null
+  const referringPartnerName = referringPartnerId
+    ? franchisePartners.find((fp) => fp.id === referringPartnerId)?.name ?? null
+    : null
   const [cardPending, startCard] = useTransition()
   const [modal, setModal] = useState<null | 'overview' | 'traction' | 'raise' | 'product' | 'founders' | 'team' | 'captable'>(null)
   const [showDealModal, setShowDealModal] = useState(false)
@@ -138,7 +141,15 @@ export default function CompanyProfileClient({
   }
 
   const modalSpecs: Record<string, { title: string; specs: Spec[] }> = {
-    overview: { title: 'Overview', specs: OVERVIEW_SPECS },
+    // "Referred by partner" is only offered to the people who decide it — founders, admins and
+    // SGP coordinators. Everyone else edits the same section without it rather than seeing a
+    // control that writes a fee-relevant fact they were not asked to set.
+    overview: {
+      title: 'Overview',
+      specs: canCreditPartner
+        ? OVERVIEW_SPECS
+        : OVERVIEW_SPECS.filter((sp) => sp.key !== 'referred_by_partner_id'),
+    },
     traction: { title: 'Traction & metrics', specs: TRACTION_SPECS },
     raise: { title: 'Current raise', specs: RAISE_SPECS },
     product: { title: 'Product', specs: PRODUCT_SPECS },
@@ -166,31 +177,13 @@ export default function CompanyProfileClient({
             {company.sectors.map((s) => <span key={s} className={styles.metaChip}>{s}</span>)}
             {company.esv_poc?.name && <span>POC: {company.esv_poc.name}</span>}
           </div>
-          {/* Who introduced them.
-              A partner who brings us a company we already have on file should not re-enter it as a
-              submission — that is a duplicate record and a second claim on one relationship. Tagging
-              the existing record credits them instead, and puts the company on their My Companies. */}
-          {canCreditPartner && (
-            <label className={styles.creditRow}>
-              <span className={styles.creditLabel}>Referred by partner</span>
-              <select
-                className={styles.creditSelect}
-                value={referringPartner ?? ''}
-                disabled={creditPending}
-                onChange={(e) => {
-                  const next = e.target.value || null
-                  const before = referringPartner
-                  setReferringPartner(next)
-                  startCredit(async () => {
-                    try { await setCompanyReferringPartner(company.id, next) }
-                    catch (err) { setReferringPartner(before); alertError(err) }
-                  })
-                }}
-              >
-                <option value="">Not partner-sourced</option>
-                {franchisePartners.map((fp) => <option key={fp.id} value={fp.id}>{fp.name}</option>)}
-              </select>
-            </label>
+          {/* Who introduced them, as a fact. It is set in Edit → Overview so there is one writer
+              for the column rather than two controls on screen drifting apart. */}
+          {referringPartnerName && (
+            <div className={styles.creditRow}>
+              <span className={styles.creditLabel}>Referred by</span>
+              <span className={styles.creditValue}>{referringPartnerName}</span>
+            </div>
           )}
         </div>
         <div className={styles.headActions}>
@@ -354,7 +347,7 @@ export default function CompanyProfileClient({
 
       {/* Modals */}
       {modal && modalSpecs[modal] && (
-        <EditFieldsModal title={modalSpecs[modal].title} company={company} specs={modalSpecs[modal].specs} team={teamMembers} onClose={() => setModal(null)} onSaved={refresh} />
+        <EditFieldsModal title={modalSpecs[modal].title} company={company} specs={modalSpecs[modal].specs} team={teamMembers} partners={franchisePartners} onClose={() => setModal(null)} onSaved={refresh} />
       )}
       {modal === 'founders' && <PeopleModal title="Founders" kind="founders" company={company} onClose={() => setModal(null)} onSaved={refresh} />}
       {modal === 'team' && <PeopleModal title="Team" kind="team" company={company} onClose={() => setModal(null)} onSaved={refresh} />}

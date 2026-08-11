@@ -10,7 +10,7 @@ import Combobox from '@/app/_components/Combobox'
 import TagSelect from '@/app/_components/TagSelect'
 import styles from '../companies.module.css'
 
-export type FieldType = 'text' | 'number' | 'percent' | 'textarea' | 'date' | 'tags' | 'status' | 'user' | 'country'
+export type FieldType = 'text' | 'number' | 'percent' | 'textarea' | 'date' | 'tags' | 'status' | 'user' | 'country' | 'partner'
 export type Spec = {
   key: keyof CompanyPatch; label: string; type?: FieldType; tagOptions?: string[]
   /** Pick-only. Set on sectors: free text is what let three vocabularies grow, and a company
@@ -41,6 +41,10 @@ export const OVERVIEW_SPECS: Spec[] = [
   { key: 'status', label: 'Status', type: 'status' }, { key: 'tags', label: 'Tags', type: 'tags' },
   { key: 'meta_tags', label: 'Meta-tags (themes for investor matching)', type: 'tags', tagOptions: THESIS_TAG_OPTIONS },
   { key: 'esv_poc_id', label: 'ESV point of contact', type: 'user' },
+  // Who introduced them. A partner who brings us a company we already hold should not re-enter it
+  // as a submission — that is a duplicate record and a second claim on one relationship — so we
+  // tag the record we have, and it appears on their My Companies.
+  { key: 'referred_by_partner_id', label: 'Referred by partner', type: 'partner' },
 ]
 export const TRACTION_SPECS: Spec[] = [
   { key: 'arr_inr', label: 'ARR', type: 'number' }, { key: 'mrr_inr', label: 'MRR', type: 'number' }, { key: 'customers_count', label: 'Customers', type: 'number' },
@@ -65,7 +69,10 @@ export const PRODUCT_SPECS: Spec[] = [
 type Team = Array<{ id: string; name: string }>
 
 /** The bare input/select/textarea for one spec — no label. */
-export function SpecInput({ spec, value, onChange, team }: { spec: Spec; value: string; onChange: (v: string) => void; team: Team }) {
+export function SpecInput({ spec, value, onChange, team, partners = [] }: {
+  spec: Spec; value: string; onChange: (v: string) => void; team: Team
+  partners?: Array<{ id: string; name: string }>
+}) {
   if (spec.type === 'textarea') {
     return <textarea className={styles.textarea} value={value} onChange={(e) => onChange(e.target.value)} />
   }
@@ -81,6 +88,14 @@ export function SpecInput({ spec, value, onChange, team }: { spec: Spec; value: 
       <select className={styles.select} value={value} onChange={(e) => onChange(e.target.value)}>
         <option value="">—</option>
         {team.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+      </select>
+    )
+  }
+  if (spec.type === 'partner') {
+    return (
+      <select className={styles.select} value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">Not partner-sourced</option>
+        {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
       </select>
     )
   }
@@ -111,11 +126,14 @@ export function SpecInput({ spec, value, onChange, team }: { spec: Spec; value: 
 }
 
 /** A labelled field: label + input, matching the `.field` layout used across the profile's modals. */
-export function SpecField({ spec, value, onChange, team }: { spec: Spec; value: string; onChange: (v: string) => void; team: Team }) {
+export function SpecField({ spec, value, onChange, team, partners = [] }: {
+  spec: Spec; value: string; onChange: (v: string) => void; team: Team
+  partners?: Array<{ id: string; name: string }>
+}) {
   return (
     <div className={styles.field}>
       <label className={styles.fieldLabel}>{spec.label}{spec.type === 'percent' ? ' (%)' : spec.type === 'tags' && !spec.tagOptions ? ' (comma-separated)' : ''}</label>
-      <SpecInput spec={spec} value={value} onChange={onChange} team={team} />
+      <SpecInput spec={spec} value={value} onChange={onChange} team={team} partners={partners} />
     </div>
   )
 }

@@ -22,6 +22,8 @@ async function requireAdmin() {
 // Editable fields on the master record (subset used by the section editors).
 export type CompanyPatch = Partial<{
   name: string
+  /** The partner who introduced this company; puts it on their My Companies. */
+  referred_by_partner_id: string | null
   legal_name: string | null
   website: string | null
   logo_url: string | null
