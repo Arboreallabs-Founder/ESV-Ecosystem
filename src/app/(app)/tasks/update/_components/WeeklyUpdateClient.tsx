@@ -10,10 +10,18 @@ import Avatar from '@/app/_components/Avatar'
 import styles from '../weekly-update.module.css'
 import AutomaticTasks from '@/app/_components/AutomaticTasks'
 import type { AutomaticTask } from '@/lib/automatic-tasks-shared'
+import HealthBadge from '@/app/_components/HealthBadge'
+import type { MandateHealth } from '@/lib/mandate-health'
 
 type TaskRef = { id: string; title: string }
 /** `update` is empty when nothing has been posted on the deal yet. */
-type MandateRef = { id: string; name: string; update: string }
+type MandateRef = {
+  id: string
+  name: string
+  update: string
+  /** Undefined until a mandate has a fundraise list — the badge simply does not render. */
+  health?: MandateHealth
+}
 
 type AssociateReport = {
   id: string
@@ -29,7 +37,10 @@ type AssociateReport = {
 /** The exact line the WhatsApp message uses for a mandate. Kept in one place so the card and the
     copied text can never drift apart. */
 function mandateLine(m: MandateRef): string {
-  return `${m.name}: ${m.update || '(no update yet)'}`
+  // The health band leads: it is the one word that says whether this mandate needs attention, and
+  // the update after it says why. A score with no context invites arguing with the formula.
+  const health = m.health && m.health.score !== null ? `[${m.health.label}] ` : ''
+  return `${health}${m.name}: ${m.update || '(no update yet)'}`
 }
 
 /**
@@ -94,6 +105,7 @@ function Section({
 
 export default function WeeklyUpdateClient({
   tasks, activeDeals, users, dealUpdates, weekTodos, currentUserId, currentUserRole, automaticTasks,
+  mandateHealth,
 }: {
   tasks: Task[]
   activeDeals: ActiveDeal[]
@@ -105,6 +117,8 @@ export default function WeeklyUpdateClient({
   currentUserRole: string
   /** Unowned by design, so they sit above the per-person cards rather than inside one. */
   automaticTasks: AutomaticTask[]
+  /** activeDealId -> health. Derived from the fundraise entries, so it is never stored anywhere. */
+  mandateHealth: Record<string, MandateHealth>
 }) {
   const [weekOffset, setWeekOffset] = useState(0)
   const founders = useMemo(() => users.filter((u) => ['founder', 'admin'].includes(u.role)), [users])
@@ -144,7 +158,12 @@ export default function WeeklyUpdateClient({
         const open = relevant.filter((t) => t.status !== 'Done').map((t) => ({ id: t.id, title: t.title }))
         const mandates = activeDeals
           .filter((d) => d.deal_state === 'active' && d.entry?.assignees?.some((x) => x.user_id === a.id))
-          .map((d) => ({ id: d.id, name: d.entry?.title ?? 'Untitled', update: dealUpdates[d.id] ?? '' }))
+          .map((d) => ({
+            id: d.id,
+            name: d.entry?.title ?? 'Untitled',
+            update: dealUpdates[d.id] ?? '',
+            health: mandateHealth[d.id],
+          }))
         const personal = weekTodos
           .filter((t) => t.user_id === a.id && t.work_week_start === weekKey)
           .map((t) => ({ title: t.title, done: t.done }))
@@ -312,6 +331,9 @@ export default function WeeklyUpdateClient({
                           <Link href={`/active-deals/${m.id}`} className={styles.mandateLink}>
                             <span className={styles.mandateName}>
                               {m.name}
+                              {/* Compact: the summary sentence is the update line below, so
+                                  repeating it here would say the same thing twice. */}
+                              {m.health && <HealthBadge health={m.health} compact />}
                               <span className={styles.mandateArrow} aria-hidden="true">↗</span>
                             </span>
                             <span className={m.update ? styles.mandateUpdate : styles.mandateNone}>

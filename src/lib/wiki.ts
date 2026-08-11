@@ -524,6 +524,32 @@ export const WIKI: Record<string, WikiSection> = {
     ],
   },
 
+  automaticTasks: {
+    title: 'Automatic tasks',
+    summary: 'Work raised by a fund\'s status rather than typed by someone. Nobody owns one until it has sat a week.',
+    items: [
+      { heading: 'The four rules', body: 'Data requested raises "Send data to X" straight away. Call request raises "Schedule call with X for Y". Diligence sitting more than 10 days raises "Follow up". A deal sent with no reply for 7 days raises "Chase X". All due in 2 days.' },
+      { heading: 'Why the chaser stops at 30 days', body: 'That is where the fund becomes Ghosted. A dead fund generating a task every week is the noise that makes people stop reading the list at all, which costs more than the missed nudge.' },
+      { heading: 'Nobody owns them', body: 'Deliberately. "Send the data" is the mandate\'s job, not one person\'s, so anyone can pick one up. They appear in the Weekly Update and on the mandate\'s own fundraise page rather than on a board.' },
+      { heading: 'Escalation', body: 'Unclaimed for seven days, it becomes the deal assignee\'s and is labelled escalated. An automatic task nobody ever sees on their own board is one nobody does.' },
+      { heading: 'Comment on them', body: 'Most are blocked on something outside the team — the fund has not replied, legal is sitting on the data. Saying so is what stops an untouched task looking like nobody did the work.' },
+      { heading: 'They close themselves', body: 'When the fund moves on, the thing the task asked for has happened, so it is marked Done rather than left to be tidied up.' },
+    ],
+  },
+
+  mandateHealth: {
+    title: 'Mandate health',
+    summary: 'One number and one sentence per mandate, from how far its funds have got and how recently they moved.',
+    items: [
+      { heading: 'How it is worked out', body: 'Each fund scores by depth — deal sent 1, data requested 3, call 4, diligence 6, accepted 10 — multiplied by recency: full weight under 14 days, half to 30, nothing after. The total is divided by the best the mandate could have scored.',
+        snippet: '3 in diligence @ 6d   6 x 1.0  = 18\n5 sent @ 4d           1 x 1.0  =  5\n1 accepted @ 2d      10 x 1.0  = 10\n1 passed              0        =  0\n                                 ----\n              33 / (10 funds x 10) = 33' },
+      { heading: 'Why recency is in it', body: 'A fund that reached diligence three months ago and has not moved is not worth what one that got there last week is. A score that cannot tell them apart stays green while a raise dies.' },
+      { heading: 'Rejections score zero, never negative', body: 'A pass is an answer, and an honest one. Penalising it would make recording a rejection look bad, which is how a status list stops being true.' },
+      { heading: 'Early and Landed', body: 'Ten funds sent last week is Early, not Stalled — nothing has had time to move. A mandate with acceptances and nothing outstanding is Landed, not Thin: it is finished, not failing.' },
+      { heading: 'The sentence matters more', body: '"3 in conversation, 2 gone quiet of 8" is something you can act on this afternoon. The number is there so mandates can be compared, and hovering it explains how it was reached.' },
+    ],
+  },
+
   faq: {
     audience: 'all',
     title: 'FAQ',
@@ -558,8 +584,8 @@ export const WIKI_SECTIONS = Object.keys(WIKI) as Array<keyof typeof WIKI>
 export const WIKI_GROUPS: Array<{ title: string; keys: string[] }> = [
   { title: 'Start here', keys: ['dashboard', 'faq'] },
   { title: 'Deals', keys: ['dealDesk', 'activeDeals', 'dealDetail', 'dealDocuments', 'pipeline', 'pipelines'] },
-  { title: 'Companies & investors', keys: ['companies', 'investors', 'investorProfile', 'investorLists', 'fundraiseStatus'] },
-  { title: 'Your work', keys: ['tasks', 'myTodos', 'recurringTasks', 'taskKpis', 'escalations', 'analytics'] },
+  { title: 'Companies & investors', keys: ['companies', 'investors', 'investorProfile', 'investorLists', 'fundraiseStatus', 'mandateHealth'] },
+  { title: 'Your work', keys: ['tasks', 'automaticTasks', 'myTodos', 'recurringTasks', 'taskKpis', 'escalations', 'analytics'] },
   { title: 'Partners (SGP)', keys: ['partners', 'sgpDesk', 'myCompanies', 'portal', 'earnings', 'partnerDeals', 'partnerInvestors', 'partnerDocuments'] },
   { title: 'Intake forms', keys: ['forms', 'formBuilder'] },
   { title: 'People & HR', keys: ['hr', 'attendance', 'attendanceHr', 'documents'] },

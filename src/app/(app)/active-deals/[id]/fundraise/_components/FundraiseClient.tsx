@@ -18,6 +18,8 @@ import type {
 import { formatDateTimeIst } from '@/lib/format-datetime'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import AutomaticTasks from '@/app/_components/AutomaticTasks'
+import HealthBadge from '@/app/_components/HealthBadge'
+import { mandateHealth } from '@/lib/mandate-health'
 import type { AutomaticTask } from '@/lib/automatic-tasks-shared'
 import styles from '../fundraise.module.css'
 
@@ -68,6 +70,8 @@ export default function FundraiseClient({
   }
 
   const entries = list?.entries ?? []
+  // Derived from the entries on screen, so the number can never disagree with the list under it.
+  const health = mandateHealth(entries)
   const counts = entries.reduce((acc, e) => {
     const s = fundraiseDisplayStatus(e.status, e.status_changed_at)
     acc[s] = (acc[s] ?? 0) + 1
@@ -205,6 +209,11 @@ export default function FundraiseClient({
               </button>
             )}
           </section>
+
+          <div className={styles.healthRow}>
+            <span className={styles.blockTitle}>Mandate health</span>
+            <HealthBadge health={health} />
+          </div>
 
           {/* What the statuses have asked for. Above the funds because it is the work, and the
               list below is the reference. */}

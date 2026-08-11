@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import type { FundraiseList } from '@/lib/types'
+import { mandateHealth, type MandateHealth } from '@/lib/mandate-health'
 
 /**
  * The Fundraise Status List for a deal.
@@ -95,4 +96,28 @@ export const countApprovedNotOnFundraiseList = cache(async (activeDealId: string
   }
 
   return { approved: approvedIds.size, listId: (answered as any).id }
+})
+
+/**
+ * Health for every mandate that has a fundraise list, keyed by active deal.
+ *
+ * One query rather than one per deal: the Weekly Update shows several mandates at once, and a
+ * round trip each is how a page that reads a dozen rows takes a second to render.
+ */
+export const fetchMandateHealth = cache(async (): Promise<Record<string, MandateHealth>> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('fundraise_lists')
+    .select('active_deal_id, entries:fundraise_entries(status, status_changed_at)')
+
+  if (error) {
+    console.error('[fundraise] health read failed:', error.message)
+    return {}
+  }
+
+  const out: Record<string, MandateHealth> = {}
+  for (const row of (data ?? []) as any[]) {
+    out[row.active_deal_id] = mandateHealth(row.entries ?? [])
+  }
+  return out
 })
