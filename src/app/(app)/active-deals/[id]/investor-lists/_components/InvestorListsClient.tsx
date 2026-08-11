@@ -279,20 +279,25 @@ The founder has already answered this list. Their answer will be discarded and c
                     return (
                       <tr key={item.id} className={!item.approved && list.responded_at ? styles.declinedRow : undefined}>
                         <td>
-                          {inv?.logo_url && <img src={inv.logo_url} alt="" className={styles.rowLogo} />}
-                          {inv
-                            ? <Link href={`/investors/${inv.id}`} className={styles.link}>{inv.name}</Link>
-                            : <span className={styles.muted}>Removed</span>}
-                          {inv?.connect_strength === 'warm' && <span className={styles.warm}>Warm</span>}
+                          {/* The name, its logo and the Warm chip in one wrapping row with a
+                              measure on it — three unconstrained things in a table cell is how a
+                              few long names pushed the table past its card. */}
+                          <span className={styles.nameCell}>
+                            {inv?.logo_url && <img src={inv.logo_url} alt="" className={styles.rowLogo} />}
+                            {inv
+                              ? <Link href={`/investors/${inv.id}`} className={styles.link}>{inv.name}</Link>
+                              : <span className={styles.muted}>Removed</span>}
+                            {inv?.connect_strength === 'warm' && <span className={styles.warm}>Warm</span>}
+                          </span>
                         </td>
-                        <td className={styles.muted}>
+                        <td className={`${styles.muted} ${styles.sectorCell}`}>
                           {inv?.sectors.slice(0, 3).join(', ') || '—'}
                           {/* Exclusions belong in front of whoever is choosing, not buried on the profile. */}
                           {inv && inv.excluded_sectors.length > 0 && (
                             <div className={styles.noSectors}>Won&apos;t look at: {inv.excluded_sectors.join(', ')}</div>
                           )}
                         </td>
-                        <td className={styles.muted}>
+                        <td className={`${styles.muted} ${styles.contactCell}`}>
                           {primary
                             ? <>{primary.name}{primary.employment_status === 'moved_on' && <span className={styles.gone}>has left</span>}</>
                             : <span className={styles.warnInline}>No primary contact</span>}

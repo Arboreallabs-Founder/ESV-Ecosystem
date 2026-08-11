@@ -232,3 +232,10 @@
   .card { padding: 1.5rem 1.25rem 2rem; }
   .negRow { flex-wrap: wrap; }
 }
+
+/* A long fund name must wrap inside its row rather than push the checkbox and the website link off
+   the card. break-word, not `anywhere`: names have word boundaries and should break on them. */
+.rowName {
+  overflow-wrap: break-word;
+  min-width: 0;
+}

@@ -362,3 +362,28 @@
   line-height: 1.6;
   color: var(--color-text);
 }
+
+/* ─── Keeping names inside their cell ───────────────────────────────────────
+   A fund name sits in a table cell beside a "Warm" chip, a sector list and a contact name, none of
+   which had any width control. A few long names and the row pushed the table past the card.
+   `break-word`, never `anywhere` — the latter splits "Zephyr Management, L.P." one letter per
+   line, which is the cure being worse than the disease. */
+.overviewTableFix td {
+  overflow-wrap: break-word;
+}
+
+.nameCell {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  /* A flex item defaults to min-content width, so without this the cell refuses to shrink and
+     takes the table with it. */
+  min-width: 0;
+  max-width: 26ch;
+}
+
+.nameCell .link { overflow-wrap: break-word; min-width: 0; }
+
+.sectorCell { max-width: 22ch; overflow-wrap: break-word; }
+.contactCell { max-width: 18ch; overflow-wrap: break-word; }
