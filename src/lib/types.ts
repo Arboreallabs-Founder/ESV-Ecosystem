@@ -857,6 +857,8 @@ export type PartnerDealSummary = {
    * Resolved in the database so a partner and an associate never see different introductions.
    */
   company_share_intro: string | null
+  /** The company's own site — the first link in the share message. */
+  company_website: string | null
   committed_total: number
   commitment_count: number
   assignees: Array<{
@@ -965,7 +967,7 @@ export type ActiveDeal = {
     submitted_at: string
     pipeline_id: string
     company_id?: string | null
-    company?: { id: string; name: string; logo_url: string | null; one_liner?: string | null; share_intro?: string | null } | null
+    company?: { id: string; name: string; logo_url: string | null; one_liner?: string | null; share_intro?: string | null; website?: string | null } | null
     assignees?: Array<{ user_id: string; name: string; photo_url: string | null }>
     sourced_via_partner?: { id: string; name: string } | null
   }

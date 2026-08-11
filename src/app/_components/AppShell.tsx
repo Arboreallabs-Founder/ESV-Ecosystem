@@ -580,14 +580,14 @@ export default function AppShell({
               {sidebarCollapsed ? (
                 /* The rail is ~64px — the full lockup cannot fit, so the symbol stands in. It
                    carries no text, so it needs no per-theme variant. */
-                <img className={styles.brandSymbol} src="/brand/ecosystem-symbol.png" alt="Ecosystem" width={28} height={27} />
+                <img className={styles.brandSymbol} src="/brand/ecosystem-symbol.png" alt="Ecosystem" width={28} height={26} />
               ) : (
                 <>
                   {/* Two files rather than one swapped in JS: the theme is applied to <html> by a
                       beforeInteractive script, so CSS can switch these with no flash and no
                       hydration mismatch. Both are under 10KB. */}
-                  <img className={styles.brandLogoLight} src="/brand/ecosystem-logo.png" alt="Ecosystem" width={180} height={45} />
-                  <img className={styles.brandLogoDark} src="/brand/ecosystem-logo-dark.png" alt="" aria-hidden="true" width={180} height={45} />
+                  <img className={styles.brandLogoLight} src="/brand/ecosystem-logo.png" alt="Ecosystem" width={180} height={47} />
+                  <img className={styles.brandLogoDark} src="/brand/ecosystem-logo-dark.png" alt="" aria-hidden="true" width={180} height={47} />
                 </>
               )}
             </Link>
@@ -883,8 +883,8 @@ export default function AppShell({
             </svg>
           </button>
           <div className={styles.topbarBrand}>
-            <img className={styles.brandLogoLight} src="/brand/ecosystem-logo.png" alt="Ecosystem" width={152} height={38} />
-            <img className={styles.brandLogoDark} src="/brand/ecosystem-logo-dark.png" alt="" aria-hidden="true" width={152} height={38} />
+            <img className={styles.brandLogoLight} src="/brand/ecosystem-logo.png" alt="Ecosystem" width={152} height={40} />
+            <img className={styles.brandLogoDark} src="/brand/ecosystem-logo-dark.png" alt="" aria-hidden="true" width={152} height={40} />
           </div>
           {canHaveTasks && (
             <div className={styles.alertsWrap}>

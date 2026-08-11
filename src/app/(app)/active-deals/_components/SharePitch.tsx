@@ -20,10 +20,12 @@ import styles from '../active-deals.module.css'
  * sending it blind is how a wrong link gets forwarded to forty people.
  */
 export default function SharePitch({
-  companyName, intro, documents, compact = false, companyId, canEditIntro = false,
+  companyName, intro, website, documents, compact = false, companyId, canEditIntro = false,
 }: {
   companyName: string
   intro?: string | null
+  /** The company's own site. Leads the list of material. */
+  website?: string | null
   documents: ActiveDealDocument[]
   /** On a card, where there is room for an icon and not much else. */
   compact?: boolean
@@ -40,7 +42,7 @@ export default function SharePitch({
   const [editing, setEditing] = useState(false)
   const [saving, startSave] = useTransition()
 
-  const message = buildDealPitch({ companyName, intro: editing ? draft : intro, documents })
+  const message = buildDealPitch({ companyName, intro: editing ? draft : intro, website, documents })
   const shareable = hasShareableDocuments(documents)
 
   async function copy() {

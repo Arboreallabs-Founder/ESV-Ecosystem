@@ -34,6 +34,9 @@ AS $$
     -- The written pitch if there is one, the card's one-liner if not. Resolved here so a partner
     -- and an associate looking at the same deal never see different introductions.
     'company_share_intro', COALESCE(NULLIF(btrim(c.share_intro), ''), c.one_liner),
+    -- First link in the share message: the company's own site is where anyone looks first, and
+    -- sending someone to a data room before their homepage is the wrong order.
+    'company_website',     c.website,
     'committed_total',     COALESCE(agg.total, 0),
     'commitment_count',    COALESCE(agg.n, 0),
     'assignees',           COALESCE(ass.list, '[]'::jsonb)
@@ -75,6 +78,7 @@ AS $$
     'company_name',        c.name,
     'company_one_liner',   c.one_liner,
     'company_share_intro', COALESCE(NULLIF(btrim(c.share_intro), ''), c.one_liner),
+    'company_website',     c.website,
     'committed_total',     COALESCE(agg.total, 0),
     'commitment_count',    COALESCE(agg.n, 0),
     'assignees',           COALESCE(ass.list, '[]'::jsonb)

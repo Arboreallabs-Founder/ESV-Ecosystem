@@ -262,6 +262,7 @@ export default function ActiveDealsList({
                           ?? deal.entry?.company?.one_liner
                           ?? summary?.company_share_intro
                           ?? null}
+                        website={deal.entry?.company?.website ?? summary?.company_website ?? null}
                         documents={documentsByDeal[deal.id] ?? []}
                         companyId={deal.entry?.company_id ?? null}
                         canEditIntro={canEditIntro}

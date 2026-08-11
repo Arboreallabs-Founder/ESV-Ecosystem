@@ -24,7 +24,7 @@ import styles from '../active-deals.module.css'
  * row called Deck instead of scanning a feed.
  */
 export default function DealDocuments({
-  dealId, documents, canEdit, isPartner, companyName, intro, canShare, companyId, canEditIntro,
+  dealId, documents, canEdit, isPartner, companyName, intro, website, canShare, companyId, canEditIntro,
 }: {
   dealId: string
   documents: ActiveDealDocument[]
@@ -32,6 +32,7 @@ export default function DealDocuments({
   isPartner: boolean
   companyName: string
   intro?: string | null
+  website?: string | null
   canShare: boolean
   companyId?: string | null
   canEditIntro?: boolean
@@ -80,6 +81,7 @@ export default function DealDocuments({
             <SharePitch
               companyName={companyName}
               intro={intro}
+              website={website}
               documents={documents}
               companyId={companyId}
               canEditIntro={canEditIntro}

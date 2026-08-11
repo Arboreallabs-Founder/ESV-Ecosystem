@@ -583,6 +583,7 @@ export default function ActiveDealPageClient({
             ?? deal.entry?.company?.one_liner
             ?? partnerSummary?.company_share_intro
             ?? null}
+          website={deal.entry?.company?.website ?? partnerSummary?.company_website ?? null}
           companyId={deal.entry?.company_id ?? null}
           canEditIntro={['founder', 'admin', 'associate'].includes(userRole)}
           canShare={userRole !== 'general'}

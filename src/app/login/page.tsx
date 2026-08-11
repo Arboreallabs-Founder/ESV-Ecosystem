@@ -108,8 +108,8 @@ function LoginContent() {
         <div className={styles.logoBlock}>
           {/* The lockup already carries the wordmark and tagline, so the separate text would
               repeat them. Both theme variants ship; CSS picks one. */}
-          <img className={styles.brandLogoLight} src="/brand/ecosystem-logo.png" alt="Ecosystem" width={260} height={65} />
-          <img className={styles.brandLogoDark} src="/brand/ecosystem-logo-dark.png" alt="" aria-hidden="true" width={260} height={65} />
+          <img className={styles.brandLogoLight} src="/brand/ecosystem-logo.png" alt="Ecosystem" width={260} height={68} />
+          <img className={styles.brandLogoDark} src="/brand/ecosystem-logo-dark.png" alt="" aria-hidden="true" width={260} height={68} />
           <span className={styles.tagline}>by Earlyseed Ventures</span>
         </div>
 

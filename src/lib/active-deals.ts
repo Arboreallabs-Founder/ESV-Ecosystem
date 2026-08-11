@@ -8,7 +8,7 @@ type DealCategoryRow = Omit<DealCategory, 'fields'> & { fields?: DealCategoryFie
 type UserNameRow = { name: string | null; photo_url: string | null }
 type EntryAssigneeRow = { user_id: string; user?: UserNameRow | UserNameRow[] | null }
 type PartnerRow = { id: string; name: string }
-type CompanyRefRow = { id: string; name: string; logo_url: string | null; one_liner: string | null; share_intro: string | null }
+type CompanyRefRow = { id: string; name: string; logo_url: string | null; one_liner: string | null; share_intro: string | null; website: string | null }
 type EntryRow = {
   title: string | null
   submitter_name: string | null
@@ -68,7 +68,7 @@ const ACTIVE_DEAL_SELECT = `
   deal_state,
   logo_url,
   visible_to_partners,
-  entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, company_id, company:companies!company_id(id, name, logo_url, one_liner, share_intro), assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
+  entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, company_id, company:companies!company_id(id, name, logo_url, one_liner, share_intro, website), assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
   categories:active_deal_categories(
     category:deal_categories(
       id, name, description, color, created_at,
@@ -101,7 +101,7 @@ function shapeActiveDealRow(row: ActiveDealRow): ActiveDeal {
       submitted_at: entry?.submitted_at ?? row.created_at,
       pipeline_id: entry?.pipeline_id ?? '',
       company_id: entry?.company_id ?? null,
-      company: company ? { id: company.id, name: company.name, logo_url: company.logo_url ?? null, one_liner: company.one_liner ?? null, share_intro: company.share_intro ?? null } : null,
+      company: company ? { id: company.id, name: company.name, logo_url: company.logo_url ?? null, one_liner: company.one_liner ?? null, share_intro: company.share_intro ?? null, website: company.website ?? null } : null,
       assignees: (entry?.assignees ?? []).map((a) => {
         const user = first(a.user)
         return { user_id: a.user_id, name: user?.name ?? 'Unknown', photo_url: user?.photo_url ?? null }
