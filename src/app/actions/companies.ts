@@ -24,6 +24,8 @@ export type CompanyPatch = Partial<{
   name: string
   /** The partner who introduced this company; puts it on their My Companies. */
   referred_by_partner_id: string | null
+  /** Up to 200 characters, used as the introduction when a deal is shared. */
+  share_intro: string | null
   legal_name: string | null
   website: string | null
   logo_url: string | null

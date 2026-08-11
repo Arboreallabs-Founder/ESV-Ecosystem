@@ -1,6 +1,15 @@
 import { DEAL_DOCUMENT_KINDS, DEAL_DOCUMENT_LABELS, type ActiveDealDocument } from '@/lib/types'
 
 /**
+ * How long the introduction may be.
+ *
+ * 200 characters because it is read in a chat window, under a heading and above a list of links.
+ * Long enough for two real sentences; short enough that nobody scrolls past it, which is the same
+ * thing as nobody reading it. Matches the CHECK on companies.share_intro.
+ */
+export const SHARE_INTRO_MAX = 200
+
+/**
  * The message that goes out on WhatsApp about a deal.
  *
  * One builder, used by the deal card and the deal page, because a pitch that reads differently

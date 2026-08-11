@@ -2680,3 +2680,51 @@
 .shareGhost:hover { color: var(--color-text); }
 .sharePrimary { background: #25D366; border: 1px solid #25D366; color: #fff; }
 .sharePrimary:hover { background: #128C4A; border-color: #128C4A; }
+
+/* The introduction, edited where it is noticed. A field only reachable from an edit form three
+   clicks away is a field that stays as the one-liner forever. */
+.shareIntro { margin-bottom: 0.875rem; }
+
+.shareIntroEdit {
+  border: none;
+  background: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.shareIntroEdit:hover { text-decoration: underline; }
+
+.shareIntroBox {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.shareIntroBox:focus { outline: none; border-color: var(--color-primary); }
+
+.shareIntroFoot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.shareIntroCount {
+  margin-right: auto;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}

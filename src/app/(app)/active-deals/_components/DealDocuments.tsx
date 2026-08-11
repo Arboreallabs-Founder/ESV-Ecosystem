@@ -24,7 +24,7 @@ import styles from '../active-deals.module.css'
  * row called Deck instead of scanning a feed.
  */
 export default function DealDocuments({
-  dealId, documents, canEdit, isPartner, companyName, intro, canShare,
+  dealId, documents, canEdit, isPartner, companyName, intro, canShare, companyId, canEditIntro,
 }: {
   dealId: string
   documents: ActiveDealDocument[]
@@ -33,6 +33,8 @@ export default function DealDocuments({
   companyName: string
   intro?: string | null
   canShare: boolean
+  companyId?: string | null
+  canEditIntro?: boolean
 }) {
   const router = useRouter()
   const [adding, setAdding] = useState<DealDocumentKind | null>(null)
@@ -74,7 +76,15 @@ export default function DealDocuments({
           {!isPartner && (
             <span className={styles.docHint}>Links, not uploads — the file stays where it is edited.</span>
           )}
-          {canShare && <SharePitch companyName={companyName} intro={intro} documents={documents} />}
+          {canShare && (
+            <SharePitch
+              companyName={companyName}
+              intro={intro}
+              documents={documents}
+              companyId={companyId}
+              canEditIntro={canEditIntro}
+            />
+          )}
         </div>
       </div>
 

@@ -367,3 +367,20 @@
   font-weight: 600;
   color: var(--color-primary);
 }
+
+/* A character counter and a note on what a field is for, under the input. */
+.fieldCount {
+  display: block;
+  text-align: right;
+  font-size: 0.6875rem;
+  color: var(--color-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.fieldHint {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+}

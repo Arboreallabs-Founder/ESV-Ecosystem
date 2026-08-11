@@ -1,6 +1,7 @@
 'use server'
 
 import { requireRole } from '@/lib/guards'
+import { SHARE_INTRO_MAX } from '@/lib/deal-pitch'
 import { DEAL_DOCUMENT_KINDS, type DealDocumentKind } from '@/lib/types'
 
 /* The IM / financials / deck / MIS / dataroom links on a deal.
@@ -76,4 +77,29 @@ export async function deleteDealDocument(documentId: string) {
     .select('id')
   if (error) throw new Error(error.message)
   if (!data || data.length === 0) throw new Error('That document could not be removed.')
+}
+
+/**
+ * The introduction that goes out with the deal.
+ *
+ * Lives on the company rather than the deal: the same company can be on two deals, and its pitch
+ * does not change between them. Editable from the share dialog because that is where anyone
+ * notices it is wrong — a field only reachable from an edit form three clicks away is a field that
+ * stays as the one-liner forever.
+ */
+export async function updateCompanyShareIntro(companyId: string, intro: string) {
+  const ctx = await requireDealEditor()
+  const text = intro.trim()
+  // Checked here as well as by the column, so an over-long paste is a sentence rather than a
+  // constraint violation surfacing as a stack trace.
+  if (text.length > SHARE_INTRO_MAX) {
+    throw new Error(`That is ${text.length} characters — keep it to ${SHARE_INTRO_MAX} or fewer.`)
+  }
+  const { data, error } = await ctx.supabase
+    .from('companies')
+    .update({ share_intro: text || null })
+    .eq('id', companyId)
+    .select('id')
+  if (error) throw new Error(error.message)
+  if (!data || data.length === 0) throw new Error('That company could not be updated.')
 }

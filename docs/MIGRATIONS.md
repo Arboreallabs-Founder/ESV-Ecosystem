@@ -328,3 +328,20 @@ Adds `company_one_liner` to `get_partner_deal_summary` and `get_partner_deal_sum
 "Earlyseed Ventures presents this exciting investment opportunity — *X* — <intro>" needs the intro,
 and the intro is `companies.one_liner`, which a partner cannot read. One more field on a projection
 that already exists, rather than a policy handing them the company database.
+
+### `20260913000000_company_share_intro.sql`
+`companies.share_intro` — up to 200 characters, used as the introduction in the WhatsApp share
+message, falling back to `one_liner`.
+
+Separate from `one_liner` rather than replacing it. The one-liner is written for a *card*:
+"clean-label food brand" tells a colleague scanning a list what a company is, and tells someone
+being asked to invest nothing at all. Making the card carry two sentences of pitch would wreck the
+list the one-liner exists for.
+
+200 characters because it is read in a chat window, under a heading and above a list of links —
+long enough for two real sentences, short enough that nobody scrolls past it, which is the same
+thing as nobody reading it. The cap is a column CHECK, a constant in `deal-pitch.ts`, and a
+`maxLength` on the textarea, so the three cannot disagree.
+
+The fallback is resolved **in the RPC** (`COALESCE(NULLIF(btrim(share_intro), ''), one_liner)`), so
+a partner and an associate looking at the same deal never see different introductions.

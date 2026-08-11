@@ -1,7 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { buildDealPitch, hasShareableDocuments, whatsappLink } from '@/lib/deal-pitch'
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
+import { alertError } from '@/lib/client-errors'
+import { updateCompanyShareIntro } from '@/app/actions/active-deal-documents'
+import { buildDealPitch, hasShareableDocuments, whatsappLink, SHARE_INTRO_MAX } from '@/lib/deal-pitch'
 import type { ActiveDealDocument } from '@/lib/types'
 import styles from '../active-deals.module.css'
 
@@ -17,18 +20,27 @@ import styles from '../active-deals.module.css'
  * sending it blind is how a wrong link gets forwarded to forty people.
  */
 export default function SharePitch({
-  companyName, intro, documents, compact = false,
+  companyName, intro, documents, compact = false, companyId, canEditIntro = false,
 }: {
   companyName: string
   intro?: string | null
   documents: ActiveDealDocument[]
   /** On a card, where there is room for an icon and not much else. */
   compact?: boolean
+  /** The linked company profile. Without one there is nowhere to save an introduction to. */
+  companyId?: string | null
+  canEditIntro?: boolean
 }) {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  // Edited here because this is where anyone notices it is wrong. A field only reachable from an
+  // edit form three clicks away is a field that stays as the one-liner forever.
+  const [draft, setDraft] = useState(intro ?? '')
+  const [editing, setEditing] = useState(false)
+  const [saving, startSave] = useTransition()
 
-  const message = buildDealPitch({ companyName, intro, documents })
+  const message = buildDealPitch({ companyName, intro: editing ? draft : intro, documents })
   const shareable = hasShareableDocuments(documents)
 
   async function copy() {
@@ -72,6 +84,49 @@ export default function SharePitch({
                 ? 'Only documents marked Shared are included — this message leaves the app.'
                 : 'No documents are shared on this deal yet, so the message carries the introduction only.'}
             </p>
+
+            {canEditIntro && companyId && (
+              <div className={styles.shareIntro}>
+                {editing ? (
+                  <>
+                    <textarea
+                      className={styles.shareIntroBox}
+                      value={draft}
+                      maxLength={SHARE_INTRO_MAX}
+                      rows={3}
+                      autoFocus
+                      onChange={(e) => setDraft(e.target.value)}
+                      placeholder="What they do and why it is worth opening the deck."
+                    />
+                    <div className={styles.shareIntroFoot}>
+                      <span className={styles.shareIntroCount}>{draft.length}/{SHARE_INTRO_MAX}</span>
+                      <button className={styles.shareGhost} onClick={() => { setDraft(intro ?? ''); setEditing(false) }}>
+                        Cancel
+                      </button>
+                      <button
+                        className={styles.shareGhost}
+                        disabled={saving}
+                        onClick={() => startSave(async () => {
+                          try {
+                            // Saved to the company, not the deal: the same company can be on two
+                            // deals and its pitch does not change between them.
+                            await updateCompanyShareIntro(companyId, draft)
+                            setEditing(false)
+                            router.refresh()
+                          } catch (err) { alertError(err) }
+                        })}
+                      >
+                        {saving ? 'Saving…' : 'Save introduction'}
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <button className={styles.shareIntroEdit} onClick={() => { setDraft(intro ?? ''); setEditing(true) }}>
+                    {intro?.trim() ? 'Edit the introduction' : 'Write an introduction'}
+                  </button>
+                )}
+              </div>
+            )}
 
             <pre className={styles.sharePreview}>{message}</pre>
 

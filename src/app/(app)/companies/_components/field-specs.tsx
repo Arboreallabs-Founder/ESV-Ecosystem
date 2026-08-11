@@ -13,6 +13,10 @@ import styles from '../companies.module.css'
 export type FieldType = 'text' | 'number' | 'percent' | 'textarea' | 'date' | 'tags' | 'status' | 'user' | 'country' | 'partner'
 export type Spec = {
   key: keyof CompanyPatch; label: string; type?: FieldType; tagOptions?: string[]
+  /** Hard cap on a text field, matched to the column's own CHECK. */
+  maxLength?: number
+  /** Sits under the input; for saying what a field is *for*, not what to type into it. */
+  hint?: string
   /** Pick-only. Set on sectors: free text is what let three vocabularies grow, and a company
    *  tagged "Defense" against funds that say "Defence" matches nothing. */
   strictTags?: boolean
@@ -35,6 +39,11 @@ export function coerce(raw: string, type?: FieldType): unknown {
 export const OVERVIEW_SPECS: Spec[] = [
   { key: 'name', label: 'Name' }, { key: 'legal_name', label: 'Legal name' }, { key: 'website', label: 'Website' },
   { key: 'logo_url', label: 'Logo URL' }, { key: 'one_liner', label: 'One-liner' }, { key: 'description', label: 'Description', type: 'textarea' },
+  {
+    key: 'share_intro', label: 'Share introduction', type: 'textarea', maxLength: 200,
+    hint: 'Used when a deal is shared on WhatsApp. The one-liner is written for a card; this is the '
+      + 'sentence or two that makes someone open the deck. Falls back to the one-liner if left blank.',
+  },
   { key: 'hq_city', label: 'HQ city' }, { key: 'hq_country', label: 'HQ country', type: 'country' }, { key: 'founded_date', label: 'Founded', type: 'date' },
   { key: 'incorporation_type', label: 'Incorporation type' }, { key: 'incorporation_no', label: 'Incorporation / CIN' },
   { key: 'sectors', label: 'Sectors', type: 'tags', tagOptions: SECTOR_OPTIONS, strictTags: true }, { key: 'stage', label: 'Stage' }, { key: 'business_model', label: 'Business model' },
@@ -74,7 +83,14 @@ export function SpecInput({ spec, value, onChange, team, partners = [] }: {
   partners?: Array<{ id: string; name: string }>
 }) {
   if (spec.type === 'textarea') {
-    return <textarea className={styles.textarea} value={value} onChange={(e) => onChange(e.target.value)} />
+    return (
+      <textarea
+        className={styles.textarea}
+        value={value}
+        maxLength={spec.maxLength}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    )
   }
   if (spec.type === 'status') {
     return (
@@ -134,6 +150,10 @@ export function SpecField({ spec, value, onChange, team, partners = [] }: {
     <div className={styles.field}>
       <label className={styles.fieldLabel}>{spec.label}{spec.type === 'percent' ? ' (%)' : spec.type === 'tags' && !spec.tagOptions ? ' (comma-separated)' : ''}</label>
       <SpecInput spec={spec} value={value} onChange={onChange} team={team} partners={partners} />
+      {spec.maxLength && (
+        <span className={styles.fieldCount}>{value.length}/{spec.maxLength}</span>
+      )}
+      {spec.hint && <span className={styles.fieldHint}>{spec.hint}</span>}
     </div>
   )
 }

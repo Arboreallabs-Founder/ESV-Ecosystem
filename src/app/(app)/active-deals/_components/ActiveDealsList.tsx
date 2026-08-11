@@ -82,6 +82,8 @@ export default function ActiveDealsList({
   const [person, setPerson] = useState<PersonDetail | null>(null)
   // Partners and associates are the two who forward deals; `general` has no outward-facing role.
   const canShare = userRole !== 'general'
+  // Partners forward the message; they do not write it.
+  const canEditIntro = ['founder', 'admin', 'associate'].includes(userRole)
   const teamById = new Map(team.map((t) => [t.id, t]))
 
   function toggleExpanded(id: string) {
@@ -256,8 +258,13 @@ export default function ActiveDealsList({
                       <SharePitch
                         compact
                         companyName={deal.entry?.title ?? 'this company'}
-                        intro={deal.entry?.company?.one_liner ?? summary?.company_one_liner ?? null}
+                        intro={deal.entry?.company?.share_intro
+                          ?? deal.entry?.company?.one_liner
+                          ?? summary?.company_share_intro
+                          ?? null}
                         documents={documentsByDeal[deal.id] ?? []}
+                        companyId={deal.entry?.company_id ?? null}
+                        canEditIntro={canEditIntro}
                       />
                     )}
                   </div>
