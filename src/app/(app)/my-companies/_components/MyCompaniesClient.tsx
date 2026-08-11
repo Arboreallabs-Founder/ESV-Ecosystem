@@ -5,7 +5,7 @@ import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import { getOrCreateMyReferralLink, submitCompanyToPipeline } from '@/app/actions/partner-companies'
 import { SGP_INTAKE_ACTION_LABELS } from '@/lib/types'
-import type { UserRow } from '@/lib/types'
+import type { PartnerReferredCompany, UserRow } from '@/lib/types'
 import type { PartnerSubmission } from '@/lib/partner-companies'
 import Avatar from '@/app/_components/Avatar'
 import { formatDateTimeIst } from '@/lib/format-datetime'
@@ -22,7 +22,7 @@ function stageClass(t: string | undefined) {
 
 
 export default function MyCompaniesClient({
-  submissions, coordinators, stages, pipelineReady, formReady, myLinkToken,
+  submissions, coordinators, stages, pipelineReady, formReady, myLinkToken, referred,
 }: {
   formReady: boolean
   myLinkToken: string | null
@@ -30,6 +30,8 @@ export default function MyCompaniesClient({
   stages: Array<{ id: string; name: string; stage_type: string; color: string | null }>
   pipelineReady: boolean
   coordinators: UserRow[]
+  /** Companies already in our database that an admin or coordinator credited to this partner. */
+  referred: PartnerReferredCompany[]
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -262,6 +264,43 @@ export default function MyCompaniesClient({
             </article>
           ))}
         </div>
+      )}
+
+      {/* Credited to you by Earlyseed Ventures.
+          These are companies we already had on file when you introduced them. Re-entering one as a
+          submission would create a duplicate record and a second claim on one relationship, so a
+          coordinator tags the existing record to you instead — and it lands here. */}
+      {referred.length > 0 && (
+        <section className={styles.referredBlock}>
+          <h2 className={styles.referredTitle}>Credited to you</h2>
+          <p className={styles.referredSub}>
+            Companies we already had on file when you introduced them. Tagged to you by the team
+            rather than entered twice.
+          </p>
+          <div className={styles.list}>
+            {referred.map((c) => (
+              <article key={c.id} className={styles.card}>
+                <div className={styles.cardHead}>
+                  <div className={styles.referredNameRow}>
+                    {c.logo_url
+                      ? <img src={c.logo_url} alt="" className={styles.referredLogo} />
+                      : <span className={styles.referredLogoFallback}>{(c.name[0] ?? '?').toUpperCase()}</span>}
+                    <div>
+                      <h3 className={styles.cardName}>{c.name}</h3>
+                      {c.one_liner && <div className={styles.cardMeta}>{c.one_liner}</div>}
+                    </div>
+                  </div>
+                  {c.stage && <span className={`${styles.status} ${styles.statusAssigned}`}>{c.stage}</span>}
+                </div>
+                {c.sectors && c.sectors.length > 0 && (
+                  <div className={styles.referredTags}>
+                    {c.sectors.map((sec) => <span key={sec} className={styles.referredTag}>{sec}</span>)}
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+        </section>
       )}
     </div>
   )

@@ -187,6 +187,20 @@ export const fetchPartnerDealSummary = cache(async (activeDealId: string): Promi
   return data as PartnerDealSummary
 })
 
+/**
+ * The same projection as fetchPartnerDealSummary, for every deal a partner can see, keyed by id.
+ *
+ * The Active Deals list had the identical problem as the detail page: a coloured initial instead of
+ * the company's mark on every card, and "Unassigned" under every one, because the logo lives on
+ * `companies` and assignees are read through `users`. One call rather than one per card.
+ */
+export const fetchPartnerDealSummaries = cache(async (): Promise<Record<string, PartnerDealSummary>> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('get_partner_deal_summaries')
+  if (error || !data) return {}
+  return data as Record<string, PartnerDealSummary>
+})
+
 // Lightweight investor count + committed total for the deal page's summary card
 // (the full breakdown lives on the dedicated /investors sub-page).
 export const fetchActiveDealInvestorSummary = cache(async (activeDealId: string): Promise<{ count: number; totalCommitted: number }> => {

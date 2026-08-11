@@ -852,7 +852,55 @@ export type PartnerDealSummary = {
   company_name: string | null
   committed_total: number
   commitment_count: number
-  assignees: Array<{ user_id: string; name: string | null; photo_url: string | null }>
+  assignees: Array<{
+    user_id: string
+    name: string | null
+    photo_url: string | null
+    designation?: string | null
+    email?: string | null
+    phone?: string | null
+  }>
+}
+
+/** A company in the database tagged as introduced by a partner. */
+export type PartnerReferredCompany = {
+  id: string
+  name: string
+  one_liner: string | null
+  logo_url: string | null
+  sectors: string[] | null
+  stage: string | null
+  status: string | null
+  created_at: string
+}
+
+/**
+ * An investor a partner says they introduced, before anyone has checked.
+ *
+ * Deliberately not a row in `investors`. A referral is a claim about a relationship, not a fund
+ * record, and it must not enter the database everyone searches until a coordinator has checked
+ * whether we already hold the fund — which is the duplicate this whole flow exists to prevent.
+ */
+export type PartnerInvestorReferral = {
+  id: string
+  partner_id: string
+  submitted_by: string | null
+  name: string
+  contact_name: string | null
+  contact_email: string | null
+  contact_phone: string | null
+  website: string | null
+  notes: string | null
+  status: 'pending' | 'accepted' | 'rejected'
+  investor_id: string | null
+  decided_by: string | null
+  decided_at: string | null
+  decision_note: string | null
+  created_at: string
+  partner?: { name: string } | null
+  investor?: { id: string; name: string } | null
+  submitter?: { name: string | null; photo_url: string | null } | null
+  decided_by_user?: { name: string | null } | null
 }
 
 export type ActiveDeal = {

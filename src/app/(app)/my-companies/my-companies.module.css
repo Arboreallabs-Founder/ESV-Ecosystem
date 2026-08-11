@@ -279,3 +279,67 @@
 .step { background: rgba(163, 155, 149, 0.14); color: var(--color-muted); }
 .stepDone { background: rgba(46, 125, 50, 0.12); color: var(--color-success); }
 .stepNow { background: var(--color-primary); color: #fff; }
+
+/* ─── Credited to you ───────────────────────────────────────────────────────
+   Companies we already had on file when this partner introduced them. Kept visually distinct from
+   their own submissions: these have no stage to move through — they are already ours. */
+.referredBlock { margin-top: 2.5rem; }
+
+.referredTitle {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.referredSub {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0.25rem 0 1rem;
+  max-width: 68ch;
+}
+
+.referredNameRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.referredLogo,
+.referredLogoFallback {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  object-fit: contain;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+}
+
+.referredLogoFallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.referredTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  margin-top: 0.75rem;
+}
+
+.referredTag {
+  padding: 0.125rem 0.5rem;
+  border-radius: 100px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}

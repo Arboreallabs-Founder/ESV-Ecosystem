@@ -17,7 +17,9 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
     fetchActiveDeal(id),
     fetchCategories(),
     fetchCompanyOptions(),
-    supabase.from('users').select('id, name, photo_url').not('role', 'in', '(franchise_partner,general)').order('name'),
+    // designation/email/phone as well: an assignee chip has to answer "how do I reach them",
+    // and the assignee join itself only carries a name and a photo.
+    supabase.from('users').select('id, name, photo_url, designation, email, phone').not('role', 'in', '(franchise_partner,general)').order('name'),
   ])
   if (!user || !['founder', 'admin', 'associate', 'franchise_partner', 'general'].includes(user.role ?? '')) redirect('/login')
   if (!deal) notFound()
@@ -38,7 +40,10 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
     isPartner ? fetchPartnerDealSummary(id) : Promise.resolve(null),
   ])
 
-  const teamMembers = (teamRows ?? []) as Array<{ id: string; name: string; photo_url: string | null }>
+  const teamMembers = (teamRows ?? []) as Array<{
+    id: string; name: string; photo_url: string | null
+    designation: string | null; email: string | null; phone: string | null
+  }>
 
   return (
     <ActiveDealPageClient

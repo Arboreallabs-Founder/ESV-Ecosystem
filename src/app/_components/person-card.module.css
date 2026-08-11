@@ -1,0 +1,119 @@
+/* Who someone is and how to reach them. Small, centred, and dismissible — it answers one question
+   and then gets out of the way. */
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.35);
+  animation: personFade 0.15s ease;
+}
+
+@keyframes personFade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes personRise { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+
+.card {
+  position: relative;
+  width: 100%;
+  /* One of the few things that genuinely caps: a floating artifact, not a page. */
+  max-width: 380px;
+  padding: 1.75rem;
+  border-radius: var(--radius-lg);
+  /* --glass-panel, not --color-card: this floats over a scrim, and a 0.55-alpha surface would show
+     the page straight through the contact details. */
+  background: var(--glass-panel);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-elevated);
+  animation: personRise 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: none;
+  color: var(--color-muted);
+  font-size: 0.9375rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.close:hover { background: var(--color-bg); color: var(--color-text); }
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.headText { min-width: 0; }
+
+.name {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+  /* break-word, never `anywhere` — the latter splits a name one letter per line the moment the
+     dialog is narrow. */
+  overflow-wrap: break-word;
+}
+
+.designation {
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  margin-top: 0.125rem;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  text-decoration: none;
+  transition: border-color 0.15s ease;
+}
+
+a.row:hover { border-color: var(--color-primary); }
+
+.rowLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+.rowValue {
+  font-size: 0.875rem;
+  color: var(--color-text);
+  overflow-wrap: break-word;
+}
+
+.rowEmpty {
+  font-size: 0.875rem;
+  color: var(--color-muted);
+  font-style: italic;
+}

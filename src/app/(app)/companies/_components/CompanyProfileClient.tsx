@@ -28,6 +28,8 @@ import DonutChart from './DonutChart'
 import { SpecField, OVERVIEW_SPECS, TRACTION_SPECS, RAISE_SPECS, PRODUCT_SPECS, CAP_TABLE_SPECS, initValue, coerce, type Spec } from './field-specs'
 import { formatInr, formatDate, initials, locationLabel } from './format'
 import Avatar from '@/app/_components/Avatar'
+import { setCompanyReferringPartner } from '@/app/actions/partner-investor-referrals'
+import { alertError } from '@/lib/client-errors'
 import styles from '../companies.module.css'
 
 type Team = Array<{ id: string; name: string }>
@@ -103,12 +105,20 @@ function SectionHead({ title, onEdit, action }: { title: string; onEdit?: () => 
 
 export default function CompanyProfileClient({
   company, fieldDefs, canManage, canAuthorCard, canCreateDeal, teamMembers, suggestions, dealCategories,
+  canCreditPartner = false, franchisePartners = [],
 }: {
   company: Company; fieldDefs: CompanyFieldDef[]; canManage: boolean; canAuthorCard: boolean; canCreateDeal: boolean; teamMembers: Team; suggestions: SuggestedInvestor[]
   dealCategories: DealCategory[]
+  /** Founders, admins and SGP coordinators may credit a company to the partner who introduced it. */
+  canCreditPartner?: boolean
+  franchisePartners?: Array<{ id: string; name: string }>
 }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
+  const [referringPartner, setReferringPartner] = useState<string | null>(
+    (company as unknown as { referred_by_partner_id?: string | null }).referred_by_partner_id ?? null,
+  )
+  const [creditPending, startCredit] = useTransition()
   const [cardPending, startCard] = useTransition()
   const [modal, setModal] = useState<null | 'overview' | 'traction' | 'raise' | 'product' | 'founders' | 'team' | 'captable'>(null)
   const [showDealModal, setShowDealModal] = useState(false)
@@ -156,6 +166,32 @@ export default function CompanyProfileClient({
             {company.sectors.map((s) => <span key={s} className={styles.metaChip}>{s}</span>)}
             {company.esv_poc?.name && <span>POC: {company.esv_poc.name}</span>}
           </div>
+          {/* Who introduced them.
+              A partner who brings us a company we already have on file should not re-enter it as a
+              submission — that is a duplicate record and a second claim on one relationship. Tagging
+              the existing record credits them instead, and puts the company on their My Companies. */}
+          {canCreditPartner && (
+            <label className={styles.creditRow}>
+              <span className={styles.creditLabel}>Referred by partner</span>
+              <select
+                className={styles.creditSelect}
+                value={referringPartner ?? ''}
+                disabled={creditPending}
+                onChange={(e) => {
+                  const next = e.target.value || null
+                  const before = referringPartner
+                  setReferringPartner(next)
+                  startCredit(async () => {
+                    try { await setCompanyReferringPartner(company.id, next) }
+                    catch (err) { setReferringPartner(before); alertError(err) }
+                  })
+                }}
+              >
+                <option value="">Not partner-sourced</option>
+                {franchisePartners.map((fp) => <option key={fp.id} value={fp.id}>{fp.name}</option>)}
+              </select>
+            </label>
+          )}
         </div>
         <div className={styles.headActions}>
           <button className={styles.primaryBtn} onClick={() => setShowCallModal(true)}>Update from call</button>

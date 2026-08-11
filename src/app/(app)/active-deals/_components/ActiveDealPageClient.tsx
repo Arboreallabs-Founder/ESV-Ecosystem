@@ -12,6 +12,7 @@ import { computeFeeAmount } from '@/lib/deal-fees'
 import { StatusGauge, StatusDonut, type DonutSegment } from './DealCharts'
 import DealUpdates from './DealUpdates'
 import Avatar from '@/app/_components/Avatar'
+import PersonCard, { type PersonDetail } from '@/app/_components/PersonCard'
 import styles from '../active-deals.module.css'
 
 function formatINR(amount: number) {
@@ -95,7 +96,10 @@ export default function ActiveDealPageClient({
   answers: AnswerItem[]
   history: PipelineEntryStageHistory[]
   stageAnswers: StageAnswerView[]
-  teamMembers: Array<{ id: string; name: string; photo_url: string | null }>
+  teamMembers: Array<{
+    id: string; name: string; photo_url: string | null
+    designation?: string | null; email?: string | null; phone?: string | null
+  }>
   updates: ActiveDealUpdate[]
   currentUserId: string
   /** Partners only, and null for everyone else. See fetchPartnerDealSummary. */
@@ -112,6 +116,26 @@ export default function ActiveDealPageClient({
   )
   // Partners cannot read the user directory, so the join comes back empty for them and the panel
   // said "No one assigned" on a deal that has an owner. The summary carries name and photo only.
+  const [contactPerson, setContactPerson] = useState<PersonDetail | null>(null)
+
+  /**
+   * Fill in the contact details behind an assignee chip.
+   *
+   * Internal users get them from the team roster. A partner cannot read that table at all, so for
+   * them the details ride along on the partner summary — same shape, different source.
+   */
+  function personFor(userId: string, name: string, photoUrl: string | null): PersonDetail {
+    const fromTeam = teamMembers.find((m) => m.id === userId)
+    const fromSummary = partnerSummary?.assignees?.find((a) => a.user_id === userId)
+    return {
+      user_id: userId,
+      name,
+      photo_url: photoUrl,
+      designation: fromTeam?.designation ?? fromSummary?.designation ?? null,
+      email: fromTeam?.email ?? fromSummary?.email ?? null,
+      phone: fromTeam?.phone ?? fromSummary?.phone ?? null,
+    }
+  }
   const [assignees, setAssignees] = useState(
     (deal.entry?.assignees?.length ? deal.entry.assignees : partnerSummary?.assignees ?? []).map((a) => ({
       user_id: a.user_id,
@@ -493,8 +517,15 @@ export default function ActiveDealPageClient({
             <div className={styles.assigneeChips}>
               {assignees.map((a) => (
                 <span key={a.user_id} className={styles.assigneeChip}>
-                  <Avatar name={a.name} photoUrl={a.photo_url} size="xs" />
-                  {a.name}
+                  <button
+                    type="button"
+                    className={styles.assigneeChipOpen}
+                    onClick={() => setContactPerson(personFor(a.user_id, a.name, a.photo_url))}
+                    title={`Contact ${a.name}`}
+                  >
+                    <Avatar name={a.name} photoUrl={a.photo_url} size="xs" />
+                    {a.name}
+                  </button>
                   <button className={styles.assigneeChipRemove} onClick={() => handleRemoveAssignee(a.user_id)} title="Remove">×</button>
                 </span>
               ))}
@@ -518,11 +549,19 @@ export default function ActiveDealPageClient({
             <div className={styles.detailEmpty}>No one assigned.</div>
           ) : (
             <div className={styles.assigneeChips}>
+              {/* A name answers "who owns this". The next question is always "how do I reach
+                  them", and until now that meant asking someone. */}
               {assignees.map((a) => (
-                <span key={a.user_id} className={styles.detailAssigneeChip}>
+                <button
+                  key={a.user_id}
+                  type="button"
+                  className={styles.detailAssigneeChipBtn}
+                  onClick={() => setContactPerson(personFor(a.user_id, a.name, a.photo_url))}
+                  title={`Contact ${a.name}`}
+                >
                   <Avatar name={a.name} photoUrl={a.photo_url} size="xs" />
                   {a.name}
-                </span>
+                </button>
               ))}
             </div>
           )}
@@ -644,6 +683,8 @@ export default function ActiveDealPageClient({
         </div>
         )}
       </div>
+
+      {contactPerson && <PersonCard person={contactPerson} onClose={() => setContactPerson(null)} />}
 
       {showEdit && (
         <EditActiveDealModal

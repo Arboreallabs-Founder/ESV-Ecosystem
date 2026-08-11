@@ -2233,3 +2233,114 @@
   color: var(--color-muted);
   white-space: nowrap;
 }
+
+/* ─── Deal card team row ────────────────────────────────────────────────────
+   Who owns the deal, on the face of the card. It used to be the expander itself, which meant the
+   whole row was one button and the names could not be clicked for anything else — and on a card
+   with no field values the row was disabled entirely, so "Unassigned" was all you ever saw. */
+.dealTeamRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.75rem;
+  margin-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.dealTeamPeople {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.dealPersonChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.1875rem 0.5rem 0.1875rem 0.1875rem;
+  border-radius: 100px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  /* inline-flex with an explicit line-height: an inline-block button carries line-box descender
+     space and clips its own bottom border at some zoom levels. */
+  line-height: 1.4;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dealPersonChip:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.dealPersonName {
+  overflow-wrap: break-word;
+  max-width: 14ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dealTeamToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.dealTeamToggle:hover { background: var(--color-bg); color: var(--color-text); }
+
+/* The assignee chips on the deal page open the same contact card. */
+.detailAssigneeChipBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.625rem 0.25rem 0.25rem;
+  border-radius: 100px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--color-text);
+  cursor: pointer;
+  line-height: 1.4;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.detailAssigneeChipBtn:hover {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+/* The name inside a removable chip is its own button, so clicking the person opens their contact
+   card while the × still removes them. */
+.assigneeChipOpen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.assigneeChipOpen:hover { color: var(--color-primary); }

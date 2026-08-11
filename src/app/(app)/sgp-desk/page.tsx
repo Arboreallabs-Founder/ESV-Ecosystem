@@ -3,9 +3,10 @@ import { getUser } from '@/lib/user'
 import Link from 'next/link'
 import {
   fetchPartnerCompanies, fetchAssignableForSgp, isSgpCoordinator,
-  fetchPartnerPipeline, fetchPartnerQueue,
+  fetchPartnerPipeline, fetchPartnerQueue, fetchInvestorReferralQueue,
 } from '@/lib/partner-companies'
 import SgpDeskClient from './_components/SgpDeskClient'
+import InvestorReferralQueue from './_components/InvestorReferralQueue'
 import styles from './sgp-desk.module.css'
 
 /**
@@ -24,11 +25,13 @@ export default async function SgpDeskPage() {
   const coordinator = isLead ? true : await isSgpCoordinator(user.id)
   if (!coordinator) redirect('/dashboard')
 
-  const [submissions, assignable, pipeline, queue] = await Promise.all([
+  const [submissions, assignable, pipeline, queue, investorReferrals] = await Promise.all([
     fetchPartnerCompanies(),
     fetchAssignableForSgp(),
     fetchPartnerPipeline(),
     fetchPartnerQueue(),
+    // Partners cannot add investors, so they refer them. This is where that lands.
+    fetchInvestorReferralQueue(),
   ])
 
   // Everything a partner submits — typed in or through their referral link — is an entry on this
@@ -54,6 +57,7 @@ export default async function SgpDeskPage() {
           </Link>
         </div>
       )}
+      <InvestorReferralQueue referrals={investorReferrals} />
       <SgpDeskClient
         submissions={submissions}
         assignable={assignable}

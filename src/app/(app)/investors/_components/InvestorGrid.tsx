@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { pocCoverage, SERVICE_TYPE_LABELS } from '@/lib/types'
-import type { Investor, ServiceType } from '@/lib/types'
+import type { PartnerInvestorReferral, Investor, ServiceType } from '@/lib/types'
 import InvestorCard from './InvestorCard'
 import InvestorDetail from './InvestorDetail'
 import InvestorFormModal from './InvestorFormModal'
@@ -11,6 +11,7 @@ import InvestorsImportModal from './InvestorsImportModal'
 import FilterTabs from '@/app/_components/FilterTabs'
 import styles from '../investors.module.css'
 import { WikiButton } from '@/app/_components/WikiPanel'
+import ReferInvestorPanel from './ReferInvestorPanel'
 
 type Props = {
   investors: Investor[]
@@ -18,6 +19,8 @@ type Props = {
   canManage?: boolean
   internalUsers: Array<{ id: string; name: string }>
   franchisePartners: Array<{ id: string; name: string }>
+  /** Partners only: what they have referred and where each one got to. */
+  referrals?: PartnerInvestorReferral[]
 }
 
 /**
@@ -31,9 +34,10 @@ type Props = {
  */
 type Tab = 'all' | ServiceType
 
-export default function InvestorGrid({ investors, userRole, canManage = true, internalUsers, franchisePartners }: Props) {
+export default function InvestorGrid({ investors, userRole, canManage = true, internalUsers, franchisePartners, referrals = [] }: Props) {
   const router = useRouter()
   const isInternal = ['founder', 'admin', 'associate', 'hr'].includes(userRole)
+  const isPartner = userRole === 'franchise_partner'
   const [activeTab, setActiveTab] = useState<Tab>('all')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Investor | null>(null)
@@ -92,13 +96,19 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
             <h1 className={styles.pageTitle}>Investors</h1>
             <WikiButton sectionKey="investors" />
           </div>
-          <p className={styles.pageSubtitle}>Fund database and relationship tracking</p>
+          <p className={styles.pageSubtitle}>
+            {isPartner
+              ? 'The funds credited to you, and anyone you have referred to us.'
+              : 'Fund database and relationship tracking'}
+          </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {isInternal && <button className={styles.ghostBtn} onClick={() => setShowImport(true)}>Import CSV</button>}
           {canManage && <button className={styles.addBtn} onClick={openCreate}>+ Add Investor</button>}
         </div>
       </div>
+
+      {isPartner && <ReferInvestorPanel referrals={referrals} />}
 
       {/* Tabs */}
       <FilterTabs

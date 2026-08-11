@@ -329,3 +329,35 @@
 /* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
    the content out to grey. Still frosted (see the backdrop-filter above). */
 .modal, .modalHead { background: var(--glass-panel); }
+
+/* ─── Partner credit ────────────────────────────────────────────────────────
+   Who introduced this company. Sits in the header rather than an edit modal because it is a fact
+   somebody establishes on a call, not a field they set up front. */
+.creditRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.625rem;
+  flex-wrap: wrap;
+}
+
+.creditLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+.creditSelect {
+  padding: 0.25rem 0.625rem;
+  border-radius: 100px;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.creditSelect:disabled { opacity: 0.6; cursor: default; }

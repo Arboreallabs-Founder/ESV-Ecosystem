@@ -1,6 +1,7 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
-import type { PartnerCompany, UserRow } from './types'
+import { getUser } from '@/lib/user'
+import type { PartnerCompany, PartnerInvestorReferral, PartnerReferredCompany, UserRow } from './types'
 
 /* Partner-sourced company submissions and the coordinator queue.
 
@@ -113,9 +114,22 @@ export const fetchPartnerPipeline = cache(async () => {
  */
 export const fetchMySubmissions = cache(async (): Promise<PartnerSubmission[]> => {
   const supabase = await createClient()
+  const user = await getUser()
+  if (!user?.franchise_partner_id) return []
+
+  // Both filters are the fix for a real leak, not belt and braces. This query had none at all and
+  // trusted RLS to scope it; it did not, and a partner was shown every entry on the Imported Deals
+  // pipeline — other people's companies, with the founder's name and email on each. A read that
+  // must return one partner's rows should say so.
+  const { data: pipeline } = await supabase
+    .from('pipelines').select('id').eq('is_partner_intake', true).maybeSingle()
+  if (!pipeline) return []
+
   const { data, error } = await supabase
     .from('pipeline_entries')
     .select('id, title, submitted_at, partner_notes, submitter_name, submitter_email, rejection_reason, stage:pipeline_stages!stage_id(name, stage_type, color)')
+    .eq('pipeline_id', pipeline.id)
+    .eq('sourced_by_partner_id', user.franchise_partner_id)
     .order('submitted_at', { ascending: false })
   if (error) {
     console.error('[partner-intake] submissions read failed:', error.message)
@@ -167,4 +181,71 @@ export const fetchPartnerQueue = cache(async () => {
     partner: one(r.partner),
     stage: one(r.stage),
   }))
+})
+
+// ── Referred companies and investors ─────────────────────────────────────────
+// The other half of a partner's page. They submit some companies themselves; for the rest we
+// already had the record when they introduced it, and an admin or coordinator tags it to them
+// rather than making them re-enter it as a duplicate.
+
+/** Companies tagged to this partner in the company database. */
+export const fetchMyReferredCompanies = cache(async (): Promise<PartnerReferredCompany[]> => {
+  const supabase = await createClient()
+  const user = await getUser()
+  if (!user?.franchise_partner_id) return []
+  const { data, error } = await supabase
+    .from('companies')
+    .select('id, name, one_liner, logo_url, sectors, stage, status, created_at')
+    .eq('referred_by_partner_id', user.franchise_partner_id)
+    .order('created_at', { ascending: false })
+  if (error) {
+    console.error('[partner-intake] referred companies read failed:', error.message)
+    return []
+  }
+  return (data ?? []) as unknown as PartnerReferredCompany[]
+})
+
+/** Investors tagged to this partner, and their referrals still waiting on a decision. */
+export const fetchMyInvestorReferrals = cache(async (): Promise<PartnerInvestorReferral[]> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('partner_investor_referrals')
+    .select('*, investor:investors!investor_id(id, name), decided_by_user:users!decided_by(name)')
+    .order('created_at', { ascending: false })
+  if (error) {
+    // The table arrives with 20260910; until then the page renders without the section rather
+    // than failing the route.
+    console.error('[partner-intake] investor referrals read failed:', error.message)
+    return []
+  }
+  const one = <T,>(v: T | T[] | null) => (Array.isArray(v) ? v[0] ?? null : v ?? null)
+  return (data ?? []).map((r: any) => ({
+    ...r,
+    investor: one(r.investor),
+    decided_by_user: one(r.decided_by_user),
+  })) as PartnerInvestorReferral[]
+})
+
+/**
+ * The investor-referral queue for the SGP Desk.
+ *
+ * Same table, same RLS; the coordinator policy is what widens this from "mine" to "everyone's".
+ */
+export const fetchInvestorReferralQueue = cache(async (): Promise<PartnerInvestorReferral[]> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('partner_investor_referrals')
+    .select('*, partner:franchise_partners!partner_id(name), investor:investors!investor_id(id, name), submitter:users!submitted_by(name, photo_url)')
+    .order('created_at', { ascending: false })
+  if (error) {
+    console.error('[partner-intake] referral queue read failed:', error.message)
+    return []
+  }
+  const one = <T,>(v: T | T[] | null) => (Array.isArray(v) ? v[0] ?? null : v ?? null)
+  return (data ?? []).map((r: any) => ({
+    ...r,
+    partner: one(r.partner),
+    investor: one(r.investor),
+    submitter: one(r.submitter),
+  })) as PartnerInvestorReferral[]
 })

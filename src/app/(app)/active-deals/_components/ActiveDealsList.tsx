@@ -3,14 +3,15 @@
 import { useState, useTransition, type KeyboardEvent } from 'react'
 import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
-import type { ActiveDeal, DealCategory, DealState } from '@/lib/types'
+import type { ActiveDeal, DealCategory, DealState, PartnerDealSummary } from '@/lib/types'
 import { DEAL_STATES, DEAL_STATE_META } from '@/lib/types'
 import { updateDealState, deleteActiveDeal } from '@/app/actions/active-deals'
 import NewDealModal from './NewDealModal'
 import DealImportModal from './DealImportModal'
 import FilterTabs from '@/app/_components/FilterTabs'
 import { WikiButton } from '@/app/_components/WikiPanel'
-import { AvatarGroup } from '@/app/_components/Avatar'
+import Avatar, { AvatarGroup } from '@/app/_components/Avatar'
+import PersonCard, { type PersonDetail } from '@/app/_components/PersonCard'
 import styles from '../active-deals.module.css'
 
 // Group a plain number with Indian digit separators (e.g. 100000000 → 10,00,00,000).
@@ -51,11 +52,17 @@ export default function ActiveDealsList({
   categories,
   companyOptions,
   userRole,
+  partnerSummaries = {},
+  team = [],
 }: {
   deals: ActiveDeal[]
   categories: DealCategory[]
   companyOptions: Array<{ id: string; name: string }>
   userRole: string
+  /** Partners only: logo and ESV contact per deal, from tables they cannot read directly. */
+  partnerSummaries?: Record<string, PartnerDealSummary>
+  /** Contact details, so an assignee chip can answer "how do I reach them". */
+  team?: Array<{ id: string; name: string | null; photo_url: string | null; designation: string | null; email: string | null; phone: string | null }>
 }) {
   const router = useRouter()
   const [stateFilter, setStateFilter] = useState<StateFilter>('open')
@@ -67,6 +74,9 @@ export default function ActiveDealsList({
   // values are for after you have chosen one, and showing every deal's fee structure at once
   // makes the list longer than the screen for no gain.
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  // Clicking a face answers "how do I reach them" without leaving the list.
+  const [person, setPerson] = useState<PersonDetail | null>(null)
+  const teamById = new Map(team.map((t) => [t.id, t]))
 
   function toggleExpanded(id: string) {
     setExpanded((prev) => {
@@ -141,6 +151,8 @@ export default function ActiveDealsList({
 
   return (
     <div className={styles.page}>
+      {person && <PersonCard person={person} onClose={() => setPerson(null)} />}
+
       {showNew && <NewDealModal categories={categories} companyOptions={companyOptions} onClose={() => setShowNew(false)} onCreated={() => { setShowNew(false); router.refresh() }} />}
       {showImport && <DealImportModal categories={categories} onClose={() => setShowImport(false)} onImported={() => router.refresh()} />}
       <div className={styles.header}>
@@ -191,8 +203,27 @@ export default function ActiveDealsList({
         <div className={styles.grid}>
           {filtered.map((deal) => {
             const meta = DEAL_STATE_META[deal.deal_state]
-            // A logo set directly on the deal wins; otherwise fall back to the linked company's logo.
-            const displayLogoUrl = deal.logo_url || deal.entry?.company?.logo_url || null
+            // A logo set directly on the deal wins; otherwise the linked company's. For a
+            // partner both of those are unreadable, so the summary carries it instead — without
+            // it every card wore a coloured initial.
+            const summary = partnerSummaries[deal.id]
+            const displayLogoUrl = deal.logo_url || deal.entry?.company?.logo_url || summary?.logo_url || null
+            // Same story: assignees are read through `users`, which a partner cannot select.
+            const people: PersonDetail[] = (
+              deal.entry?.assignees?.length ? deal.entry.assignees : summary?.assignees ?? []
+            ).map((a) => {
+              const full = teamById.get(a.user_id)
+              return {
+                user_id: a.user_id,
+                name: a.name ?? full?.name ?? 'Unknown',
+                photo_url: a.photo_url ?? full?.photo_url ?? null,
+                // The summary already carries these for partners; internal users get them from the
+                // team roster, since the assignee join only returns a name and a photo.
+                designation: (a as PersonDetail).designation ?? full?.designation ?? null,
+                email: (a as PersonDetail).email ?? full?.email ?? null,
+                phone: (a as PersonDetail).phone ?? full?.phone ?? null,
+              }
+            })
             return (
               <article
                 key={deal.id}
@@ -278,32 +309,49 @@ export default function ActiveDealsList({
                 {(() => {
                   const hasFields = deal.categories.some(({ field_values }) => field_values.some((fv) => fv.value))
                   const isOpen = expanded.has(deal.id)
-                  if ((deal.entry?.assignees?.length ?? 0) === 0 && !hasFields) return null
+                  if (people.length === 0 && !hasFields) return null
                   return (
-                    <button
-                      type="button"
-                      className={styles.dealTeam}
-                      onClick={(e) => { e.stopPropagation(); toggleExpanded(deal.id) }}
-                      aria-expanded={isOpen}
-                      aria-label={isOpen ? 'Hide deal details' : 'Show deal details'}
-                      disabled={!hasFields}
-                    >
-                      <AvatarGroup
-                        people={(deal.entry?.assignees ?? []).map((a) => ({ id: a.user_id, name: a.name, photo_url: a.photo_url }))}
-                        size="sm"
-                      />
-                      <span className={styles.dealTeamLabel}>
-                        {(deal.entry?.assignees ?? []).map((a) => a.name).join(', ') || 'Unassigned'}
-                      </span>
-                      {hasFields && (
-                        <span className={isOpen ? styles.chevronOpen : styles.chevron} aria-hidden="true">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="m6 9 6 6 6-6" />
-                          </svg>
-                        </span>
+                    <div className={styles.dealTeamRow}>
+                      {/* Who owns this deal, on the face of the card rather than behind the
+                          chevron. It is the first thing anyone wants from a list of deals, and
+                          hiding it behind an expander made every card read "Unassigned".
+                          Each chip is its own button: the name answers "who", the click answers
+                          "how do I reach them". */}
+                      {people.length > 0 ? (
+                        <div className={styles.dealTeamPeople}>
+                          {people.map((pers) => (
+                            <button
+                              key={pers.user_id}
+                              type="button"
+                              className={styles.dealPersonChip}
+                              onClick={(e) => { e.stopPropagation(); setPerson(pers) }}
+                              title={`Contact ${pers.name}`}
+                            >
+                              <Avatar name={pers.name ?? '?'} photoUrl={pers.photo_url ?? null} size="xs" />
+                              <span className={styles.dealPersonName}>{pers.name}</span>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className={styles.dealTeamLabel}>Unassigned</span>
                       )}
-                    </button>
+                      {hasFields && (
+                        <button
+                          type="button"
+                          className={styles.dealTeamToggle}
+                          onClick={(e) => { e.stopPropagation(); toggleExpanded(deal.id) }}
+                          aria-expanded={isOpen}
+                          aria-label={isOpen ? 'Hide deal details' : 'Show deal details'}
+                        >
+                          <span className={isOpen ? styles.chevronOpen : styles.chevron} aria-hidden="true">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                              strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="m6 9 6 6 6-6" />
+                            </svg>
+                          </span>
+                        </button>
+                      )}
+                    </div>
                   )
                 })()}
 

@@ -1,7 +1,8 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
 import {
-  fetchCoordinators, fetchMySubmissions, fetchPartnerForm, fetchPartnerPipeline,
+  fetchCoordinators, fetchMyReferredCompanies, fetchMySubmissions, fetchPartnerForm,
+  fetchPartnerPipeline,
 } from '@/lib/partner-companies'
 import MyCompaniesClient from './_components/MyCompaniesClient'
 
@@ -23,11 +24,14 @@ export default async function MyCompaniesPage() {
     redirect('/dashboard')
   }
 
-  const [submissions, coordinators, pipeline, form] = await Promise.all([
+  const [submissions, coordinators, pipeline, form, referred] = await Promise.all([
     fetchMySubmissions(),
     fetchCoordinators(),
     fetchPartnerPipeline(),
     fetchPartnerForm(),
+    // The other half of "my companies": ones already on file when this partner introduced them,
+    // tagged to them by an admin or coordinator rather than re-entered as a duplicate.
+    fetchMyReferredCompanies(),
   ])
 
   // A partner's own link, if they have already made one. Creating it is a click rather than
@@ -42,6 +46,7 @@ export default async function MyCompaniesPage() {
       pipelineReady={Boolean(pipeline)}
       formReady={Boolean(form?.published)}
       myLinkToken={myLink}
+      referred={referred}
     />
   )
 }

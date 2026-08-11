@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
 import { fetchAllInvestors } from '@/lib/investors'
+import { fetchMyInvestorReferrals } from '@/lib/partner-companies'
 import { createClient } from '@/lib/supabase/server'
 import InvestorGrid from './_components/InvestorGrid'
 
@@ -9,9 +10,13 @@ export default async function InvestorsPage() {
   if (!user) redirect('/login')
   if (!['founder', 'admin', 'associate', 'franchise_partner', 'general', 'hr'].includes(user.role ?? '')) redirect('/login')
 
-  // Internal users manage everything; partners may add/edit their own referrals (POC stays locked).
   const isInternal = ['founder', 'admin', 'associate', 'hr'].includes(user.role ?? '')
-  const canManage = isInternal || user.role === 'franchise_partner'
+  // Partners no longer create investors (20260905 dropped the INSERT policy), so the button that
+  // opened the create form could only ever fail for them. They refer instead, and a coordinator
+  // decides — see ReferInvestorPanel.
+  const canManage = isInternal
+  const isPartner = user.role === 'franchise_partner'
+  const referrals = isPartner ? await fetchMyInvestorReferrals() : []
   const supabase = await createClient()
   const [{ data: internalUsers }, { data: franchisePartners }] = await Promise.all([
     isInternal
@@ -29,6 +34,7 @@ export default async function InvestorsPage() {
       canManage={canManage}
       internalUsers={(internalUsers ?? []) as Array<{ id: string; name: string }>}
       franchisePartners={(franchisePartners ?? []) as Array<{ id: string; name: string }>}
+      referrals={referrals}
     />
   )
 }

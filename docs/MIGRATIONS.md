@@ -271,3 +271,31 @@ marked visible to partners. Any of those failing returns NULL.
 The raise **percentage** is deliberately not returned. It is computed client-side from the target
 field the partner can already see, so the denominator is always on the page — and if that field is
 closed to partners the bar disappears with it.
+
+### `20260910000000_partner_referrals.sql`
+Investor referrals, the company credit tag, and a leak found while building them.
+
+**The leak.** My Companies was showing a partner every entry on the *Imported Deals* pipeline —
+real ESV deals they had nothing to do with, with the founder's name and email on each.
+`fetchMySubmissions` selected `pipeline_entries` with **no filter at all**, trusting RLS to scope
+it, and RLS did not. The query now filters by the partner-intake pipeline **and** by
+`sourced_by_partner_id`. The policy side still needs the wide policy found and removed — permissive
+policies are OR'd, so adding a narrow one can only widen access.
+
+`rls_policy_audit` exists for exactly that: `pg_policies` is not reachable through PostgREST, so
+"what can a partner actually read" has been unanswerable without opening the SQL editor. Granted to
+`service_role` only, which already bypasses RLS and so gains nothing it did not have.
+
+**`companies.referred_by_partner_id`** — the other half of "my companies". A partner who introduces
+a company we already have on file should not re-enter it as a submission; a coordinator tags the
+existing record instead, and it appears on their page.
+
+**`partner_investor_referrals`** — deliberately *not* a row in `investors`. A referral is a claim
+about a relationship, not a fund record, and it must not enter the database everyone searches until
+someone has checked whether we already hold it. The coordinator either tags the fund we have or
+creates it; both credit the partner, and a fund already credited to a *different* partner refuses
+the write, because two partners claiming one relationship is a fee question, not a click.
+
+**`get_partner_deal_summaries()`** — 20260909 did one deal; the Active Deals list had the identical
+problem on every card. The ESV contact now also carries email, phone and designation: telling a
+partner who their point of contact is with no way to reach them is a name, not a contact.
