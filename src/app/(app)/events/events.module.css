@@ -62,9 +62,14 @@
    almost always portrait and carries text at both ends, so cropping it to a banner would hide the
    half that matters. The box is bounded in height instead, so one event cannot push the rest of
    the list off the screen. */
+/* fit-content, not 100%. A poster is almost always portrait; a full-width frame around one leaves
+   a vast white letterbox with the image marooned in the middle, which reads as a broken image even
+   though the picture is fine. The frame hugs whatever shape was uploaded instead — portrait ends up
+   a poster-shaped tile, a wide banner still runs to the full width and is capped by the height. */
 .posterThumbBtn {
   display: block;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   margin-top: 0.7rem;
   padding: 0;
   border: 1px solid var(--color-border);
@@ -79,7 +84,9 @@
 .posterThumbBtn:hover { border-color: rgba(var(--color-hover-rgb),0.45); }
 .posterThumb {
   display: block;
-  width: 100%;
+  width: auto;
+  height: auto;
+  max-width: 100%;
   max-height: 320px;
   object-fit: contain;
 }
