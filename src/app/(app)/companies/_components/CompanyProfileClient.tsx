@@ -15,11 +15,11 @@ import {
 } from '@/app/actions/companies'
 import {
   COMPANY_STATUS_LABELS, COMPANY_DOC_TYPES, COMPANY_DOC_TYPE_LABELS, COMPANY_FIELD_TYPES,
-  SERVICE_TYPE_LABELS, DEAL_STATE_META,
+  SERVICE_TYPE_LABELS, DEAL_STATE_META, ATTRIBUTION_STATUS_LABELS,
 } from '@/lib/types'
 import type {
   Company, CompanyFieldDef, CompanyDocType, CompanyFieldType, CompanyFounder, CompanyTeamMember,
-  SuggestedInvestor, DealCategory,
+  SuggestedInvestor, DealCategory, PartnerAttributionClaim,
 } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import CreateDealModal from './CreateDealModal'
@@ -28,7 +28,7 @@ import DonutChart from './DonutChart'
 import { SpecField, OVERVIEW_SPECS, TRACTION_SPECS, RAISE_SPECS, PRODUCT_SPECS, CAP_TABLE_SPECS, initValue, coerce, type Spec } from './field-specs'
 import { formatInr, formatDate, initials, locationLabel } from './format'
 import Avatar from '@/app/_components/Avatar'
-import { setCompanyReferringPartner } from '@/app/actions/partner-investor-referrals'
+import { proposeCompanyAttribution } from '@/app/actions/partner-investor-referrals'
 import { alertError } from '@/lib/client-errors'
 import styles from '../companies.module.css'
 
@@ -105,15 +105,104 @@ function SectionHead({ title, onEdit, action }: { title: string; onEdit?: () => 
   )
 }
 
+/**
+ * Who introduced this company, and how far that has got.
+ *
+ * This used to be a dropdown in Edit → Overview that wrote the column on save. That made it the
+ * easiest way in the app to credit a partner with a fee — pick a name, hit save, done, nobody
+ * asked. It proposes now; the tag appears only after a coordinator and the founder have both
+ * signed, and the database refuses any other route to it.
+ */
+function AttributionRow({
+  companyId, approvedName, claim, partners, canPropose, onDone,
+}: {
+  companyId: string
+  approvedName: string | null
+  claim: PartnerAttributionClaim | null
+  partners: Array<{ id: string; name: string }>
+  canPropose: boolean
+  onDone: () => void
+}) {
+  const [picking, setPicking] = useState(false)
+  const [partnerId, setPartnerId] = useState('')
+  const [note, setNote] = useState('')
+  const [pending, start] = useTransition()
+
+  // Approved: the settled fact.
+  if (approvedName && claim?.status === 'approved') {
+    return (
+      <div className={styles.creditRow}>
+        <span className={styles.creditLabel}>Referred by</span>
+        <span className={styles.creditValue}>{approvedName}</span>
+      </div>
+    )
+  }
+
+  // In flight: named, but not yet credited. Said plainly, because "Referred by X" on a claim
+  // nobody has approved is the app asserting something that has not been agreed.
+  if (claim) {
+    return (
+      <div className={styles.creditRow}>
+        <span className={styles.creditLabel}>Attribution</span>
+        <span className={styles.creditValue}>
+          {claim.partner?.name ?? 'A partner'} — {ATTRIBUTION_STATUS_LABELS[claim.status]}
+        </span>
+      </div>
+    )
+  }
+
+  if (!canPropose) return null
+
+  if (!picking) {
+    return (
+      <div className={styles.creditRow}>
+        <button className={styles.creditPropose} onClick={() => setPicking(true)}>
+          + Credit a partner for this company
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.creditRow}>
+      <select className={styles.creditSelect} value={partnerId} onChange={(e) => setPartnerId(e.target.value)} autoFocus>
+        <option value="">Which partner introduced them?</option>
+        {partners.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+      </select>
+      <input
+        className={styles.creditNote}
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="How do we know? (optional)"
+      />
+      <button
+        className={styles.creditPropose}
+        disabled={!partnerId || pending}
+        onClick={() => start(async () => {
+          try {
+            await proposeCompanyAttribution(companyId, partnerId, note)
+            setPicking(false); setPartnerId(''); setNote('')
+            onDone()
+          } catch (err) { alertError(err) }
+        })}
+      >
+        {pending ? 'Filing…' : 'Propose'}
+      </button>
+      <button className={styles.creditCancel} onClick={() => setPicking(false)}>Cancel</button>
+    </div>
+  )
+}
+
 export default function CompanyProfileClient({
   company, fieldDefs, canManage, canAuthorCard, canCreateDeal, teamMembers, suggestions, dealCategories,
-  canCreditPartner = false, franchisePartners = [],
+  canCreditPartner = false, franchisePartners = [], attributionClaim = null,
 }: {
   company: Company; fieldDefs: CompanyFieldDef[]; canManage: boolean; canAuthorCard: boolean; canCreateDeal: boolean; teamMembers: Team; suggestions: SuggestedInvestor[]
   dealCategories: DealCategory[]
-  /** Founders, admins and SGP coordinators may credit a company to the partner who introduced it. */
+  /** Founders, admins and SGP coordinators may propose that a partner introduced this company. */
   canCreditPartner?: boolean
   franchisePartners?: Array<{ id: string; name: string }>
+  attributionClaim?: PartnerAttributionClaim | null
 }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
@@ -141,15 +230,9 @@ export default function CompanyProfileClient({
   }
 
   const modalSpecs: Record<string, { title: string; specs: Spec[] }> = {
-    // "Referred by partner" is only offered to the people who decide it — founders, admins and
-    // SGP coordinators. Everyone else edits the same section without it rather than seeing a
-    // control that writes a fee-relevant fact they were not asked to set.
-    overview: {
-      title: 'Overview',
-      specs: canCreditPartner
-        ? OVERVIEW_SPECS
-        : OVERVIEW_SPECS.filter((sp) => sp.key !== 'referred_by_partner_id'),
-    },
+    // Attribution is no longer one of these. It is not a field you edit and save with the rest of
+    // the overview — it is a claim on a fee, and it has its own block below.
+    overview: { title: 'Overview', specs: OVERVIEW_SPECS },
     traction: { title: 'Traction & metrics', specs: TRACTION_SPECS },
     raise: { title: 'Current raise', specs: RAISE_SPECS },
     product: { title: 'Product', specs: PRODUCT_SPECS },
@@ -177,14 +260,17 @@ export default function CompanyProfileClient({
             {company.sectors.map((s) => <span key={s} className={styles.metaChip}>{s}</span>)}
             {company.esv_poc?.name && <span>POC: {company.esv_poc.name}</span>}
           </div>
-          {/* Who introduced them, as a fact. It is set in Edit → Overview so there is one writer
-              for the column rather than two controls on screen drifting apart. */}
-          {referringPartnerName && (
-            <div className={styles.creditRow}>
-              <span className={styles.creditLabel}>Referred by</span>
-              <span className={styles.creditValue}>{referringPartnerName}</span>
-            </div>
-          )}
+          {/* Who introduced them — approved, or on its way there. A pending claim is shown rather
+              than hidden: somebody looking at this company should know a partner is claiming it,
+              because that is exactly when they would otherwise file a second claim. */}
+          <AttributionRow
+            companyId={company.id}
+            approvedName={referringPartnerName}
+            claim={attributionClaim}
+            partners={franchisePartners}
+            canPropose={canCreditPartner}
+            onDone={refresh}
+          />
         </div>
         <div className={styles.headActions}>
           <button className={styles.primaryBtn} onClick={() => setShowCallModal(true)}>Update from call</button>

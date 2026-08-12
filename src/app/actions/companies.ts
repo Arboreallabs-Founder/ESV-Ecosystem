@@ -22,8 +22,9 @@ async function requireAdmin() {
 // Editable fields on the master record (subset used by the section editors).
 export type CompanyPatch = Partial<{
   name: string
-  /** The partner who introduced this company; puts it on their My Companies. */
-  referred_by_partner_id: string | null
+  // referred_by_partner_id is deliberately not patchable. It is a fee attribution, and it takes a
+  // coordinator and the founder — see proposeCompanyAttribution. The database refuses the direct
+  // write, so leaving it here would only turn an unapproved credit into a failed save.
   /** Up to 200 characters, used as the introduction when a deal is shared. */
   share_intro: string | null
   legal_name: string | null

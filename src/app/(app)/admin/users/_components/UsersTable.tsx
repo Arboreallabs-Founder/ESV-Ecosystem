@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addApprovedUser, updateApprovedUser, revokeUser, setUserPhotoFromUrl } from '@/app/actions/admin'
 import { setSgpCoordinator } from '@/app/actions/partner-companies'
+import { setSgpApprover } from '@/app/actions/partner-attribution'
 import type { ApprovedUser } from '@/lib/types'
 import { personInitials } from '@/app/_components/Avatar'
 import styles from '../../admin.module.css'
@@ -77,6 +78,7 @@ export default function UsersTable({
   const [editRole, setEditRole] = useState<string>('')
   const [editDesignation, setEditDesignation] = useState('')
   const [editCoordinator, setEditCoordinator] = useState(false)
+  const [editApprover, setEditApprover] = useState(false)
 
   // Revoke modal
   const [photoTarget, setPhotoTarget] = useState<ApprovedUser | null>(null)
@@ -116,6 +118,7 @@ export default function UsersTable({
     setEditRole(u.role)
     setEditDesignation(u.designation ?? '')
     setEditCoordinator(u.is_sgp_coordinator)
+    setEditApprover(u.is_sgp_approver)
   }
 
   function handleAdd(e: React.FormEvent) {
@@ -134,6 +137,7 @@ export default function UsersTable({
           photo_url: null,
           designation: null,
           is_sgp_coordinator: false,
+          is_sgp_approver: false,
           hasLoggedIn: false,
         }])
         setShowAdd(false)
@@ -157,6 +161,9 @@ export default function UsersTable({
       if (editTarget.userId && editCoordinator !== editTarget.is_sgp_coordinator) {
         await setSgpCoordinator(editTarget.userId, editCoordinator)
       }
+      if (editTarget.userId && editApprover !== editTarget.is_sgp_approver) {
+        await setSgpApprover(editTarget.userId, editApprover)
+      }
       setUsers((prev) => prev.map((u) =>
         u.email === editTarget.email
           ? {
@@ -165,6 +172,7 @@ export default function UsersTable({
               role: editRole as ApprovedUser['role'],
               designation: editTarget.userId ? (editDesignation.trim() || null) : u.designation,
               is_sgp_coordinator: editTarget.userId ? editCoordinator : u.is_sgp_coordinator,
+              is_sgp_approver: editTarget.userId ? editApprover : u.is_sgp_approver,
             }
           : u
       ))
@@ -411,6 +419,21 @@ export default function UsersTable({
                   <span className={styles.fieldHint}>
                     Triages companies submitted by partners on the SGP Desk, and can assign them to
                     an associate or general user. Founders and admins can always do this.
+                  </span>
+                  {/* The second signature. Separate from coordinating on purpose: one person
+                      holding both is one signature wearing two hats, and the action refuses it. */}
+                  <label className={styles.coordinatorRow}>
+                    <input
+                      type="checkbox"
+                      checked={editApprover}
+                      onChange={(e) => setEditApprover(e.target.checked)}
+                    />
+                    SGP Approver (founder sign-off)
+                  </label>
+                  <span className={styles.fieldHint}>
+                    Signs off partner attribution after a coordinator — the step that actually
+                    credits a partner with a fee. Held by Nimit; add a second only to cover an
+                    absence.
                   </span>
                 </div>
               )}

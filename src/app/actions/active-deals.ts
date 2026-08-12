@@ -5,6 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireRole } from '@/lib/guards'
 import { findOrCreateCompanyByName } from '@/lib/company-sync'
 import { parseDealsCsv } from '@/lib/active-deals-csv'
+import { proposeAttribution } from './partner-attribution'
 import { DEAL_STATES } from '@/lib/types'
 import type { ActiveDealInvestor, ActiveDealInvestorFee, ActiveDealInvestorStatus, DealCategory, DealState } from '@/lib/types'
 
@@ -235,6 +236,34 @@ export async function acceptDeal(
 
   // Accepting always means the deal is active — percolate that into the linked company profile.
   await syncCompanyStatusFromDealState(supabase, resolvedCompanyId, 'active')
+
+  // A partner-sourced entry reaching Accepted is the moment their introduction became a deal, and
+  // therefore the moment the fee question arises. File the claim here rather than leaving somebody
+  // to notice later: the attribution was recorded on the entry at submission, but nothing was ever
+  // carrying it onto the company the partner would actually be paid for.
+  //
+  // Non-fatal, like the company sync above. Acceptance is the important write; a claim that failed
+  // to file can be raised from the Desk, an acceptance that failed cannot be recovered as easily.
+  if (resolvedCompanyId) {
+    try {
+      const { data: sourced } = await supabase
+        .from('pipeline_entries')
+        .select('sourced_by_partner_id, form_link_id')
+        .eq('id', entryId)
+        .maybeSingle()
+      const partnerId = (sourced as { sourced_by_partner_id: string | null } | null)?.sourced_by_partner_id
+      if (partnerId) {
+        await proposeAttribution({
+          companyId: resolvedCompanyId,
+          partnerId,
+          // Through their own link, or typed in while logged in — the Desk shows the difference.
+          source: (sourced as { form_link_id: string | null } | null)?.form_link_id
+            ? 'form_submission' : 'manual_submission',
+          pipelineEntryId: entryId,
+        })
+      }
+    } catch { /* a duplicate claim, or a claim already live — neither should block acceptance */ }
+  }
 
   // If this entry was already accepted before (its active deal lingers after being
   // moved out of Accepted), re-accepting just moves it back — don't create a second

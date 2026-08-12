@@ -10,9 +10,7 @@ import styles from '../companies.module.css'
 type Team = Array<{ id: string; name: string }>
 
 const SECTIONS: Array<{ key: string; title: string; specs: Spec[] }> = [
-  // Who referred the company is not something you learn on a call with them, and this form writes
-  // every field it shows — so it stays out rather than being offered with an empty partner list.
-  { key: 'overview', title: 'Overview', specs: OVERVIEW_SPECS.filter((s) => s.key !== 'referred_by_partner_id') },
+  { key: 'overview', title: 'Overview', specs: OVERVIEW_SPECS },
   { key: 'traction', title: 'Traction & metrics', specs: TRACTION_SPECS },
   { key: 'raise', title: 'Current raise', specs: RAISE_SPECS },
   { key: 'product', title: 'Product', specs: PRODUCT_SPECS },

@@ -1,36 +1,65 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { getUser } from '@/lib/user'
-import type { PartnerCompany, PartnerInvestorReferral, PartnerReferredCompany, UserRow } from './types'
+import type {
+  PartnerAttributionClaim, PartnerInvestorReferral, PartnerReferredCompany, UserRow,
+} from './types'
 
-/* Partner-sourced company submissions and the coordinator queue.
+/* Partner-sourced submissions, the coordinator queue, and the attribution ledger.
 
-   RLS does the scoping: a partner's query returns only their own submissions, an assignee's
-   returns only what was handed to them, and coordinators and leadership see the whole queue. The
-   same function serves all three. */
+   RLS does the scoping: a partner's query returns only their own, and coordinators and leadership
+   see the whole queue. The same function serves both. */
 
-const SELECT = `
-  *,
-  submitter:submitted_by(name, photo_url),
-  partner:franchise_partners!partner_id(name),
-  assignee:assigned_to(name, photo_url),
-  coordinator:coordinator_id(name)
-`
-
-export const fetchPartnerCompanies = cache(async (): Promise<PartnerCompany[]> => {
+/**
+ * Every attribution claim, whatever it is about and whatever state it is in.
+ *
+ * One read rather than one per section: the Desk splits them by status on the page, and three
+ * round trips to ap-south-1 to render three lists of the same table is three times the wait for
+ * no benefit. Partners get this too — RLS narrows it to their own.
+ */
+export const fetchAttributionClaims = cache(async (): Promise<PartnerAttributionClaim[]> => {
   const supabase = await createClient()
   const { data, error } = await supabase
-    .from('partner_companies')
-    .select(SELECT)
+    .from('partner_attribution_claims')
+    .select(`
+      *,
+      partner:franchise_partners!partner_id(name),
+      company:companies!company_id(id, name),
+      investor:investors!investor_id(id, name),
+      proposer:users!proposed_by(name, photo_url),
+      coordinator:users!coordinator_by(name),
+      founder:users!founder_by(name)
+    `)
     .order('created_at', { ascending: false })
 
-  // Surfaced rather than swallowed: an empty queue and a failed read look identical otherwise,
-  // and a coordinator seeing "nothing to triage" when there is would be a silent failure.
+  // Surfaced rather than swallowed: an empty queue and a failed read look identical otherwise, and
+  // "nothing to approve" when there is something is the failure that costs a partner their fee.
   if (error) {
-    console.error('[partner-companies] read failed:', error.message)
+    console.error('[attribution] claim read failed:', error.message)
     return []
   }
-  return (data ?? []) as unknown as PartnerCompany[]
+  const one = <T,>(v: T | T[] | null) => (Array.isArray(v) ? v[0] ?? null : v ?? null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data ?? []).map((r: any) => ({
+    ...r,
+    partner: one(r.partner),
+    company: one(r.company),
+    investor: one(r.investor),
+    proposer: one(r.proposer),
+    coordinator: one(r.coordinator),
+    founder: one(r.founder),
+  })) as PartnerAttributionClaim[]
+})
+
+/** Whether the caller holds the second signature. */
+export const isSgpApprover = cache(async (userId: string): Promise<boolean> => {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('users')
+    .select('is_sgp_approver')
+    .eq('id', userId)
+    .maybeSingle()
+  return !!(data as { is_sgp_approver?: boolean } | null)?.is_sgp_approver
 })
 
 /** Whether the caller coordinates the SGP queue. */

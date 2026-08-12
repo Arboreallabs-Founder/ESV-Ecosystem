@@ -420,3 +420,31 @@ serves an HTML viewer page, so an `<img>` pointed at one shows a broken icon.
 Public bucket: the poster is displayed inline on a list of cards. Private would mean minting a
 signed URL per event per page load, and refreshing them before expiry, to protect an image whose
 entire purpose is being circulated. Writes are limited to the roles that may edit an event at all.
+
+### `20260919000000_partner_attribution_approval.sql`
+Two signatures before a partner is credited with anything.
+
+**One ledger, not three flows.** A company through a partner's form, an investor referral, and an
+admin ticking "referred by" in the database are the same claim — *this partner introduced this, and
+is owed a fee*. `partner_attribution_claims` is what all four routes file into, and the SGP Desk
+reads it as one queue.
+
+**A trigger, not a column REVOKE.** Six code paths wrote `referred_by_partner_id` directly, so an
+approval screen in front of them would have been decoration. `guard_partner_attribution()` refuses
+any change to that column — INSERT as well as UPDATE — unless `app.applying_attribution` is set,
+which only `apply_partner_attribution()` does. Column-level REVOKE was the first attempt and was
+wrong: re-granting the other 48 columns on `companies` by name would leave every future column
+silently unwritable.
+
+The trigger fires for service_role and the SQL editor too. That is deliberate — "an admin goes into
+the database and tags them" is the case it exists for. For a genuine data fix,
+`SET LOCAL app.applying_attribution = 'on'` in the same transaction.
+
+`users.is_sgp_approver` holds the second signature (set for Nimit). `apply_partner_attribution`
+checks `coordinator_at` rather than `coordinator_by`, so the rows carried in from before approvals
+existed — which had a real coordinator step but no record of who — are not permanently unapplyable.
+
+The three already-tagged investors are backfilled at `pending_founder` rather than grandfathered as
+approved: nobody signed the fee-bearing half, and a ledger full of claims no one approved is worse
+than three items on a Monday agenda. `partner_companies` is renamed rather than dropped — no writer
+since `20260906`, no reader since the Desk stopped rendering it, three historical rows worth keeping.

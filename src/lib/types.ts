@@ -676,6 +676,8 @@ export type ApprovedUser = {
   /** Triages partner-sourced companies on the SGP Desk. A flag rather than a role — see
    *  supabase/migrations/20260826000000. */
   is_sgp_coordinator: boolean
+  /** Holds the second signature on partner attribution. Nimit, unless somebody else is given it. */
+  is_sgp_approver: boolean
   hasLoggedIn: boolean
 }
 
@@ -939,6 +941,81 @@ export type PartnerInvestorReferral = {
   investor?: { id: string; name: string } | null
   submitter?: { name: string | null; photo_url: string | null } | null
   decided_by_user?: { name: string | null } | null
+}
+
+// ── Partner attribution claims ───────────────────────────────────────────────
+/**
+ * "This partner introduced this, and is therefore owed a fee."
+ *
+ * One ledger for what used to be three unrelated gestures — a partner's form submission, an
+ * investor referral, and an admin ticking "referred by" in the database. They are the same claim,
+ * they carry the same money, and they now take the same two signatures.
+ *
+ * The tag on companies/investors is only written once a claim reaches `approved`; a database
+ * trigger refuses every other route to that column, so this type is not merely the UI's view of
+ * the process — it is the process.
+ */
+export const ATTRIBUTION_SOURCES = [
+  'form_submission', 'manual_submission', 'investor_referral', 'retroactive_tag',
+] as const
+export type AttributionSource = typeof ATTRIBUTION_SOURCES[number]
+
+export const ATTRIBUTION_SOURCE_LABELS: Record<AttributionSource, string> = {
+  form_submission: 'Through their link',
+  manual_submission: 'Submitted directly',
+  investor_referral: 'Investor referral',
+  retroactive_tag: 'Tagged by us',
+}
+
+export const ATTRIBUTION_STATUSES = [
+  'pending_coordinator', 'pending_founder', 'approved', 'rejected',
+] as const
+export type AttributionStatus = typeof ATTRIBUTION_STATUSES[number]
+
+export const ATTRIBUTION_STATUS_LABELS: Record<AttributionStatus, string> = {
+  pending_coordinator: 'With the coordinator',
+  pending_founder: 'With the founder',
+  approved: 'Approved',
+  rejected: 'Not credited',
+}
+
+export const ATTRIBUTION_STATUS_COLORS: Record<AttributionStatus, string> = {
+  pending_coordinator: '#D5AE8F',
+  pending_founder: '#745FFD',
+  approved: '#2E7D32',
+  rejected: '#C0392B',
+}
+
+export type PartnerAttributionClaim = {
+  id: string
+  partner_id: string
+  company_id: string | null
+  investor_id: string | null
+  source: AttributionSource
+  referral_id: string | null
+  pipeline_entry_id: string | null
+  status: AttributionStatus
+  note: string | null
+  proposed_by: string | null
+  coordinator_by: string | null
+  coordinator_at: string | null
+  coordinator_note: string | null
+  founder_by: string | null
+  founder_at: string | null
+  founder_note: string | null
+  rejected_note: string | null
+  created_at: string
+  partner?: { name: string } | null
+  company?: { id: string; name: string } | null
+  investor?: { id: string; name: string } | null
+  proposer?: { name: string | null; photo_url: string | null } | null
+  coordinator?: { name: string | null } | null
+  founder?: { name: string | null } | null
+}
+
+/** What the claim is about, whichever kind it is. */
+export function claimSubjectName(c: PartnerAttributionClaim): string {
+  return c.company?.name ?? c.investor?.name ?? 'Unknown'
 }
 
 /**
@@ -1533,36 +1610,6 @@ export type SgpSubmissionStatus = 'submitted' | 'assigned' | 'closed'
 
 export type SupportingLink = { label: string; url: string }
 
-export type PartnerCompany = {
-  id: string
-  org_id: string
-  submitted_by: string
-  partner_id: string | null
-  name: string
-  website: string | null
-  sector: string | null
-  hq_city: string | null
-  contact_name: string | null
-  contact_email: string | null
-  contact_phone: string | null
-  partner_comments: string | null
-  status: SgpSubmissionStatus
-  intake_action: SgpIntakeAction | null
-  coordinator_id: string | null
-  coordinator_notes: string | null
-  supporting_links: SupportingLink[]
-  assigned_to: string | null
-  assigned_at: string | null
-  task_id: string | null
-  company_id: string | null
-  closed_reason: string | null
-  created_at: string
-  updated_at: string
-  submitter?: { name: string | null; photo_url: string | null } | null
-  partner?: { name: string } | null
-  assignee?: { name: string | null; photo_url: string | null } | null
-  coordinator?: { name: string | null } | null
-}
 
 // ── Attendance statements (monthly, HR → employee approval) ──────────────────
 

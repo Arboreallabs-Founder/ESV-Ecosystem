@@ -50,10 +50,9 @@ export const OVERVIEW_SPECS: Spec[] = [
   { key: 'status', label: 'Status', type: 'status' }, { key: 'tags', label: 'Tags', type: 'tags' },
   { key: 'meta_tags', label: 'Meta-tags (themes for investor matching)', type: 'tags', tagOptions: THESIS_TAG_OPTIONS },
   { key: 'esv_poc_id', label: 'ESV point of contact', type: 'user' },
-  // Who introduced them. A partner who brings us a company we already hold should not re-enter it
-  // as a submission — that is a duplicate record and a second claim on one relationship — so we
-  // tag the record we have, and it appears on their My Companies.
-  { key: 'referred_by_partner_id', label: 'Referred by partner', type: 'partner' },
+  // "Referred by partner" is deliberately not here. It is a fee attribution, not a field: it takes
+  // a coordinator and the founder, and the database refuses a direct write. The company profile
+  // proposes it instead — see the Attribution block in CompanyProfileClient.
 ]
 export const TRACTION_SPECS: Spec[] = [
   { key: 'arr_inr', label: 'ARR', type: 'number' }, { key: 'mrr_inr', label: 'MRR', type: 'number' }, { key: 'customers_count', label: 'Customers', type: 'number' },

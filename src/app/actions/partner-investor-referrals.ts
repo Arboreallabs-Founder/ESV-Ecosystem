@@ -1,6 +1,7 @@
 'use server'
 
 import { requireRole } from '@/lib/guards'
+import { proposeAttribution } from './partner-attribution'
 
 /* Investor referrals from partners, and the coordinator's decision.
  *
@@ -100,9 +101,10 @@ export async function findInvestorMatches(name: string) {
 /**
  * Accept a referral against a fund we already hold.
  *
- * Tags the existing investor with the partner rather than creating a second record. If that
- * investor is already credited to a different partner the write is refused: two partners claiming
- * one relationship is a fee dispute, and it needs a person, not a last-write-wins.
+ * Points the referral at the existing investor rather than creating a second record — and files an
+ * attribution claim instead of tagging it. Accepting is the coordinator saying "yes, this is a real
+ * introduction"; it is not the founder agreeing to pay for it, and those used to be the same
+ * keystroke.
  */
 export async function acceptReferralOntoExisting(referralId: string, investorId: string) {
   const ctx = await requireCoordinator()
@@ -133,16 +135,22 @@ export async function acceptReferralOntoExisting(referralId: string, investorId:
     )
   }
 
-  const { error: tagErr } = await ctx.supabase
-    .from('investors')
-    .update({ referred_by_partner_id: claimingPartner })
-    .eq('id', investorId)
-  if (tagErr) throw new Error(tagErr.message)
-
   await decide(ctx, referralId, 'accepted', investorId, null)
+  await proposeAttribution({
+    investorId,
+    partnerId: claimingPartner,
+    source: 'investor_referral',
+    referralId,
+  })
 }
 
-/** Accept a referral for a fund we do not hold: create it, tagged to the partner. */
+/**
+ * Accept a referral for a fund we do not hold: create it, then claim it.
+ *
+ * The fund is created untagged. A record cannot be born carrying an attribution any more — the
+ * database refuses it — because that was the neatest way to acquire a credited partner without
+ * anyone approving anything.
+ */
 export async function acceptReferralAsNew(referralId: string) {
   const ctx = await requireCoordinator()
 
@@ -166,7 +174,6 @@ export async function acceptReferralAsNew(referralId: string) {
       name: r.name,
       website: r.website,
       notes: r.notes,
-      referred_by_partner_id: r.partner_id,
       created_by: ctx.userId,
     })
     .select('id')
@@ -185,6 +192,12 @@ export async function acceptReferralAsNew(referralId: string) {
   }
 
   await decide(ctx, referralId, 'accepted', (created as { id: string }).id, null)
+  await proposeAttribution({
+    investorId: (created as { id: string }).id,
+    partnerId: r.partner_id,
+    source: 'investor_referral',
+    referralId,
+  })
 }
 
 /** Turn one down. The reason is required: "no" without one is what stops partners referring. */
@@ -225,14 +238,19 @@ async function decide(
   }
 }
 
-/** Tag a company in the database as introduced by a partner — or clear the tag. */
-export async function setCompanyReferringPartner(companyId: string, partnerId: string | null) {
-  const ctx = await requireCoordinator()
-  const { data, error } = await ctx.supabase
-    .from('companies')
-    .update({ referred_by_partner_id: partnerId })
-    .eq('id', companyId)
-    .select('id')
-  if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That company could not be updated.')
+/**
+ * Propose that a company already in the database was introduced by a partner.
+ *
+ * This used to write the tag on the spot, which made it the easiest way in the whole app to credit
+ * a partner with no approval at all — open the company, pick a name, done. It now files a claim
+ * like every other route, and the database refuses the direct write regardless of what this
+ * function does.
+ *
+ * Clearing is *not* the same gesture and does not go through here. Removing credit that was
+ * approved is its own decision — see withdrawCompanyAttribution.
+ */
+export async function proposeCompanyAttribution(companyId: string, partnerId: string, note?: string | null) {
+  await requireCoordinator()
+  if (!partnerId) throw new Error('Choose which partner introduced this company.')
+  await proposeAttribution({ companyId, partnerId, source: 'retroactive_tag', note })
 }

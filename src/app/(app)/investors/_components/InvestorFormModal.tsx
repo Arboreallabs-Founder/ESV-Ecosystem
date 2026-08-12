@@ -185,7 +185,8 @@ export default function InvestorFormModal({
           ticket_size_min: ticketMin ? Number(ticketMin) : null,
           ticket_size_max: ticketMax ? Number(ticketMax) : null,
           stage: stage.trim() || null,
-          referred_by_partner_id: referredBy || null,
+          // No referred_by_partner_id. Changing who is credited is a claim on a fee, not a form
+          // field — it goes through the SGP Desk, and the database refuses the direct write.
           onboarding_form_completed: showOnboardingKyc ? onboardingDone : false,
           onboarding_form_url: showOnboardingKyc ? (onboardingUrl.trim() || null) : null,
           kyc_done: showOnboardingKyc ? kycDone : false,
@@ -415,8 +416,12 @@ export default function InvestorFormModal({
             </div>
           </div>
 
-          {/* Referred By — admin/founder only */}
-          {canSetReferredBy && (
+          {/* Referred By — admin/founder only, and only when creating.
+              On create this files an attribution claim rather than crediting anyone: the fund is
+              saved either way, the credit waits for a coordinator and the founder. On edit it is
+              not offered at all, because a control that silently does nothing is worse than no
+              control — changing an existing attribution goes through the SGP Desk. */}
+          {canSetReferredBy && mode === 'create' && (
             <InlineSection icon={<HandshakeIcon />} title="Referred By Partner">
               <Combobox
                 options={franchisePartners.map((p) => ({ id: p.id, label: p.name }))}
@@ -424,6 +429,10 @@ export default function InvestorFormModal({
                 onChange={setReferredBy}
                 placeholder="Search a partner&#8230;"
               />
+              <p className={styles.formHint}>
+                Files a claim for approval. The partner is credited once a coordinator and the
+                founder have both signed it off on the SGP Desk.
+              </p>
             </InlineSection>
           )}
 

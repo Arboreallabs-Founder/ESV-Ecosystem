@@ -2,11 +2,12 @@ import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
 import Link from 'next/link'
 import {
-  fetchAssignableForSgp, isSgpCoordinator, fetchPartnerPipeline, fetchPartnerQueue,
-  fetchInvestorReferralQueue,
+  fetchAssignableForSgp, isSgpCoordinator, isSgpApprover, fetchPartnerPipeline, fetchPartnerQueue,
+  fetchInvestorReferralQueue, fetchAttributionClaims,
 } from '@/lib/partner-companies'
 import SgpDeskClient, { type QueueEntry } from './_components/SgpDeskClient'
 import InvestorReferralQueue from './_components/InvestorReferralQueue'
+import AttributionQueue from './_components/AttributionQueue'
 import styles from './sgp-desk.module.css'
 
 /**
@@ -27,14 +28,19 @@ export default async function SgpDeskPage() {
 
   const isLead = ['founder', 'admin'].includes(user.role ?? '')
   const coordinator = isLead ? true : await isSgpCoordinator(user.id)
-  if (!coordinator) redirect('/dashboard')
+  const approver = await isSgpApprover(user.id)
+  // The founder approver reaches the Desk on the strength of that flag alone: the whole point is
+  // that the second signature is one named person, and requiring them to also be a coordinator
+  // would mean the person signing off is a person who could have signed off already.
+  if (!coordinator && !approver) redirect('/dashboard')
 
   // In flight together: none of these depends on another, and each is a round trip to ap-south-1.
-  const [assignable, pipeline, queue, investorReferrals] = await Promise.all([
+  const [assignable, pipeline, queue, investorReferrals, claims] = await Promise.all([
     fetchAssignableForSgp(),
     fetchPartnerPipeline(),
     fetchPartnerQueue(),
     fetchInvestorReferralQueue(),
+    fetchAttributionClaims(),
   ])
 
   const waiting = (queue as QueueEntry[]).filter((e) => e.stage?.stage_type === 'lead')
@@ -57,6 +63,9 @@ export default async function SgpDeskPage() {
           </Link>
         </div>
       )}
+      {/* Approval first. On the Monday call this is the decision that has money attached; triage
+          and the referral queue are work that can happen any day of the week. */}
+      <AttributionQueue claims={claims} canCoordinate={coordinator} canApprove={approver} />
       <InvestorReferralQueue referrals={investorReferrals} />
       <SgpDeskClient entries={queue as QueueEntry[]} assignable={assignable} />
     </>

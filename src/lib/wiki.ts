@@ -368,6 +368,22 @@ export const WIKI: Record<string, WikiSection> = {
     ],
   },
 
+  attribution: {
+    title: 'Partner attribution',
+    summary: 'The two signatures before a partner is credited with a company or an investor. Everything with a fee attached to it sits in one place on the SGP Desk, which is what makes it reviewable in one sitting on a Monday.',
+    items: [
+      { heading: 'One ledger, four routes', body: 'A company submitted through a partner\'s link, one they typed in themselves, an investor they referred, and a record somebody tags months later are all the same claim: this partner introduced this, and is owed a fee for it. They arrive by different doors and land in the same queue.' },
+      { heading: 'Two signatures', body: 'An SGP Coordinator signs first, then the founder approver. Only the second one credits anybody — until then the partner is named on the claim, not on the record.',
+        snippet: 'proposed ─► with the coordinator ─► with the founder ─► approved\n                     └────────────► not credited ◄────────┘' },
+      { heading: 'Not the same person twice', body: 'If you approved it as the coordinator you cannot also sign it off as the founder. Two signatures from one person is one signature, and both the app and the database refuse it.' },
+      { heading: 'Tagging in the database goes through it too', body: 'Opening a company and naming the partner who introduced them files a claim; it does not credit them. This used to be the easiest way in the whole app to attach a fee to somebody with nobody asking, which is precisely why it is the case the approval exists for.' },
+      { heading: 'The database is the gate, not the screen', body: 'Six different places used to write the attribution column. A trigger now refuses every route to it except an approved claim — so it does not matter which form somebody uses or what they send.' },
+      { heading: 'Approving several at once', body: 'The founder can tick a batch and sign them together, which is what the Monday call actually needs. Each is applied on its own, so one failure does not quietly take the rest with it.' },
+      { heading: 'Withdrawing credit', body: 'An approved attribution can be taken back, by the founder approver, with a reason. It is a decision about money somebody was told they had — not an undo.' },
+      { heading: 'Who signs', body: 'Admin → User Management → edit a user → SGP Approver. Nimit holds it; add a second only to cover an absence.' },
+    ],
+  },
+
   myCompanies: {
     audience: 'partner',
     title: 'My Companies',
@@ -379,6 +395,7 @@ export const WIKI: Record<string, WikiSection> = {
         snippet: 'Acme Corp                              First level call\n  Lead   [First level call]   Prefunding   Founder discussion' },
       { heading: 'Only the name is required', body: 'The point is to capture a lead while it is in front of you, not to make you complete a form first. Your comments are passed through verbatim to whoever picks it up.' },
       { heading: 'What you see', body: 'Your own submissions only. Another partner’s leads are never visible to you, and yours are not visible to them.' },
+      { heading: 'Being reviewed', body: 'Introductions we are still signing off appear in their own section with where they have got to. Being credited takes an SGP Coordinator and then a founder, so there is a real gap before a company shows under "Credited to you" — this is that gap, rather than silence.' },
     ],
   },
 
@@ -619,7 +636,7 @@ export const WIKI_GROUPS: Array<{ title: string; keys: string[] }> = [
   { title: 'Deals', keys: ['dealDesk', 'activeDeals', 'dealDetail', 'dealDocuments', 'pipeline', 'pipelines'] },
   { title: 'Companies & investors', keys: ['companies', 'investors', 'investorProfile', 'investorLists', 'fundraiseStatus', 'gettingToAContact', 'mandateHealth', 'angelReachout'] },
   { title: 'Your work', keys: ['tasks', 'automaticTasks', 'myTodos', 'recurringTasks', 'taskKpis', 'escalations', 'analytics'] },
-  { title: 'Partners (SGP)', keys: ['partners', 'sgpDesk', 'myCompanies', 'portal', 'earnings', 'partnerDeals', 'partnerInvestors', 'partnerDocuments'] },
+  { title: 'Partners (SGP)', keys: ['partners', 'sgpDesk', 'attribution', 'myCompanies', 'portal', 'earnings', 'partnerDeals', 'partnerInvestors', 'partnerDocuments'] },
   { title: 'Intake forms', keys: ['forms', 'formBuilder'] },
   { title: 'People & HR', keys: ['hr', 'attendance', 'attendanceHr', 'documents'] },
   { title: 'Company-wide', keys: ['bulletin', 'admin'] },

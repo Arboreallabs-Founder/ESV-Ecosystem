@@ -5,6 +5,7 @@ import { requireRole } from '@/lib/guards'
 import { createClient } from '@/lib/supabase/server'
 import { parseInvestorsCsv } from '@/lib/investors-csv'
 import type { Investor, InvestorContact, InvestorPortfolioItem } from '@/lib/types'
+import { proposeAttribution } from './partner-attribution'
 
 type ContactDraft = {
   name: string
@@ -81,6 +82,9 @@ export async function createInvestor(params: {
   }
 
   const { supabase, userId, orgId } = await requireInternal()
+  // Held back from the insert on purpose. A record can no longer be created already credited to a
+  // partner — the database refuses it — so the fund is created plain and the attribution is filed
+  // as a claim below, to be approved like any other.
   const referredByPartnerId = fields.referred_by_partner_id
 
   const username = await generateUniqueUsername(supabase, fields.name)
@@ -100,7 +104,6 @@ export async function createInvestor(params: {
       ticket_size_min: fields.ticket_size_min,
       ticket_size_max: fields.ticket_size_max,
       stage: fields.stage || null,
-      referred_by_partner_id: referredByPartnerId,
       onboarding_form_completed: fields.onboarding_form_completed ?? false,
       onboarding_form_url: fields.onboarding_form_url || null,
       kyc_done: fields.kyc_done ?? false,
@@ -139,6 +142,20 @@ export async function createInvestor(params: {
     if (contactErr) throw contactErr
   }
 
+  // The fund exists either way; the credit is a separate question with its own two signatures.
+  // Non-fatal on purpose — losing the whole record because a claim could not be filed would be a
+  // worse outcome than a claim someone has to file again.
+  if (referredByPartnerId) {
+    try {
+      await proposeAttribution({
+        investorId: investor.id as string,
+        partnerId: referredByPartnerId,
+        source: 'retroactive_tag',
+        note: 'Named as the referring partner when the fund was added.',
+      })
+    } catch { /* the fund is saved; the claim can be filed again from the Desk */ }
+  }
+
   return { id: investor.id }
 }
 
@@ -146,7 +163,11 @@ const LOGGED_FIELD_LABELS: Record<string, string> = {
   name: 'Name', country: 'Country', website: 'Website', sectors: 'Sectors',
   business_types: 'Business types', meta_tags: 'Meta-tags', service_type: 'Type',
   ticket_size_min: 'Ticket min', ticket_size_max: 'Ticket max', stage: 'Stage',
-  referred_by_partner_id: 'Referred by partner', onboarding_form_completed: 'Onboarding completed',
+  // referred_by_partner_id was here. It has to come out with the field itself: describeChanges
+  // diffs `before` against the update payload, and the payload no longer carries this key — so
+  // every edit of a tagged investor would have logged "Referred by partner: <id> → —" and claimed
+  // the attribution had just been cleared. The claim's own signatures are the record now.
+  onboarding_form_completed: 'Onboarding completed',
   onboarding_form_url: 'Onboarding form URL', kyc_done: 'KYC done',
 }
 
@@ -181,7 +202,8 @@ export async function updateInvestor(
     ticket_size_min: number | null
     ticket_size_max: number | null
     stage: string | null
-    referred_by_partner_id: string | null
+    // No referred_by_partner_id. Taking it out of the signature rather than accepting and ignoring
+    // it: a parameter that is quietly dropped is how a caller ends up believing it saved something.
     onboarding_form_completed?: boolean
     onboarding_form_url?: string | null
     kyc_done?: boolean
@@ -189,9 +211,7 @@ export async function updateInvestor(
     birthday_year?: number | null
   }
 ): Promise<void> {
-  // Partners may edit their own referrals, but never the ESV POC or referral attribution.
   const { supabase, role, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'hr'])
-  const isPartner = false
 
   const baseFields = {
     name: params.name,
@@ -211,7 +231,11 @@ export async function updateInvestor(
     // A year without a day/month is an orphan the DB CHECK rejects, so clear it together.
     birthday_year: params.birthday_md ? (params.birthday_year ?? null) : null,
   }
-  const nextFields = isPartner ? baseFields : { ...baseFields, referred_by_partner_id: params.referred_by_partner_id || null }
+  // referred_by_partner_id is deliberately absent. It used to ride along with every edit, which
+  // made the investor form a way to credit a partner without anyone approving it. The database now
+  // refuses the write outright, so including it here would fail the whole save; changing the
+  // attribution goes through a claim instead.
+  const nextFields = baseFields
 
   const { data: before } = await supabase
     .from('investors')
@@ -225,15 +249,12 @@ export async function updateInvestor(
     .eq('id', id)
   if (error) throw error
 
-  // POC mapping is admin-owned — partners never touch investor_poc_users.
-  if (!isPartner) {
-    const pocIds = params.esv_poc_ids ?? (params.esv_poc_id ? [params.esv_poc_id] : [])
-    await supabase.from('investor_poc_users').delete().eq('investor_id', id)
-    if (pocIds.length > 0) {
-      await supabase.from('investor_poc_users').insert(
-        pocIds.map((uid) => ({ investor_id: id, user_id: uid }))
-      )
-    }
+  const pocIds = params.esv_poc_ids ?? (params.esv_poc_id ? [params.esv_poc_id] : [])
+  await supabase.from('investor_poc_users').delete().eq('investor_id', id)
+  if (pocIds.length > 0) {
+    await supabase.from('investor_poc_users').insert(
+      pocIds.map((uid) => ({ investor_id: id, user_id: uid }))
+    )
   }
 
   // Best-effort audit log — never fail the save if logging hiccups.

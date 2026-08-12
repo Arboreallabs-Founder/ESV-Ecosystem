@@ -4,8 +4,11 @@ import { useState, useTransition } from 'react'
 import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import { getOrCreateMyReferralLink, submitCompanyToPipeline } from '@/app/actions/partner-companies'
-import { SGP_INTAKE_ACTION_LABELS } from '@/lib/types'
-import type { PartnerReferredCompany, UserRow } from '@/lib/types'
+import {
+  SGP_INTAKE_ACTION_LABELS, ATTRIBUTION_SOURCE_LABELS, ATTRIBUTION_STATUS_LABELS,
+  ATTRIBUTION_STATUS_COLORS, claimSubjectName,
+} from '@/lib/types'
+import type { PartnerAttributionClaim, PartnerReferredCompany, UserRow } from '@/lib/types'
 import type { PartnerSubmission } from '@/lib/partner-companies'
 import Avatar from '@/app/_components/Avatar'
 import { formatDateTimeIst } from '@/lib/format-datetime'
@@ -22,7 +25,7 @@ function stageClass(t: string | undefined) {
 
 
 export default function MyCompaniesClient({
-  submissions, coordinators, stages, pipelineReady, formReady, myLinkToken, referred,
+  submissions, coordinators, stages, pipelineReady, formReady, myLinkToken, referred, awaiting,
 }: {
   formReady: boolean
   myLinkToken: string | null
@@ -32,6 +35,8 @@ export default function MyCompaniesClient({
   coordinators: UserRow[]
   /** Companies already in our database that an admin or coordinator credited to this partner. */
   referred: PartnerReferredCompany[]
+  /** Their claims still working through the two sign-offs. */
+  awaiting: PartnerAttributionClaim[]
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -264,6 +269,44 @@ export default function MyCompaniesClient({
             </article>
           ))}
         </div>
+      )}
+
+      {/* What we are still deciding.
+          Being credited now takes two sign-offs, which means a real gap between telling us about
+          someone and seeing them appear above. Showing the gap is the point: silence in that gap is
+          exactly what stopped partners bothering to refer anyone last time. */}
+      {awaiting.length > 0 && (
+        <section className={styles.referredBlock}>
+          <h2 className={styles.referredTitle}>Being reviewed</h2>
+          <p className={styles.referredSub}>
+            Introductions you have made that we are still signing off. Each one needs an SGP
+            coordinator and then a founder; you will see it under &ldquo;Credited to you&rdquo; once
+            both have.
+          </p>
+          <div className={styles.list}>
+            {awaiting.map((c) => (
+              <article key={c.id} className={styles.card}>
+                <div className={styles.cardHead}>
+                  <div>
+                    <h3 className={styles.cardName}>{claimSubjectName(c)}</h3>
+                    <div className={styles.cardMeta}>
+                      {c.company_id ? 'Company' : 'Investor'} · {ATTRIBUTION_SOURCE_LABELS[c.source]}
+                    </div>
+                  </div>
+                  <span
+                    className={styles.status}
+                    style={{
+                      color: ATTRIBUTION_STATUS_COLORS[c.status],
+                      background: `${ATTRIBUTION_STATUS_COLORS[c.status]}18`,
+                    }}
+                  >
+                    {ATTRIBUTION_STATUS_LABELS[c.status]}
+                  </span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
       )}
 
       {/* Credited to you by Earlyseed Ventures.
