@@ -57,6 +57,137 @@
 
 .empty { text-align: center; padding: 3rem 1.5rem; color: var(--color-muted); font-size: 0.875rem; line-height: 1.6; border: 1.5px dashed var(--color-border); border-radius: var(--radius-lg); }
 
+/* ── Poster ───────────────────────────────────────────────────────────
+   On the card face, then full size in a lightbox. `contain` rather than `cover`: a poster is
+   almost always portrait and carries text at both ends, so cropping it to a banner would hide the
+   half that matters. The box is bounded in height instead, so one event cannot push the rest of
+   the list off the screen. */
+.posterThumbBtn {
+  display: block;
+  width: 100%;
+  margin-top: 0.7rem;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card-raised);
+  cursor: zoom-in;
+  overflow: hidden;
+  position: relative;
+  font-family: inherit;
+  transition: border-color 0.12s;
+}
+.posterThumbBtn:hover { border-color: rgba(var(--color-hover-rgb),0.45); }
+.posterThumb {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+}
+.posterHint {
+  position: absolute;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 9999px;
+  background: rgba(0,0,0,0.55);
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0;
+  transition: opacity 0.12s;
+  pointer-events: none;
+}
+.posterThumbBtn:hover .posterHint { opacity: 1; }
+
+.posterOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  cursor: zoom-out;
+}
+.posterFull {
+  max-width: min(100%, 900px);
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+  cursor: default;
+}
+.posterClose {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  border: none;
+  background: none;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.75;
+}
+.posterClose:hover { opacity: 1; }
+
+/* Poster field inside the event modal */
+.posterDrop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 84px;
+  padding: 0.75rem;
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card-raised);
+  color: var(--color-muted);
+  font-size: 0.8125rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.posterDrop:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.posterDropBusy { cursor: progress; opacity: 0.7; }
+
+.posterEdit { display: flex; align-items: flex-start; gap: 0.75rem; }
+.posterEditImg {
+  width: 110px;
+  max-height: 150px;
+  object-fit: contain;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card-raised);
+  flex-shrink: 0;
+}
+.posterEditActions { display: flex; flex-direction: column; gap: 0.4rem; }
+.posterPickBtn {
+  border: 1px solid var(--color-border);
+  background: var(--color-card-raised);
+  color: var(--color-text);
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.posterPickBtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.posterRemoveBtn {
+  border: 1px solid transparent;
+  background: none;
+  color: var(--color-muted);
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.posterRemoveBtn:hover { color: var(--color-destructive); }
+.posterNote { font-size: 0.6875rem; color: var(--color-muted); line-height: 1.5; margin-top: 0.4rem; }
+
 /* ── Going / attended ─────────────────────────────────────────────── */
 .goingSection { margin-top: 0.65rem; padding-top: 0.65rem; border-top: 1px dashed var(--color-border); }
 .goingHead { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }

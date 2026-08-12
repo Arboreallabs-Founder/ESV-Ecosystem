@@ -1,8 +1,10 @@
 'use client'
 
-import { useRef, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import {
   createEvent, updateEvent, deleteEvent, toggleEventPin, toggleEventCompleted,
   toggleEventAttendance, addEventAttendee, removeEventAttendee, addEventMediaLink, deleteEventMediaLink,
@@ -24,6 +26,26 @@ function formatPostedDate(iso: string) {
 }
 function hostnameOf(url: string) {
   try { return new URL(url).hostname.replace('www.', '') } catch { return url }
+}
+
+// The poster at full size. Portalled to the body because the card is a positioned, translucent
+// surface — rendered in place, a fixed overlay would be clipped by it and tinted by its blur.
+function PosterLightbox({ url, title, onClose }: { url: string; title: string; onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  if (typeof document === 'undefined') return null
+  return createPortal(
+    <div className={styles.posterOverlay} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+      <button type="button" className={styles.posterClose} onClick={onClose} aria-label="Close poster">×</button>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt={`Poster for ${title}`} className={styles.posterFull} />
+    </div>,
+    document.body,
+  )
 }
 
 function AttendeeAdd({ options, onAdd }: { options: Array<{ id: string; name: string }>; onAdd: (userId: string) => void }) {
@@ -83,6 +105,7 @@ function EventCard({
   const [showAddLink, setShowAddLink] = useState(false)
   const [linkLabel, setLinkLabel] = useState('')
   const [linkUrl, setLinkUrl] = useState('')
+  const [posterOpen, setPosterOpen] = useState(false)
   const isGoing = event.attendees.some((a) => a.user_id === currentUserId)
 
   function submitLink() {
@@ -129,6 +152,27 @@ function EventCard({
           </div>
         )}
       </div>
+      {event.poster_url && (
+        <>
+          <button
+            type="button"
+            className={styles.posterThumbBtn}
+            onClick={() => setPosterOpen(true)}
+            title="View poster full size"
+          >
+            {/* Plain <img>, not next/image: the poster comes from our own Supabase CDN, so routing
+                it through Vercel's optimiser would spend transformation quota to re-serve bytes
+                that are already cached at the edge — the same call Avatar makes. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={event.poster_url} alt={`Poster for ${event.title}`} className={styles.posterThumb} />
+            <span className={styles.posterHint}>Click to enlarge</span>
+          </button>
+          {posterOpen && (
+            <PosterLightbox url={event.poster_url} title={event.title} onClose={() => setPosterOpen(false)} />
+          )}
+        </>
+      )}
+
       {event.body && <div className={styles.cardBody}>{event.body}</div>}
 
       <div className={styles.goingSection}>
@@ -222,9 +266,10 @@ function EventCard({
 }
 
 export default function EventsView({
-  events: initialEvents, canEdit, canManage, canCreate, currentUserId, mode, internalUsers,
+  events: initialEvents, canEdit, canManage, canCreate, currentUserId, orgId, mode, internalUsers,
 }: {
   events: BulletinPost[]; canEdit: boolean; canManage: boolean; canCreate: boolean; currentUserId: string; mode: 'upcoming' | 'past'
+  orgId: string
   internalUsers: Array<{ id: string; name: string }>
 }) {
   const router = useRouter()
@@ -331,6 +376,7 @@ export default function EventsView({
       {editing && (
         <EventModal
           event={editing === 'new' ? null : editing}
+          orgId={orgId}
           onClose={() => setEditing(null)}
           onSaved={() => { setEditing(null); router.refresh() }}
         />
@@ -339,7 +385,71 @@ export default function EventsView({
   )
 }
 
-function EventModal({ event, onClose, onSaved }: { event: BulletinPost | null; onClose: () => void; onSaved: () => void }) {
+const MAX_POSTER_BYTES = 8 * 1024 * 1024
+
+// Upload straight from the browser to Supabase Storage, as profile photos already do. Routing an
+// 8MB image through a server action would mean serialising it into the action payload and back out
+// again — for no gain, since storage RLS is what authorises the write either way.
+function PosterField({ orgId, value, onChange }: {
+  orgId: string; value: string; onChange: (url: string) => void
+}) {
+  const [pending, setPending] = useState(false)
+  const [error, setError] = useState('')
+
+  async function pick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setError('')
+    if (!file.type.startsWith('image/')) { setError('The poster must be an image file.'); return }
+    if (file.size > MAX_POSTER_BYTES) { setError('The poster must be under 8MB.'); return }
+    setPending(true)
+    try {
+      const supabase = createClient()
+      const ext = file.name.split('.').pop() || 'jpg'
+      // Org-prefixed and uniquely named: the storage policy checks the first path segment, and a
+      // fresh name per upload means replacing a poster never serves the browser a stale cached one.
+      const path = `${orgId}/${crypto.randomUUID()}.${ext}`
+      const { error: upErr } = await supabase.storage.from('event-posters').upload(path, file)
+      if (upErr) throw new Error(upErr.message)
+      const { data } = supabase.storage.from('event-posters').getPublicUrl(path)
+      onChange(data.publicUrl)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not upload the poster.')
+    } finally { setPending(false) }
+  }
+
+  return (
+    <div className={styles.field}>
+      <label className={styles.fieldLabel}>Poster</label>
+      {value ? (
+        <div className={styles.posterEdit}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={value} alt="Event poster" className={styles.posterEditImg} />
+          <div className={styles.posterEditActions}>
+            <label className={styles.posterPickBtn}>
+              Replace
+              <input type="file" accept="image/*" onChange={pick} hidden disabled={pending} />
+            </label>
+            <button type="button" className={styles.posterRemoveBtn} onClick={() => onChange('')}>Remove</button>
+          </div>
+        </div>
+      ) : (
+        <label className={`${styles.posterDrop} ${pending ? styles.posterDropBusy : ''}`}>
+          {pending ? 'Uploading…' : 'Upload the invite or poster image'}
+          <input type="file" accept="image/*" onChange={pick} hidden disabled={pending} />
+        </label>
+      )}
+      <div className={styles.posterNote}>
+        Shown on the event card and full size when clicked. Images only — a Drive link goes in the
+        field below instead.
+      </div>
+      {error && <div className={styles.errBox}>{error}</div>}
+    </div>
+  )
+}
+
+function EventModal({ event, orgId, onClose, onSaved }: { event: BulletinPost | null; orgId: string; onClose: () => void; onSaved: () => void }) {
   const [title, setTitle] = useState(event?.title ?? '')
   const [body, setBody] = useState(event?.body ?? '')
   const [eventDate, setEventDate] = useState(event?.event_date ?? '')
@@ -347,6 +457,7 @@ function EventModal({ event, onClose, onSaved }: { event: BulletinPost | null; o
   const [location, setLocation] = useState(event?.location ?? '')
   const [mediaUrl, setMediaUrl] = useState(event?.media_url ?? '')
   const [scannedCardsUrl, setScannedCardsUrl] = useState(event?.scanned_cards_url ?? '')
+  const [posterUrl, setPosterUrl] = useState(event?.poster_url ?? '')
   const [pinned, setPinned] = useState(event?.pinned ?? false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
@@ -359,6 +470,7 @@ function EventModal({ event, onClose, onSaved }: { event: BulletinPost | null; o
       title, body: body || null,
       event_date: eventDate, event_time: eventTime || null, location: location || null,
       media_url: mediaUrl || null, scanned_cards_url: scannedCardsUrl || null,
+      poster_url: posterUrl || null,
       pinned,
     }
     startTransition(async () => {
@@ -401,6 +513,8 @@ function EventModal({ event, onClose, onSaved }: { event: BulletinPost | null; o
             <label className={styles.fieldLabel}>Location</label>
             <input className={styles.input} value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Office, Zoom link, etc." />
           </div>
+
+          <PosterField orgId={orgId} value={posterUrl} onChange={setPosterUrl} />
 
           <div className={styles.field}>
             <label className={styles.fieldLabel}>Event media (Google link)</label>

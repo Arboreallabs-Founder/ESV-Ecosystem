@@ -31,6 +31,7 @@ export default async function UpcomingEventsPage() {
       canManage={canManage}
       canCreate={canCreate}
       currentUserId={user.id}
+      orgId={user.org_id ?? ''}
       mode="upcoming"
       internalUsers={(internalUsers ?? []) as Array<{ id: string; name: string }>}
     />

@@ -409,3 +409,14 @@ is a view rather than a copy, so an investor's history cannot drift from what wa
 
 Two more automatic rules: a contact search stalled past a week, and an introduction waiting past a
 week. Both are the failure mode §9 and §10 exist to prevent.
+
+### `20260918000000_event_poster.sql`
+`bulletin_posts.poster_url` plus a public `event-posters` bucket.
+
+An uploaded file rather than another pasted link, because the two link fields events already carry
+are Google Drive/Photos URLs and those cannot be rendered — a Drive `…/view?usp=sharing` link
+serves an HTML viewer page, so an `<img>` pointed at one shows a broken icon.
+
+Public bucket: the poster is displayed inline on a list of cards. Private would mean minting a
+signed URL per event per page load, and refreshing them before expiry, to protect an image whose
+entire purpose is being circulated. Writes are limited to the roles that may edit an event at all.

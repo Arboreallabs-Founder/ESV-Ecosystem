@@ -33,6 +33,7 @@ export default async function PastEventsPage() {
       canManage={canManage}
       canCreate={canCreate}
       currentUserId={user.id}
+      orgId={user.org_id ?? ''}
       mode="past"
       internalUsers={(internalUsers ?? []) as Array<{ id: string; name: string }>}
     />

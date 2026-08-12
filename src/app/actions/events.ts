@@ -38,6 +38,7 @@ export type EventInput = {
   pinned?: boolean
   media_url?: string | null
   scanned_cards_url?: string | null
+  poster_url?: string | null
 }
 
 function describeEventChanges(
@@ -55,6 +56,11 @@ function describeEventChanges(
     const a = JSON.stringify(before[key] ?? null)
     const b = JSON.stringify(after[key] ?? null)
     if (a !== b) lines.push(`${label}: ${before[key] ?? '—'} → ${after[key] ?? '—'}`)
+  }
+  // Said, not diffed: a poster URL is a bucket path with a UUID in it, and printing the before and
+  // after of that in an audit line tells a reader nothing they can use.
+  if ((before.poster_url ?? null) !== (after.poster_url ?? null)) {
+    lines.push(after.poster_url ? (before.poster_url ? 'Poster replaced' : 'Poster added') : 'Poster removed')
   }
   return lines.join('; ')
 }
@@ -81,6 +87,7 @@ export async function createEvent(input: EventInput): Promise<string> {
       pinned: UNRESTRICTED_EDITORS.includes(role) ? (input.pinned ?? false) : false,
       media_url: input.media_url?.trim() || null,
       scanned_cards_url: input.scanned_cards_url?.trim() || null,
+      poster_url: input.poster_url?.trim() || null,
     })
     .select('id')
     .single()
@@ -106,7 +113,7 @@ export async function updateEvent(id: string, input: EventInput): Promise<void> 
 
   const { data: before } = await supabase
     .from('bulletin_posts')
-    .select('title, body, event_date, event_time, location, pinned, media_url, scanned_cards_url, created_by')
+    .select('title, body, event_date, event_time, location, pinned, media_url, scanned_cards_url, poster_url, created_by')
     .eq('id', id)
     .single()
 
@@ -128,6 +135,7 @@ export async function updateEvent(id: string, input: EventInput): Promise<void> 
     pinned: restricted ? (before?.pinned ?? false) : (input.pinned ?? false),
     media_url: input.media_url?.trim() || null,
     scanned_cards_url: input.scanned_cards_url?.trim() || null,
+    poster_url: input.poster_url?.trim() || null,
   }
 
   const { error } = await supabase.from('bulletin_posts').update(nextFields).eq('id', id)

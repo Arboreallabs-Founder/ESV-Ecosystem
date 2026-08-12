@@ -313,6 +313,7 @@ export const WIKI: Record<string, WikiSection> = {
       { heading: 'Reading it', body: 'Posts are grouped into Pinned, Upcoming events, and Announcements, with a collapsed "Past events" section at the bottom so old events don\'t clutter the board.' },
       { heading: 'Posting', body: 'Founders/admins click "+ New post", choose Event or Announcement, and fill in a title and details. Events also take a date, optional time, and location.' },
       { heading: 'Pinning', body: 'Pin a post to keep it at the top of the board regardless of date, for anything that needs everyone\'s attention.' },
+      { heading: 'The poster', body: 'Upload the invite image on an event and it appears on the card itself, so people see what the event is without opening anything. Click it for the full-size version. It has to be an image file — a Drive link renders as a link, not a picture, which is why the two are separate fields.' },
     ],
   },
 
