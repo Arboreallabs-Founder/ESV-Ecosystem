@@ -79,14 +79,19 @@
    Grid, not a stack: a triage queue is scanned, and on a wide screen a single column means
    scrolling past whitespace to see what is waiting. The minimum keeps a card readable; anything
    wider becomes another column. */
+/* No align-items: start. It sized every card to its own content, so two cards side by side ended
+   up different heights purely because one had a note on it and the other did not — which reads as
+   a layout fault rather than as information. Grid rows stretch by default; the cards below take
+   that height and push their actions to the bottom, so the row lines up along both edges. */
 .list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
   gap: 0.875rem;
-  align-items: start;
 }
 
 .card {
+  display: flex;
+  flex-direction: column;
   padding: 1.125rem 1.25rem;
   background: var(--color-card);
   border: 1.5px solid var(--glass-border, var(--color-border));
@@ -179,7 +184,9 @@
   color: var(--color-primary);
 }
 
-.cardActions { display: flex; gap: 0.5rem; margin-top: 1rem; }
+/* auto, not a fixed margin: the actions sit at the foot of a stretched card so the buttons across
+   a row line up, with padding-top guaranteeing the gap a plain auto margin would collapse to 0. */
+.cardActions { display: flex; gap: 0.5rem; margin-top: auto; padding-top: 1rem; }
 
 /* ── Buttons ── */
 .primaryBtn {
@@ -683,9 +690,12 @@
 }
 .batchAll { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8125rem; color: var(--color-text); cursor: pointer; }
 
-.claimRow { display: flex; align-items: flex-start; gap: 0.625rem; }
-.claimCheck { margin-top: 1.1rem; flex-shrink: 0; }
-.claimRowBody { flex: 1; min-width: 0; }
+/* stretch, so the card inside inherits the grid row's height rather than collapsing back to its
+   own content and undoing the alignment one level up. */
+.claimRow { display: flex; align-items: stretch; gap: 0.625rem; }
+.claimCheck { margin-top: 1.1rem; flex-shrink: 0; align-self: flex-start; }
+.claimRowBody { flex: 1; min-width: 0; display: flex; }
+.claimRowBody > * { flex: 1; }
 
 .textarea {
   width: 100%; min-height: 5rem; margin-top: 0.75rem; padding: 0.55rem 0.7rem;
