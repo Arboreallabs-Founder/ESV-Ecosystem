@@ -8,9 +8,10 @@ import {
   commitAngelToDeal, createAngelReachout, setAngelDone, setAngelIncluded, setAngelResponse,
 } from '@/app/actions/angel-reachout'
 import { ANGEL_METHODS, ANGEL_METHOD_LABELS } from '@/lib/types'
-import type { AngelMethod, AngelReachoutList, UserRow } from '@/lib/types'
+import type { ActiveDealDocument, AngelMethod, AngelReachoutList, UserRow } from '@/lib/types'
 import { formatDateTimeIst } from '@/lib/format-datetime'
 import Avatar from '@/app/_components/Avatar'
+import SharePitch from '@/app/(app)/active-deals/_components/SharePitch'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import styles from '../angels.module.css'
 
@@ -25,12 +26,18 @@ import styles from '../angels.module.css'
  * rather than forty investors becoming forty task cards nobody can see the shape of.
  */
 export default function AngelReachoutClient({
-  lists, dealId, dealName, team,
+  lists, dealId, dealName, team, documents, companyName, intro, website, companyId,
 }: {
   lists: AngelReachoutList[]
   dealId: string
   dealName: string
   team: UserRow[]
+  /** For the pitch. The same builder the deal card and deal page use. */
+  documents: ActiveDealDocument[]
+  companyName: string
+  intro: string | null
+  website: string | null
+  companyId: string | null
 }) {
   const router = useRouter()
   const [creating, setCreating] = useState(false)
@@ -63,9 +70,22 @@ export default function AngelReachoutClient({
             down what they said.
           </p>
         </div>
-        <button className={styles.primaryBtn} onClick={() => setCreating((v) => !v)}>
-          {creating ? 'Cancel' : '+ New reachout'}
-        </button>
+        <div className={styles.headActions}>
+          {/* The message itself, where the work is done. Reaching 145 people means opening this
+              once and pasting 145 times — having to go back to the deal page for the text is how
+              somebody ends up retyping it from memory halfway down the list. */}
+          <SharePitch
+            companyName={companyName}
+            intro={intro}
+            website={website}
+            documents={documents}
+            companyId={companyId}
+            canEditIntro
+          />
+          <button className={styles.primaryBtn} onClick={() => setCreating((v) => !v)}>
+            {creating ? 'Cancel' : '+ New reachout'}
+          </button>
+        </div>
       </header>
 
       {creating && (
@@ -178,83 +198,126 @@ export default function AngelReachoutClient({
                 <span className={open ? styles.chevOpen : styles.chev} aria-hidden="true">▾</span>
               </button>
 
-              {open && (
-                <div className={styles.members}>
-                  {list.members.map((m) => (
-                    <div key={m.id} className={m.included ? styles.member : styles.memberOut}>
-                      <label className={styles.includeBox} title="On this round?">
-                        <input
-                          type="checkbox"
-                          checked={m.included}
-                          disabled={pending}
-                          onChange={() => run(() => setAngelIncluded(m.id, !m.included, dealId))}
-                        />
-                      </label>
-
-                      <span className={styles.memberName}>{m.investor?.name ?? 'Removed'}</span>
-
-                      {m.included && (
-                        <>
-                          <button
-                            className={m.done ? styles.doneOn : styles.doneOff}
-                            disabled={pending}
-                            onClick={() => run(() => setAngelDone(m.id, !m.done, dealId))}
-                          >
-                            {m.done ? 'Reached' : 'Mark reached'}
-                          </button>
-
-                          {/* Who did it, because with several people on one list that is the first
-                              thing anyone asks afterwards. */}
-                          {m.done && m.done_by_user && (
-                            <span className={styles.byWhom}>
-                              <Avatar name={m.done_by_user.name ?? '?'} photoUrl={m.done_by_user.photo_url} size="xs" />
-                              {m.done_by_user.name}
-                            </span>
-                          )}
-
-                          <input
-                            className={styles.responseInput}
-                            defaultValue={m.response ?? ''}
-                            placeholder="What did they say?"
-                            disabled={pending}
-                            onBlur={(e) => {
-                              if (e.target.value.trim() !== (m.response ?? '').trim()) {
-                                run(() => setAngelResponse(m.id, e.target.value, dealId))
-                              }
-                            }}
-                          />
-
-                          {/* A commitment belongs on the deal's own investor list, so the totals
-                              there stay true. Reached from here because this is where you are
-                              standing when they say yes. */}
-                          {m.response && (
-                            <button
-                              className={styles.commitBtn}
-                              disabled={pending}
-                              onClick={() => {
-                                const raw = prompt(`How much is ${m.investor?.name} in for? (₹)`)
-                                const amount = Number((raw ?? '').replace(/[^0-9.]/g, ''))
-                                if (!amount) return
-                                run(() => commitAngelToDeal({
-                                  memberId: m.id,
-                                  investorId: m.investor_id,
-                                  activeDealId: dealId,
-                                  amount,
-                                }))
-                              }}
-                            >
-                              They&apos;re in
-                            </button>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {open && <MemberList list={list} dealId={dealId} pending={pending} run={run} />}
             </section>
           )
         })
+      )}
+    </div>
+  )
+}
+
+/**
+ * The roster, with a search over it.
+ *
+ * Its own component so the query resets when you switch lists rather than following you into a
+ * different roster — and so a keystroke re-renders these rows instead of the whole page.
+ *
+ * Filtering hides rows; it never changes what is included. The counts in the list header stay
+ * computed from the whole roster, because "0/145 reached" must not become "0/3 reached" the moment
+ * somebody types a name.
+ */
+function MemberList({ list, dealId, pending, run }: {
+  list: AngelReachoutList
+  dealId: string
+  pending: boolean
+  run: (fn: () => Promise<unknown>) => void
+}) {
+  const [query, setQuery] = useState('')
+  const q = query.trim().toLowerCase()
+  const shown = q
+    ? list.members.filter((m) => (m.investor?.name ?? '').toLowerCase().includes(q))
+    : list.members
+
+  return (
+    <div className={styles.members}>
+      <div className={styles.searchRow}>
+        <input
+          className={styles.search}
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search this list by name…"
+          aria-label="Search angels in this list"
+        />
+        <span className={styles.searchCount}>
+          {q ? `${shown.length} of ${list.members.length}` : `${list.members.length} angels`}
+        </span>
+      </div>
+
+      {shown.length === 0 ? (
+        <div className={styles.noMatch}>No one on this list matches “{query.trim()}”.</div>
+      ) : (
+        shown.map((m) => (
+          <div key={m.id} className={m.included ? styles.member : styles.memberOut}>
+            <label className={styles.includeBox} title="On this round?">
+              <input
+                type="checkbox"
+                checked={m.included}
+                disabled={pending}
+                onChange={() => run(() => setAngelIncluded(m.id, !m.included, dealId))}
+              />
+            </label>
+
+            <span className={styles.memberName}>{m.investor?.name ?? 'Removed'}</span>
+
+            {m.included && (
+              <>
+                <button
+                  className={m.done ? styles.doneOn : styles.doneOff}
+                  disabled={pending}
+                  onClick={() => run(() => setAngelDone(m.id, !m.done, dealId))}
+                >
+                  {m.done ? 'Reached' : 'Mark reached'}
+                </button>
+
+                {/* Who did it, because with several people on one list that is the first
+                    thing anyone asks afterwards. */}
+                {m.done && m.done_by_user && (
+                  <span className={styles.byWhom}>
+                    <Avatar name={m.done_by_user.name ?? '?'} photoUrl={m.done_by_user.photo_url} size="xs" />
+                    {m.done_by_user.name}
+                  </span>
+                )}
+
+                <input
+                  className={styles.responseInput}
+                  defaultValue={m.response ?? ''}
+                  placeholder="What did they say?"
+                  disabled={pending}
+                  onBlur={(e) => {
+                    if (e.target.value.trim() !== (m.response ?? '').trim()) {
+                      run(() => setAngelResponse(m.id, e.target.value, dealId))
+                    }
+                  }}
+                />
+
+                {/* A commitment belongs on the deal's own investor list, so the totals
+                    there stay true. Reached from here because this is where you are
+                    standing when they say yes. */}
+                {m.response && (
+                  <button
+                    className={styles.commitBtn}
+                    disabled={pending}
+                    onClick={() => {
+                      const raw = prompt(`How much is ${m.investor?.name} in for? (₹)`)
+                      const amount = Number((raw ?? '').replace(/[^0-9.]/g, ''))
+                      if (!amount) return
+                      run(() => commitAngelToDeal({
+                        memberId: m.id,
+                        investorId: m.investor_id,
+                        activeDealId: dealId,
+                        amount,
+                      }))
+                    }}
+                  >
+                    They&apos;re in
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        ))
       )}
     </div>
   )

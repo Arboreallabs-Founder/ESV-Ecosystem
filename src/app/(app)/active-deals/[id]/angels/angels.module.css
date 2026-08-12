@@ -50,7 +50,11 @@
 }
 .primaryBtn:disabled { opacity: 0.5; cursor: default; }
 
-.list { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: hidden; }
+/* `clip`, not `hidden`. Both clip the rows to the rounded corners, but `hidden` establishes a
+   scroll container — and a sticky descendant sticks to its nearest scrolling ancestor, which would
+   be this never-scrolling box. The search row below would then simply never stick. `clip` does not
+   create one, so it stays anchored to the page's own scrollport. */
+.list { background: var(--color-card); border: 1px solid var(--color-border); border-radius: var(--radius-lg); overflow: clip; }
 
 .listHead {
   display: flex; align-items: center; gap: 0.875rem; flex-wrap: wrap;
@@ -69,7 +73,32 @@
 .chev, .chevOpen { color: var(--color-muted); font-size: 0.75rem; }
 .chevOpen { transform: rotate(180deg); }
 
+.headActions { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+
 .members { border-top: 1px solid var(--color-border); }
+
+/* Search over the roster. Sticky, because with 145 rows the box you are typing in scrolls away
+   the moment you look at what it found. */
+.searchRow {
+  position: sticky; top: 0; z-index: 2;
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.625rem 1.125rem;
+  background: var(--glass-panel);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border-bottom: 1px solid var(--color-border);
+}
+.search {
+  flex: 1; min-width: 0;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--color-border); border-radius: var(--radius-sm);
+  background: var(--color-bg); color: var(--color-text);
+  font-family: inherit; font-size: 0.8125rem;
+}
+.search:focus { outline: none; border-color: var(--color-primary); }
+.searchCount { font-size: 0.75rem; color: var(--color-muted); white-space: nowrap; }
+
+.noMatch { padding: 1.5rem 1.125rem; font-size: 0.8125rem; color: var(--color-muted); }
 
 .member, .memberOut {
   display: flex; align-items: center; gap: 0.625rem; flex-wrap: wrap;

@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
-import { fetchActiveDeal } from '@/lib/active-deals'
+import { fetchActiveDeal, fetchDealDocuments } from '@/lib/active-deals'
 import { fetchAngelLists, isSyndicateDeal } from '@/lib/angel-reachout'
 import { fetchAssignableForSgp } from '@/lib/partner-companies'
 import { createClient } from '@/lib/supabase/server'
@@ -20,10 +20,13 @@ export default async function AngelsPage({ params }: { params: Promise<{ id: str
   if (!['founder', 'admin', 'associate'].includes(user.role ?? '')) redirect('/dashboard')
 
   const supabase = await createClient()
-  const [deal, lists, syndicate, { data: teamRows }] = await Promise.all([
+  const [deal, lists, syndicate, documents, { data: teamRows }] = await Promise.all([
     fetchActiveDeal(id),
     fetchAngelLists(id),
     isSyndicateDeal(id),
+    // The same documents the deal page shares from. An angel is being sent the identical message a
+    // fund's contact gets — a second pitch written from memory here is how the two drift apart.
+    fetchDealDocuments(id),
     supabase.from('users').select('*')
       .in('role', ['founder', 'admin', 'associate']).order('name'),
   ])
@@ -50,6 +53,11 @@ export default async function AngelsPage({ params }: { params: Promise<{ id: str
       dealId={id}
       dealName={deal.entry?.title ?? 'this deal'}
       team={(teamRows ?? []) as UserRow[]}
+      documents={documents}
+      companyName={deal.entry?.title ?? 'this company'}
+      intro={deal.entry?.company?.share_intro ?? deal.entry?.company?.one_liner ?? null}
+      website={deal.entry?.company?.website ?? null}
+      companyId={deal.entry?.company_id ?? null}
     />
   )
 }

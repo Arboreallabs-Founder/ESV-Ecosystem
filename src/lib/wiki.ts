@@ -576,6 +576,8 @@ export const WIKI: Record<string, WikiSection> = {
         snippet: 'Angel reachout — WhatsApp blast     12/34 reached · 5 replied\n  [x] Ankit Shah      Reached (Sakshay)   \"Send me the deck\"\n  [x] Meera Iyer      Reached (Karan)     \"Not this one\"\n  [ ] Rohan Gupta     Mark reached' },
       { heading: 'Four methods', body: 'In person, WhatsApp blast, email blast, or other — and "other" makes you say which. "Other" on its own is a record of nothing three months later.' },
       { heading: 'Everyone starts ticked', body: 'The list is something you narrow, not something you build. Untick anyone you are not approaching this round; they stay visible but recede, because seeing who you left out is part of the decision.' },
+      { heading: 'Finding someone', body: 'The search box above the roster filters by name as you type, and stays put as you scroll. It hides rows, it does not change who is included — the "reached" count in the header stays counted against the whole list.' },
+      { heading: 'The message', body: 'Share on WhatsApp at the top of the page builds the same pitch the deal card and deal page build, from the same documents. One builder on purpose: a message that reads differently depending on which screen it was copied from is one nobody trusts.' },
       { heading: 'What they said', body: 'Free text beside each name. It is archived against that investor\'s profile, so their history builds up across deals rather than being trapped in the list it came from.' },
       { heading: 'When they commit', body: '"They\'re in" adds them to the deal\'s own investor list with the amount, so the totals on the deal page stay true — the same place every other commitment lives.' },
     ],
