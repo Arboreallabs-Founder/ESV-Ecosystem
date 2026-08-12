@@ -1,11 +1,16 @@
 /* ── Public form — full ESV branding ──────────────────────────────── */
 
+/* Centred vertically by the card's own auto margins, not by justify-content.
+   `justify-content: center` overflows a too-tall card equally in both directions, and overflow
+   above the scroll origin cannot be scrolled to — so a question with enough options to exceed the
+   viewport put its own heading permanently out of reach. Auto margins only ever distribute
+   *positive* free space: when the card is taller than the screen they resolve to zero and it sits
+   at the top, scrollable from the first line. */
 .page {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   padding: 2rem 1rem;
   background-color: #F7ECE2; /* Crema */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
@@ -30,6 +35,8 @@
   padding: 3rem 2.5rem;
   width: 100%;
   max-width: 560px;
+  /* The vertical centring — see .page. Collapses to 0 rather than pushing the top off-screen. */
+  margin-block: auto;
   position: relative;
   z-index: 1;
 }
