@@ -808,6 +808,46 @@ export async function updateDealInvestor(id: string, updates: {
   if (error) throw error
 }
 
+/**
+ * Move a commitment between the deal's categories, or back to Unassigned.
+ *
+ * Its own action rather than another key on updateDealInvestor, because this is the one field that
+ * has to be checked against something. `category_id` references deal_categories globally, so
+ * without the check below an investor could be filed under a category belonging to a different
+ * deal — a row that then appears under no tab at all and quietly stops counting toward any total.
+ *
+ * Angel commitments land here with no category (they arrive from Angel Reachout, which is upstream
+ * of the split), so Unassigned is a real state and moving out of it is the normal path.
+ */
+export async function setDealInvestorCategory(id: string, categoryId: string | null) {
+  const { supabase } = await requireInternal()
+
+  const { data: row, error: readErr } = await supabase
+    .from('active_deal_investors')
+    .select('active_deal_id')
+    .eq('id', id)
+    .single()
+  if (readErr) throw readErr
+  // RLS filters the read, and a filtered-out row comes back as "not found" rather than an error.
+  if (!row) throw new Error('That commitment could not be found.')
+
+  if (categoryId) {
+    const { data: allowed } = await supabase
+      .from('active_deal_categories')
+      .select('category_id')
+      .eq('active_deal_id', row.active_deal_id)
+      .eq('category_id', categoryId)
+      .maybeSingle()
+    if (!allowed) throw new Error('That category is not on this deal.')
+  }
+
+  const { error } = await supabase
+    .from('active_deal_investors')
+    .update({ category_id: categoryId })
+    .eq('id', id)
+  if (error) throw error
+}
+
 export async function upsertInvestorFee(
   activeDealInvestorId: string,
   params: { id?: string; label: string; rate: number | null; source_field_id?: string | null }

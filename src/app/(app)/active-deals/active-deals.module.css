@@ -1420,6 +1420,25 @@
 }
 .investorStatusSelect:hover { filter: brightness(0.97); }
 
+/* Deliberately quieter than the status pill beside it. Status is the thing you read down the
+   column; category is the thing you occasionally change, and two competing pills in adjacent cells
+   would make the row hard to scan. */
+.investorCategorySelect {
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.4rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  outline: none;
+  max-width: 11rem;
+}
+.investorCategorySelect:hover { border-color: var(--color-primary); }
+.investorCategorySelect:focus { border-color: var(--color-primary); }
+
 .sheetFeeColHead {
   display: inline-flex;
   align-items: center;

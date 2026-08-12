@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useCallback, useMemo, useState, useTransition } from 'react'
 import { alertError } from '@/lib/client-errors'
 import Link from 'next/link'
 import {
@@ -8,6 +8,7 @@ import {
   addInvestorsToDeal,
   removeInvestorFromDeal,
   updateDealInvestor,
+  setDealInvestorCategory,
   upsertInvestorFee,
   toggleInvestorFee,
   deleteInvestorFee,
@@ -63,17 +64,21 @@ export default function InvestorSpreadsheet({
 
   // Per-category investor tabs — only shown once the deal has 2+ categories; otherwise this
   // behaves exactly like the old single flat list (activeTab is irrelevant when there's ≤1 tab).
-  const hasUnassigned = investors.some((inv) => !inv.category_id || !categories.some((c) => c.id === inv.category_id))
+  // A category the deal no longer carries counts as unassigned too — the row is still real, and
+  // filing it under a tab that isn't rendered would hide it from every view.
+  const isUnassigned = useCallback(
+    (inv: ActiveDealInvestor) => !inv.category_id || !categories.some((c) => c.id === inv.category_id),
+    [categories],
+  )
+  const hasUnassigned = investors.some(isUnassigned)
   const tabs = [...categories.map((c) => ({ value: c.id, label: c.name, dot: c.color })), ...(hasUnassigned ? [{ value: UNASSIGNED_TAB, label: 'Unassigned' }] : [])]
   const [activeTab, setActiveTab] = useState<string>(categories[0]?.id ?? UNASSIGNED_TAB)
   const showTabs = tabs.length > 1
   const visibleInvestors = useMemo(
     () => showTabs
-      ? investors.filter((inv) => activeTab === UNASSIGNED_TAB
-          ? !inv.category_id || !categories.some((c) => c.id === inv.category_id)
-          : inv.category_id === activeTab)
+      ? investors.filter((inv) => activeTab === UNASSIGNED_TAB ? isUnassigned(inv) : inv.category_id === activeTab)
       : investors,
-    [investors, activeTab, showTabs, categories],
+    [investors, activeTab, showTabs, isUnassigned],
   )
   const [showCreateInvestor, setShowCreateInvestor] = useState(false)
   const [showAddFeeColumn, setShowAddFeeColumn] = useState(false)
@@ -117,6 +122,25 @@ export default function InvestorSpreadsheet({
     startTransition(async () => {
       try { await updateDealInvestor(inv.id, { status: next, is_investing: nextInvesting }) }
       catch (err) { mutateInvestor(inv.id, (i) => ({ ...i, status: prevStatus, is_investing: prevInvesting })); alertError(err) }
+    })
+  }
+
+  // Moving a row out of the tab you are looking at makes it vanish from the list — which is what
+  // "move" means, and the tab counts update in the same render so where it went is visible.
+  function handleCategoryChange(inv: ActiveDealInvestor, next: string) {
+    const categoryId = next === UNASSIGNED_TAB ? null : next
+    const prev = inv.category_id
+    // The Unassigned tab only exists while something is unassigned. Emptying it from inside would
+    // otherwise leave the view on a tab that is no longer rendered, showing nothing — so follow the
+    // row across. Only in that case: bulk-moving out of Unassigned should not yank the view after
+    // the first row.
+    if (activeTab === UNASSIGNED_TAB && categoryId && !investors.some((i) => i.id !== inv.id && isUnassigned(i))) {
+      setActiveTab(categoryId)
+    }
+    mutateInvestor(inv.id, (i) => ({ ...i, category_id: categoryId }))
+    startTransition(async () => {
+      try { await setDealInvestorCategory(inv.id, categoryId) }
+      catch (err) { mutateInvestor(inv.id, (i) => ({ ...i, category_id: prev })); alertError(err) }
     })
   }
 
@@ -300,7 +324,7 @@ export default function InvestorSpreadsheet({
       </div>
 
       {showTabs && (
-        <FilterTabs tabs={tabs.map((t) => ({ ...t, count: investors.filter((inv) => (t.value === UNASSIGNED_TAB ? (!inv.category_id || !categories.some((c) => c.id === inv.category_id)) : inv.category_id === t.value)).length }))} value={activeTab} onChange={setActiveTab} />
+        <FilterTabs tabs={tabs.map((t) => ({ ...t, count: investors.filter((inv) => (t.value === UNASSIGNED_TAB ? isUnassigned(inv) : inv.category_id === t.value)).length }))} value={activeTab} onChange={setActiveTab} />
       )}
 
       {visibleInvestors.length === 0 ? (
@@ -314,6 +338,9 @@ export default function InvestorSpreadsheet({
               <tr>
                 <th className={styles.sheetSrNo}>Sr No</th>
                 <th>Investor</th>
+                {/* Only where there is somewhere to move to. On a single-category deal the column
+                    would be one repeated value and a control with no second option. */}
+                {showTabs && <th>Category</th>}
                 <th>Status</th>
                 <th className={styles.sheetNum}>Commitment Amount</th>
                 <th className={styles.sheetNum}>No. of Shares</th>
@@ -350,6 +377,7 @@ export default function InvestorSpreadsheet({
             <tbody>
               {rows.map(({ inv, cumulative }, i) => {
                 const statusMeta = ACTIVE_DEAL_INVESTOR_STATUS_META[inv.status]
+                const currentCategory = categories.find((c) => c.id === inv.category_id)
                 return (
                   <tr key={inv.id}>
                     <td className={styles.sheetSrNo}>{i + 1}</td>
@@ -362,6 +390,23 @@ export default function InvestorSpreadsheet({
                         {inv.is_referral && <span className={styles.referralChip}>Referral</span>}
                       </div>
                     </td>
+                    {showTabs && (
+                      <td>
+                        {isReadOnly ? (
+                          <span className={styles.sheetMuted}>{currentCategory?.name ?? 'Unassigned'}</span>
+                        ) : (
+                          <select
+                            className={styles.investorCategorySelect}
+                            value={currentCategory?.id ?? UNASSIGNED_TAB}
+                            title="Move this commitment to another category"
+                            onChange={(e) => handleCategoryChange(inv, e.target.value)}
+                          >
+                            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            <option value={UNASSIGNED_TAB}>Unassigned</option>
+                          </select>
+                        )}
+                      </td>
+                    )}
                     <td>
                       {isReadOnly ? (
                         <span className={styles.stateBadge} style={{ color: statusMeta.color, borderColor: `${statusMeta.color}55`, background: `${statusMeta.color}12` }}>
@@ -475,6 +520,7 @@ export default function InvestorSpreadsheet({
               <tr>
                 <td className={styles.sheetSrNo} />
                 <td className={styles.sheetTotalLabel}>Total</td>
+                {showTabs && <td />}
                 <td />
                 <td className={styles.sheetNum}>{formatINR(totalCommitment)}</td>
                 <td className={styles.sheetNum}>{totalShares.toLocaleString('en-IN')}</td>
