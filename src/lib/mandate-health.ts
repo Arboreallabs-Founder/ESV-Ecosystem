@@ -44,6 +44,19 @@ export const HEALTH_DEPTH: Record<FundraiseStatus, number> = {
 const MAX_DEPTH = 10
 
 /**
+ * Everything that happens before the deal actually reaches the fund.
+ *
+ * Needed as a set, not just as a zero score: "scores nothing" and "has not started" are different
+ * facts, and only the second one excuses a mandate from being called stalled.
+ */
+const PRE_SEND: ReadonlySet<FundraiseStatus> = new Set([
+  'no_contact', 'reaching_out', 'converted_poc',
+  'sent_to_founder', 'founder_connected', 'founder_looped_in',
+  'sent_to_partner', 'partner_connected', 'partner_looped_in',
+  'not_sent',
+])
+
+/**
  * How much a fund still counts, given how long it has been silent.
  *
  * A fund that reached diligence three months ago and has not moved since is not worth as much as
@@ -126,11 +139,25 @@ export function mandateHealth(entries: HealthInput[]): MandateHealth {
   //
   //   Ten funds sent last week reads as "Stalled", because nothing has had time to move yet.
   //   Calling that stalled would have someone chasing on day three.
+  //
+  //   And the one this missed on the first two passes: a list drawn up yesterday, with every fund
+  //   approved and none sent, also read as "Stalled" — the worst possible label for work that has
+  //   not begun. Nothing has gone wrong there; nothing has happened yet, which is a different
+  //   sentence and deserves a different word.
   const everythingIsRecent = entries.every((e) =>
     (Date.now() - new Date(e.status_changed_at).getTime()) / 86_400_000 < 14)
 
+  // Not "scores zero" — genuinely nothing has left the building. A fund we are still trying to
+  // find a contact at has not been sent to either.
+  const sent = entries.filter((e) => !PRE_SEND.has(e.status)).length
+  // Deliberately gated on recency: a list approved a month ago with nothing sent IS stalled, and
+  // calling it "Not started" would be the excuse that lets it sit there another month.
+  const notStarted = sent === 0 && everythingIsRecent
+
   let band: { band: MandateHealth['band']; label: string }
-  if (accepted > 0 && live === 0) {
+  if (notStarted) {
+    band = { band: 'empty', label: 'Not started' }
+  } else if (accepted > 0 && live === 0) {
     band = { band: 'landed', label: 'Landed' }
   } else if (live > 0 && ghosted === 0 && everythingIsRecent && score < 30) {
     band = { band: 'early', label: 'Early' }
@@ -139,7 +166,9 @@ export function mandateHealth(entries: HealthInput[]): MandateHealth {
   }
 
   return {
-    score,
+    // Null, not 0. A score before anything has been sent is not a low score, it is not a score —
+    // and the badge drops the number entirely when it is null, which is the honest rendering.
+    score: notStarted ? null : score,
     band: band.band,
     label: band.label,
     funds: entries.length,
