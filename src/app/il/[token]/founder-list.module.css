@@ -2,11 +2,21 @@
    Public page, no app shell. This one DOES cap its width: it is a single focused
    document a founder reads once on whatever device is to hand, not a workspace. */
 
+/* Owns its scrolling — see the note in the public form's stylesheet. <body> is height:100% and a
+   column flex container for the app shell's benefit, so a public page left to grow was instead
+   shrunk to the viewport with its content spilling out of the box. A founder's list runs well past
+   one screen, so this was every list of any length.
+
+   align-items: flex-start so the card takes its content height and this container scrolls. Left to
+   stretch, the card's border would stop at the fold while the funds carried on past it. */
 .shell {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: 2.5rem 1rem 4rem;
   background: var(--color-bg);
   display: flex;
+  align-items: flex-start;
   justify-content: center;
 }
 

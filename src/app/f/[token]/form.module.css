@@ -1,13 +1,22 @@
 /* ── Public form — full ESV branding ──────────────────────────────── */
 
-/* Centred vertically by the card's own auto margins, not by justify-content.
-   `justify-content: center` overflows a too-tall card equally in both directions, and overflow
-   above the scroll origin cannot be scrolled to — so a question with enough options to exceed the
-   viewport put its own heading permanently out of reach. Auto margins only ever distribute
-   *positive* free space: when the card is taller than the screen they resolve to zero and it sits
-   at the top, scrollable from the first line. */
+/* This page owns its scrolling. The root layout makes <body> height:100% AND a column flex
+   container — the app shell needs that, because it runs its own scroller in <main>. A public page
+   has no such scroller, so as a flex item it was shrunk to exactly the viewport and its content
+   simply spilled out of the box: a form longer than the screen could not be scrolled to the end,
+   and a question with enough options lost its own heading off the top.
+
+   flex: 1 with min-height: 0 lets this fill the viewport and scroll inside itself, the same shape
+   the app shell already uses. As a side effect it drops the 100vh/100dvh mobile problem entirely,
+   since the height now comes from the body rather than from a viewport unit.
+
+   Vertical centring is the card's auto margins, not justify-content: auto margins distribute only
+   *positive* free space, so a short form still centres and a long one starts at the top instead of
+   being pushed half off the screen. */
 .page {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;

@@ -1,11 +1,13 @@
 /* Public verification page. Deliberately plain: the audience is a bank clerk or a landlord who
    has scanned a QR code and wants one question answered. No app chrome, no navigation. */
 
-/* Same centring fix as the public form: align-items/justify-content push a too-tall card equally
-   in both directions, and the half that goes above the scroll origin is unreachable. This card is
-   short today, but it grows with whatever the document engine puts on it. */
+/* Owns its scrolling — same reason as the public form. The card is short today but grows with
+   whatever the document engine puts on it, and centring is the card's auto margin so a tall one
+   starts at the top rather than half off the screen. */
 .page {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   padding: 2rem 1rem;
   background: var(--color-bg);

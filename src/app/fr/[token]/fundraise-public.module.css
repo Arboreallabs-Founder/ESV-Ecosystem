@@ -1,7 +1,12 @@
 /* The founder's view. A public card — one of the few things that genuinely caps its width, because
    it is a document rather than a workspace. */
 
-.page { min-height: 100vh; display: flex; justify-content: center; padding: 2.5rem 1.25rem 4rem; background: var(--color-bg); }
+/* Owns its scrolling — same reason as the public form and the founder list. */
+.page {
+  flex: 1; min-height: 0; overflow-y: auto;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 2.5rem 1.25rem 4rem; background: var(--color-bg);
+}
 .card {
   width: 100%; max-width: 760px;
   padding: 2rem 2.25rem 2.5rem;

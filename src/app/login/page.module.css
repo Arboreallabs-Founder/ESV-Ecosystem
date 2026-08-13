@@ -1,12 +1,20 @@
 /* ─── Login Page ─────────────────────────────────────────────────────── */
+/* Owns its scrolling, like the other pages outside the app shell — see the public form's
+   stylesheet for why <body> cannot be left to grow. Login fits one screen on a desktop, but not on
+   a short phone in landscape with the keyboard up, and that is the case where being unable to
+   scroll to the button matters most. */
 .page {
-  min-height: 100vh;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
-  align-items: center;
   justify-content: center;
   background-color: var(--color-bg);
   padding: 1.5rem;
 }
+/* Auto margins rather than align-items: they centre when there is room and collapse when there
+   is not, instead of pushing the top of the card off the screen. */
+.page > .card { margin-block: auto; }
 
 /* ─── Card ───────────────────────────────────────────────────────────── */
 .card {
