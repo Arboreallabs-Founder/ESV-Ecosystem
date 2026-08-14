@@ -9,8 +9,27 @@ async function requireAdminOrFounder() {
   return { supabase, callerId: userId, orgId }
 }
 
+/**
+ * The roles a tenant administrator may hand out. `super_admin` is deliberately absent: it is the
+ * platform role that bypasses organisation scoping, and nothing inside a tenant should be able to
+ * mint one.
+ *
+ * The admin screen already offers exactly this set, but a Server Action argument is not a form
+ * field — it is an HTTP parameter anyone with a session can craft. The database enforces this too
+ * (20260920); this exists so a refusal arrives as a sentence rather than a Postgres error, and so
+ * the rule is visible at the place the value enters the system.
+ */
+const ASSIGNABLE_ROLES = ['founder', 'admin', 'associate', 'franchise_partner', 'general', 'hr'] as const
+
+function assertAssignableRole(role: string): void {
+  if (!(ASSIGNABLE_ROLES as readonly string[]).includes(role)) {
+    throw new Error(`"${role}" is not a role you can assign.`)
+  }
+}
+
 export async function addApprovedUser(email: string, name: string, role: string, password?: string) {
   const { supabase, callerId, orgId } = await requireAdminOrFounder()
+  assertAssignableRole(role)
   const normalizedEmail = email.toLowerCase().trim()
   const trimmedName = name.trim()
 
@@ -53,6 +72,7 @@ export async function updateApprovedUser(
   designation?: string | null,
 ) {
   const { supabase } = await requireAdminOrFounder()
+  assertAssignableRole(role)
   const trimmedName = name.trim()
 
   // approved_emails carries only what is needed to let someone in; it has no designation column,

@@ -1,10 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
-// '/verify/' is the document verification page reached from the QR printed on HR letters.
-// It has to work for a bank clerk or landlord with no account at all — gating it behind
-// login would make every issued document unverifiable by the people it is issued for.
-const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth', '/f/', '/verify/']
+// Routes that must work for someone with no account at all.
+//
+// '/verify/' is the document verification page reached from the QR printed on HR letters — a bank
+// clerk or landlord has to be able to open it, or every issued document is unverifiable by the
+// people it was issued for.
+//
+// '/fr/' and '/il/' are the founder-facing fundraise status page and investor approval list. Both
+// are built as account-free experiences and the app generates share links for them, but they were
+// missing here — so every link we sent a founder bounced them to a login they do not have. The
+// bug was invisible internally because staff open those links already signed in.
+const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth', '/f/', '/fr/', '/il/', '/verify/']
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })

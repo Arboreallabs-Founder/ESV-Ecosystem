@@ -42,6 +42,18 @@ Deno.serve(async (req) => {
       })
     }
 
+    // The caller is authorised as a tenant founder/admin above, and the role then travels straight
+    // into a service-role write — which bypasses RLS entirely. Without this allowlist that made the
+    // function a way to mint a super_admin, the platform role that bypasses organisation scoping.
+    // The database refuses it too (migration 20260920); both exist because this one runs with the
+    // service key and would otherwise be trusted by definition.
+    const ASSIGNABLE_ROLES = ['founder', 'admin', 'associate', 'franchise_partner', 'general', 'hr']
+    if (!ASSIGNABLE_ROLES.includes(role)) {
+      return new Response(JSON.stringify({ error: `"${role}" is not a role you can assign.` }), {
+        status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // Create user with service role
     const adminClient = createClient(
       Deno.env.get('SUPABASE_URL')!,

@@ -448,3 +448,25 @@ The three already-tagged investors are backfilled at `pending_founder` rather th
 approved: nobody signed the fee-bearing half, and a ledger full of claims no one approved is worse
 than three items on a Monday agenda. `partner_companies` is renamed rather than dropped — no writer
 since `20260906`, no reader since the Desk stopped rendering it, three historical rows worth keeping.
+
+### `20260920000000_lock_down_privilege_escalation.sql`
+The first batch from the 13 Aug security audit.
+
+**Role escalation.** RLS decides which *rows* a caller may write, never which *values* — the
+existing "Org admins update user roles" policy was correct about the row and silent about the role,
+so a tenant founder could set themselves `super_admin` and `is_super_admin()` bypasses org scoping
+across the estate. Triggers on `users` and `approved_emails` now refuse that, and refuse moving a
+user between organisations, which is the same escalation wearing a different hat. They fire for
+`service_role` too: the create-user Edge Function holds the service key and takes a caller-supplied
+role. Escape hatch for deliberate platform work: `SET LOCAL app.allow_super_admin = 'on'`.
+
+**Bearer tokens.** `"Anon read form links by token"` was `USING (true)` — every row, tokens
+included. Dropped, and the `anon` grant revoked so a future permissive policy cannot silently
+re-open it. Verified safe first: the renderer goes through `get_public_form()`, which is
+`SECURITY DEFINER` and does not consult RLS.
+
+**One repair.** Verifying the audit meant running the attacks against the live database. They
+succeeded, so the probe cleared Meridian Angel Network's partner tag. The claim was restored at
+once; the tag is restored here because the 20260919 guard correctly refuses it from anywhere else,
+and fabricating a founder signature to tidy it up would be the dishonesty the ledger exists to
+prevent.

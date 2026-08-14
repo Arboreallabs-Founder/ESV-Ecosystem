@@ -162,6 +162,11 @@ function LoginContent() {
           </button>
         </form>
 
+        {/* A UI hint, not the gate. The gate is DEMO_LOGIN_ENABLED, checked server-side in
+            verifyPinAndLogin, which refuses regardless of what the browser renders. This only
+            decides whether to show a control that would always fail — a dead "explore without
+            signing in" button on a public login page is its own kind of wrong. */}
+        {process.env.NEXT_PUBLIC_DEMO_LOGIN_ENABLED === 'true' && (
         <div className={styles.demoSection}>
           <div className={styles.demoDivider}><span>or explore without signing in</span></div>
           {!showPinModal ? (
@@ -209,6 +214,7 @@ function LoginContent() {
             </form>
           )}
         </div>
+        )}
 
         <div className={styles.footer}>
           Access is restricted to approved team members only.{' '}
