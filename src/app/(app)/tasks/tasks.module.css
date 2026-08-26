@@ -113,6 +113,13 @@
   border-radius: var(--radius-sm);
   padding: 0.875rem;
   transition: border-color 0.12s, box-shadow 0.12s;
+  /* Set here rather than on the title and the description separately, because overflow-wrap
+     inherits and a task can carry a long string in either. `anywhere` rather than `break-word`:
+     what actually overflows is a pasted Google Sheets URL, which has no word boundary to break on
+     -- and `anywhere` also stops such a string forcing the card's min-content width open. Ordinary
+     prose is unaffected; both values only break a word that would otherwise overflow. */
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 .card:hover {
   border-color: rgba(var(--color-hover-rgb),0.35);
@@ -533,6 +540,9 @@
   overflow-y: auto;
   box-shadow: var(--shadow-elevated);
   border: 1px solid var(--color-border);
+  /* The same reason as .card: the modal shows the same description, and a pasted URL has no word
+     boundary. It sits outside .card so it inherits nothing from there. */
+  overflow-wrap: anywhere;
 }
 
 .modalTitle {

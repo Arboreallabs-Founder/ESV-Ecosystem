@@ -455,6 +455,8 @@
 
 .dealPageHeader {
   display: flex;
+  /* Last resort: when the buttons cannot wrap small enough to sit beside the title, the whole
+     block drops beneath it rather than overflowing. */
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
@@ -626,10 +628,15 @@
 
 .detailHeadRight {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
-  flex-shrink: 0;
+  /* Was flex-shrink: 0 with no wrap, the combination that guarantees an overflow: the block
+     refused to narrow and its buttons refused to stack, so once the title beside it had shrunk to
+     its minimum the row ran out past the card on both sides. Wrapping alone is not enough --
+     a block that will not shrink never reaches the width that would make it wrap. */
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
 }
 
 .detailClose {
