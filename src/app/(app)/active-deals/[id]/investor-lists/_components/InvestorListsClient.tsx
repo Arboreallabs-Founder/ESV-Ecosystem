@@ -416,30 +416,52 @@ The founder has already answered this list. Their answer will be discarded and c
             </div>
           )}
 
-          {/* ── The founder's own exclusions ── */}
-          {list.exclusions.length > 0 && (
-            <div className={styles.exclusions}>
-              <h3 className={styles.blockTitle}>Names the founder asked us to avoid</h3>
-              {list.exclusions.map((x) => (
-                <div key={x.id} className={styles.exclRow}>
-                  <span className={styles.exclName}>{x.raw_name}</span>
-                  {x.reason && <span className={styles.muted}>{x.reason}</span>}
-                  {x.investor
-                    ? <span className={styles.okTag}>matched to {x.investor.name}</span>
-                    : (
-                      // Unmatched means we cannot check outreach against it, so it is flagged
-                      // rather than left looking handled.
-                      <MatchPicker
-                        exclusionId={x.id}
-                        funds={funds}
-                        pending={pending}
-                        run={run}
-                      />
-                    )}
-                </div>
-              ))}
-            </div>
-          )}
+          {/* ── The founder's own names, both directions ──
+              Two blocks rather than one mixed list: "avoid these" and "also try these" are
+              opposite instructions, and a reader skimming a merged list would eventually act on
+              the wrong one. Same row shape and same matching step underneath. */}
+          {(['include', 'exclude'] as const).map((kind) => {
+            const rows = list.exclusions.filter((x) => x.kind === kind)
+            if (rows.length === 0) return null
+            return (
+              <div key={kind} className={styles.exclusions}>
+                <h3 className={styles.blockTitle}>
+                  {kind === 'include'
+                    ? 'Funds the founder asked us to add'
+                    : 'Names the founder asked us to avoid'}
+                </h3>
+                {kind === 'include' && (
+                  <p className={styles.exclHint}>
+                    Matching one of these adds it to the list straight away, marked as new on the
+                    founder&apos;s page. If we don&apos;t hold the fund, add it to the investor
+                    database first and it will show up here to match.
+                  </p>
+                )}
+                {rows.map((x) => (
+                  <div key={x.id} className={styles.exclRow}>
+                    <span className={styles.exclName}>{x.raw_name}</span>
+                    {x.reason && <span className={styles.muted}>{x.reason}</span>}
+                    {x.investor
+                      ? (
+                        <span className={styles.okTag}>
+                          {kind === 'include' ? 'added as' : 'matched to'} {x.investor.name}
+                        </span>
+                      )
+                      : (
+                        // Unmatched means we cannot check outreach against it, so it is flagged
+                        // rather than left looking handled.
+                        <MatchPicker
+                          exclusionId={x.id}
+                          funds={funds}
+                          pending={pending}
+                          run={run}
+                        />
+                      )}
+                  </div>
+                ))}
+              </div>
+            )
+          })}
 
           {/* ── Share ── */}
           <div className={styles.shareBlock}>

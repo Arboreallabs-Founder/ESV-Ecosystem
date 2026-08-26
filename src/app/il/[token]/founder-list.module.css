@@ -258,3 +258,44 @@
   .card { padding: 1.5rem 1.25rem 2rem; }
   .negRow { flex-wrap: wrap; }
 }
+
+/* A fund added after the founder replied. They approved a list this one was not in, so it is
+   marked rather than appearing quietly pre-ticked among the rest. */
+.newChip {
+  margin-left: 0.5rem;
+  padding: 0.0625rem 0.45rem;
+  border-radius: 100px;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.newBanner {
+  margin: 0.875rem 0;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--color-hover-rgb), 0.09);
+  border: 1px solid rgba(var(--color-hover-rgb), 0.3);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--color-text);
+}
+
+/* The way back from the thank-you screen. A dead end there is why founders used to reply by
+   email to change a single name. */
+.editAgain {
+  margin-top: 1.25rem;
+  padding: 0.5rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.editAgain:hover { border-color: var(--color-primary); color: var(--color-primary); }

@@ -470,3 +470,21 @@ succeeded, so the probe cleared Meridian Angel Network's partner tag. The claim 
 once; the tag is restored here because the 20260919 guard correctly refuses it from anywhere else,
 and fabricating a founder signature to tidy it up would be the dishonesty the ledger exists to
 prevent.
+
+### `20260921000000_investor_list_suggestions_and_live_edit.sql`
+Founder suggestions, and editing a list that is already out.
+
+A `kind` column on `investor_list_exclusions` rather than a second table: an exclusion and a
+suggestion are one object with the sign flipped — a name typed from memory that somebody here has
+to match against a fund we hold before it can be acted on. Same lifecycle, same matching step, same
+RLS. The table name is now half right and is left alone deliberately; renaming it would break every
+policy and code reference in the window between the migration running and the build deploying.
+
+`submit_investor_list_response` gains `p_suggestions` and the four-argument version is dropped.
+The drop is what keeps the window safe, not what threatens it: PostgREST passes arguments by name
+and Postgres resolves a four-name call against the five-parameter function because the fifth has a
+default — but only while there is one candidate. Leaving both would make that call ambiguous.
+
+`get_investor_list_public` now returns per-item `decided_at`. No column records "added since the
+founder replied": every item is stamped on submit, so a NULL `decided_at` on a responded list *is*
+a fund that arrived afterwards. Derived rather than stored, so it cannot drift.

@@ -43,8 +43,14 @@ export async function addInvestorsToList(listId: string, investorIds: string[]):
   const { data: list, error: lErr } = await supabase
     .from('investor_lists').select('id, active_deal_id, status').eq('id', listId).single()
   if (lErr) throw lErr
-  if (list.status !== 'draft') {
-    throw new Error('This list has already been shared. Reopen it before changing who is on it.')
+  // Adding to a live list used to be refused, so the only route was unshare -> edit -> reshare —
+  // and unsharing takes the founder's page offline, because get_investor_list_public serves only a
+  // shared list. Their open tab started erroring while we worked, which is a poor answer to
+  // "we thought of two more funds".
+  //
+  // A closed list is still refused: that is a finished decision, not a work in progress.
+  if (list.status === 'closed') {
+    throw new Error('This list is closed. Reopen it before changing who is on it.')
   }
 
   const { data: existing } = await supabase
@@ -116,7 +122,7 @@ export async function unshareInvestorList(listId: string): Promise<void> {
  * actually be checked against, so it is done by us rather than guessed by a string match.
  */
 export async function matchExclusion(exclusionId: string, investorId: string | null): Promise<void> {
-  const { supabase, userId } = await requireInternal()
+  const { supabase, userId, orgId } = await requireInternal()
   const { data, error } = await supabase
     .from('investor_list_exclusions')
     .update({
@@ -125,9 +131,33 @@ export async function matchExclusion(exclusionId: string, investorId: string | n
       matched_at: investorId ? new Date().toISOString() : null,
     })
     .eq('id', exclusionId)
-    .select('list:investor_lists!list_id(active_deal_id)')
+    .select('kind, list_id, list:investor_lists!list_id(active_deal_id)')
   if (error) throw error
-  const l = Array.isArray((data?.[0] as any)?.list) ? (data![0] as any).list[0] : (data?.[0] as any)?.list
+  const row = data?.[0] as any
+  const l = Array.isArray(row?.list) ? row.list[0] : row?.list
+
+  // Matching a *suggestion* is not just bookkeeping — the founder asked for this fund, so naming
+  // which one they meant is the same gesture as putting it on the list. Matching an exclusion stays
+  // bookkeeping: it records who not to approach, and adding them would be the opposite.
+  //
+  // Added with decided_at left NULL, which is what marks it "new since you last looked" on the
+  // founder's page. They asked for it, but they should still see it arrive rather than find it
+  // silently approved on their behalf.
+  if (investorId && row?.kind === 'include') {
+    const { data: existing } = await supabase
+      .from('investor_list_items')
+      .select('id').eq('list_id', row.list_id).eq('investor_id', investorId).maybeSingle()
+    if (!existing) {
+      const { count } = await supabase
+        .from('investor_list_items')
+        .select('id', { count: 'exact', head: true }).eq('list_id', row.list_id)
+      await supabase.from('investor_list_items').insert({
+        org_id: orgId, list_id: row.list_id, investor_id: investorId,
+        approved: true, sort_order: count ?? 0,
+      })
+    }
+  }
+
   if (l?.active_deal_id) revalidate(l.active_deal_id)
 }
 

@@ -26,10 +26,18 @@ export type ListItem = {
   } | null
 }
 
+/**
+ * A name the founder typed, in either direction.
+ *
+ * `exclude` is do-not-approach; `include` is a fund they asked us to add. One type because they are
+ * one object with the sign flipped — a name from memory that somebody here matches against a fund
+ * we actually hold before it can be acted on. The table keeps its original name; see 20260921.
+ */
 export type ListExclusion = {
   id: string
   raw_name: string
   reason: string | null
+  kind: 'exclude' | 'include'
   investor_id: string | null
   matched_at: string | null
   investor?: { id: string; name: string } | null
@@ -62,7 +70,7 @@ const LIST_SELECT = `
     )
   ),
   exclusions:investor_list_exclusions(
-    id, raw_name, reason, investor_id, matched_at,
+    id, raw_name, reason, kind, investor_id, matched_at,
     investor:investors!investor_id(id, name)
   )
 `

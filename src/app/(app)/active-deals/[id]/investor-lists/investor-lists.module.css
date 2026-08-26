@@ -387,3 +387,13 @@
 
 .sectorCell { max-width: 22ch; overflow-wrap: break-word; }
 .contactCell { max-width: 18ch; overflow-wrap: break-word; }
+
+/* Under the "funds the founder asked us to add" block. Matching there has a side effect the
+   exclusion side does not — it puts a fund on the list — so it says so at the point of use. */
+.exclHint {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.75rem;
+  line-height: 1.55;
+  color: var(--color-muted);
+  max-width: 70ch;
+}

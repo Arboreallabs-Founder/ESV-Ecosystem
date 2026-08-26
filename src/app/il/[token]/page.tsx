@@ -17,7 +17,12 @@ export default async function FounderListPage({
   const { token } = await params
   const supabase = await createClient()
 
-  const { data, error } = await supabase.rpc('get_investor_list_public', { p_token: token })
+  const [{ data, error }, { data: namesData }] = await Promise.all([
+    supabase.rpc('get_investor_list_public', { p_token: token }),
+    // What they told us last time. Without it a second visit shows an empty form and asks them to
+    // remember what they already said.
+    supabase.rpc('get_investor_list_names', { p_token: token }),
+  ])
 
   if (error || !data || data.length === 0) {
     return (
@@ -41,6 +46,9 @@ export default async function FounderListPage({
       name: r.investor_name as string,
       website: (r.investor_website as string | null) ?? null,
       approved: r.approved as boolean,
+      // Every item is stamped decided_at when the founder submits, so one still NULL on a list
+      // that has been responded to is a fund that arrived after they last looked.
+      isNew: Boolean(head.responded_at) && !r.decided_at,
     }))
 
   // Recording the open is best-effort: if it fails the founder still sees their list.
@@ -53,6 +61,11 @@ export default async function FounderListPage({
       dealName={head.deal_name}
       introNote={head.intro_note}
       alreadyResponded={Boolean(head.responded_at)}
+      priorNote={head.founder_note ?? null}
+      priorExclusions={((namesData as any[]) ?? []).filter((n) => n.kind === 'exclude')
+        .map((n) => ({ name: n.name as string, reason: (n.reason as string) ?? '' }))}
+      priorSuggestions={((namesData as any[]) ?? []).filter((n) => n.kind === 'include')
+        .map((n) => ({ name: n.name as string, reason: (n.reason as string) ?? '' }))}
       items={items}
     />
   )
