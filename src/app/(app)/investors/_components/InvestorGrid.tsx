@@ -8,6 +8,7 @@ import InvestorCard from './InvestorCard'
 import InvestorDetail from './InvestorDetail'
 import InvestorFormModal from './InvestorFormModal'
 import InvestorsImportModal from './InvestorsImportModal'
+import DuplicatesModal from './DuplicatesModal'
 import FilterTabs from '@/app/_components/FilterTabs'
 import styles from '../investors.module.css'
 import { WikiButton } from '@/app/_components/WikiPanel'
@@ -42,6 +43,9 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
   const router = useRouter()
   const isInternal = ['founder', 'admin', 'associate', 'hr'].includes(userRole)
   const isPartner = userRole === 'franchise_partner'
+  // Merging is destructive and the RPC refuses anyone else, so this is not offered to an associate
+  // as a button that would always error.
+  const isLead = ['founder', 'admin', 'super_admin'].includes(userRole)
   const [activeTab, setActiveTab] = useState<Tab>('all')
   const [search, setSearch] = useState('')
   // The id is what a click gives us; the record is fetched. Holding both means the drawer can
@@ -50,6 +54,7 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
   const [selected, setSelected] = useState<Investor | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [showImport, setShowImport] = useState(false)
+  const [showDupes, setShowDupes] = useState(false)
   const [editTarget, setEditTarget] = useState<Investor | null>(null)
   // Off by default. It is a work queue, not a lens you want on every time you open the page.
   const [needsPocOnly, setNeedsPocOnly] = useState(false)
@@ -131,6 +136,7 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {isLead && <button className={styles.ghostBtn} onClick={() => setShowDupes(true)}>Find duplicates</button>}
           {isInternal && <button className={styles.ghostBtn} onClick={() => setShowImport(true)}>Import CSV</button>}
           {canManage && <button className={styles.addBtn} onClick={openCreate}>+ Add Investor</button>}
         </div>
@@ -213,6 +219,8 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
       )}
 
       {/* CSV import */}
+      {showDupes && isLead && <DuplicatesModal onClose={() => setShowDupes(false)} />}
+
       {showImport && isInternal && (
         <InvestorsImportModal
           onClose={() => setShowImport(false)}

@@ -488,3 +488,27 @@ default — but only while there is one candidate. Leaving both would make that 
 `get_investor_list_public` now returns per-item `decided_at`. No column records "added since the
 founder replied": every item is stamped on submit, so a NULL `decided_at` on a responded list *is*
 a fund that arrived afterwards. Derived rather than stored, so it cannot drift.
+
+### `20260922000000_merge_duplicate_investors.sql`
+Merging duplicate investor records.
+
+The visible symptom was on investor lists: a fund appearing twice in the suggestions, once as a
+thematic match and once as sector-agnostic. That is **not** a banding bug — a record lands in
+exactly one band. It is two records each qualifying honestly on their own tags, so the fix belongs
+at the source.
+
+`merge_investors(p_keep, p_merge)` reads `pg_constraint` at run time and repoints every foreign key
+referencing `investors`, rather than working from a hand-written list of tables. A list stops being
+complete the next time somebody adds a table, and the failure is silent — a row still pointing at a
+deleted record, or children taken out by `ON DELETE CASCADE`.
+
+Unique-constraint collisions are handled by falling back to a delete: if repointing would collide,
+the keeper already has that relationship and the loser row is redundant. Scalars fill only the
+gaps on the keeper, arrays union, notes concatenate with a provenance line.
+
+Scoped to the caller org, not merely to "both records in the same org" — this is `SECURITY
+DEFINER`, and same-org-as-each-other would let one tenant merge another tenant's records.
+
+`find_investor_duplicates()` groups by name with fund suffixes stripped, so "Blume" and "Blume
+Ventures" surface. Deliberately loose and deliberately not automatic: it over-matches, which is why
+it is a review screen with a chosen keeper and a confirmation.
