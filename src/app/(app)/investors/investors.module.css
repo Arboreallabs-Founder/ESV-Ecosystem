@@ -1444,3 +1444,52 @@
   cursor: pointer;
 }
 .dupMergeBtn:disabled { opacity: 0.5; cursor: default; }
+
+/* Manual search half of the merge screen. The automatic pass groups exact normalised matches and
+   cannot reach a spelling difference -- "SANGITA" against "Sangeeta" -- so this is not a
+   convenience beside it, it is the other half of the problem. */
+.dupSection { padding-top: 1rem; margin-top: 1rem; border-top: 1px solid var(--color-border); }
+.dupSection:first-of-type { padding-top: 0; margin-top: 0; border-top: none; }
+
+.dupSectionTitle {
+  margin: 0 0 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+.dupSearch {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.75rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.9375rem;
+  box-sizing: border-box;
+  outline: none;
+}
+.dupSearch:focus { border-color: var(--color-primary); }
+
+/* Capped and scrollable: 25 results should not push the automatic groups off the modal. */
+.dupResults {
+  max-height: 260px;
+  overflow-y: auto;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.35rem;
+  background: var(--color-bg);
+}
+
+.dupChooseLabel {
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.dupHint { margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--color-muted); }
