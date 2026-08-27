@@ -21,6 +21,7 @@ export default function LogoImportButton() {
   const [stop, setStop] = useState(false)
   const [done, setDone] = useState(0)
   const [skipped, setSkipped] = useState(0)
+  const [notOwn, setNotOwn] = useState(0)
   const [failed, setFailed] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,7 +29,7 @@ export default function LogoImportButton() {
 
   async function run() {
     setRunning(true); setStop(false); setError(null)
-    setDone(0); setSkipped(0); setFailed(0)
+    setDone(0); setSkipped(0); setNotOwn(0); setFailed(0)
     let guard = 0
     try {
       // Bounded: a bug that never reduced `remaining` would otherwise loop until the tab is closed.
@@ -36,6 +37,7 @@ export default function LogoImportButton() {
         const r = await fetchFundLogos(12)
         setDone((n) => n + r.updated)
         setSkipped((n) => n + r.tooSmall)
+        setNotOwn((n) => n + r.notOwnSite)
         setFailed((n) => n + r.failed)
         setMissing(r.remaining)
         if (r.remaining === 0) break
@@ -107,10 +109,11 @@ export default function LogoImportButton() {
 
       {/* Said plainly, because a count that only goes up hides the two outcomes that are not
           successes -- a fund whose only icon is 16px, and a domain that did not answer. */}
-      {(done > 0 || skipped > 0 || failed > 0) && !running && (
+      {(done > 0 || skipped > 0 || notOwn > 0 || failed > 0) && !running && (
         <span className={styles.logoImportNote}>
           {done} added
           {skipped > 0 && `, ${skipped} skipped (icon too small to look right)`}
+          {notOwn > 0 && `, ${notOwn} whose website is a LinkedIn page — use the CSV for those`}
           {failed > 0 && `, ${failed} unreachable`}
         </span>
       )}

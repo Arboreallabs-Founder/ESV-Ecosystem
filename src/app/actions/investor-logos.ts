@@ -28,6 +28,32 @@ import { UserFacingError } from '@/lib/action-errors'
 
 const MIN_PIXELS = 64
 
+/**
+ * Domains that are not the fund's own site.
+ *
+ * 65 of 276 funds have a LinkedIn URL in the website field, because that is what somebody had to
+ * hand when the record was created. Deriving a logo from the domain then hands all 65 the LinkedIn
+ * glyph — not merely wrong but identically wrong, which reads as the app being broken rather than
+ * as a missing logo. It is worse than the initials it replaces.
+ *
+ * There is no fetching our way out of this one: LinkedIn serves a login wall to a server-side
+ * request, so the company's own mark is not reachable from here. These funds are skipped and
+ * reported, and the CSV import is the route for them.
+ */
+const NOT_THEIR_OWN_SITE = [
+  'linkedin.com', 'lnkd.in',
+  'twitter.com', 'x.com', 'facebook.com', 'fb.com', 'instagram.com', 'youtube.com',
+  'crunchbase.com', 'tracxn.com', 'angel.co', 'angellist.com', 'wellfound.com', 'pitchbook.com',
+  'medium.com', 'substack.com', 'notion.so', 'notion.site', 'github.com',
+  'google.com', 'docs.google.com', 'drive.google.com', 'sites.google.com',
+]
+
+/** Matches the domain itself and any subdomain of it — in.linkedin.com is still LinkedIn. */
+function isAggregator(domain: string): boolean {
+  const d = domain.toLowerCase()
+  return NOT_THEIR_OWN_SITE.some((b) => d === b || d.endsWith(`.${b}`))
+}
+
 /** The bare domain, from whatever is in the website field — some rows hold "blume.vc", some a URL. */
 function domainOf(website: string | null): string | null {
   const raw = (website ?? '').trim()
@@ -63,6 +89,8 @@ function pixelWidth(buf: Uint8Array): number {
 export type LogoSweepResult = {
   updated: number
   tooSmall: number
+  /** Website is a LinkedIn/Crunchbase page, so the domain is not theirs to take a logo from. */
+  notOwnSite: number
   failed: number
   remaining: number
   /** Named so a run is reviewable rather than a number that went up. */
@@ -98,12 +126,13 @@ export async function fetchFundLogos(batchSize = 12): Promise<LogoSweepResult> {
 
   const batch = candidates.slice(0, Math.max(1, Math.min(batchSize, 25)))
   const out: LogoSweepResult = {
-    updated: 0, tooSmall: 0, failed: 0,
+    updated: 0, tooSmall: 0, notOwnSite: 0, failed: 0,
     remaining: Math.max(0, candidates.length - batch.length),
     done: [],
   }
 
   for (const c of batch) {
+    if (isAggregator(c.domain!)) { out.notOwnSite++; continue }
     const source = `https://www.google.com/s2/favicons?domain=${encodeURIComponent(c.domain!)}&sz=256`
     try {
       const probe = await fetch(source, { signal: AbortSignal.timeout(10_000) })
@@ -142,7 +171,9 @@ export async function countFundsMissingLogos(): Promise<number> {
     .neq('service_type', 'angel_investor')
     .limit(1000)
   return ((data ?? []) as Array<{ website: string | null }>)
-    .filter((r) => domainOf(r.website)).length
+    .map((r) => domainOf(r.website))
+    .filter((d): d is string => !!d && !isAggregator(d))
+    .length
 }
 
 export type LogoCsvResult = {
