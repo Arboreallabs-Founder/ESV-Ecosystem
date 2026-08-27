@@ -2,6 +2,8 @@
 
 import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { requireRole } from '@/lib/guards'
+import { SERVICE_TYPE_LABELS } from '@/lib/types'
+import type { ServiceType } from '@/lib/types'
 import { proposeAttribution } from './partner-attribution'
 
 /* Investor referrals from partners, and the coordinator's decision.
@@ -151,8 +153,19 @@ export async function acceptReferralOntoExisting(referralId: string, investorId:
  * The fund is created untagged. A record cannot be born carrying an attribution any more — the
  * database refuses it — because that was the neatest way to acquire a credited partner without
  * anyone approving anything.
+ *
+ * ─── Why the type is a parameter and not a default ─────────────────────────
+ * investors.service_type is NOT NULL and this insert never set it, so accepting a referral as a new
+ * fund has failed since the day it shipped — 23502, with the message stripped in production, which
+ * is why it read as nothing having happened.
+ *
+ * Defaulting it to vc_fund would have been the quick fix and a bad one. Investor lists exclude
+ * angel_investor in the database precisely so a founder's raise plans never reach an angel who
+ * knows them personally. An angel filed as a VC fund by a default nobody chose would defeat that,
+ * and would do it silently. A partner referring somebody knows what they are; the coordinator
+ * accepting it can say so.
  */
-export async function acceptReferralAsNew(referralId: string) {
+export async function acceptReferralAsNew(referralId: string, serviceType: ServiceType) {
   const ctx = await requireCoordinator()
 
   const { data: referral } = await ctx.supabase
@@ -168,11 +181,18 @@ export async function acceptReferralAsNew(referralId: string) {
   }
   if (r.status !== 'pending') throw new UserFacingError('This referral has already been decided.')
 
+  // Checked here rather than trusted from the form: this is an HTTP parameter, and the value it
+  // sets decides whether the record can ever appear on a founder-facing investor list.
+  if (!Object.prototype.hasOwnProperty.call(SERVICE_TYPE_LABELS, serviceType)) {
+    throw new UserFacingError('Choose what kind of investor this is before adding them.')
+  }
+
   const { data: created, error } = await ctx.supabase
     .from('investors')
     .insert({
       org_id: r.org_id,
       name: r.name,
+      service_type: serviceType,
       website: r.website,
       notes: r.notes,
       created_by: ctx.userId,

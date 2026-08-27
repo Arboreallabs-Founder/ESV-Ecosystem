@@ -705,3 +705,18 @@
   box-sizing: border-box;
 }
 .textarea:focus { outline: none; border-color: var(--color-primary); }
+
+/* The investor type, chosen when accepting a referral as a new record. Sits with the accept button
+   because it is part of that decision, not a separate step somebody can skip. */
+.referralType {
+  padding: 0.45rem 0.6rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  max-width: 15rem;
+}
+.referralType:focus { outline: none; border-color: var(--color-primary); }

@@ -6,7 +6,8 @@ import { alertError } from '@/lib/client-errors'
 import {
   acceptReferralAsNew, acceptReferralOntoExisting, findInvestorMatches, rejectInvestorReferral,
 } from '@/app/actions/partner-investor-referrals'
-import type { PartnerInvestorReferral } from '@/lib/types'
+import { SERVICE_TYPE_LABELS } from '@/lib/types'
+import type { PartnerInvestorReferral, ServiceType } from '@/lib/types'
 import { formatDateTimeIst } from '@/lib/format-datetime'
 import styles from '../sgp-desk.module.css'
 
@@ -33,6 +34,7 @@ export default function InvestorReferralQueue({ referrals }: { referrals: Partne
   const [openId, setOpenId] = useState<string | null>(null)
   const [matches, setMatches] = useState<Match[]>([])
   const [loadingMatches, setLoadingMatches] = useState(false)
+  const [types, setTypes] = useState<Record<string, ServiceType | ''>>({})
   const [rejecting, setRejecting] = useState<string | null>(null)
   const [reason, setReason] = useState('')
   const [pending, start] = useTransition()
@@ -159,10 +161,26 @@ export default function InvestorReferralQueue({ referrals }: { referrals: Partne
                   <button className={styles.referralGhost} onClick={() => setRejecting(r.id)}>
                     Not taken forward
                   </button>
+                  {/* Asked rather than guessed. The type decides whether this record can ever
+                      appear on a founder-facing investor list — angels are excluded there so a
+                      founder's raise plans never reach somebody who knows them personally — and a
+                      default nobody chose would defeat that quietly. */}
+                  <select
+                    className={styles.referralType}
+                    value={types[r.id] ?? ''}
+                    onChange={(e) => setTypes((p) => ({ ...p, [r.id]: e.target.value as ServiceType }))}
+                    aria-label="What kind of investor is this?"
+                  >
+                    <option value="">What kind of investor?</option>
+                    {(Object.keys(SERVICE_TYPE_LABELS) as ServiceType[]).map((t) => (
+                      <option key={t} value={t}>{SERVICE_TYPE_LABELS[t]}</option>
+                    ))}
+                  </select>
                   <button
                     className={styles.referralPrimary}
-                    disabled={pending}
-                    onClick={() => run(() => acceptReferralAsNew(r.id))}
+                    disabled={pending || !types[r.id]}
+                    title={types[r.id] ? undefined : 'Pick what kind of investor they are first'}
+                    onClick={() => run(() => acceptReferralAsNew(r.id, types[r.id] as ServiceType))}
                   >
                     {pending ? 'Adding…' : 'We don’t have them — add as new'}
                   </button>
