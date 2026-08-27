@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { notifyFoundersOfApproval } from '@/lib/notify-founders'
@@ -24,10 +25,10 @@ export type LeaveRequestInput = {
 
 export async function createLeaveRequest(input: LeaveRequestInput): Promise<void> {
   const { supabase, userId, orgId } = await requireRequester()
-  if (!input.start_date || !input.end_date) throw new Error('Start and end dates are required.')
-  if (input.end_date < input.start_date) throw new Error('End date cannot be before the start date.')
+  if (!input.start_date || !input.end_date) throw new UserFacingError('Start and end dates are required.')
+  if (input.end_date < input.start_date) throw new UserFacingError('End date cannot be before the start date.')
   if (input.is_half_day && input.start_date !== input.end_date) {
-    throw new Error('A half day must start and end on the same date.')
+    throw new UserFacingError('A half day must start and end on the same date.')
   }
 
   const { error } = await supabase.from('leave_requests').insert({
@@ -46,9 +47,9 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<void
 export async function withdrawLeaveRequest(id: string): Promise<void> {
   const { supabase, userId } = await requireRequester()
   const { data: existing } = await supabase.from('leave_requests').select('requester_id, status').eq('id', id).single()
-  if (!existing) throw new Error('Leave request not found.')
+  if (!existing) throw new UserFacingError('Leave request not found.')
   if (existing.requester_id !== userId || existing.status !== 'pending') {
-    throw new Error('You can only withdraw your own pending requests.')
+    throw new UserFacingError('You can only withdraw your own pending requests.')
   }
   const { error } = await supabase.from('leave_requests').delete().eq('id', id)
   if (error) throw error
@@ -57,14 +58,14 @@ export async function withdrawLeaveRequest(id: string): Promise<void> {
 
 export async function decideLeaveRequest(id: string, decision: 'approved' | 'rejected', note?: string | null): Promise<void> {
   const { supabase, userId, orgId, role } = await requireApprover()
-  if (!orgId) throw new Error('No organization found for this account.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
 
   const { data: existing } = await supabase
     .from('leave_requests')
     .select('id, requester_id, leave_type, start_date, end_date, status')
     .eq('id', id)
     .single()
-  if (!existing) throw new Error('Leave request not found.')
+  if (!existing) throw new UserFacingError('Leave request not found.')
   // Approvers may re-decide an already-decided request (e.g. correcting a mistake, or
   // reviewing one flagged from the Team leaves roster) — not just act on pending ones.
 

@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 
@@ -44,7 +45,7 @@ function tooManyAttempts(key: string): boolean {
 
 export async function verifyPinAndLogin(pin: string) {
   if (!DEMO_ENABLED || !DEMO_PIN || !DEMO_EMAIL || !DEMO_PASSWORD) {
-    throw new Error('Demo access is not available.')
+    throw new UserFacingError('Demo access is not available.')
   }
 
   const store = await cookies()
@@ -55,13 +56,13 @@ export async function verifyPinAndLogin(pin: string) {
   const h = await headers()
   const key = h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'shared'
   if (tooManyAttempts(key)) {
-    throw new Error('Too many attempts. Try again later.')
+    throw new UserFacingError('Too many attempts. Try again later.')
   }
 
-  if (pin !== DEMO_PIN) throw new Error('Incorrect PIN')
+  if (pin !== DEMO_PIN) throw new UserFacingError('Incorrect PIN')
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword({ email: DEMO_EMAIL, password: DEMO_PASSWORD })
-  if (error) throw new Error('Demo login failed. Please try again.')
+  if (error) throw new UserFacingError('Demo login failed. Please try again.')
   store.set('demo_mode', '1', { path: '/', httpOnly: false, sameSite: 'lax' })
   store.set('demo_persona', 'founder', { path: '/', httpOnly: false, sameSite: 'lax' })
 }

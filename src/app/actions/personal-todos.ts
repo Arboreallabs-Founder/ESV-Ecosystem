@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { PersonalTodo } from '@/lib/types'
@@ -29,7 +30,7 @@ export async function addPersonalTodo(input: {
 }): Promise<string> {
   const { supabase, userId, orgId } = await requireInternal()
   const title = input.title.trim()
-  if (!title) throw new Error('Title is required.')
+  if (!title) throw new UserFacingError('Title is required.')
   const { data, error } = await supabase
     .from('personal_todos')
     .insert({
@@ -56,7 +57,7 @@ export async function updatePersonalTodo(id: string, patch: {
   const update: Record<string, unknown> = {}
   if (patch.title !== undefined) {
     const title = patch.title.trim()
-    if (!title) throw new Error('Title is required.')
+    if (!title) throw new UserFacingError('Title is required.')
     update.title = title
   }
   if (patch.notes !== undefined) update.notes = patch.notes?.trim() || null
@@ -109,7 +110,7 @@ export async function portTaskIn(taskId: string): Promise<string> {
   const { supabase, userId, orgId } = await requireInternal()
 
   const { data: task, error: taskErr } = await supabase.from('tasks').select('title, status, due_date').eq('id', taskId).single()
-  if (taskErr || !task) throw new Error('Task not found.')
+  if (taskErr || !task) throw new UserFacingError('Task not found.')
 
   // Already ported — return the existing row instead of erroring on the unique constraint.
   const { data: existing } = await supabase.from('personal_todos').select('id').eq('user_id', userId).eq('linked_task_id', taskId).maybeSingle()

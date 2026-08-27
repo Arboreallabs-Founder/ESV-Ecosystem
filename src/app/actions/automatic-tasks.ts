@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -24,7 +25,7 @@ export async function completeAutomaticTask(taskId: string) {
     .select('id')
   if (error) throw new Error(error.message)
   // An RLS-filtered update reports success having changed nothing.
-  if (!data || data.length === 0) throw new Error('That task could not be completed.')
+  if (!data || data.length === 0) throw new UserFacingError('That task could not be completed.')
   revalidatePath('/tasks/update')
 }
 
@@ -38,7 +39,7 @@ export async function reopenAutomaticTask(taskId: string) {
     .eq('source', 'automatic')
     .select('id')
   if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That task could not be reopened.')
+  if (!data || data.length === 0) throw new UserFacingError('That task could not be reopened.')
   revalidatePath('/tasks/update')
 }
 
@@ -52,12 +53,12 @@ export async function reopenAutomaticTask(taskId: string) {
 export async function commentOnAutomaticTask(taskId: string, body: string) {
   const ctx = await requireInternal()
   const text = body.trim()
-  if (!text) throw new Error('Write something first.')
+  if (!text) throw new UserFacingError('Write something first.')
 
   const { data: task } = await ctx.supabase
     .from('tasks').select('org_id, source').eq('id', taskId).maybeSingle()
   if (!task || (task as { source: string }).source !== 'automatic') {
-    throw new Error('That is not an automatic task.')
+    throw new UserFacingError('That is not an automatic task.')
   }
 
   const { error } = await ctx.supabase.from('task_comments').insert({

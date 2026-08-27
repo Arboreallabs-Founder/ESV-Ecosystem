@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -33,7 +34,7 @@ export default function CompanyList({ companies, canManage }: { companies: Compa
         if (tagged) parts.push(`tagged ${tagged} compan${tagged === 1 ? 'y' : 'ies'}`)
         setSyncMsg(parts.length === 0 ? 'Everything is already synced.' : `Synced ${parts.join(', ')}.`)
         router.refresh()
-      } catch (e) { setSyncMsg((e as Error).message) }
+      } catch (e) { setSyncMsg(describeError(e).message) }
     })
   }
 
@@ -129,7 +130,7 @@ function NewCompanyModal({ existingNames, onClose, onCreated }: { existingNames:
       try {
         const id = await createCompany({ name, one_liner: oneLiner.trim() || null, website: website.trim() || null, status })
         onCreated(id)
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

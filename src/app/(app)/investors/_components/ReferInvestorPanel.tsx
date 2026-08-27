@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { alertError } from '@/lib/client-errors'
+import { alertError, describeError } from '@/lib/client-errors'
 import { submitInvestorReferral } from '@/app/actions/partner-investor-referrals'
 import type { PartnerInvestorReferral } from '@/lib/types'
 import { formatDateTimeIst } from '@/lib/format-datetime'
@@ -45,7 +45,7 @@ export default function ReferInvestorPanel({ referrals }: { referrals: PartnerIn
         setSaved(name)
         router.refresh()
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
+        setError(describeError(err).message)
         alertError(err)
       }
     })

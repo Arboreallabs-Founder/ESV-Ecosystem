@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { createLeaveRequest, type LeaveRequestInput } from '@/app/actions/leave-requests'
 import { LEAVE_TYPE_LABELS, type LeaveType, type LeaveBalance } from '@/lib/types'
@@ -32,7 +33,7 @@ export default function LeaveRequestModal({ balances, onClose, onSaved }: {
       try {
         await createLeaveRequest(input)
         onSaved()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -40,8 +41,8 @@ export type BirthdayInput = {
 export async function createBirthday(input: BirthdayInput): Promise<void> {
   const { supabase, userId, orgId } = await requireEditor()
   const name = input.name.trim()
-  if (!name) throw new Error('Name is required.')
-  if (!input.birth_date) throw new Error('Date of birth is required.')
+  if (!name) throw new UserFacingError('Name is required.')
+  if (!input.birth_date) throw new UserFacingError('Date of birth is required.')
 
   const { error } = await supabase
     .from('hr_birthdays')
@@ -53,8 +54,8 @@ export async function createBirthday(input: BirthdayInput): Promise<void> {
 export async function updateBirthday(id: string, input: BirthdayInput): Promise<void> {
   const { supabase } = await requireEditor()
   const name = input.name.trim()
-  if (!name) throw new Error('Name is required.')
-  if (!input.birth_date) throw new Error('Date of birth is required.')
+  if (!name) throw new UserFacingError('Name is required.')
+  if (!input.birth_date) throw new UserFacingError('Date of birth is required.')
 
   const { error } = await supabase
     .from('hr_birthdays')

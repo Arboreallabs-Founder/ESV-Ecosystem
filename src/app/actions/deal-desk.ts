@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { parseDeskCsv } from '@/lib/deal-desk-csv'
@@ -84,13 +85,13 @@ export async function updateDeskDeal(id: string, patch: DeskDealPatch) {
   const { supabase } = await requireAuthor()
   if (patch.company_name !== undefined) {
     const name = patch.company_name.trim()
-    if (!name) throw new Error('Company name is required.')
-    if (name.length > 40) throw new Error('Company name exceeds 40 characters.')
+    if (!name) throw new UserFacingError('Company name is required.')
+    if (name.length > 40) throw new UserFacingError('Company name exceeds 40 characters.')
     patch = { ...patch, company_name: name }
   }
   if (patch.analyst_opinion !== undefined) {
     const op = patch.analyst_opinion?.trim() || null
-    if (op && op.length > 100) throw new Error('Analyst opinion exceeds 100 characters.')
+    if (op && op.length > 100) throw new UserFacingError('Analyst opinion exceeds 100 characters.')
     patch = { ...patch, analyst_opinion: op }
   }
   // Normalise referrer (trim) for consistent grouping in later BI/reporting.
@@ -166,7 +167,7 @@ export async function actOnDeal(
   const comment = params.commentText?.trim() || null
   const voice = params.voiceNotePath || null
   if (params.actionType === 'need_more_info' && !comment && !voice) {
-    throw new Error('Add a comment or a voice note to request more info.')
+    throw new UserFacingError('Add a comment or a voice note to request more info.')
   }
 
   const { error: actionErr } = await supabase.from('desk_deal_actions').insert({

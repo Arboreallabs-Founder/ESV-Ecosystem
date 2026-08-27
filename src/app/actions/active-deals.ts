@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireRole } from '@/lib/guards'
@@ -214,7 +215,7 @@ export async function acceptDeal(
       .eq('entry_id', entryId)
       .eq('user_id', userId)
       .maybeSingle()
-    if (!data) throw new Error('Associates can only accept entries assigned to them.')
+    if (!data) throw new UserFacingError('Associates can only accept entries assigned to them.')
   }
 
   // Move entry to accepted stage
@@ -317,7 +318,7 @@ async function syncCompanyStatusFromDealState(
 
 export async function updateDealState(activeDealId: string, state: DealState) {
   const { supabase } = await requireInternal()
-  if (!DEAL_STATES.includes(state)) throw new Error('Invalid deal state.')
+  if (!DEAL_STATES.includes(state)) throw new UserFacingError('Invalid deal state.')
   const { error } = await supabase.from('active_deals').update({ deal_state: state }).eq('id', activeDealId)
   if (error) throw error
 
@@ -344,7 +345,7 @@ export async function deleteActiveDeal(activeDealId: string) {
     .select('pipeline_entry_id')
     .eq('id', activeDealId)
     .single()
-  if (dealErr || !deal) throw new Error('Active deal not found.')
+  if (dealErr || !deal) throw new UserFacingError('Active deal not found.')
 
   const { data: investorRows } = await supabase
     .from('active_deal_investors')
@@ -384,14 +385,14 @@ export async function updateActiveDealDetails(activeDealId: string, input: {
 }) {
   const { supabase } = await requireInternal()
   const name = input.deal_name.trim()
-  if (!name) throw new Error('Deal name is required.')
+  if (!name) throw new UserFacingError('Deal name is required.')
 
   const { data: deal, error: dealErr } = await supabase
     .from('active_deals')
     .select('pipeline_entry_id')
     .eq('id', activeDealId)
     .single()
-  if (dealErr || !deal) throw new Error('Active deal not found.')
+  if (dealErr || !deal) throw new UserFacingError('Active deal not found.')
 
   const { error: entryErr } = await supabase
     .from('pipeline_entries')
@@ -485,7 +486,7 @@ export async function linkActiveDealToCompany(activeDealId: string, companyId: s
     .select('pipeline_entry_id')
     .eq('id', activeDealId)
     .single()
-  if (dealErr || !deal) throw new Error('Active deal not found.')
+  if (dealErr || !deal) throw new UserFacingError('Active deal not found.')
 
   const { data: entry } = await supabase
     .from('pipeline_entries')
@@ -509,20 +510,20 @@ export async function linkActiveDealToCompany(activeDealId: string, companyId: s
 
 export async function createOrLinkCompanyForActiveDeal(activeDealId: string): Promise<string> {
   const { supabase, userId, orgId } = await requireInternal()
-  if (!orgId) throw new Error('No organisation in scope.')
+  if (!orgId) throw new UserFacingError('No organisation in scope.')
 
   const { data: deal, error: dealErr } = await supabase
     .from('active_deals')
     .select('pipeline_entry_id, entry:pipeline_entries(title)')
     .eq('id', activeDealId)
     .single()
-  if (dealErr || !deal) throw new Error('Active deal not found.')
+  if (dealErr || !deal) throw new UserFacingError('Active deal not found.')
   const entry = Array.isArray(deal.entry) ? deal.entry[0] : deal.entry
   const title = entry?.title?.trim()
-  if (!title) throw new Error('Deal name is required before creating a company profile.')
+  if (!title) throw new UserFacingError('Deal name is required before creating a company profile.')
 
   const company = await findOrCreateCompanyByName(supabase, orgId, userId, title)
-  if (!company?.id) throw new Error('Could not create or link a company profile.')
+  if (!company?.id) throw new UserFacingError('Could not create or link a company profile.')
 
   const { error } = await supabase
     .from('pipeline_entries')
@@ -567,7 +568,7 @@ async function ensureImportPipeline(
   const { data: stage } = await supabase
     .from('pipeline_stages').select('id').eq('pipeline_id', pipelineId).eq('stage_type', 'accepted').limit(1)
   const acceptedStageId = stage?.[0]?.id as string | undefined
-  if (!acceptedStageId) throw new Error('The Imported Deals pipeline is missing an Accepted stage.')
+  if (!acceptedStageId) throw new UserFacingError('The Imported Deals pipeline is missing an Accepted stage.')
   return { pipelineId, acceptedStageId }
 }
 
@@ -632,9 +633,9 @@ export async function createStandaloneDeal(input: {
   company_id?: string | null
 }): Promise<string> {
   const { supabase, userId, orgId } = await requireInternal()
-  if (!orgId) throw new Error('No organisation in scope.')
+  if (!orgId) throw new UserFacingError('No organisation in scope.')
   const name = input.deal_name.trim()
-  if (!name) throw new Error('Deal name is required.')
+  if (!name) throw new UserFacingError('Deal name is required.')
   const importPipeline = await ensureImportPipeline(supabase, orgId, userId)
   const id = await insertStandaloneDeal(supabase, importPipeline, orgId, userId, {
     deal_name: name,
@@ -649,7 +650,7 @@ export async function createStandaloneDeal(input: {
 
 export async function importActiveDealsCsv(csvText: string): Promise<{ created: number; errors: { row: number; message: string }[] }> {
   const { supabase, userId, orgId } = await requireAdmin()
-  if (!orgId) throw new Error('No organisation in scope.')
+  if (!orgId) throw new UserFacingError('No organisation in scope.')
 
   // Categories drive the dynamic columns; read them the same shape getCategories() returns.
   const { data: catData } = await supabase
@@ -858,7 +859,7 @@ export async function setDealInvestorCategory(id: string, categoryId: string | n
     .single()
   if (readErr) throw readErr
   // RLS filters the read, and a filtered-out row comes back as "not found" rather than an error.
-  if (!row) throw new Error('That commitment could not be found.')
+  if (!row) throw new UserFacingError('That commitment could not be found.')
 
   if (categoryId) {
     const { data: allowed } = await supabase
@@ -867,7 +868,7 @@ export async function setDealInvestorCategory(id: string, categoryId: string | n
       .eq('active_deal_id', row.active_deal_id)
       .eq('category_id', categoryId)
       .maybeSingle()
-    if (!allowed) throw new Error('That category is not on this deal.')
+    if (!allowed) throw new UserFacingError('That category is not on this deal.')
   }
 
   const { error } = await supabase
@@ -936,7 +937,7 @@ export async function setDealPartnerVisibility(activeDealId: string, visible: bo
   // An UPDATE that RLS filters out succeeds having changed nothing, so the caller would be told
   // their change saved when it had not.
   if (!data || data.length === 0) {
-    throw new Error('That deal could not be updated — it may have been removed.')
+    throw new UserFacingError('That deal could not be updated — it may have been removed.')
   }
 
   revalidatePath('/active-deals')

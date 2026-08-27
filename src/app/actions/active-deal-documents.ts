@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { requireRole } from '@/lib/guards'
 import { SHARE_INTRO_MAX } from '@/lib/deal-pitch'
 import { DEAL_DOCUMENT_KINDS, type DealDocumentKind } from '@/lib/types'
@@ -20,11 +21,11 @@ async function requireDealEditor() {
 
 function cleanUrl(raw: string): string {
   const url = raw.trim()
-  if (!url) throw new Error('Paste a link.')
+  if (!url) throw new UserFacingError('Paste a link.')
   // Matches the CHECK on the column, so the failure is a sentence here rather than a constraint
   // violation from Postgres.
   if (!/^https?:\/\//i.test(url)) {
-    throw new Error('That does not look like a link — it needs to start with http:// or https://')
+    throw new UserFacingError('That does not look like a link — it needs to start with http:// or https://')
   }
   return url
 }
@@ -37,7 +38,7 @@ export async function addDealDocument(input: {
   visibleToPartners?: boolean
 }) {
   const ctx = await requireDealEditor()
-  if (!DEAL_DOCUMENT_KINDS.includes(input.kind)) throw new Error('Unknown document type.')
+  if (!DEAL_DOCUMENT_KINDS.includes(input.kind)) throw new UserFacingError('Unknown document type.')
 
   const { data: me } = await ctx.supabase
     .from('users').select('org_id').eq('id', ctx.userId).maybeSingle()
@@ -65,7 +66,7 @@ export async function setDealDocumentPartnerVisibility(documentId: string, visib
   if (error) throw new Error(error.message)
   // An RLS-filtered update reports success having changed nothing, so the row count is the only
   // honest signal that it landed.
-  if (!data || data.length === 0) throw new Error('That document could not be updated.')
+  if (!data || data.length === 0) throw new UserFacingError('That document could not be updated.')
 }
 
 export async function deleteDealDocument(documentId: string) {
@@ -76,7 +77,7 @@ export async function deleteDealDocument(documentId: string) {
     .eq('id', documentId)
     .select('id')
   if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That document could not be removed.')
+  if (!data || data.length === 0) throw new UserFacingError('That document could not be removed.')
 }
 
 /**
@@ -93,7 +94,7 @@ export async function updateCompanyShareIntro(companyId: string, intro: string) 
   // Checked here as well as by the column, so an over-long paste is a sentence rather than a
   // constraint violation surfacing as a stack trace.
   if (text.length > SHARE_INTRO_MAX) {
-    throw new Error(`That is ${text.length} characters — keep it to ${SHARE_INTRO_MAX} or fewer.`)
+    throw new UserFacingError(`That is ${text.length} characters — keep it to ${SHARE_INTRO_MAX} or fewer.`)
   }
   const { data, error } = await ctx.supabase
     .from('companies')
@@ -101,5 +102,5 @@ export async function updateCompanyShareIntro(companyId: string, intro: string) 
     .eq('id', companyId)
     .select('id')
   if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That company could not be updated.')
+  if (!data || data.length === 0) throw new UserFacingError('That company could not be updated.')
 }

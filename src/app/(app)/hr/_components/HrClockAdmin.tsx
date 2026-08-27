@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
@@ -40,7 +41,7 @@ export default function HrClockAdmin({ settings, birthdays, canEdit, canDelete }
         await updateClockSettings(times)
         router.refresh()
       } catch (e) {
-        setTimesError((e as Error).message)
+        setTimesError(describeError(e).message)
       }
     })
   }
@@ -165,7 +166,7 @@ function BirthdayModal({ birthday, onClose, onSaved }: {
         if (birthday) await updateBirthday(birthday.id, input)
         else await createBirthday(input)
         onSaved()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

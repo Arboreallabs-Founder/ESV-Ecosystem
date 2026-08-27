@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { mirrorImage, isAlreadyCached } from '@/lib/image-cache'
@@ -23,7 +24,7 @@ const ASSIGNABLE_ROLES = ['founder', 'admin', 'associate', 'franchise_partner', 
 
 function assertAssignableRole(role: string): void {
   if (!(ASSIGNABLE_ROLES as readonly string[]).includes(role)) {
-    throw new Error(`"${role}" is not a role you can assign.`)
+    throw new UserFacingError(`"${role}" is not a role you can assign.`)
   }
 }
 
@@ -57,7 +58,7 @@ export async function addApprovedUser(email: string, name: string, role: string,
     )
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
-      throw new Error(body.error ?? 'Failed to create user account')
+      throw new UserFacingError(body.error ?? 'Failed to create user account')
     }
   }
   // No revalidatePath here — optimistic update in UsersTable handles the UI.
@@ -130,7 +131,7 @@ export async function revokeUser(email: string, userId: string | null) {
     )
     if (!res.ok) {
       const body = await res.json().catch(() => ({}))
-      throw new Error(body.error ?? 'Failed to delete auth account')
+      throw new UserFacingError(body.error ?? 'Failed to delete auth account')
     }
   }
 
@@ -153,7 +154,7 @@ export async function revokeUser(email: string, userId: string | null) {
  */
 export async function setUserPhotoFromUrl(userId: string, sourceUrl: string | null): Promise<string | null> {
   const { supabase } = await requireAdminOrFounder()
-  if (!userId) throw new Error('That person has not signed in yet, so there is no profile to attach a photo to.')
+  if (!userId) throw new UserFacingError('That person has not signed in yet, so there is no profile to attach a photo to.')
 
   const raw = sourceUrl?.trim() ?? ''
   if (!raw) {

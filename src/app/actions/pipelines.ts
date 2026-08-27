@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole, requireAuth } from '@/lib/guards'
 import type { StageQuestionFieldType } from '@/lib/types'
@@ -86,7 +87,7 @@ async function assertAssignedIfAssociate(supabase: Awaited<ReturnType<typeof req
     .eq('entry_id', entryId)
     .eq('user_id', userId)
     .maybeSingle()
-  if (!data) throw new Error('Associates can only move entries assigned to them.')
+  if (!data) throw new UserFacingError('Associates can only move entries assigned to them.')
 }
 
 export async function moveEntry(entryId: string, stageId: string | null) {

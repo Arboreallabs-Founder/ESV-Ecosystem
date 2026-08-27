@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireAuth } from '@/lib/guards'
 
@@ -11,7 +12,7 @@ export async function updateMyProfile(input: {
 }) {
   const { supabase, userId } = await requireAuth()
   const name = input.name.trim()
-  if (!name) throw new Error('Name is required.')
+  if (!name) throw new UserFacingError('Name is required.')
   const { error } = await supabase.from('users').update({
     name,
     phone: input.phone?.trim() || null,
@@ -50,7 +51,7 @@ export async function updateMyIdPhoto(idPhotoUrl: string | null) {
     .maybeSingle()
 
   if (!existing) {
-    throw new Error('Your employee profile has not been set up yet — ask HR to create it first.')
+    throw new UserFacingError('Your employee profile has not been set up yet — ask HR to create it first.')
   }
 
   const { error } = await supabase

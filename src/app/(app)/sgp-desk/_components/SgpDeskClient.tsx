@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { alertError } from '@/lib/client-errors'
+import { alertError, describeError } from '@/lib/client-errors'
 import { intakePartnerEntry } from '@/app/actions/partner-companies'
 import {
   SGP_INTAKE_ACTIONS, SGP_INTAKE_ACTION_LABELS, SGP_INTAKE_ACTION_HINTS,
@@ -95,7 +95,7 @@ export default function SgpDeskClient({
         setTab('moving')
         router.refresh()
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
+        setError(describeError(err).message)
         alertError(err)
       }
     })

@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -51,14 +52,14 @@ export default function DealDetailOverlay({
     setError(null)
     startPromote(async () => {
       try { const id = await promoteDeskDealToCompany(deal.id); router.push(`/companies/${id}`) }
-      catch (e) { setError((e as Error).message) }
+      catch (e) { setError(describeError(e).message) }
     })
   }
 
   function run(fn: () => Promise<void>) {
     setError(null)
     startTransition(async () => {
-      try { await fn(); onChanged() } catch (e) { setError((e as Error).message) }
+      try { await fn(); onChanged() } catch (e) { setError(describeError(e).message) }
     })
   }
 

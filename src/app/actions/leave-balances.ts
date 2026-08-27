@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { entitlementFor, fetchLeavePolicy } from '@/lib/leave-balances'
@@ -26,8 +27,8 @@ export type AvailableBalanceInput = {
  */
 export async function setAvailableBalances(input: AvailableBalanceInput): Promise<void> {
   const { supabase, userId, orgId } = await requireApprover()
-  if (!orgId) throw new Error('No organization found for this account.')
-  if (!input.user_id) throw new Error('No person selected.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
+  if (!input.user_id) throw new UserFacingError('No person selected.')
 
   const policy = await fetchLeavePolicy()
 
@@ -49,10 +50,10 @@ export async function setAvailableBalances(input: AvailableBalanceInput): Promis
 
   const rows = BALANCE_LEAVE_TYPES.map((type: LeaveType) => {
     const available = Number(input.available[type])
-    if (!Number.isFinite(available)) throw new Error(`Enter a valid number for ${type}.`)
-    if (available < 0) throw new Error('Balances cannot be negative.')
+    if (!Number.isFinite(available)) throw new UserFacingError(`Enter a valid number for ${type}.`)
+    if (available < 0) throw new UserFacingError('Balances cannot be negative.')
     // Half-day granularity — reject 0.3-style values rather than silently rounding them.
-    if (Math.round(available * 2) !== available * 2) throw new Error('Balances move in half-day steps.')
+    if (Math.round(available * 2) !== available * 2) throw new UserFacingError('Balances move in half-day steps.')
 
     const entitled = entitlementFor(policy, type)
     const manualUsed = entitled - (usedByType.get(type) ?? 0) - available
@@ -82,10 +83,10 @@ export type LeavePolicyInput = {
 
 export async function updateLeavePolicy(input: LeavePolicyInput): Promise<void> {
   const { supabase, userId, orgId } = await requireApprover()
-  if (!orgId) throw new Error('No organization found for this account.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
 
   for (const [key, value] of Object.entries(input)) {
-    if (!Number.isFinite(value) || value < 0) throw new Error(`${key} must be zero or more.`)
+    if (!Number.isFinite(value) || value < 0) throw new UserFacingError(`${key} must be zero or more.`)
   }
 
   const { error } = await supabase.from('leave_policy').upsert(

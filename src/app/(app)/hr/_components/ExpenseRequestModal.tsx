@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { createExpenseRequest, type ExpenseRequestInput } from '@/app/actions/expense-requests'
@@ -38,7 +39,7 @@ export default function ExpenseRequestModal({ orgId, userId, onClose, onSaved }:
         }
         await createExpenseRequest(input)
         onSaved()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

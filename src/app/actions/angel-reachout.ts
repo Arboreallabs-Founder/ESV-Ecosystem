@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { ANGEL_METHOD_LABELS, type AngelMethod } from '@/lib/types'
@@ -33,7 +34,7 @@ export async function createAngelReachout(input: {
   // "Other" with no detail is a record of nothing — in three months nobody will remember what it
   // meant, which defeats the point of logging the method at all.
   if (input.method === 'other' && !input.methodOther?.trim()) {
-    throw new Error('Say what the method was — "other" on its own tells nobody anything later.')
+    throw new UserFacingError('Say what the method was — "other" on its own tells nobody anything later.')
   }
 
   const { data: me } = await ctx.supabase
@@ -96,7 +97,7 @@ export async function setAngelIncluded(memberId: string, included: boolean, acti
     .eq('id', memberId)
     .select('id')
   if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That investor could not be updated.')
+  if (!data || data.length === 0) throw new UserFacingError('That investor could not be updated.')
   revalidatePath(`/active-deals/${activeDealId}/angels`)
 }
 
@@ -118,7 +119,7 @@ export async function setAngelDone(memberId: string, done: boolean, activeDealId
     .eq('id', memberId)
     .select('id')
   if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That investor could not be updated.')
+  if (!data || data.length === 0) throw new UserFacingError('That investor could not be updated.')
   revalidatePath(`/active-deals/${activeDealId}/angels`)
 }
 
@@ -135,7 +136,7 @@ export async function setAngelResponse(memberId: string, response: string, activ
     .eq('id', memberId)
     .select('id')
   if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That response could not be saved.')
+  if (!data || data.length === 0) throw new UserFacingError('That response could not be saved.')
   revalidatePath(`/active-deals/${activeDealId}/angels`)
 }
 
@@ -152,7 +153,7 @@ export async function commitAngelToDeal(input: {
   amount: number
 }) {
   const ctx = await requireInternal()
-  if (!(input.amount > 0)) throw new Error('How much are they in for?')
+  if (!(input.amount > 0)) throw new UserFacingError('How much are they in for?')
 
   const { data: existing } = await ctx.supabase
     .from('active_deal_investors')
@@ -162,7 +163,7 @@ export async function commitAngelToDeal(input: {
     .maybeSingle()
 
   if (existing) {
-    throw new Error('They are already on this deal’s investor list — edit the amount there.')
+    throw new UserFacingError('They are already on this deal’s investor list — edit the amount there.')
   }
 
   const { error } = await ctx.supabase.from('active_deal_investors').insert({

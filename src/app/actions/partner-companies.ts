@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { SGP_INTAKE_ACTION_LABELS } from '@/lib/types'
@@ -21,7 +22,7 @@ async function requireCoordinator() {
   const isCoordinator = !!(data as { is_sgp_coordinator?: boolean } | null)?.is_sgp_coordinator
   // Founders and admins can always triage; an associate needs the flag.
   if (!isCoordinator && !['founder', 'admin'].includes(ctx.role)) {
-    throw new Error('Only an SGP Coordinator can intake partner submissions.')
+    throw new UserFacingError('Only an SGP Coordinator can intake partner submissions.')
   }
   return ctx
 }
@@ -70,7 +71,7 @@ export async function submitCompanyToPipeline(input: {
 }): Promise<{ id: string }> {
   const { supabase, userId } = await requireRole(['franchise_partner', 'founder', 'admin', 'associate'])
   const name = input.name.trim()
-  if (!name) throw new Error('The company name is required.')
+  if (!name) throw new UserFacingError('The company name is required.')
 
   const { data: pipeline, error: pErr } = await supabase
     .from('pipelines')
@@ -79,10 +80,10 @@ export async function submitCompanyToPipeline(input: {
     .maybeSingle()
   if (pErr) throw pErr
   if (!pipeline) {
-    throw new Error('No partner pipeline has been set up yet. Ask an admin to create one.')
+    throw new UserFacingError('No partner pipeline has been set up yet. Ask an admin to create one.')
   }
   const lead = ((pipeline as any).stages ?? []).find((s: any) => s.stage_type === 'lead')
-  if (!lead) throw new Error('The partner pipeline has no Lead stage.')
+  if (!lead) throw new UserFacingError('The partner pipeline has no Lead stage.')
 
   const { data: me } = await supabase
     .from('users').select('franchise_partner_id, name').eq('id', userId).single()
@@ -129,11 +130,11 @@ export async function getOrCreateMyReferralLink(): Promise<{ token: string }> {
   const { data: form, error: fErr } = await supabase
     .from('forms').select('id, published').eq('is_partner_form', true).maybeSingle()
   if (fErr) throw fErr
-  if (!form) throw new Error('No partner form exists yet. Ask an admin to set one up.')
+  if (!form) throw new UserFacingError('No partner form exists yet. Ask an admin to set one up.')
   if (!form.published) {
     // A link to an unpublished form returns an error to whoever opens it, which reads to the
     // recipient as us being broken.
-    throw new Error('The partner form is unpublished, so a link would not work. Ask an admin to publish it.')
+    throw new UserFacingError('The partner form is unpublished, so a link would not work. Ask an admin to publish it.')
   }
 
   const { data: existing } = await supabase
@@ -181,15 +182,15 @@ export async function intakePartnerEntry(input: {
   dueDate?: string | null
 }): Promise<void> {
   const { supabase, userId, orgId } = await requireCoordinator()
-  if (!orgId) throw new Error('No organization found for this account.')
-  if (!input.assignedTo) throw new Error('Choose who this goes to.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
+  if (!input.assignedTo) throw new UserFacingError('Choose who this goes to.')
 
   const { data: entry } = await supabase
     .from('pipeline_entries')
     .select('id, title, partner_notes, pipeline_id, submitter_name, submitter_email')
     .eq('id', input.entryId)
     .maybeSingle()
-  if (!entry) throw new Error('That submission could not be found.')
+  if (!entry) throw new UserFacingError('That submission could not be found.')
   const e = entry as {
     id: string; title: string | null; partner_notes: string | null
     pipeline_id: string; submitter_name: string | null; submitter_email: string | null
@@ -200,7 +201,7 @@ export async function intakePartnerEntry(input: {
     .filter((l) => l.url)
   for (const l of links) {
     if (!/^https?:\/\//i.test(l.url)) {
-      throw new Error(`Supporting links must start with http:// or https:// — "${l.url}" does not.`)
+      throw new UserFacingError(`Supporting links must start with http:// or https:// — "${l.url}" does not.`)
     }
   }
 
@@ -254,7 +255,7 @@ export async function intakePartnerEntry(input: {
       .select('id')
     if (moveErr) throw moveErr
     // An RLS-filtered update reports success having changed nothing.
-    if (!moved || moved.length === 0) throw new Error('That submission could not be moved.')
+    if (!moved || moved.length === 0) throw new UserFacingError('That submission could not be moved.')
   }
 
   // Also add the assignee to the entry, so "who is on this" is answerable from the board.

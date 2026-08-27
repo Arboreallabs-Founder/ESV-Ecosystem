@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import type { DealCategory } from '@/lib/types'
 import { createStandaloneDeal } from '@/app/actions/active-deals'
@@ -38,7 +39,7 @@ export default function NewDealModal({ categories, companyOptions, onClose, onCr
           company_id: companyId || null,
         })
         onCreated()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

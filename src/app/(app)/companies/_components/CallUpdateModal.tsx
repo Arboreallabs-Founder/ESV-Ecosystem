@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { updateCompany, setFieldValue, addUpdate, type CompanyPatch } from '@/app/actions/companies'
 import type { Company, CompanyFieldDef, CompanyFounder } from '@/lib/types'
@@ -87,7 +88,7 @@ export default function CallUpdateModal({ company, fieldDefs, teamMembers, onClo
         }
 
         onSaved(); onClose()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

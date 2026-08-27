@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { alertError } from '@/lib/client-errors'
+import { alertError, describeError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import { getOrCreateMyReferralLink, submitCompanyToPipeline } from '@/app/actions/partner-companies'
 import {
@@ -80,7 +80,7 @@ export default function MyCompaniesClient({
         router.refresh()
         setTimeout(() => setSaved(null), 4000)
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
+        setError(describeError(err).message)
       }
     })
   }

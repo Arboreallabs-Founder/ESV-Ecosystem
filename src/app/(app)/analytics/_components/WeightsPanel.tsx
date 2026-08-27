@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { updatePerformanceWeights, type WeightsInput } from '@/app/actions/performance'
@@ -39,7 +40,7 @@ export default function WeightsPanel({ weights, onClose }: {
         await updatePerformanceWeights(parsed as unknown as WeightsInput)
         onClose()
         router.refresh()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

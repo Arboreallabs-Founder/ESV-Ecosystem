@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -49,7 +50,7 @@ export default function ShareClient({
         setLabel('')
         router.refresh()
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
+        setError(describeError(err).message)
       }
     })
   }
@@ -69,7 +70,7 @@ export default function ShareClient({
     )) return
     startTransition(async () => {
       try { await deleteFormLink(link.id); router.refresh() }
-      catch (err) { setError(err instanceof Error ? err.message : String(err)) }
+      catch (err) { setError(describeError(err).message) }
     })
   }
 

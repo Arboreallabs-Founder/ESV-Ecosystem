@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { addRecurrenceInterval } from '@/lib/recurrence'
@@ -25,8 +26,8 @@ export type RecurringTaskInput = {
 export async function createRecurringTask(input: RecurringTaskInput): Promise<string> {
   const { supabase, userId, orgId } = await requireAdmin()
   const title = input.title.trim()
-  if (!title) throw new Error('Title is required.')
-  if (!input.next_due_date) throw new Error('A first due date is required.')
+  if (!title) throw new UserFacingError('Title is required.')
+  if (!input.next_due_date) throw new UserFacingError('A first due date is required.')
 
   const { data, error } = await supabase
     .from('recurring_tasks')
@@ -53,7 +54,7 @@ export async function updateRecurringTask(id: string, patch: Partial<RecurringTa
   const update: Record<string, unknown> = {}
   if (patch.title !== undefined) {
     const title = patch.title.trim()
-    if (!title) throw new Error('Title is required.')
+    if (!title) throw new UserFacingError('Title is required.')
     update.title = title
   }
   if (patch.description !== undefined) update.description = patch.description?.trim() || null
@@ -94,7 +95,7 @@ export async function completeRecurringTask(id: string): Promise<void> {
     .select('next_due_date, recurrence_type, org_id')
     .eq('id', id)
     .single()
-  if (readErr || !task) throw new Error('Recurring task not found.')
+  if (readErr || !task) throw new UserFacingError('Recurring task not found.')
 
   const { error: logErr } = await supabase.from('recurring_task_completions').insert({
     recurring_task_id: id,

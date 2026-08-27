@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { FundraiseEventKind, FundraiseStatus } from '@/lib/types'
@@ -46,7 +47,7 @@ export async function setFundraiseStatus(input: {
   const ctx = await requireDeskUser()
 
   if (input.status === 'rejected' && !input.rejectionReason?.trim()) {
-    throw new Error(
+    throw new UserFacingError(
       'A rejection needs its reason — it is what tells us, and the founder, what actually happened, '
       + 'and it is what enriches the fund\'s profile for next time.',
     )
@@ -57,11 +58,11 @@ export async function setFundraiseStatus(input: {
     .select('id, org_id, status')
     .eq('id', input.entryId)
     .maybeSingle()
-  if (!entry) throw new Error('That fund is no longer on this list.')
+  if (!entry) throw new UserFacingError('That fund is no longer on this list.')
   const current = entry as { id: string; org_id: string; status: FundraiseStatus }
 
   if (current.status === input.status && !input.note?.trim()) {
-    throw new Error(`Already ${input.status.replace(/_/g, ' ')}.`)
+    throw new UserFacingError(`Already ${input.status.replace(/_/g, ' ')}.`)
   }
 
   const now = new Date().toISOString()
@@ -82,7 +83,7 @@ export async function setFundraiseStatus(input: {
     .select('id')
   if (error) throw new Error(error.message)
   // An RLS-filtered update reports success having changed nothing.
-  if (!updated || updated.length === 0) throw new Error('That fund could not be updated.')
+  if (!updated || updated.length === 0) throw new UserFacingError('That fund could not be updated.')
 
   await ctx.supabase.from('fundraise_events').insert({
     org_id: current.org_id,
@@ -111,11 +112,11 @@ export async function addFundraiseEvent(input: {
 }) {
   const ctx = await requireDeskUser()
   const body = input.body.trim()
-  if (!body) throw new Error('Write something first.')
+  if (!body) throw new UserFacingError('Write something first.')
 
   const { data: entry } = await ctx.supabase
     .from('fundraise_entries').select('org_id').eq('id', input.entryId).maybeSingle()
-  if (!entry) throw new Error('That fund is no longer on this list.')
+  if (!entry) throw new UserFacingError('That fund is no longer on this list.')
 
   // Deliberately does not touch status_changed_at. Talking about a fund among ourselves must not
   // make a silent one look alive.
@@ -141,7 +142,7 @@ export async function setEventFounderVisible(eventId: string, visible: boolean, 
     .neq('kind', 'founder_comment')   // theirs to begin with; not ours to hide
     .select('id')
   if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That update could not be changed.')
+  if (!data || data.length === 0) throw new UserFacingError('That update could not be changed.')
   revalidatePath(`/active-deals/${activeDealId}/fundraise`)
 }
 
@@ -154,7 +155,7 @@ export async function setReachoutTemplate(listId: string, template: string, acti
     .eq('id', listId)
     .select('id')
   if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That list could not be updated.')
+  if (!data || data.length === 0) throw new UserFacingError('That list could not be updated.')
   revalidatePath(`/active-deals/${activeDealId}/fundraise`)
 }
 
@@ -167,7 +168,7 @@ export async function shareFundraiseList(listId: string, activeDealId: string) {
     .eq('id', listId)
     .select('share_token')
   if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That list could not be shared.')
+  if (!data || data.length === 0) throw new UserFacingError('That list could not be shared.')
   revalidatePath(`/active-deals/${activeDealId}/fundraise`)
   return (data[0] as { share_token: string }).share_token
 }
@@ -203,11 +204,11 @@ export async function establishPoc(input: {
 }) {
   const ctx = await requireDeskUser()
   const name = input.name.trim()
-  if (!name) throw new Error('Who did you reach?')
+  if (!name) throw new UserFacingError('Who did you reach?')
 
   const { data: entry } = await ctx.supabase
     .from('fundraise_entries').select('org_id, status').eq('id', input.entryId).maybeSingle()
-  if (!entry) throw new Error('That fund is no longer on this list.')
+  if (!entry) throw new UserFacingError('That fund is no longer on this list.')
   const e = entry as { org_id: string; status: string }
 
   // Primary, because it is now the way in. Any incumbent primary is demoted first — two primaries
@@ -248,7 +249,7 @@ export async function establishPoc(input: {
     .eq('id', input.entryId)
     .select('id')
   if (error) throw new Error(error.message)
-  if (!updated || updated.length === 0) throw new Error('That fund could not be updated.')
+  if (!updated || updated.length === 0) throw new UserFacingError('That fund could not be updated.')
 
   await ctx.supabase.from('fundraise_events').insert({
     org_id: e.org_id,
@@ -288,7 +289,7 @@ export async function setContactConnection(input: {
     .eq('id', input.contactId)
     .select('id')
   if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That contact could not be updated.')
+  if (!data || data.length === 0) throw new UserFacingError('That contact could not be updated.')
   if (input.activeDealId) revalidatePath(`/active-deals/${input.activeDealId}/fundraise`)
 }
 
@@ -301,6 +302,6 @@ export async function setIntroRoute(entryId: string, route: string | null, activ
     .eq('id', entryId)
     .select('id')
   if (error) throw new Error(error.message)
-  if (!data || data.length === 0) throw new Error('That fund could not be updated.')
+  if (!data || data.length === 0) throw new UserFacingError('That fund could not be updated.')
   revalidatePath(`/active-deals/${activeDealId}/fundraise`)
 }

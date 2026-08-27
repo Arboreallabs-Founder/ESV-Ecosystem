@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -34,8 +35,8 @@ export async function createHrPolicy(input: HrPolicyInput): Promise<string> {
   const { supabase, userId, orgId } = await requireEditor()
   const title = input.title.trim()
   const body = input.body.trim()
-  if (!title) throw new Error('Title is required.')
-  if (!body) throw new Error('Policy body is required.')
+  if (!title) throw new UserFacingError('Title is required.')
+  if (!body) throw new UserFacingError('Policy body is required.')
 
   const { count } = await supabase.from('hr_policies').select('id', { count: 'exact', head: true }).eq('org_id', orgId)
   const { data, error } = await supabase
@@ -61,8 +62,8 @@ export async function updateHrPolicy(id: string, input: HrPolicyInput): Promise<
   const { supabase, userId, orgId } = await requireEditor()
   const title = input.title.trim()
   const body = input.body.trim()
-  if (!title) throw new Error('Title is required.')
-  if (!body) throw new Error('Policy body is required.')
+  if (!title) throw new UserFacingError('Title is required.')
+  if (!body) throw new UserFacingError('Policy body is required.')
   const category = input.category?.trim() || null
 
   const { data: before } = await supabase.from('hr_policies').select('title, category, body').eq('id', id).single()

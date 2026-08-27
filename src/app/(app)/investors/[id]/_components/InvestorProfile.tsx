@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -52,7 +53,7 @@ export default function InvestorProfile({
         const msg = (res as { error?: string } | undefined)?.error
         if (msg) { setError(msg); return }
         router.refresh()
-      } catch (err) { setError(err instanceof Error ? err.message : String(err)) }
+      } catch (err) { setError(describeError(err).message) }
     })
   }
 

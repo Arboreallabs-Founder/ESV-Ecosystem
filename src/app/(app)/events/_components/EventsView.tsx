@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react'
 import { createPortal } from 'react-dom'
-import { alertError } from '@/lib/client-errors'
+import { alertError, describeError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import {
@@ -478,7 +478,7 @@ function EventModal({ event, orgId, onClose, onSaved }: { event: BulletinPost | 
         if (event) await updateEvent(event.id, input)
         else await createEvent(input)
         onSaved()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

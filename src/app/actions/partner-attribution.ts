@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { AttributionSource } from '@/lib/types'
@@ -27,7 +28,7 @@ async function requireCoordinator() {
     .maybeSingle()
   const flags = data as { is_sgp_coordinator?: boolean; is_sgp_approver?: boolean } | null
   if (!flags?.is_sgp_coordinator && !['founder', 'admin'].includes(ctx.role)) {
-    throw new Error('Only an SGP Coordinator can decide partner attribution.')
+    throw new UserFacingError('Only an SGP Coordinator can decide partner attribution.')
   }
   return ctx
 }
@@ -44,7 +45,7 @@ async function requireApprover() {
     .eq('id', ctx.userId)
     .maybeSingle()
   if (!(data as { is_sgp_approver?: boolean } | null)?.is_sgp_approver) {
-    throw new Error('Only the founder approver can sign off partner attribution.')
+    throw new UserFacingError('Only the founder approver can sign off partner attribution.')
   }
   return ctx
 }
@@ -74,8 +75,8 @@ export async function proposeAttribution(input: Subject & {
   pipelineEntryId?: string | null
 }): Promise<string> {
   const ctx = await requireRole(['founder', 'admin', 'associate'])
-  if (!ctx.orgId) throw new Error('No organisation in scope.')
-  if (!input.partnerId) throw new Error('Choose which partner is being credited.')
+  if (!ctx.orgId) throw new UserFacingError('No organisation in scope.')
+  if (!input.partnerId) throw new UserFacingError('Choose which partner is being credited.')
 
   const { data: flagRow } = await ctx.supabase
     .from('users').select('is_sgp_coordinator').eq('id', ctx.userId).maybeSingle()
@@ -106,7 +107,7 @@ export async function proposeAttribution(input: Subject & {
     // The partial unique index. Two partners claiming one relationship is a fee dispute that needs
     // a person, so it surfaces as a sentence rather than a constraint name.
     if (error.code === '23505') {
-      throw new Error(
+      throw new UserFacingError(
         'There is already a live claim on this one. Settle that before filing another — two partners '
         + 'claiming one relationship is a fee question, not a race.',
       )
@@ -134,7 +135,7 @@ export async function coordinatorApprove(claimId: string, note?: string | null):
     .select('id')
   if (error) throw new Error(error.message)
   if (!data || data.length === 0) {
-    throw new Error('That claim is no longer waiting on a coordinator. Reload to see where it got to.')
+    throw new UserFacingError('That claim is no longer waiting on a coordinator. Reload to see where it got to.')
   }
   revalidateSgp()
 }
@@ -154,14 +155,14 @@ export async function founderApprove(claimId: string, note?: string | null): Pro
     .select('coordinator_by, status')
     .eq('id', claimId)
     .maybeSingle()
-  if (!claim) throw new Error('That claim could not be found.')
+  if (!claim) throw new UserFacingError('That claim could not be found.')
   const c = claim as { coordinator_by: string | null; status: string }
   if (c.status !== 'pending_founder') {
-    throw new Error('That claim is not waiting on the founder. Reload to see where it got to.')
+    throw new UserFacingError('That claim is not waiting on the founder. Reload to see where it got to.')
   }
   // Enforced in the database too; caught here so the message says what to do about it.
   if (c.coordinator_by && c.coordinator_by === ctx.userId) {
-    throw new Error(
+    throw new UserFacingError(
       'You approved this as the coordinator, so it needs a different person to sign it off. '
       + 'Two signatures from one person is one signature.',
     )
@@ -180,12 +181,12 @@ export async function founderApprove(claimId: string, note?: string | null): Pro
     .select('id')
   if (error) throw new Error(error.message)
   if (!data || data.length === 0) {
-    throw new Error('That claim was decided by someone else a moment ago. Reload to see the outcome.')
+    throw new UserFacingError('That claim was decided by someone else a moment ago. Reload to see the outcome.')
   }
 
   const { error: applyErr } = await ctx.supabase.rpc('apply_partner_attribution', { p_claim_id: claimId })
   if (applyErr) {
-    throw new Error(
+    throw new UserFacingError(
       `Approved, but the tag could not be applied: ${applyErr.message}. `
       + 'The claim is recorded as approved — reapply it from the Desk.',
     )
@@ -198,20 +199,20 @@ export async function founderApprove(claimId: string, note?: string | null): Pro
 export async function rejectAttribution(claimId: string, reason: string): Promise<void> {
   const ctx = await requireRole(['founder', 'admin', 'associate'])
   const note = reason.trim()
-  if (!note) throw new Error('Say why, so the partner knows where they stand.')
+  if (!note) throw new UserFacingError('Say why, so the partner knows where they stand.')
 
   const { data: claim } = await ctx.supabase
     .from('partner_attribution_claims')
     .select('status')
     .eq('id', claimId)
     .maybeSingle()
-  if (!claim) throw new Error('That claim could not be found.')
+  if (!claim) throw new UserFacingError('That claim could not be found.')
   const status = (claim as { status: string }).status
 
   // Whichever step it is sitting at is the step allowed to refuse it.
   if (status === 'pending_coordinator') await requireCoordinator()
   else if (status === 'pending_founder') await requireApprover()
-  else throw new Error('That claim has already been decided.')
+  else throw new UserFacingError('That claim has already been decided.')
 
   const { data, error } = await ctx.supabase
     .from('partner_attribution_claims')
@@ -221,7 +222,7 @@ export async function rejectAttribution(claimId: string, reason: string): Promis
     .select('id')
   if (error) throw new Error(error.message)
   if (!data || data.length === 0) {
-    throw new Error('That claim was decided by someone else a moment ago. Reload to see the outcome.')
+    throw new UserFacingError('That claim was decided by someone else a moment ago. Reload to see the outcome.')
   }
   revalidateSgp()
 }
@@ -269,7 +270,7 @@ export async function reapplyAttribution(claimId: string): Promise<void> {
 export async function withdrawAttribution(claimId: string, reason: string): Promise<void> {
   const ctx = await requireApprover()
   const note = reason.trim()
-  if (!note) throw new Error('Say why the credit is being withdrawn.')
+  if (!note) throw new UserFacingError('Say why the credit is being withdrawn.')
   const { error } = await ctx.supabase.rpc('withdraw_partner_attribution', {
     p_claim_id: claimId, p_reason: note,
   })

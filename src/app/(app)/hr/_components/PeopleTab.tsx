@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useEffect, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveEmployeeProfile, saveCompensation } from '@/app/actions/employees'
@@ -112,7 +113,7 @@ export default function PeopleTab({
         router.refresh()
         setTimeout(() => setSaved(false), 2000)
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
+        setError(describeError(err).message)
       }
     })
   }
@@ -145,7 +146,7 @@ export default function PeopleTab({
         setShowCompForm(false)
         router.refresh()
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
+        setError(describeError(err).message)
       }
     })
   }

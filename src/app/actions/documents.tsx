@@ -1,5 +1,7 @@
 'use server'
 
+import { describeError } from '@/lib/client-errors'
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { requireRole } from '@/lib/guards'
@@ -47,10 +49,10 @@ export type IssuedDocumentResult = {
 
 export async function issueDocument(input: IssueDocumentInput): Promise<IssuedDocumentResult> {
   const { supabase, userId, orgId, role } = await requireRole([...ISSUER_ROLES])
-  if (!orgId) throw new Error('No organization found for this account.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
 
   const template = TEMPLATES[input.documentCode]
-  if (!template) throw new Error('That document type cannot be generated yet.')
+  if (!template) throw new UserFacingError('That document type cannot be generated yet.')
 
   // Permission comes from the matrix, not a hardcoded list — that is the point of the table.
   // RLS enforces it again on insert; this exists so a refusal is a readable message.
@@ -62,7 +64,7 @@ export async function issueDocument(input: IssueDocumentInput): Promise<IssuedDo
     .eq('role', role)
     .maybeSingle()
   if (!permission?.can_issue) {
-    throw new Error(`Your role is not permitted to issue a ${template.title}.`)
+    throw new UserFacingError(`Your role is not permitted to issue a ${template.title}.`)
   }
 
   const { data: docType } = await supabase
@@ -70,14 +72,14 @@ export async function issueDocument(input: IssueDocumentInput): Promise<IssuedDo
     .select('name, signature_mode')
     .eq('code', input.documentCode)
     .single()
-  if (!docType) throw new Error('Unknown document type.')
+  if (!docType) throw new UserFacingError('Unknown document type.')
 
   // ── Gather the data the letter will assert ──
   const [{ data: subject }, { data: profile }] = await Promise.all([
     supabase.from('users').select('id, name, email, designation').eq('id', input.subjectUserId).single(),
     supabase.from('employee_profiles').select('*').eq('user_id', input.subjectUserId).maybeSingle(),
   ])
-  if (!subject) throw new Error('That person could not be found.')
+  if (!subject) throw new UserFacingError('That person could not be found.')
 
   let compensation: EmployeeCompensation | null = null
   if (template.requiresCompensation) {
@@ -96,7 +98,7 @@ export async function issueDocument(input: IssueDocumentInput): Promise<IssuedDo
 
   const missing = missingRequirements(input.documentCode, typedProfile, compensation)
   if (missing.length > 0) {
-    throw new Error(
+    throw new UserFacingError(
       `Cannot issue this letter — the employee profile is missing: ${missing.join(', ')}.`,
     )
   }
@@ -104,7 +106,7 @@ export async function issueDocument(input: IssueDocumentInput): Promise<IssuedDo
   const extras = input.extras ?? {}
   for (const field of template.fields ?? []) {
     if (field.required && !extras[field.name]?.trim()) {
-      throw new Error(`${field.label} is required for a ${template.title}.`)
+      throw new UserFacingError(`${field.label} is required for a ${template.title}.`)
     }
   }
 
@@ -122,7 +124,7 @@ export async function issueDocument(input: IssueDocumentInput): Promise<IssuedDo
   // ── Allocate the reference number, then create the row ──
   const { data: humanId, error: idError } = await supabase
     .rpc('next_document_human_id', { p_org_id: orgId, p_code: input.documentCode })
-  if (idError || !humanId) throw new Error(`Could not allocate a document number: ${idError?.message ?? 'unknown error'}`)
+  if (idError || !humanId) throw new UserFacingError(`Could not allocate a document number: ${idError?.message ?? 'unknown error'}`)
 
   const verifyToken = generateVerifyToken()
   const signatureMode = docType.signature_mode as SignatureMode
@@ -179,8 +181,8 @@ export async function issueDocument(input: IssueDocumentInput): Promise<IssuedDo
     // The row survives with no artifact, which the UI shows as "generation failed". Deleting it
     // would silently free the reference number for reuse — two different letters could then end
     // up bearing the same id, which is far worse than a visible failed row.
-    throw new Error(
-      `Document ${humanId} was recorded but the PDF could not be generated: ${err instanceof Error ? err.message : String(err)}`,
+    throw new UserFacingError(
+      `Document ${humanId} was recorded but the PDF could not be generated: ${describeError(err).message}`,
     )
   }
 
@@ -211,7 +213,7 @@ export async function getDocumentUrl(documentId: string): Promise<string | null>
 export async function revokeDocument(documentId: string, reason: string): Promise<void> {
   const { supabase, userId } = await requireRole([...ISSUER_ROLES])
   const text = reason.trim()
-  if (!text) throw new Error('A reason is required to revoke a document.')
+  if (!text) throw new UserFacingError('A reason is required to revoke a document.')
 
   const { error } = await supabase
     .from('issued_documents')

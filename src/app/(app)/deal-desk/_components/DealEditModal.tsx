@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { updateDeskDeal, withdrawDeskDeal, type DeskDealPatch } from '@/app/actions/deal-desk'
 import { DESK_STAGES, DESK_VALUATION_TYPES, DESK_REVENUE_STATUSES, DESK_INSTRUMENTS, DESK_ROUND_STATUSES } from '@/lib/types'
@@ -74,7 +75,7 @@ export default function DealEditModal({ deal, onClose, onSaved }: { deal: DeskDe
     }
     startTransition(async () => {
       try { await updateDeskDeal(deal.id, patch); onSaved(); onClose() }
-      catch (e) { setError((e as Error).message) }
+      catch (e) { setError(describeError(e).message) }
     })
   }
 
@@ -82,7 +83,7 @@ export default function DealEditModal({ deal, onClose, onSaved }: { deal: DeskDe
     if (!confirm('Withdraw this deal? This permanently deletes the card.')) return
     startTransition(async () => {
       try { await withdrawDeskDeal(deal.id); onSaved(); onClose() }
-      catch (e) { setError((e as Error).message) }
+      catch (e) { setError(describeError(e).message) }
     })
   }
 

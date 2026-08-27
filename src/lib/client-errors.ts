@@ -11,6 +11,8 @@
  * gets more likely the more often we ship, which is why it surfaced on a day with a dozen deploys.
  */
 
+import { userFacingMessage } from './action-errors'
+
 export type DescribedError = {
   /** What to show the user. */
   message: string
@@ -29,6 +31,12 @@ const STALE_MARKERS = [
 ]
 
 export function describeError(err: unknown): DescribedError {
+  // A refusal we wrote, carried across the server boundary in the digest because React strips the
+  // message. Checked first: it is the answer whenever it is present, and it is already written for
+  // a person, so none of the cleanup below applies to it.
+  const deliberate = userFacingMessage(err)
+  if (deliberate) return { stale: false, message: deliberate }
+
   const raw = err instanceof Error ? err.message : String(err)
   const hay = raw.toLowerCase()
 

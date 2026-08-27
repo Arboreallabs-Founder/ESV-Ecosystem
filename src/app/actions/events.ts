@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -68,8 +69,8 @@ function describeEventChanges(
 export async function createEvent(input: EventInput): Promise<string> {
   const { supabase, userId, orgId, role } = await requireEditor()
   const title = input.title.trim()
-  if (!title) throw new Error('Title is required.')
-  if (!input.event_date) throw new Error('Event date is required.')
+  if (!title) throw new UserFacingError('Title is required.')
+  if (!input.event_date) throw new UserFacingError('Event date is required.')
 
   const { data, error } = await supabase
     .from('bulletin_posts')
@@ -108,8 +109,8 @@ export async function createEvent(input: EventInput): Promise<string> {
 export async function updateEvent(id: string, input: EventInput): Promise<void> {
   const { supabase, userId, orgId, role } = await requireEditor()
   const title = input.title.trim()
-  if (!title) throw new Error('Title is required.')
-  if (!input.event_date) throw new Error('Event date is required.')
+  if (!title) throw new UserFacingError('Title is required.')
+  if (!input.event_date) throw new UserFacingError('Event date is required.')
 
   const { data: before } = await supabase
     .from('bulletin_posts')
@@ -122,7 +123,7 @@ export async function updateEvent(id: string, input: EventInput): Promise<void> 
   // truth instead.
   const restricted = !UNRESTRICTED_EDITORS.includes(role)
   if (restricted && before?.created_by !== userId) {
-    throw new Error('You can only edit events you created. Ask an admin to change this one.')
+    throw new UserFacingError('You can only edit events you created. Ask an admin to change this one.')
   }
 
   const nextFields = {
@@ -226,7 +227,7 @@ export async function removeEventAttendee(postId: string, userId: string): Promi
 export async function addEventMediaLink(postId: string, label: string | null, url: string): Promise<string> {
   const { supabase, userId, orgId } = await requireAdmin()
   const trimmedUrl = url.trim()
-  if (!trimmedUrl) throw new Error('A link URL is required.')
+  if (!trimmedUrl) throw new UserFacingError('A link URL is required.')
   const { data, error } = await supabase
     .from('bulletin_event_media')
     .insert({ post_id: postId, org_id: orgId, label: label?.trim() || null, url: trimmedUrl, created_by: userId })

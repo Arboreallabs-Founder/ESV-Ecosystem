@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -221,7 +222,7 @@ function HrPolicyModal({ policy, onClose, onSaved }: { policy: HrPolicy | null; 
         if (policy) await updateHrPolicy(policy.id, input)
         else await createHrPolicy(input)
         onSaved()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

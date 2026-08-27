@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import type { AttendanceStatement } from '@/lib/types'
@@ -25,7 +26,7 @@ export default function MyAttendance({ statements }: { statements: AttendanceSta
     setError(null)
     start(async () => {
       try { await fn(); setDisputeFor(null); setNote(''); router.refresh() }
-      catch (err) { setError(err instanceof Error ? err.message : String(err)) }
+      catch (err) { setError(describeError(err).message) }
     })
   }
 

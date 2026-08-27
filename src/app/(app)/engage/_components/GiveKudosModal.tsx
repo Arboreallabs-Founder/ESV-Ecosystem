@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { giveKudos, type KudosInput } from '@/app/actions/kudos'
 import type { KudosCategory } from '@/lib/types'
@@ -26,7 +27,7 @@ export default function GiveKudosModal({ recipients, onClose, onSaved }: {
       try {
         await giveKudos(input)
         onSaved()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

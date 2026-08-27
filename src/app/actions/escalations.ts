@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { EscalationLinkedType } from '@/lib/types'
@@ -44,7 +45,7 @@ export async function createEscalation(params: {
   const { supabase, userId, orgId } = await requireRole(['associate', 'admin'])
 
   const subject = params.subject.trim()
-  if (!subject) throw new Error('Subject is required.')
+  if (!subject) throw new UserFacingError('Subject is required.')
 
   // Recipient must be a founder or a partner in the same org.
   const { data: recipient } = await supabase
@@ -52,10 +53,10 @@ export async function createEscalation(params: {
     .select('role, org_id')
     .eq('id', params.recipientUserId)
     .single()
-  if (!recipient) throw new Error('Recipient not found.')
-  if (recipient.org_id !== orgId) throw new Error('Recipient is outside your organization.')
+  if (!recipient) throw new UserFacingError('Recipient not found.')
+  if (recipient.org_id !== orgId) throw new UserFacingError('Recipient is outside your organization.')
   if (!['founder', 'franchise_partner'].includes(recipient.role)) {
-    throw new Error('Escalations can only be sent to a founder or a partner.')
+    throw new UserFacingError('Escalations can only be sent to a founder or a partner.')
   }
 
   let linkedTitle: string | null = null
@@ -85,12 +86,12 @@ export async function updateEscalationStatus(id: string, status: string) {
     .select('raised_by, recipient_user_id')
     .eq('id', id)
     .single()
-  if (!esc) throw new Error('Escalation not found.')
+  if (!esc) throw new UserFacingError('Escalation not found.')
 
   const allowed =
     role === 'founder' || role === 'admin' ||
     esc.raised_by === userId || esc.recipient_user_id === userId
-  if (!allowed) throw new Error('You cannot change the status of this escalation.')
+  if (!allowed) throw new UserFacingError('You cannot change the status of this escalation.')
 
   const resolved_at = status === 'Resolved' ? new Date().toISOString() : null
   const { error } = await supabase.from('escalations').update({ status, resolved_at }).eq('id', id)

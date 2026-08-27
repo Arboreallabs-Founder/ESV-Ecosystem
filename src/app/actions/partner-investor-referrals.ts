@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { requireRole } from '@/lib/guards'
 import { proposeAttribution } from './partner-attribution'
 
@@ -24,7 +25,7 @@ async function requireCoordinator() {
 
   const isCoordinator = !!(data as { is_sgp_coordinator?: boolean } | null)?.is_sgp_coordinator
   if (!isCoordinator && !['founder', 'admin'].includes(ctx.role)) {
-    throw new Error('Only an SGP Coordinator can decide investor referrals.')
+    throw new UserFacingError('Only an SGP Coordinator can decide investor referrals.')
   }
   return ctx
 }
@@ -43,7 +44,7 @@ export async function submitInvestorReferral(input: InvestorReferralInput) {
   const ctx = await requireRole(['franchise_partner'])
 
   const name = input.name.trim()
-  if (!name) throw new Error('Give the investor a name.')
+  if (!name) throw new UserFacingError('Give the investor a name.')
 
   const { data: me } = await ctx.supabase
     .from('users')
@@ -53,7 +54,7 @@ export async function submitInvestorReferral(input: InvestorReferralInput) {
 
   const partnerId = (me as { franchise_partner_id?: string | null } | null)?.franchise_partner_id
   if (!partnerId) {
-    throw new Error('Your account is not linked to a partner record yet. Ask Earlyseed Ventures to set that up.')
+    throw new UserFacingError('Your account is not linked to a partner record yet. Ask Earlyseed Ventures to set that up.')
   }
 
   const { error } = await ctx.supabase.from('partner_investor_referrals').insert({
@@ -114,22 +115,22 @@ export async function acceptReferralOntoExisting(referralId: string, investorId:
     .select('id, name, referred_by_partner_id')
     .eq('id', investorId)
     .maybeSingle()
-  if (!investor) throw new Error('That investor no longer exists.')
+  if (!investor) throw new UserFacingError('That investor no longer exists.')
 
   const { data: referral } = await ctx.supabase
     .from('partner_investor_referrals')
     .select('partner_id, status')
     .eq('id', referralId)
     .maybeSingle()
-  if (!referral) throw new Error('That referral no longer exists.')
+  if (!referral) throw new UserFacingError('That referral no longer exists.')
   if ((referral as { status: string }).status !== 'pending') {
-    throw new Error('This referral has already been decided.')
+    throw new UserFacingError('This referral has already been decided.')
   }
 
   const existingPartner = (investor as { referred_by_partner_id: string | null }).referred_by_partner_id
   const claimingPartner = (referral as { partner_id: string }).partner_id
   if (existingPartner && existingPartner !== claimingPartner) {
-    throw new Error(
+    throw new UserFacingError(
       `${(investor as { name: string }).name} is already credited to another partner. `
       + 'Two partners claiming one relationship is a fee question — settle it before tagging.',
     )
@@ -159,13 +160,13 @@ export async function acceptReferralAsNew(referralId: string) {
     .select('*')
     .eq('id', referralId)
     .maybeSingle()
-  if (!referral) throw new Error('That referral no longer exists.')
+  if (!referral) throw new UserFacingError('That referral no longer exists.')
   const r = referral as {
     status: string; partner_id: string; org_id: string
     name: string; website: string | null; notes: string | null
     contact_name: string | null; contact_email: string | null; contact_phone: string | null
   }
-  if (r.status !== 'pending') throw new Error('This referral has already been decided.')
+  if (r.status !== 'pending') throw new UserFacingError('This referral has already been decided.')
 
   const { data: created, error } = await ctx.supabase
     .from('investors')
@@ -204,7 +205,7 @@ export async function acceptReferralAsNew(referralId: string) {
 export async function rejectInvestorReferral(referralId: string, reason: string) {
   const ctx = await requireCoordinator()
   const note = reason.trim()
-  if (!note) throw new Error('Say why, so the partner knows what to do differently.')
+  if (!note) throw new UserFacingError('Say why, so the partner knows what to do differently.')
   await decide(ctx, referralId, 'rejected', null, note)
 }
 
@@ -234,7 +235,7 @@ async function decide(
   // An RLS-filtered update reports success having changed nothing, so the row count is the only
   // honest signal that the decision landed.
   if (!data || data.length === 0) {
-    throw new Error('That referral was decided by someone else a moment ago. Reload to see the outcome.')
+    throw new UserFacingError('That referral was decided by someone else a moment ago. Reload to see the outcome.')
   }
 }
 
@@ -251,6 +252,6 @@ async function decide(
  */
 export async function proposeCompanyAttribution(companyId: string, partnerId: string, note?: string | null) {
   await requireCoordinator()
-  if (!partnerId) throw new Error('Choose which partner introduced this company.')
+  if (!partnerId) throw new UserFacingError('Choose which partner introduced this company.')
   await proposeAttribution({ companyId, partnerId, source: 'retroactive_tag', note })
 }

@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { mirrorImage, isAlreadyCached } from '@/lib/image-cache'
@@ -74,7 +75,7 @@ export type CompanyPatch = Partial<{
 export async function createCompany(patch: CompanyPatch): Promise<string> {
   const { supabase, userId, orgId } = await requireInternal()
   const name = patch.name?.trim()
-  if (!name) throw new Error('Company name is required.')
+  if (!name) throw new UserFacingError('Company name is required.')
   // Auto-extract meta-tags from any text provided, unless the caller set them explicitly.
   const meta_tags = patch.meta_tags ?? extractMetaTags(patch.name, patch.one_liner, patch.description, patch.product_description, patch.usp, patch.business_model)
   const { data, error } = await supabase
@@ -110,7 +111,7 @@ const IMPORT_SCALARS = [
  */
 export async function importCompaniesCsv(csvText: string): Promise<CompanyImportResult> {
   const { supabase, userId, orgId } = await requireInternal()
-  if (!orgId) throw new Error('No organisation in scope.')
+  if (!orgId) throw new UserFacingError('No organisation in scope.')
 
   const { rows, errors } = parseCompaniesCsv(csvText)
   if (rows.length === 0) return { created: 0, updated: 0, errors }
@@ -181,7 +182,7 @@ export async function suggestMetaTags(companyId: string): Promise<void> {
   const { data: c } = await supabase.from('companies')
     .select('name, one_liner, description, product_description, usp, business_model, meta_tags')
     .eq('id', companyId).single()
-  if (!c) throw new Error('Company not found.')
+  if (!c) throw new UserFacingError('Company not found.')
   const row = c as Record<string, unknown>
   const extracted = extractMetaTags(
     row.name as string, row.one_liner as string, row.description as string,
@@ -195,7 +196,7 @@ export async function suggestMetaTags(companyId: string): Promise<void> {
 
 export async function updateCompany(id: string, patch: CompanyPatch) {
   const { supabase } = await requireInternal()
-  if (patch.name !== undefined && !patch.name.trim()) throw new Error('Company name is required.')
+  if (patch.name !== undefined && !patch.name.trim()) throw new UserFacingError('Company name is required.')
 
   // Founder headshots are usually pasted from LinkedIn, whose media URLs are signed and expire.
   // Mirror them into our own storage so the profile doesn't quietly lose its photos in a few
@@ -281,7 +282,7 @@ export type CapTableInput = {
 export async function saveCapTableEntry(companyId: string, input: CapTableInput) {
   const { supabase, orgId } = await requireInternal()
   const name = input.holder_name?.trim()
-  if (!name) throw new Error('Holder name is required.')
+  if (!name) throw new UserFacingError('Holder name is required.')
   const { id, ...fields } = { ...input, holder_name: name }
   if (id) {
     const { error } = await supabase.from('company_cap_table').update(fields).eq('id', id)
@@ -304,7 +305,7 @@ export async function deleteCapTableEntry(id: string, companyId: string) {
 
 export async function addDocument(companyId: string, label: string, docType: CompanyDocType, url: string) {
   const { supabase, userId, orgId } = await requireInternal()
-  if (!label.trim() || !url.trim()) throw new Error('Label and URL are required.')
+  if (!label.trim() || !url.trim()) throw new UserFacingError('Label and URL are required.')
   const { error } = await supabase.from('company_documents').insert({
     company_id: companyId, org_id: orgId, label: label.trim(), doc_type: docType, url: url.trim(), created_by: userId,
   })
@@ -323,7 +324,7 @@ export async function removeDocument(id: string, companyId: string) {
 
 export async function addUpdate(companyId: string, body: string) {
   const { supabase, userId, orgId } = await requireInternal()
-  if (!body.trim()) throw new Error('Update text is required.')
+  if (!body.trim()) throw new UserFacingError('Update text is required.')
   const { error } = await supabase.from('company_updates').insert({ company_id: companyId, org_id: orgId, body: body.trim(), author_id: userId })
   if (error) throw error
   revalidatePath(`/companies/${companyId}`)
@@ -341,7 +342,7 @@ export async function deleteUpdate(id: string, companyId: string) {
 export async function saveFieldDef(input: { id?: string; label: string; field_type: CompanyFieldType; position?: number }) {
   const { supabase, orgId } = await requireAdmin()
   const label = input.label?.trim()
-  if (!label) throw new Error('Field label is required.')
+  if (!label) throw new UserFacingError('Field label is required.')
   if (input.id) {
     const { error } = await supabase.from('company_field_defs').update({ label, field_type: input.field_type, position: input.position ?? 0 }).eq('id', input.id)
     if (error) throw error
@@ -451,10 +452,10 @@ export async function linkPipelineEntryToCompany(entryId: string, companyId: str
 export async function promoteDeskDealToCompany(deskDealId: string): Promise<string> {
   const { supabase, userId, orgId } = await requireInternal()
   const { data: deal, error: readErr } = await supabase.from('desk_deals').select('*').eq('id', deskDealId).single()
-  if (readErr || !deal) throw new Error('Deal Desk card not found.')
+  if (readErr || !deal) throw new UserFacingError('Deal Desk card not found.')
 
   const companyId = await findOrCreateCompanyForDeskDeal(supabase, orgId, userId, deal as Record<string, unknown>)
-  if (!companyId) throw new Error('Could not create a company (missing name).')
+  if (!companyId) throw new UserFacingError('Could not create a company (missing name).')
 
   await supabase.from('desk_deals').update({ company_id: companyId }).eq('id', deskDealId)
   revalidatePath('/companies')
@@ -481,7 +482,7 @@ export async function createDeskDealFromCompany(companyId: string): Promise<void
   if (assigned.length > 0) {
     const isAssignee = assigned.some((e) => (e.assignees ?? []).some((a) => a.user_id === userId))
     if (!isAssignee && role !== 'admin') {
-      throw new Error('This deal is assigned to someone else — only the assignee (or an admin) can create its card.')
+      throw new UserFacingError('This deal is assigned to someone else — only the assignee (or an admin) can create its card.')
     }
   } else if (entries.length > 0) {
     for (const e of entries) {
@@ -491,7 +492,7 @@ export async function createDeskDealFromCompany(companyId: string): Promise<void
   }
 
   const { data: c, error } = await supabase.from('companies').select('*').eq('id', companyId).single()
-  if (error || !c) throw new Error('Company not found.')
+  if (error || !c) throw new UserFacingError('Company not found.')
   const company = c as Record<string, any>
 
   const founders = (company.founders ?? []).map((f: Record<string, any>) => ({

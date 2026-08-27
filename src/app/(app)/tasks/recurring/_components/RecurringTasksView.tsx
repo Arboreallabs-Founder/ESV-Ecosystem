@@ -12,7 +12,7 @@ import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import Avatar from '@/app/_components/Avatar'
 import styles from '../../tasks.module.css'
-import { alertError } from '@/lib/client-errors'
+import { alertError, describeError } from '@/lib/client-errors'
 
 type RecTask = RecurringTask & { status: RecurringTaskStatus }
 
@@ -171,7 +171,7 @@ function RecurringTaskModal({ task, users, onClose, onSaved }: {
         if (task) await updateRecurringTask(task.id, input)
         else await createRecurringTask(input)
         onSaved()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

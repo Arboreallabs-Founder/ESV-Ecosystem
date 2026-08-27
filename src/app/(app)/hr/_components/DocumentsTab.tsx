@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { issueDocument, getDocumentUrl, revokeDocument } from '@/app/actions/documents'
@@ -66,7 +67,7 @@ export default function DocumentsTab({
         setExtras({})
         router.refresh()
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
+        setError(describeError(err).message)
       }
     })
   }
@@ -78,7 +79,7 @@ export default function DocumentsTab({
         if (!url) { setError('That document has no file — generation may have failed.'); return }
         window.open(url, '_blank', 'noopener')
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
+        setError(describeError(err).message)
       }
     })
   }
@@ -89,7 +90,7 @@ export default function DocumentsTab({
     setRevoking(id)
     startTransition(async () => {
       try { await revokeDocument(id, reason); router.refresh() }
-      catch (err) { setError(err instanceof Error ? err.message : String(err)) }
+      catch (err) { setError(describeError(err).message) }
       finally { setRevoking(null) }
     })
   }

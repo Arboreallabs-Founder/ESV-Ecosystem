@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { notifyFoundersOfApproval } from '@/lib/notify-founders'
@@ -24,8 +25,8 @@ export type ExpenseRequestInput = {
 // (same discipline as Deal Desk's uploads — this action only ever receives the resulting path).
 export async function createExpenseRequest(input: ExpenseRequestInput): Promise<void> {
   const { supabase, userId, orgId } = await requireRequester()
-  if (!input.invoice_path) throw new Error('An invoice attachment is required.')
-  if (!input.amount || input.amount <= 0) throw new Error('Enter a valid amount.')
+  if (!input.invoice_path) throw new UserFacingError('An invoice attachment is required.')
+  if (!input.amount || input.amount <= 0) throw new UserFacingError('Enter a valid amount.')
 
   const { error } = await supabase.from('expense_requests').insert({
     org_id: orgId,
@@ -42,9 +43,9 @@ export async function createExpenseRequest(input: ExpenseRequestInput): Promise<
 export async function withdrawExpenseRequest(id: string): Promise<void> {
   const { supabase, userId } = await requireRequester()
   const { data: existing } = await supabase.from('expense_requests').select('requester_id, status, invoice_path').eq('id', id).single()
-  if (!existing) throw new Error('Expense request not found.')
+  if (!existing) throw new UserFacingError('Expense request not found.')
   if (existing.requester_id !== userId || existing.status !== 'pending') {
-    throw new Error('You can only withdraw your own pending requests.')
+    throw new UserFacingError('You can only withdraw your own pending requests.')
   }
   const { error } = await supabase.from('expense_requests').delete().eq('id', id)
   if (error) throw error
@@ -54,15 +55,15 @@ export async function withdrawExpenseRequest(id: string): Promise<void> {
 
 export async function decideExpenseRequest(id: string, decision: 'approved' | 'rejected', note?: string | null): Promise<void> {
   const { supabase, userId, orgId, role } = await requireApprover()
-  if (!orgId) throw new Error('No organization found for this account.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
 
   const { data: existing } = await supabase
     .from('expense_requests')
     .select('id, requester_id, expense_type, amount, status')
     .eq('id', id)
     .single()
-  if (!existing) throw new Error('Expense request not found.')
-  if (existing.status !== 'pending') throw new Error('This request has already been decided.')
+  if (!existing) throw new UserFacingError('Expense request not found.')
+  if (existing.status !== 'pending') throw new UserFacingError('This request has already been decided.')
 
   const { error } = await supabase
     .from('expense_requests')

@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { ActiveDealUpdate } from '@/lib/types'
@@ -23,10 +24,10 @@ export async function getDealUpdates(activeDealId: string): Promise<ActiveDealUp
 
 export async function addDealUpdate(activeDealId: string, body: string): Promise<ActiveDealUpdate> {
   const { supabase, userId, orgId } = await requireRole([...INTERNAL])
-  if (!orgId) throw new Error('No organization found for this account.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
 
   const text = body.trim()
-  if (!text) throw new Error('An update cannot be empty.')
+  if (!text) throw new UserFacingError('An update cannot be empty.')
 
   // Posting rights (founder/admin, or an assignee on the deal's pipeline entry) are enforced by
   // the RLS policy rather than duplicated here — one source of truth, and it holds even if some

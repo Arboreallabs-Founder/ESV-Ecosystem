@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { KudosCategory } from '@/lib/types'
@@ -17,9 +18,9 @@ export type KudosInput = {
 export async function giveKudos(input: KudosInput): Promise<void> {
   const { supabase, userId, orgId } = await requireInternal()
   const message = input.message.trim()
-  if (!message) throw new Error('Message is required.')
-  if (!input.recipient_id) throw new Error('Please choose who this is for.')
-  if (input.recipient_id === userId) throw new Error('You cannot give kudos to yourself.')
+  if (!message) throw new UserFacingError('Message is required.')
+  if (!input.recipient_id) throw new UserFacingError('Please choose who this is for.')
+  if (input.recipient_id === userId) throw new UserFacingError('You cannot give kudos to yourself.')
 
   const { error } = await supabase.from('kudos').insert({
     org_id: orgId,

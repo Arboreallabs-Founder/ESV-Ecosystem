@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireRole } from '@/lib/guards'
 import { createClient } from '@/lib/supabase/server'
@@ -75,7 +76,7 @@ export async function createInvestor(params: {
   // the name and we attribute the existing fund to them via referred_by_partner_id — which is why
   // that field is on the internal form's partner dropdown.
   if (isPartnerReferral) {
-    throw new Error(
+    throw new UserFacingError(
       'Partners cannot add investors directly. Send us the name and we will link it to you — '
       + 'this avoids duplicating a fund we may already hold.',
     )
@@ -332,7 +333,7 @@ export type InvestorImportResult = { created: number; updated: number; errors: {
  */
 export async function importInvestorsCsv(csvText: string): Promise<InvestorImportResult> {
   const { supabase, userId, orgId } = await requireInternal()
-  if (!orgId) throw new Error('No organisation in scope.')
+  if (!orgId) throw new UserFacingError('No organisation in scope.')
 
   const { rows, errors } = parseInvestorsCsv(csvText)
   if (rows.length === 0) return { created: 0, updated: 0, errors }

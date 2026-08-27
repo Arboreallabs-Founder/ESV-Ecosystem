@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createStandaloneDeal } from '@/app/actions/active-deals'
@@ -31,7 +32,7 @@ export default function CreateDealModal({ companyId, companyName, categories, on
         })
         onClose()
         router.push('/active-deals')
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

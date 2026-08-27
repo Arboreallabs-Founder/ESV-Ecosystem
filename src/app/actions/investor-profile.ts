@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { isAlreadyCached, mirrorImage, ImageCacheError } from '@/lib/image-cache'
@@ -34,7 +35,7 @@ export async function addPortfolioEntry(investorId: string, input: {
 }): Promise<void> {
   const { supabase, orgId, userId } = await requireInternal()
   const name = input.company_name.trim()
-  if (!name) throw new Error('A company name is required.')
+  if (!name) throw new UserFacingError('A company name is required.')
 
   // Link to a company we already track when the name matches, so the profile can say "we already
   // have a record on 3 of their portfolio companies". Unmatched names are kept as text — most of
@@ -58,7 +59,7 @@ export async function addPortfolioEntry(investorId: string, input: {
     created_by: userId,
   })
   if (error) {
-    if ((error as any).code === '23505') throw new Error(`${name} is already on this portfolio.`)
+    if ((error as any).code === '23505') throw new UserFacingError(`${name} is already on this portfolio.`)
     throw error
   }
   revalidate(investorId)
@@ -189,7 +190,7 @@ export async function assignPocSearch(
   note?: string | null,
 ): Promise<void> {
   const { supabase, orgId, userId } = await requireInternal()
-  if (!assigneeId) throw new Error('Choose who is looking.')
+  if (!assigneeId) throw new UserFacingError('Choose who is looking.')
 
   const { data: inv, error: iErr } = await supabase
     .from('investors')

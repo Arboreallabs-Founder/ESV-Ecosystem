@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -25,10 +26,10 @@ export type WeightsInput = {
 
 export async function updatePerformanceWeights(input: WeightsInput): Promise<void> {
   const { supabase, userId, orgId } = await requireAdmin()
-  if (!orgId) throw new Error('No organization found for this account.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
 
   for (const [key, value] of Object.entries(input)) {
-    if (!Number.isFinite(value)) throw new Error(`${key} must be a number.`)
+    if (!Number.isFinite(value)) throw new UserFacingError(`${key} must be a number.`)
   }
 
   const { error } = await supabase.from('performance_weights').upsert(
@@ -48,14 +49,14 @@ export type AdjustmentInput = {
 
 export async function createAdjustment(input: AdjustmentInput): Promise<void> {
   const { supabase, userId, orgId } = await requireScorer()
-  if (!orgId) throw new Error('No organization found for this account.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
 
   const reason = input.reason.trim()
-  if (!reason) throw new Error('A reason is required.')
+  if (!reason) throw new UserFacingError('A reason is required.')
   if (!Number.isFinite(input.points) || input.points === 0) {
-    throw new Error('Enter a non-zero number of points.')
+    throw new UserFacingError('Enter a non-zero number of points.')
   }
-  if (!input.user_id) throw new Error('Choose who this applies to.')
+  if (!input.user_id) throw new UserFacingError('Choose who this applies to.')
 
   const { error } = await supabase.from('performance_adjustments').insert({
     org_id: orgId,

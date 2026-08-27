@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { siteUrl } from '@/lib/site-url'
@@ -23,7 +24,7 @@ function revalidate(dealId: string) {
 export async function createInvestorList(activeDealId: string, name: string): Promise<string> {
   const { supabase, orgId, userId } = await requireInternal()
   const title = name.trim()
-  if (!title) throw new Error('Give the list a name.')
+  if (!title) throw new UserFacingError('Give the list a name.')
 
   const { data, error } = await supabase
     .from('investor_lists')
@@ -50,7 +51,7 @@ export async function addInvestorsToList(listId: string, investorIds: string[]):
   //
   // A closed list is still refused: that is a finished decision, not a work in progress.
   if (list.status === 'closed') {
-    throw new Error('This list is closed. Reopen it before changing who is on it.')
+    throw new UserFacingError('This list is closed. Reopen it before changing who is on it.')
   }
 
   const { data: existing } = await supabase
@@ -85,7 +86,7 @@ export async function shareInvestorList(listId: string, introNote: string): Prom
 
   const { data: items } = await supabase
     .from('investor_list_items').select('id').eq('list_id', listId).limit(1)
-  if (!items?.length) throw new Error('Add at least one fund before sharing this list.')
+  if (!items?.length) throw new UserFacingError('Add at least one fund before sharing this list.')
 
   const { data, error } = await supabase
     .from('investor_lists')
@@ -173,7 +174,7 @@ export async function setItemInternalNote(itemId: string, note: string): Promise
 export async function renameInvestorList(listId: string, name: string): Promise<void> {
   const { supabase } = await requireInternal()
   const title = name.trim()
-  if (!title) throw new Error('A list needs a name.')
+  if (!title) throw new UserFacingError('A list needs a name.')
 
   const { data, error } = await supabase
     .from('investor_lists')
@@ -199,7 +200,7 @@ export async function deleteInvestorList(listId: string, force = false): Promise
     .from('investor_lists').select('active_deal_id, responded_at').eq('id', listId).single()
   if (lErr) throw lErr
   if (list.responded_at && !force) {
-    throw new Error('The founder has answered this list. Deleting it discards their answer.')
+    throw new UserFacingError('The founder has answered this list. Deleting it discards their answer.')
   }
 
   const { error } = await supabase.from('investor_lists').delete().eq('id', listId)

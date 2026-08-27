@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { EmploymentType, BloodGroup } from '@/lib/types'
@@ -53,13 +54,13 @@ function clean<T extends Record<string, unknown>>(input: T): Record<string, unkn
 
 export async function saveEmployeeProfile(userId: string, input: EmployeeProfileInput): Promise<void> {
   const { supabase, userId: callerId, orgId } = await requirePeopleAdmin()
-  if (!orgId) throw new Error('No organization found for this account.')
-  if (!userId) throw new Error('No employee selected.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
+  if (!userId) throw new UserFacingError('No employee selected.')
 
   const patch = clean(input)
 
   if (patch.notice_period_days != null && Number(patch.notice_period_days) < 0) {
-    throw new Error('Notice period cannot be negative.')
+    throw new UserFacingError('Notice period cannot be negative.')
   }
   // A confirmation before the joining date is a data-entry slip that would end up printed on a
   // letter, so it's rejected here rather than left to be noticed later.
@@ -67,7 +68,7 @@ export async function saveEmployeeProfile(userId: string, input: EmployeeProfile
   for (const field of ['probation_end_date', 'confirmation_date', 'date_of_exit'] as const) {
     const value = patch[field] as string | null
     if (doj && value && value < doj) {
-      throw new Error(`${field.replace(/_/g, ' ')} cannot be before the joining date.`)
+      throw new UserFacingError(`${field.replace(/_/g, ' ')} cannot be before the joining date.`)
     }
   }
 
@@ -94,7 +95,7 @@ export async function saveEmployeeProfile(userId: string, input: EmployeeProfile
       return before !== null && before !== undefined && before !== '' && patch[k] === null
     })
     if (clearing.length >= WIPE_THRESHOLD) {
-      throw new Error(
+      throw new UserFacingError(
         `This would clear ${clearing.length} fields that currently have values `
         + `(${clearing.slice(0, 4).map((f) => f.replace(/_/g, ' ')).join(', ')}`
         + `${clearing.length > 4 ? ', …' : ''}). `
@@ -138,17 +139,17 @@ export type CompensationInput = {
  */
 export async function saveCompensation(userId: string, input: CompensationInput): Promise<void> {
   const { supabase, userId: callerId, orgId } = await requirePeopleAdmin()
-  if (!orgId) throw new Error('No organization found for this account.')
-  if (!userId) throw new Error('No employee selected.')
-  if (!input.effective_from) throw new Error('An effective date is required.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
+  if (!userId) throw new UserFacingError('No employee selected.')
+  if (!input.effective_from) throw new UserFacingError('An effective date is required.')
 
   const ctc = Number(input.annual_ctc)
-  if (!Number.isFinite(ctc) || ctc < 0) throw new Error('Enter a valid annual CTC.')
+  if (!Number.isFinite(ctc) || ctc < 0) throw new UserFacingError('Enter a valid annual CTC.')
 
   const num = (v: number | null | undefined) => {
     if (v === null || v === undefined || (v as unknown as string) === '') return null
     const n = Number(v)
-    if (!Number.isFinite(n) || n < 0) throw new Error('Breakdown amounts must be zero or more.')
+    if (!Number.isFinite(n) || n < 0) throw new UserFacingError('Breakdown amounts must be zero or more.')
     return n
   }
 

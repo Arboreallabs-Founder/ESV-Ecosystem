@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { Task, TaskComment } from '@/lib/types'
@@ -10,7 +11,7 @@ export async function createTask(formData: FormData): Promise<Task> {
   const { supabase, userId, orgId, role } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
 
   const assigneeId = formData.get('assignee_id') as string
-  if (!assigneeId) throw new Error('Please choose who this task is assigned to.')
+  if (!assigneeId) throw new UserFacingError('Please choose who this task is assigned to.')
 
   // Assignment rules: never assign to a partner; associates may only assign to
   // themselves or other associates. (RLS double-guards these.)
@@ -22,13 +23,13 @@ export async function createTask(formData: FormData): Promise<Task> {
       .single()
     const assigneeRole = assignee?.role
     if (assigneeRole === 'franchise_partner') {
-      throw new Error('Tasks cannot be assigned to partners.')
+      throw new UserFacingError('Tasks cannot be assigned to partners.')
     }
     if (
       (role === 'associate' || role === 'general' || role === 'hr')
       && assigneeRole !== 'associate' && assigneeRole !== 'general' && assigneeRole !== 'hr'
     ) {
-      throw new Error('Associates can only assign tasks to themselves or other associates.')
+      throw new UserFacingError('Associates can only assign tasks to themselves or other associates.')
     }
   }
 
@@ -60,17 +61,17 @@ export async function updateTask(taskId: string, formData: FormData): Promise<Ta
     .select('created_by, assigned_by_id, assignee_id')
     .eq('id', taskId)
     .single()
-  if (!existing) throw new Error('Task not found.')
+  if (!existing) throw new UserFacingError('Task not found.')
 
   // Editable by whoever has a stake in the task, not just its assignee (contrast pushTask).
   const canEdit = ['founder', 'admin'].includes(role)
     || existing.created_by === userId
     || existing.assigned_by_id === userId
     || existing.assignee_id === userId
-  if (!canEdit) throw new Error('You can only edit tasks you created, assigned, or are assigned to.')
+  if (!canEdit) throw new UserFacingError('You can only edit tasks you created, assigned, or are assigned to.')
 
   const assigneeId = formData.get('assignee_id') as string
-  if (!assigneeId) throw new Error('Please choose who this task is assigned to.')
+  if (!assigneeId) throw new UserFacingError('Please choose who this task is assigned to.')
 
   // Same assignment rules as createTask. (RLS double-guards these.)
   if (assigneeId !== userId) {
@@ -81,13 +82,13 @@ export async function updateTask(taskId: string, formData: FormData): Promise<Ta
       .single()
     const assigneeRole = assignee?.role
     if (assigneeRole === 'franchise_partner') {
-      throw new Error('Tasks cannot be assigned to partners.')
+      throw new UserFacingError('Tasks cannot be assigned to partners.')
     }
     if (
       (role === 'associate' || role === 'general' || role === 'hr')
       && assigneeRole !== 'associate' && assigneeRole !== 'general' && assigneeRole !== 'hr'
     ) {
-      throw new Error('Associates can only assign tasks to themselves or other associates.')
+      throw new UserFacingError('Associates can only assign tasks to themselves or other associates.')
     }
   }
 
@@ -132,12 +133,12 @@ export type PushTaskInput = {
 
 export async function pushTask(taskId: string, newDate: string, input: PushTaskInput) {
   const { supabase, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
-  if (!orgId) throw new Error('No organization found for this account.')
+  if (!orgId) throw new UserFacingError('No organization found for this account.')
 
   // Validated here, not just in the modal — the reason is the whole point of the change, and a
   // client-side-only check would leave the KPI silently full of blank reasons.
   const reason = input.reason?.trim()
-  if (!reason) throw new Error('A reason is required to push a task.')
+  if (!reason) throw new UserFacingError('A reason is required to push a task.')
 
   // Only the assignee may push their own task.
   const { data: task } = await supabase
@@ -145,8 +146,8 @@ export async function pushTask(taskId: string, newDate: string, input: PushTaskI
     .select('assignee_id, push_count, pushed_date, due_date')
     .eq('id', taskId)
     .single()
-  if (!task) throw new Error('Task not found.')
-  if (task.assignee_id !== userId) throw new Error('Only the assignee can push this task.')
+  if (!task) throw new UserFacingError('Task not found.')
+  if (task.assignee_id !== userId) throw new UserFacingError('Only the assignee can push this task.')
 
   const fromDate = task.pushed_date ?? task.due_date ?? null
 
@@ -219,7 +220,7 @@ export async function getTaskComments(taskId: string): Promise<TaskComment[]> {
 export async function addTaskComment(taskId: string, body: string) {
   const { supabase, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
   const text = body.trim()
-  if (!text) throw new Error('Comment cannot be empty.')
+  if (!text) throw new UserFacingError('Comment cannot be empty.')
   const { error } = await supabase.from('task_comments').insert({ task_id: taskId, org_id: orgId, body: text, author_id: userId })
   if (error) throw error
   revalidatePath('/tasks')

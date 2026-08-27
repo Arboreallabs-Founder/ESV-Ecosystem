@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createBulletinPost, updateBulletinPost, deleteBulletinPost, toggleBulletinPin, type BulletinPostInput } from '@/app/actions/bulletin'
@@ -140,7 +141,7 @@ function BulletinPostModal({ post, onClose, onSaved }: { post: BulletinPost | nu
         if (post) await updateBulletinPost(post.id, input)
         else await createBulletinPost(input)
         onSaved()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

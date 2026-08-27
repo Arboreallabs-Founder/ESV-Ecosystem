@@ -29,7 +29,7 @@ import { SpecField, OVERVIEW_SPECS, TRACTION_SPECS, RAISE_SPECS, PRODUCT_SPECS, 
 import { formatInr, formatDate, initials, locationLabel } from './format'
 import Avatar from '@/app/_components/Avatar'
 import { proposeCompanyAttribution } from '@/app/actions/partner-investor-referrals'
-import { alertError } from '@/lib/client-errors'
+import { alertError, describeError } from '@/lib/client-errors'
 import styles from '../companies.module.css'
 
 type Team = Array<{ id: string; name: string }>
@@ -65,7 +65,7 @@ function EditFieldsModal({
     if ('name' in patch && !(patch.name as string)) { setError('Company name is required.'); return }
     startTransition(async () => {
       try { await updateCompany(company.id, patch as CompanyPatch); onSaved(); onClose() }
-      catch (e) { setError((e as Error).message) }
+      catch (e) { setError(describeError(e).message) }
     })
   }
   const set = (k: string, v: string) => setForm((f) => ({ ...f, [k]: v }))
@@ -484,7 +484,7 @@ function PeopleModal({ title, kind, company, onClose, onSaved }: {
           await updateCompany(company.id, { team })
         }
         onSaved(); onClose()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

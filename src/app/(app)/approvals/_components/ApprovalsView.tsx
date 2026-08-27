@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { decideLeaveRequest, deleteLeaveRequestAsAdmin } from '@/app/actions/leave-requests'
@@ -44,7 +45,7 @@ export default function ApprovalsView({
         if (kind === 'leave') await decideLeaveRequest(id, decision)
         else await decideExpenseRequest(id, decision)
         router.refresh()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 
@@ -55,7 +56,7 @@ export default function ApprovalsView({
       try {
         await deleteLeaveRequestAsAdmin(id)
         router.refresh()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

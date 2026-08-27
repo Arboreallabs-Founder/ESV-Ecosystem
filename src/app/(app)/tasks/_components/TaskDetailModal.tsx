@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { getTaskComments, addTaskComment, deleteTaskComment, updateTask } from '@/app/actions/tasks'
@@ -79,7 +80,7 @@ export default function TaskDetailModal({
         await addTaskComment(task.id, body)
         setText('')
         setComments(await getTaskComments(task.id))
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

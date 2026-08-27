@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { createAdjustment } from '@/app/actions/performance'
@@ -29,7 +30,7 @@ export default function AdjustmentModal({ people, onClose }: {
         await createAdjustment({ user_id: userId, points: n, reason, occurred_on: occurredOn })
         onClose()
         router.refresh()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

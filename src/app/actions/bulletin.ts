@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -23,7 +24,7 @@ export type BulletinPostInput = {
 export async function createBulletinPost(input: BulletinPostInput): Promise<string> {
   const { supabase, userId, orgId } = await requireEditor()
   const title = input.title.trim()
-  if (!title) throw new Error('Title is required.')
+  if (!title) throw new UserFacingError('Title is required.')
 
   const { data, error } = await supabase
     .from('bulletin_posts')
@@ -45,7 +46,7 @@ export async function createBulletinPost(input: BulletinPostInput): Promise<stri
 export async function updateBulletinPost(id: string, input: BulletinPostInput): Promise<void> {
   const { supabase } = await requireEditor()
   const title = input.title.trim()
-  if (!title) throw new Error('Title is required.')
+  if (!title) throw new UserFacingError('Title is required.')
 
   const { error } = await supabase
     .from('bulletin_posts')

@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { updateLeavePolicy } from '@/app/actions/leave-balances'
@@ -68,7 +69,7 @@ export default function PolicyEditor({ policy, canEdit }: { policy: LeavePolicy;
         setOpen(false)
         router.refresh()
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
+        setError(describeError(err).message)
       }
     })
   }

@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { setAvailableBalances } from '@/app/actions/leave-balances'
 import { BALANCE_LEAVE_TYPES } from '@/lib/types'
@@ -36,7 +37,7 @@ export default function BalanceEditRow({ row, onCancel, onSaved }: {
       try {
         await setAvailableBalances({ user_id: row.user_id, available })
         onSaved()
-      } catch (e) { setError((e as Error).message) }
+      } catch (e) { setError(describeError(e).message) }
     })
   }
 

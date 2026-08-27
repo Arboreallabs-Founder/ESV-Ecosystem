@@ -1,5 +1,6 @@
 'use server'
 
+import { UserFacingError } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { deriveLinesFromRecords } from '@/lib/attendance'
@@ -95,7 +96,7 @@ export async function pullFromRecords(statementId: string): Promise<{ added: num
     .single()
   if (stErr) throw stErr
   if (!EDITABLE.includes(st.status as AttendanceStatus)) {
-    throw new Error('This statement has already been sent. Reopen it before pulling records again.')
+    throw new UserFacingError('This statement has already been sent. Reopen it before pulling records again.')
   }
 
   const derived = await deriveLinesFromRecords(st.user_id as string, st.period_month as string)
@@ -140,9 +141,9 @@ export async function addLine(statementId: string, input: {
     .select('status').eq('id', statementId).single()
   if (stErr) throw stErr
   if (!EDITABLE.includes(st.status as AttendanceStatus)) {
-    throw new Error('This statement has been sent. Reopen it to make changes.')
+    throw new UserFacingError('This statement has been sent. Reopen it to make changes.')
   }
-  if (!input.entry_date) throw new Error('A date is required.')
+  if (!input.entry_date) throw new UserFacingError('A date is required.')
 
   const { error } = await supabase.from('attendance_statement_lines').insert({
     org_id: orgId,
@@ -168,7 +169,7 @@ export async function deleteLine(lineId: string): Promise<void> {
   if (lErr) throw lErr
   const st = Array.isArray((line as any).statement) ? (line as any).statement[0] : (line as any).statement
   if (!EDITABLE.includes(st?.status as AttendanceStatus)) {
-    throw new Error('This statement has been sent. Reopen it to make changes.')
+    throw new UserFacingError('This statement has been sent. Reopen it to make changes.')
   }
   const { error } = await supabase.from('attendance_statement_lines').delete().eq('id', lineId)
   if (error) throw error
@@ -178,7 +179,7 @@ export async function deleteLine(lineId: string): Promise<void> {
 /** "Considered" on the sheet: keep the record, drop the charge. A reason is required. */
 export async function setLineWaived(lineId: string, waived: boolean, reason: string): Promise<void> {
   const { supabase } = await requireManager()
-  if (waived && !reason.trim()) throw new Error('Say why it is being waived — the reason is the record.')
+  if (waived && !reason.trim()) throw new UserFacingError('Say why it is being waived — the reason is the record.')
 
   const { error } = await supabase
     .from('attendance_statement_lines')
@@ -232,7 +233,7 @@ export async function sendStatement(statementId: string): Promise<void> {
     .in('status', ['draft', 'disputed'])
     .select('id, user_id, period_month, task_id')
   if (error) throw error
-  if (!data?.length) throw new Error('Only a draft or a disputed statement can be sent.')
+  if (!data?.length) throw new UserFacingError('Only a draft or a disputed statement can be sent.')
   const st = data[0]
 
   // Non-fatal: the statement is sent either way. Failing the send because the notification failed
@@ -301,7 +302,7 @@ export async function reopenStatement(statementId: string): Promise<void> {
     .in('status', ['sent', 'approved', 'disputed'])
     .select('id')
   if (error) throw error
-  if (!data?.length) throw new Error('A locked statement cannot be reopened here.')
+  if (!data?.length) throw new UserFacingError('A locked statement cannot be reopened here.')
   revalidate()
 }
 
@@ -318,7 +319,7 @@ export async function approveStatement(statementId: string): Promise<void> {
     .in('status', ['sent', 'disputed'])
     .select('id')
   if (error) throw error
-  if (!data?.length) throw new Error('This statement is not awaiting your approval.')
+  if (!data?.length) throw new UserFacingError('This statement is not awaiting your approval.')
   await closeApprovalTask(supabase, statementId)
   revalidate()
   revalidatePath('/tasks')
@@ -328,7 +329,7 @@ export async function disputeStatement(statementId: string, note: string): Promi
   const { supabase, userId } = await requireInternal()
   const reason = note.trim()
   // The whole point of moving off WhatsApp is that a dispute is answerable. "Wrong" is not.
-  if (reason.length < 5) throw new Error('Say what is wrong — which date, and what it should be.')
+  if (reason.length < 5) throw new UserFacingError('Say what is wrong — which date, and what it should be.')
 
   const { data, error } = await supabase
     .from('attendance_statements')
@@ -338,7 +339,7 @@ export async function disputeStatement(statementId: string, note: string): Promi
     .in('status', ['sent', 'approved'])
     .select('id')
   if (error) throw error
-  if (!data?.length) throw new Error('This statement is not open for a dispute.')
+  if (!data?.length) throw new UserFacingError('This statement is not open for a dispute.')
   // A dispute is an answer too — the task has served its purpose and should stop nagging.
   await closeApprovalTask(supabase, statementId)
   revalidate()
@@ -348,7 +349,7 @@ export async function disputeStatement(statementId: string, note: string): Promi
 /** HR/founder records how a dispute was settled. Sending the corrected statement is separate. */
 export async function resolveDispute(statementId: string, note: string): Promise<void> {
   const { supabase, userId } = await requireManager()
-  if (!note.trim()) throw new Error('Record what was agreed.')
+  if (!note.trim()) throw new UserFacingError('Record what was agreed.')
 
   const { data, error } = await supabase
     .from('attendance_statements')
@@ -357,7 +358,7 @@ export async function resolveDispute(statementId: string, note: string): Promise
     .eq('status', 'disputed')
     .select('id')
   if (error) throw error
-  if (!data?.length) throw new Error('That statement is not under dispute.')
+  if (!data?.length) throw new UserFacingError('That statement is not under dispute.')
   revalidate()
 }
 
@@ -373,8 +374,8 @@ export async function lockStatement(statementId: string): Promise<void> {
     .from('attendance_statements')
     .select('status').eq('id', statementId).single()
   if (stErr) throw stErr
-  if (st.status === 'draft') throw new Error('Send the statement before locking it.')
-  if (st.status === 'disputed') throw new Error('Settle the dispute before locking this month.')
+  if (st.status === 'draft') throw new UserFacingError('Send the statement before locking it.')
+  if (st.status === 'disputed') throw new UserFacingError('Settle the dispute before locking this month.')
 
   const { data, error } = await supabase
     .from('attendance_statements')
@@ -388,6 +389,6 @@ export async function lockStatement(statementId: string): Promise<void> {
     .in('status', ['sent', 'approved'])
     .select('id')
   if (error) throw error
-  if (!data?.length) throw new Error('That statement could not be locked.')
+  if (!data?.length) throw new UserFacingError('That statement could not be locked.')
   revalidate()
 }

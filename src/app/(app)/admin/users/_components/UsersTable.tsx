@@ -1,5 +1,6 @@
 'use client'
 
+import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addApprovedUser, updateApprovedUser, revokeUser, setUserPhotoFromUrl } from '@/app/actions/admin'
@@ -105,7 +106,7 @@ export default function UsersTable({
         setPhotoTarget(null)
         router.refresh()
       } catch (err) {
-        setPhotoError(err instanceof Error ? err.message : String(err))
+        setPhotoError(describeError(err).message)
       } finally {
         setPhotoSaving(false)
       }
