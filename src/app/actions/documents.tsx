@@ -1,7 +1,7 @@
 'use server'
 
 import { describeError } from '@/lib/client-errors'
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { requireRole } from '@/lib/guards'
@@ -219,7 +219,7 @@ export async function revokeDocument(documentId: string, reason: string): Promis
     .from('issued_documents')
     .update({ revoked_at: new Date().toISOString(), revoked_by: userId, revoked_reason: text })
     .eq('id', documentId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath('/hr')
 }

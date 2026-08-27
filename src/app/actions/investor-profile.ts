@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { isAlreadyCached, mirrorImage, ImageCacheError } from '@/lib/image-cache'
@@ -60,7 +60,7 @@ export async function addPortfolioEntry(investorId: string, input: {
   })
   if (error) {
     if ((error as any).code === '23505') throw new UserFacingError(`${name} is already on this portfolio.`)
-    throw error
+    throw dbFailure('save that', error)
   }
   revalidate(investorId)
 }
@@ -84,7 +84,7 @@ export async function updatePortfolioEntry(entryId: string, input: {
     })
     .eq('id', entryId)
     .select('investor_id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (data?.[0]) revalidate(data[0].investor_id as string)
 }
 
@@ -92,7 +92,7 @@ export async function deletePortfolioEntry(entryId: string): Promise<void> {
   const { supabase } = await requireInternal()
   const { data, error } = await supabase
     .from('investor_portfolio').delete().eq('id', entryId).select('investor_id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (data?.[0]) revalidate(data[0].investor_id as string)
 }
 
@@ -124,7 +124,7 @@ export async function setContactEmployment(contactId: string, input: {
     })
     .eq('id', contactId)
     .select('investor_id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (data?.[0]) revalidate(data[0].investor_id as string)
 }
 
@@ -151,7 +151,7 @@ export async function setContactRank(contactId: string, rank: PocRank): Promise<
   }
 
   const { error } = await supabase.from('investor_contacts').update({ rank }).eq('id', contactId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate(contact.investor_id as string)
 }
 
@@ -171,7 +171,7 @@ export async function setContactOutreach(contactId: string, input: {
     })
     .eq('id', contactId)
     .select('investor_id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (data?.[0]) revalidate(data[0].investor_id as string)
 }
 
@@ -278,7 +278,7 @@ export async function updateInvestorNotes(investorId: string, notes: string): Pr
     .from('investors')
     .update({ notes: notes.trim() || null })
     .eq('id', investorId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate(investorId)
 }
 
@@ -299,7 +299,7 @@ export async function setInvestorLogo(investorId: string, url: string): Promise<
 
   if (!raw) {
     const { error } = await supabase.from('investors').update({ logo_url: null }).eq('id', investorId)
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
     revalidate(investorId)
     return {}
   }
@@ -322,7 +322,7 @@ export async function setInvestorLogo(investorId: string, url: string): Promise<
   }
 
   const { error } = await supabase.from('investors').update({ logo_url: stored }).eq('id', investorId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate(investorId)
   return {}
 }

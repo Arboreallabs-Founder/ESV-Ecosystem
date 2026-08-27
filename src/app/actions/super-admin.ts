@@ -1,5 +1,6 @@
 'use server'
 
+import { dbFailure } from '@/lib/action-errors'
 import { requireSuperAdmin } from '@/lib/guards'
 import type { Organization, UserRole } from '@/lib/types'
 
@@ -26,7 +27,7 @@ export async function listOrganizations(): Promise<OrgSummary[]> {
     .from('organizations')
     .select('id, name, slug, created_at')
     .order('created_at', { ascending: true })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   if (!orgs || orgs.length === 0) return []
 
@@ -56,7 +57,7 @@ export async function createOrganization(name: string, slug: string): Promise<st
     .insert({ name: name.trim(), slug: slug.trim().toLowerCase(), created_by: userId })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   return data.id as string
 }
 
@@ -67,7 +68,7 @@ export async function listOrgUsers(orgId: string): Promise<OrgUser[]> {
     .select('id, name, email, role')
     .eq('org_id', orgId)
     .order('name', { ascending: true })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   return (data ?? []) as OrgUser[]
 }
 
@@ -78,7 +79,7 @@ export async function listOrgApprovedEmails(orgId: string): Promise<OrgApprovedE
     .select('email, name, role, added_at')
     .eq('org_id', orgId)
     .order('added_at', { ascending: true })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   return (data ?? []) as OrgApprovedEmail[]
 }
 
@@ -95,5 +96,5 @@ export async function addOrgUser(
     role,
     org_id: orgId,
   })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }

@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -36,7 +36,7 @@ export async function updatePerformanceWeights(input: WeightsInput): Promise<voi
     { org_id: orgId, updated_by: userId, ...input },
     { onConflict: 'org_id' },
   )
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/analytics')
 }
 
@@ -66,13 +66,13 @@ export async function createAdjustment(input: AdjustmentInput): Promise<void> {
     occurred_on: input.occurred_on || new Date().toISOString().slice(0, 10),
     created_by: userId,
   })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/analytics')
 }
 
 export async function deleteAdjustment(id: string): Promise<void> {
   const { supabase } = await requireScorer()
   const { error } = await supabase.from('performance_adjustments').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/analytics')
 }

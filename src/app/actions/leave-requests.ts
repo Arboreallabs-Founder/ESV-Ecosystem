@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { notifyFoundersOfApproval } from '@/lib/notify-founders'
@@ -40,7 +40,7 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<void
     is_half_day: input.is_half_day ?? false,
     reason: input.reason?.trim() || null,
   })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/hr')
 }
 
@@ -52,7 +52,7 @@ export async function withdrawLeaveRequest(id: string): Promise<void> {
     throw new UserFacingError('You can only withdraw your own pending requests.')
   }
   const { error } = await supabase.from('leave_requests').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/hr')
 }
 
@@ -73,7 +73,7 @@ export async function decideLeaveRequest(id: string, decision: 'approved' | 'rej
     .from('leave_requests')
     .update({ status: decision, decided_by: userId, decided_at: new Date().toISOString(), decision_note: note?.trim() || null })
     .eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   // Only when an admin or hr approves (never founder, never on reject) does every founder
   // get notified — see src/lib/notify-founders.ts.
@@ -100,7 +100,7 @@ export async function decideLeaveRequest(id: string, decision: 'approved' | 'rej
 export async function deleteLeaveRequestAsAdmin(id: string): Promise<void> {
   const { supabase } = await requireApprover()
   const { error } = await supabase.from('leave_requests').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/approvals')
   revalidatePath('/hr')
 }

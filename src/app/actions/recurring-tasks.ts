@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { addRecurrenceInterval } from '@/lib/recurrence'
@@ -44,7 +44,7 @@ export async function createRecurringTask(input: RecurringTaskInput): Promise<st
     })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/tasks/recurring')
   return data.id as string
 }
@@ -65,21 +65,21 @@ export async function updateRecurringTask(id: string, patch: Partial<RecurringTa
   if (patch.next_due_date !== undefined) update.next_due_date = patch.next_due_date
 
   const { error } = await supabase.from('recurring_tasks').update(update).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/tasks/recurring')
 }
 
 export async function deleteRecurringTask(id: string): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('recurring_tasks').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/tasks/recurring')
 }
 
 export async function setRecurringTaskActive(id: string, active: boolean): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('recurring_tasks').update({ active }).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/tasks/recurring')
 }
 

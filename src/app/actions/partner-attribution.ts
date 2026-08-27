@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { AttributionSource } from '@/lib/types'
@@ -112,7 +112,7 @@ export async function proposeAttribution(input: Subject & {
         + 'claiming one relationship is a fee question, not a race.',
       )
     }
-    throw new Error(error.message)
+    throw dbFailure('save that', error)
   }
 
   revalidateSgp()
@@ -133,7 +133,7 @@ export async function coordinatorApprove(claimId: string, note?: string | null):
     .eq('id', claimId)
     .eq('status', 'pending_coordinator')   // two coordinators at once: first wins, loudly
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) {
     throw new UserFacingError('That claim is no longer waiting on a coordinator. Reload to see where it got to.')
   }
@@ -179,7 +179,7 @@ export async function founderApprove(claimId: string, note?: string | null): Pro
     .eq('id', claimId)
     .eq('status', 'pending_founder')
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) {
     throw new UserFacingError('That claim was decided by someone else a moment ago. Reload to see the outcome.')
   }
@@ -220,7 +220,7 @@ export async function rejectAttribution(claimId: string, reason: string): Promis
     .eq('id', claimId)
     .eq('status', status)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) {
     throw new UserFacingError('That claim was decided by someone else a moment ago. Reload to see the outcome.')
   }
@@ -256,7 +256,7 @@ export async function founderApproveMany(claimIds: string[]): Promise<{ approved
 export async function reapplyAttribution(claimId: string): Promise<void> {
   const ctx = await requireApprover()
   const { error } = await ctx.supabase.rpc('apply_partner_attribution', { p_claim_id: claimId })
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   revalidateSgp()
 }
 
@@ -274,7 +274,7 @@ export async function withdrawAttribution(claimId: string, reason: string): Prom
   const { error } = await ctx.supabase.rpc('withdraw_partner_attribution', {
     p_claim_id: claimId, p_reason: note,
   })
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   revalidateSgp()
 }
 
@@ -285,7 +285,7 @@ export async function setSgpApprover(targetUserId: string, isApprover: boolean):
     .from('users')
     .update({ is_sgp_approver: isApprover })
     .eq('id', targetUserId)
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/admin/users')
   revalidatePath('/sgp-desk')
 }

@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { siteUrl } from '@/lib/site-url'
@@ -32,7 +32,7 @@ export async function createInvestorList(activeDealId: string, name: string): Pr
     .select('id')
     .single()
   // The trigger message is written for a person, so pass it through rather than replacing it.
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   revalidate(activeDealId)
   return data.id as string
 }
@@ -65,7 +65,7 @@ export async function addInvestorsToList(listId: string, investorIds: string[]):
       org_id: orgId, list_id: listId, investor_id: id, sort_order: have.size + i,
     })),
   )
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   revalidate(list.active_deal_id as string)
   return fresh.length
 }
@@ -75,7 +75,7 @@ export async function removeInvestorFromList(itemId: string): Promise<void> {
   const { data, error } = await supabase
     .from('investor_list_items').delete().eq('id', itemId)
     .select('list:investor_lists!list_id(active_deal_id)')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   const l = Array.isArray((data?.[0] as any)?.list) ? (data![0] as any).list[0] : (data?.[0] as any)?.list
   if (l?.active_deal_id) revalidate(l.active_deal_id)
 }
@@ -98,7 +98,7 @@ export async function shareInvestorList(listId: string, introNote: string): Prom
     .eq('id', listId)
     .select('share_token, active_deal_id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate(data.active_deal_id as string)
   return `${siteUrl()}/il/${data.share_token}`
 }
@@ -112,7 +112,7 @@ export async function unshareInvestorList(listId: string): Promise<void> {
     .eq('id', listId)
     .select('active_deal_id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate(data.active_deal_id as string)
 }
 
@@ -133,7 +133,7 @@ export async function matchExclusion(exclusionId: string, investorId: string | n
     })
     .eq('id', exclusionId)
     .select('kind, list_id, list:investor_lists!list_id(active_deal_id)')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   const row = data?.[0] as any
   const l = Array.isArray(row?.list) ? row.list[0] : row?.list
 
@@ -168,7 +168,7 @@ export async function setItemInternalNote(itemId: string, note: string): Promise
     .from('investor_list_items')
     .update({ internal_note: note.trim() || null })
     .eq('id', itemId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function renameInvestorList(listId: string, name: string): Promise<void> {
@@ -182,7 +182,7 @@ export async function renameInvestorList(listId: string, name: string): Promise<
     .eq('id', listId)
     .select('active_deal_id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate(data.active_deal_id as string)
 }
 
@@ -204,6 +204,6 @@ export async function deleteInvestorList(listId: string, force = false): Promise
   }
 
   const { error } = await supabase.from('investor_lists').delete().eq('id', listId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate(list.active_deal_id as string)
 }

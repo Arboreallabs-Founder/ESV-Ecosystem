@@ -1,5 +1,6 @@
 'use server'
 
+import { dbFailure } from '@/lib/action-errors'
 import { requireAuth, requireRole } from '@/lib/guards'
 import { parseBirthday } from '@/lib/birthday'
 import type { PartnerDealEarning, MyDealEarning, PartnerShareBase } from '@/lib/types'
@@ -55,7 +56,7 @@ export async function updatePartnerDetails(partnerId: string, formData: FormData
     })
     .eq('id', partnerId)
 
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   // router.refresh() in the component handles the UI update
 }
 
@@ -68,7 +69,7 @@ const num = (v: unknown): number => (v == null ? 0 : Number(v))
 export async function getPartnerEarnings(partnerId: string): Promise<PartnerDealEarning[]> {
   const { supabase } = await requireRole(['founder', 'admin', 'associate', 'hr'])
   const { data, error } = await supabase.rpc('get_partner_earnings', { p_partner_id: partnerId })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   return (data ?? []).map((r: any) => ({
     active_deal_id: r.active_deal_id,
     deal_title: r.deal_title,
@@ -103,7 +104,7 @@ export async function setPartnerDealShare(
       },
       { onConflict: 'active_deal_id,partner_id' },
     )
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 // Partner: only their own final share per deal (no org totals).
@@ -117,7 +118,7 @@ export async function getMyEarnings(): Promise<MyDealEarning[]> {
   const partnerId = row?.franchise_partner_id
   if (!partnerId) return []
   const { data, error } = await supabase.rpc('get_partner_earnings', { p_partner_id: partnerId })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   return (data ?? []).map((r: any) => ({
     active_deal_id: r.active_deal_id,
     deal_title: r.deal_title,

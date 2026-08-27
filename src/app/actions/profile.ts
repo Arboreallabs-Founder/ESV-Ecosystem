@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireAuth } from '@/lib/guards'
 
@@ -19,14 +19,14 @@ export async function updateMyProfile(input: {
     designation: input.designation?.trim() || null,
     location: input.location?.trim() || null,
   }).eq('id', userId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/settings')
 }
 
 export async function updateMyPhoto(photoUrl: string | null) {
   const { supabase, userId } = await requireAuth()
   const { error } = await supabase.from('users').update({ photo_url: photoUrl }).eq('id', userId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/settings')
 }
 
@@ -58,7 +58,7 @@ export async function updateMyIdPhoto(idPhotoUrl: string | null) {
     .from('employee_profiles')
     .update({ id_photo_url: idPhotoUrl })
     .eq('user_id', userId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath('/settings')
   revalidatePath('/hr')

@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -29,7 +29,7 @@ export async function updateClockSettings(input: ClockSettingsInput): Promise<vo
       { org_id: orgId, updated_by: userId, ...input },
       { onConflict: 'org_id' },
     )
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/hr')
 }
 
@@ -47,7 +47,7 @@ export async function createBirthday(input: BirthdayInput): Promise<void> {
   const { error } = await supabase
     .from('hr_birthdays')
     .insert({ org_id: orgId, created_by: userId, name, birth_date: input.birth_date })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/hr')
 }
 
@@ -61,13 +61,13 @@ export async function updateBirthday(id: string, input: BirthdayInput): Promise<
     .from('hr_birthdays')
     .update({ name, birth_date: input.birth_date })
     .eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/hr')
 }
 
 export async function deleteBirthday(id: string): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('hr_birthdays').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/hr')
 }

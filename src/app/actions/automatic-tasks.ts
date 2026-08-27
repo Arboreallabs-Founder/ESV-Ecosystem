@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -23,7 +23,7 @@ export async function completeAutomaticTask(taskId: string) {
     .eq('id', taskId)
     .eq('source', 'automatic')
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   // An RLS-filtered update reports success having changed nothing.
   if (!data || data.length === 0) throw new UserFacingError('That task could not be completed.')
   revalidatePath('/tasks/update')
@@ -38,7 +38,7 @@ export async function reopenAutomaticTask(taskId: string) {
     .eq('id', taskId)
     .eq('source', 'automatic')
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) throw new UserFacingError('That task could not be reopened.')
   revalidatePath('/tasks/update')
 }
@@ -67,6 +67,6 @@ export async function commentOnAutomaticTask(taskId: string, body: string) {
     body: text,
     author_id: ctx.userId,
   })
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/tasks/update')
 }

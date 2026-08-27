@@ -1,5 +1,6 @@
 'use server'
 
+import { dbFailure } from '@/lib/action-errors'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole, requireAuth } from '@/lib/guards'
 import type { FormNode, FormEdge } from '@/lib/types'
@@ -29,7 +30,7 @@ export async function createForm(title: string, description: string, pipelineId:
     })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   // Seed with start + two end nodes (success + rejected)
   await supabase
@@ -64,7 +65,7 @@ export async function updateFormMeta(
       pipeline_id: pipelineId || null,
     })
     .eq('id', formId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function saveFormGraph(
@@ -125,7 +126,7 @@ export async function saveFormGraph(
 export async function publishForm(formId: string, published: boolean) {
   const { supabase } = await requireBuilder()
   const { error } = await supabase.from('forms').update({ published }).eq('id', formId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function generateFormLink(formId: string, label: string) {
@@ -135,7 +136,7 @@ export async function generateFormLink(formId: string, label: string) {
     .insert({ form_id: formId, created_by: userId, label: label.trim() || null })
     .select('id, token')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   const { data: userRow } = await supabase.from('users').select('name').eq('id', userId).single()
   return { token: data.token, id: data.id, creatorName: userRow?.name ?? null }
 }
@@ -160,19 +161,19 @@ export async function getPartnerFormLinks() {
 export async function deleteForm(formId: string) {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('forms').delete().eq('id', formId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function deleteFormLink(linkId: string) {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('form_links').delete().eq('id', linkId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function linkFormToPipeline(formId: string, pipelineId: string | null) {
   const { supabase } = await requireBuilder()
   const { error } = await supabase.from('forms').update({ pipeline_id: pipelineId }).eq('id', formId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   if (!pipelineId) return
 
@@ -267,5 +268,5 @@ export async function submitForm(
     p_submitter_name: submitterName || '',
     p_submitter_email: submitterEmail || '',
   })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }

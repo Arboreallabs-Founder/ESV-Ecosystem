@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { EmploymentType, BloodGroup } from '@/lib/types'
@@ -111,7 +111,7 @@ export async function saveEmployeeProfile(userId: string, input: EmployeeProfile
       { user_id: userId, org_id: orgId, updated_by: callerId, ...patch },
       { onConflict: 'user_id' },
     )
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath('/hr')
 }
@@ -169,7 +169,7 @@ export async function saveCompensation(userId: string, input: CompensationInput)
     notes: input.notes?.trim() || null,
     created_by: callerId,
   }, { onConflict: 'user_id,effective_from' })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath('/hr')
 }
@@ -181,6 +181,6 @@ export async function saveCompensation(userId: string, input: CompensationInput)
 export async function deleteCompensation(id: string): Promise<void> {
   const { supabase } = await requireRole(['founder'])
   const { error } = await supabase.from('employee_compensation').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/hr')
 }

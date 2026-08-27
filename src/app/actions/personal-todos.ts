@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { PersonalTodo } from '@/lib/types'
@@ -41,7 +41,7 @@ export async function addPersonalTodo(input: {
     })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/my-todos')
   revalidatePath('/tasks/update')
   return data.id as string
@@ -64,7 +64,7 @@ export async function updatePersonalTodo(id: string, patch: {
   if (patch.due_date !== undefined) update.due_date = patch.due_date || null
   if (patch.work_week_start !== undefined) update.work_week_start = patch.work_week_start || null
   const { error } = await supabase.from('personal_todos').update(update).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/my-todos')
   revalidatePath('/tasks/update')
 }
@@ -72,7 +72,7 @@ export async function updatePersonalTodo(id: string, patch: {
 export async function deletePersonalTodo(id: string): Promise<void> {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('personal_todos').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/my-todos')
 }
 
@@ -92,7 +92,7 @@ export async function togglePersonalTodo(id: string, done: boolean): Promise<voi
     .eq('user_id', userId)
     .select('linked_task_id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   if (row?.linked_task_id) {
     try { await supabase.from('tasks').update({ status: done ? 'Done' : 'To Do', completed_at: done_at }).eq('id', row.linked_task_id) }
@@ -125,7 +125,7 @@ export async function portTaskIn(taskId: string): Promise<string> {
     })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/my-todos')
   return data.id as string
 }
@@ -134,6 +134,6 @@ export async function portTaskIn(taskId: string): Promise<string> {
 export async function unlinkPersonalTodo(id: string): Promise<void> {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('personal_todos').update({ linked_task_id: null }).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/my-todos')
 }

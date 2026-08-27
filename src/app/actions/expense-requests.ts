@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { notifyFoundersOfApproval } from '@/lib/notify-founders'
@@ -36,7 +36,7 @@ export async function createExpenseRequest(input: ExpenseRequestInput): Promise<
     description: input.description?.trim() || null,
     invoice_path: input.invoice_path,
   })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/hr')
 }
 
@@ -48,7 +48,7 @@ export async function withdrawExpenseRequest(id: string): Promise<void> {
     throw new UserFacingError('You can only withdraw your own pending requests.')
   }
   const { error } = await supabase.from('expense_requests').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   await supabase.storage.from('expenses').remove([existing.invoice_path])
   revalidatePath('/hr')
 }
@@ -69,7 +69,7 @@ export async function decideExpenseRequest(id: string, decision: 'approved' | 'r
     .from('expense_requests')
     .update({ status: decision, decided_by: userId, decided_at: new Date().toISOString(), decision_note: note?.trim() || null })
     .eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   if (decision === 'approved' && (role === 'admin' || role === 'hr')) {
     const { data: requester } = await supabase.from('users').select('name').eq('id', existing.requester_id).single()

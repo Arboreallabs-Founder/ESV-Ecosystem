@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -38,7 +38,7 @@ export async function createBulletinPost(input: BulletinPostInput): Promise<stri
     })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/bulletin')
   return data.id as string
 }
@@ -56,20 +56,20 @@ export async function updateBulletinPost(id: string, input: BulletinPostInput): 
       pinned: input.pinned ?? false,
     })
     .eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/bulletin')
 }
 
 export async function deleteBulletinPost(id: string): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('bulletin_posts').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/bulletin')
 }
 
 export async function toggleBulletinPin(id: string, pinned: boolean): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('bulletin_posts').update({ pinned }).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/bulletin')
 }

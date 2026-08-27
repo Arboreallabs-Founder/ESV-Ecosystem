@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { requireRole } from '@/lib/guards'
 import { proposeAttribution } from './partner-attribution'
 
@@ -68,7 +68,7 @@ export async function submitInvestorReferral(input: InvestorReferralInput) {
     website: input.website?.trim() || null,
     notes: input.notes?.trim() || null,
   })
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
 }
 
 /**
@@ -179,7 +179,7 @@ export async function acceptReferralAsNew(referralId: string) {
     })
     .select('id')
     .single()
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
 
   // The person the partner named is the reason the referral is worth anything — carried over as
   // the fund's first contact rather than left behind in the referral row.
@@ -231,7 +231,7 @@ async function decide(
     .eq('status', 'pending')   // two coordinators deciding at once: first one wins, loudly
     .select('id')
 
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   // An RLS-filtered update reports success having changed nothing, so the row count is the only
   // honest signal that the decision landed.
   if (!data || data.length === 0) {

@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { FundraiseEventKind, FundraiseStatus } from '@/lib/types'
@@ -21,7 +21,7 @@ export async function syncFromInvestorList(investorListId: string, activeDealId:
   const ctx = await requireDeskUser()
   const { data, error } = await ctx.supabase
     .rpc('sync_fundraise_from_investor_list', { p_list_id: investorListId })
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/active-deals/${activeDealId}/fundraise`)
   return (data as number) ?? 0
 }
@@ -81,7 +81,7 @@ export async function setFundraiseStatus(input: {
     .update(patch)
     .eq('id', input.entryId)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   // An RLS-filtered update reports success having changed nothing.
   if (!updated || updated.length === 0) throw new UserFacingError('That fund could not be updated.')
 
@@ -128,7 +128,7 @@ export async function addFundraiseEvent(input: {
     founder_visible: input.founderVisible ?? false,
     created_by: ctx.userId,
   })
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/active-deals/${input.activeDealId}/fundraise`)
 }
 
@@ -141,7 +141,7 @@ export async function setEventFounderVisible(eventId: string, visible: boolean, 
     .eq('id', eventId)
     .neq('kind', 'founder_comment')   // theirs to begin with; not ours to hide
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) throw new UserFacingError('That update could not be changed.')
   revalidatePath(`/active-deals/${activeDealId}/fundraise`)
 }
@@ -154,7 +154,7 @@ export async function setReachoutTemplate(listId: string, template: string, acti
     .update({ reachout_template: template.trim() || null })
     .eq('id', listId)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) throw new UserFacingError('That list could not be updated.')
   revalidatePath(`/active-deals/${activeDealId}/fundraise`)
 }
@@ -167,7 +167,7 @@ export async function shareFundraiseList(listId: string, activeDealId: string) {
     .update({ shared_at: new Date().toISOString() })
     .eq('id', listId)
     .select('share_token')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) throw new UserFacingError('That list could not be shared.')
   revalidatePath(`/active-deals/${activeDealId}/fundraise`)
   return (data[0] as { share_token: string }).share_token
@@ -178,7 +178,7 @@ export async function unshareFundraiseList(listId: string, activeDealId: string)
   const ctx = await requireDeskUser()
   const { error } = await ctx.supabase
     .from('fundraise_lists').update({ shared_at: null }).eq('id', listId)
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/active-deals/${activeDealId}/fundraise`)
 }
 
@@ -235,7 +235,7 @@ export async function establishPoc(input: {
     })
     .select('id')
     .single()
-  if (contactErr) throw new Error(contactErr.message)
+  if (contactErr) throw dbFailure('save that', contactErr)
 
   const now = new Date().toISOString()
   const { data: updated, error } = await ctx.supabase
@@ -248,7 +248,7 @@ export async function establishPoc(input: {
     })
     .eq('id', input.entryId)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!updated || updated.length === 0) throw new UserFacingError('That fund could not be updated.')
 
   await ctx.supabase.from('fundraise_events').insert({
@@ -288,7 +288,7 @@ export async function setContactConnection(input: {
     })
     .eq('id', input.contactId)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) throw new UserFacingError('That contact could not be updated.')
   if (input.activeDealId) revalidatePath(`/active-deals/${input.activeDealId}/fundraise`)
 }
@@ -301,7 +301,7 @@ export async function setIntroRoute(entryId: string, route: string | null, activ
     .update({ intro_route: route })
     .eq('id', entryId)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) throw new UserFacingError('That fund could not be updated.')
   revalidatePath(`/active-deals/${activeDealId}/fundraise`)
 }

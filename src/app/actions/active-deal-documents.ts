@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { requireRole } from '@/lib/guards'
 import { SHARE_INTRO_MAX } from '@/lib/deal-pitch'
 import { DEAL_DOCUMENT_KINDS, type DealDocumentKind } from '@/lib/types'
@@ -52,7 +52,7 @@ export async function addDealDocument(input: {
     visible_to_partners: input.visibleToPartners ?? true,
     created_by: ctx.userId,
   })
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
 }
 
 /** Share a document with partners, or take it back. */
@@ -63,7 +63,7 @@ export async function setDealDocumentPartnerVisibility(documentId: string, visib
     .update({ visible_to_partners: visible })
     .eq('id', documentId)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   // An RLS-filtered update reports success having changed nothing, so the row count is the only
   // honest signal that it landed.
   if (!data || data.length === 0) throw new UserFacingError('That document could not be updated.')
@@ -76,7 +76,7 @@ export async function deleteDealDocument(documentId: string) {
     .delete()
     .eq('id', documentId)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) throw new UserFacingError('That document could not be removed.')
 }
 
@@ -101,6 +101,6 @@ export async function updateCompanyShareIntro(companyId: string, intro: string) 
     .update({ share_intro: text || null })
     .eq('id', companyId)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) throw new UserFacingError('That company could not be updated.')
 }

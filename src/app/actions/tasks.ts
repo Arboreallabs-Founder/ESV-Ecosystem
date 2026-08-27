@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { Task, TaskComment } from '@/lib/types'
@@ -48,7 +48,7 @@ export async function createTask(formData: FormData): Promise<Task> {
     org_id: orgId,
   }).select(TASK_SELECT).single()
 
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   // No revalidatePath — TaskBoard adds the returned task to local state directly.
   return data as unknown as Task
 }
@@ -103,7 +103,7 @@ export async function updateTask(taskId: string, formData: FormData): Promise<Ta
     priority: (formData.get('priority') as string) || 'Medium',
   }).eq('id', taskId).select(TASK_SELECT).single()
 
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/tasks')
   revalidatePath('/dashboard')
   revalidatePath('/my-todos')
@@ -159,7 +159,7 @@ export async function pushTask(taskId: string, newDate: string, input: PushTaskI
       push_count: (task.push_count ?? 0) + 1,
     })
     .eq('id', taskId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   const blockedBy = input.blockedByUserId || null
   const { error: pushErr } = await supabase.from('task_pushes').insert({
@@ -199,7 +199,7 @@ export async function pushTask(taskId: string, newDate: string, input: PushTaskI
 export async function deleteTask(taskId: string) {
   const { supabase } = await requireRole(['founder', 'admin'])
   const { error } = await supabase.from('tasks').delete().eq('id', taskId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/tasks')
   revalidatePath('/dashboard')
   revalidatePath('/my-todos')
@@ -222,13 +222,13 @@ export async function addTaskComment(taskId: string, body: string) {
   const text = body.trim()
   if (!text) throw new UserFacingError('Comment cannot be empty.')
   const { error } = await supabase.from('task_comments').insert({ task_id: taskId, org_id: orgId, body: text, author_id: userId })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/tasks')
 }
 
 export async function deleteTaskComment(id: string) {
   const { supabase } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
   const { error } = await supabase.from('task_comments').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/tasks')
 }

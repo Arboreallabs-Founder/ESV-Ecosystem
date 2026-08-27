@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { entitlementFor, fetchLeavePolicy } from '@/lib/leave-balances'
@@ -68,7 +68,7 @@ export async function setAvailableBalances(input: AvailableBalanceInput): Promis
   })
 
   const { error } = await supabase.from('leave_balances').upsert(rows, { onConflict: 'user_id,leave_type' })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/approvals')
   revalidatePath('/hr')
 }
@@ -93,7 +93,7 @@ export async function updateLeavePolicy(input: LeavePolicyInput): Promise<void> 
     { org_id: orgId, updated_by: userId, ...input },
     { onConflict: 'org_id' },
   )
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/approvals')
   revalidatePath('/hr')
 }

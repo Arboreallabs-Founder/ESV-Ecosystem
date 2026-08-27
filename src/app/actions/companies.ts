@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { mirrorImage, isAlreadyCached } from '@/lib/image-cache'
@@ -83,7 +83,7 @@ export async function createCompany(patch: CompanyPatch): Promise<string> {
     .insert({ ...patch, name, meta_tags, org_id: orgId, created_by: userId })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/companies')
   return data.id as string
 }
@@ -135,7 +135,7 @@ export async function importCompaniesCsv(csvText: string): Promise<CompanyImport
         if (row.sectors.length) insert.sectors = row.sectors
         if (row.founders.length) insert.founders = row.founders
         const { error } = await supabase.from('companies').insert(insert)
-        if (error) throw error
+        if (error) throw dbFailure('save that', error)
         created++
       }
     } catch (e) {
@@ -173,7 +173,7 @@ async function updateBlanks(
 
   if (Object.keys(patch).length === 0) return
   const { error } = await supabase.from('companies').update(patch).eq('id', companyId).eq('org_id', orgId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 /** Re-run keyword extraction over the company's text and merge into its meta-tags. */
@@ -190,7 +190,7 @@ export async function suggestMetaTags(companyId: string): Promise<void> {
   )
   const merged = Array.from(new Set([...((row.meta_tags as string[]) ?? []), ...extracted]))
   const { error } = await supabase.from('companies').update({ meta_tags: merged }).eq('id', companyId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/companies/${companyId}`)
 }
 
@@ -220,7 +220,7 @@ export async function updateCompany(id: string, patch: CompanyPatch) {
   }
 
   const { error } = await supabase.from('companies').update(patch).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/companies/${id}`)
   revalidatePath('/companies')
 }
@@ -228,7 +228,7 @@ export async function updateCompany(id: string, patch: CompanyPatch) {
 export async function deleteCompany(id: string) {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('companies').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/companies')
 }
 
@@ -252,10 +252,10 @@ export async function saveFundingRound(companyId: string, input: FundingRoundInp
   const { id, ...fields } = input
   if (id) {
     const { error } = await supabase.from('company_funding_rounds').update(fields).eq('id', id)
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
   } else {
     const { error } = await supabase.from('company_funding_rounds').insert({ ...fields, company_id: companyId, org_id: orgId })
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
   }
   revalidatePath(`/companies/${companyId}`)
 }
@@ -263,7 +263,7 @@ export async function saveFundingRound(companyId: string, input: FundingRoundInp
 export async function deleteFundingRound(id: string, companyId: string) {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('company_funding_rounds').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/companies/${companyId}`)
 }
 
@@ -286,10 +286,10 @@ export async function saveCapTableEntry(companyId: string, input: CapTableInput)
   const { id, ...fields } = { ...input, holder_name: name }
   if (id) {
     const { error } = await supabase.from('company_cap_table').update(fields).eq('id', id)
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
   } else {
     const { error } = await supabase.from('company_cap_table').insert({ ...fields, company_id: companyId, org_id: orgId })
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
   }
   revalidatePath(`/companies/${companyId}`)
 }
@@ -297,7 +297,7 @@ export async function saveCapTableEntry(companyId: string, input: CapTableInput)
 export async function deleteCapTableEntry(id: string, companyId: string) {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('company_cap_table').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/companies/${companyId}`)
 }
 
@@ -309,14 +309,14 @@ export async function addDocument(companyId: string, label: string, docType: Com
   const { error } = await supabase.from('company_documents').insert({
     company_id: companyId, org_id: orgId, label: label.trim(), doc_type: docType, url: url.trim(), created_by: userId,
   })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/companies/${companyId}`)
 }
 
 export async function removeDocument(id: string, companyId: string) {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('company_documents').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/companies/${companyId}`)
 }
 
@@ -326,14 +326,14 @@ export async function addUpdate(companyId: string, body: string) {
   const { supabase, userId, orgId } = await requireInternal()
   if (!body.trim()) throw new UserFacingError('Update text is required.')
   const { error } = await supabase.from('company_updates').insert({ company_id: companyId, org_id: orgId, body: body.trim(), author_id: userId })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/companies/${companyId}`)
 }
 
 export async function deleteUpdate(id: string, companyId: string) {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('company_updates').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/companies/${companyId}`)
 }
 
@@ -345,10 +345,10 @@ export async function saveFieldDef(input: { id?: string; label: string; field_ty
   if (!label) throw new UserFacingError('Field label is required.')
   if (input.id) {
     const { error } = await supabase.from('company_field_defs').update({ label, field_type: input.field_type, position: input.position ?? 0 }).eq('id', input.id)
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
   } else {
     const { error } = await supabase.from('company_field_defs').insert({ label, field_type: input.field_type, position: input.position ?? 0, org_id: orgId })
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
   }
   revalidatePath('/companies')
 }
@@ -356,7 +356,7 @@ export async function saveFieldDef(input: { id?: string; label: string; field_ty
 export async function deleteFieldDef(id: string) {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('company_field_defs').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/companies')
 }
 
@@ -366,7 +366,7 @@ export async function setFieldValue(companyId: string, fieldDefId: string, value
   const { error } = await supabase
     .from('company_field_values')
     .upsert({ company_id: companyId, field_def_id: fieldDefId, org_id: orgId, value: v }, { onConflict: 'company_id,field_def_id' })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/companies/${companyId}`)
 }
 
@@ -431,7 +431,7 @@ export async function syncCompaniesFromExisting(): Promise<{ cards: number; deal
 export async function linkDeskDealToCompany(deskDealId: string, companyId: string | null) {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('desk_deals').update({ company_id: companyId }).eq('id', deskDealId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/deal-desk')
   if (companyId) revalidatePath(`/companies/${companyId}`)
 }
@@ -440,7 +440,7 @@ export async function linkPipelineEntryToCompany(entryId: string, companyId: str
   const { supabase } = await requireInternal()
   const { data: entry } = await supabase.from('pipeline_entries').select('pipeline_id').eq('id', entryId).single()
   const { error } = await supabase.from('pipeline_entries').update({ company_id: companyId }).eq('id', entryId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (entry?.pipeline_id) revalidatePath(`/pipelines/${entry.pipeline_id}`)
   if (companyId) revalidatePath(`/companies/${companyId}`)
 }
@@ -521,7 +521,7 @@ export async function createDeskDealFromCompany(companyId: string): Promise<void
     founders,
     seen_status: false,
   })
-  if (insErr) throw insErr
+  if (insErr) throw dbFailure('save that', insErr)
   revalidatePath('/deal-desk')
   revalidatePath(`/companies/${companyId}`)
 }

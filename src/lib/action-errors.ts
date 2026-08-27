@@ -31,9 +31,10 @@
  * old masked behaviour — no worse than today, rather than silently lost.
  *
  * ─── The line this draws ───────────────────────────────────────────────────
- * Only messages we wrote travel. `throw error` — rethrowing a Postgres or Supabase error — is left
- * alone deliberately and stays masked, because those are the ones that leak schema detail. The
- * distinction is not incidental: it is the reason the masking exists, and this keeps it.
+ * Only text we wrote travels. A Postgres message never does — those are the ones that name columns
+ * and constraints, and hiding them is what the masking is for. A rethrown database error goes
+ * through dbFailure() below instead, which says which step failed and carries the SQLSTATE, so the
+ * failure is diagnosable without any of its text crossing the boundary.
  */
 
 /** Marks a digest as one of ours. Anything else is Next's own hash and stays opaque. */
@@ -68,4 +69,25 @@ export function userFacingMessage(err: unknown): string | null {
   const digest = (err as { digest?: unknown }).digest
   if (typeof digest !== 'string' || !digest.startsWith(PREFIX)) return null
   return digest.slice(PREFIX.length) || null
+}
+
+/**
+ * A database failure, said in a way somebody can act on and report.
+ *
+ * The raw message stays masked — those are the ones that name columns, constraints and tables, and
+ * that is the whole reason React hides them. But "An error occurred in the Server Components
+ * render" tells the person nothing, and it tells whoever they report it to even less: no step, no
+ * class of failure, nothing to search for.
+ *
+ * So the sentence names the step, and carries the SQLSTATE. A code is not a schema leak — 42501 is
+ * "insufficient privilege", 23502 "not null", 23505 "unique violation" — and it turns "it broke"
+ * into a first line of diagnosis without a round trip through the logs.
+ */
+export function dbFailure(step: string, error: unknown): UserFacingError {
+  const code = (error as { code?: unknown } | null)?.code
+  const suffix = typeof code === 'string' && code ? ` (code ${code})` : ''
+  const hint = code === '42501'
+    ? ' Your account does not have permission for this — tell an admin what you were doing.'
+    : ''
+  return new UserFacingError(`Could not ${step}${suffix}.${hint}`)
 }

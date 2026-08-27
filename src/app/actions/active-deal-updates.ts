@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { ActiveDealUpdate } from '@/lib/types'
@@ -37,7 +37,7 @@ export async function addDealUpdate(activeDealId: string, body: string): Promise
     .insert({ active_deal_id: activeDealId, org_id: orgId, body: text, created_by: userId })
     .select(UPDATE_SELECT)
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath(`/active-deals/${activeDealId}`)
   revalidatePath('/tasks/update')
@@ -47,7 +47,7 @@ export async function addDealUpdate(activeDealId: string, body: string): Promise
 export async function deleteDealUpdate(id: string, activeDealId: string) {
   const { supabase } = await requireRole([...INTERNAL])
   const { error } = await supabase.from('active_deal_updates').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath(`/active-deals/${activeDealId}`)
   revalidatePath('/tasks/update')
 }

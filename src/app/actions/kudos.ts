@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { KudosCategory } from '@/lib/types'
@@ -29,13 +29,13 @@ export async function giveKudos(input: KudosInput): Promise<void> {
     message,
     category: input.category || null,
   })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/engage')
 }
 
 export async function deleteKudos(id: string): Promise<void> {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('kudos').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/engage')
 }

@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireRole } from '@/lib/guards'
@@ -86,7 +86,7 @@ export async function createCategory(name: string, description: string, color: s
     .insert({ name: name.trim(), description: description.trim() || null, color, created_by: userId, org_id: orgId })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   return data.id as string
 }
 
@@ -96,13 +96,13 @@ export async function updateCategory(id: string, name: string, description: stri
     .from('deal_categories')
     .update({ name: name.trim(), description: description.trim() || null, color })
     .eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function deleteCategory(id: string) {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('deal_categories').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 // ── Category Fields ───────────────────────────────────────────────────────────
@@ -120,7 +120,7 @@ export async function addCategoryField(
     .insert({ category_id: categoryId, label: label.trim(), field_type: fieldType, required, position })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   return data.id as string
 }
 
@@ -135,13 +135,13 @@ export async function updateCategoryField(
     .from('deal_category_fields')
     .update({ label: label.trim(), field_type: fieldType, required })
     .eq('id', fieldId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function deleteCategoryField(fieldId: string) {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('deal_category_fields').delete().eq('id', fieldId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 // ── Active Deals List (for client-side overlay) ───────────────────────────────
@@ -282,7 +282,7 @@ export async function acceptDeal(
     .insert({ pipeline_entry_id: entryId })
     .select('id')
     .single()
-  if (dealErr) throw dealErr
+  if (dealErr) throw dbFailure('create the deal', dealErr)
 
   if (selections.length === 0) return
 
@@ -320,7 +320,7 @@ export async function updateDealState(activeDealId: string, state: DealState) {
   const { supabase } = await requireInternal()
   if (!DEAL_STATES.includes(state)) throw new UserFacingError('Invalid deal state.')
   const { error } = await supabase.from('active_deals').update({ deal_state: state }).eq('id', activeDealId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   const { data: deal } = await supabase
     .from('active_deals')
@@ -354,7 +354,7 @@ export async function deleteActiveDeal(activeDealId: string) {
   const investorIds = (investorRows ?? []).map((r: { id: string }) => r.id)
   if (investorIds.length > 0) {
     const { error } = await supabase.from('active_deal_investor_fees').delete().in('active_deal_investor_id', investorIds)
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
   }
 
   let res = await supabase.from('active_deal_investors').delete().eq('active_deal_id', activeDealId)
@@ -402,7 +402,7 @@ export async function updateActiveDealDetails(activeDealId: string, input: {
       submitter_email: input.submitter_email?.trim() || null,
     })
     .eq('id', deal.pipeline_entry_id)
-  if (entryErr) throw entryErr
+  if (entryErr) throw dbFailure('read the submission', entryErr)
 
   if ('logo_url' in input) {
     const { error: logoErr } = await supabase
@@ -429,7 +429,7 @@ export async function updateActiveDealDetails(activeDealId: string, input: {
       const { error } = await supabase
         .from('active_deal_categories')
         .insert(categoryIds.map((category_id) => ({ active_deal_id: activeDealId, category_id })))
-      if (error) throw error
+      if (error) throw dbFailure('save that', error)
     }
 
     const rows = selections
@@ -438,7 +438,7 @@ export async function updateActiveDealDetails(activeDealId: string, input: {
       .map(([field_id, value]) => ({ active_deal_id: activeDealId, field_id, value: value.trim() }))
     if (rows.length > 0) {
       const { error } = await supabase.from('active_deal_field_values').insert(rows)
-      if (error) throw error
+      if (error) throw dbFailure('save that', error)
     }
 
     const { data: investorRows } = await supabase
@@ -452,7 +452,7 @@ export async function updateActiveDealDetails(activeDealId: string, input: {
         .delete()
         .in('active_deal_investor_id', investorIds)
         .not('source_field_id', 'is', null)
-      if (error) throw error
+      if (error) throw dbFailure('save that', error)
 
       // Only give an investor fee stubs from their OWN category's percentage fields —
       // not every percentage field across all of the deal's categories.
@@ -499,7 +499,7 @@ export async function linkActiveDealToCompany(activeDealId: string, companyId: s
     .from('pipeline_entries')
     .update({ company_id: companyId })
     .eq('id', deal.pipeline_entry_id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath('/active-deals')
   revalidatePath(`/active-deals/${activeDealId}`)
@@ -529,7 +529,7 @@ export async function createOrLinkCompanyForActiveDeal(activeDealId: string): Pr
     .from('pipeline_entries')
     .update({ company_id: company.id })
     .eq('id', deal.pipeline_entry_id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath('/active-deals')
   revalidatePath(`/active-deals/${activeDealId}`)
@@ -557,7 +557,7 @@ async function ensureImportPipeline(
       .from('pipelines')
       .insert({ name: IMPORT_PIPELINE_NAME, description: 'Portfolio & off-pipeline deals added directly to Active Deals.', created_by: userId, org_id: orgId })
       .select('id').single()
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
     pipelineId = created.id as string
     await supabase.from('pipeline_stages').insert([
       { pipeline_id: pipelineId, name: 'Lead', color: '#745FFD', position: -1, stage_type: 'lead' },
@@ -590,7 +590,7 @@ async function insertStandaloneDeal(
     .from('pipeline_entries')
     .insert({ pipeline_id: importPipeline.pipelineId, stage_id: importPipeline.acceptedStageId, title: row.deal_name, submitter_name: row.submitter_name, submitter_email: row.submitter_email })
     .select('id').single()
-  if (entryErr) throw entryErr
+  if (entryErr) throw dbFailure('read the submission', entryErr)
   const entryId = entry.id as string
 
   // Link to a company: directly, if one was already chosen (created from its profile); otherwise
@@ -610,7 +610,7 @@ async function insertStandaloneDeal(
 
   const { data: deal, error: dealErr } = await supabase
     .from('active_deals').insert({ pipeline_entry_id: entryId }).select('id').single()
-  if (dealErr) throw dealErr
+  if (dealErr) throw dbFailure('create the deal', dealErr)
 
   if (row.categories.length > 0) {
     await supabase.from('active_deal_categories').insert(
@@ -793,7 +793,7 @@ export async function addInvestorsToDeal(activeDealId: string, investorIds: stri
       is_referral: referralById.get(investorId) ?? false,
     })))
     .select('id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   const newIds = ((inserted ?? []) as InsertedIdRow[]).map((r) => r.id)
 
@@ -824,7 +824,7 @@ export async function addInvestorsToDeal(activeDealId: string, investorIds: stri
 export async function removeInvestorFromDeal(activeDealInvestorId: string) {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('active_deal_investors').delete().eq('id', activeDealInvestorId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function updateDealInvestor(id: string, updates: {
@@ -835,7 +835,7 @@ export async function updateDealInvestor(id: string, updates: {
 }) {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('active_deal_investors').update(updates).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 /**
@@ -875,7 +875,7 @@ export async function setDealInvestorCategory(id: string, categoryId: string | n
     .from('active_deal_investors')
     .update({ category_id: categoryId })
     .eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function upsertInvestorFee(
@@ -888,7 +888,7 @@ export async function upsertInvestorFee(
       .from('active_deal_investor_fees')
       .update({ label: params.label.trim(), rate: params.rate })
       .eq('id', params.id)
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
   } else {
     const { data, error } = await supabase
       .from('active_deal_investor_fees')
@@ -901,7 +901,7 @@ export async function upsertInvestorFee(
       })
       .select('id')
       .single()
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
     return data.id as string
   }
 }
@@ -909,13 +909,13 @@ export async function upsertInvestorFee(
 export async function toggleInvestorFee(feeId: string, is_enabled: boolean) {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('active_deal_investor_fees').update({ is_enabled }).eq('id', feeId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function deleteInvestorFee(feeId: string) {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('active_deal_investor_fees').delete().eq('id', feeId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 /**
@@ -933,7 +933,7 @@ export async function setDealPartnerVisibility(activeDealId: string, visible: bo
     .eq('id', activeDealId)
     .select('id')
 
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   // An UPDATE that RLS filters out succeeds having changed nothing, so the caller would be told
   // their change saved when it had not.
   if (!data || data.length === 0) {
@@ -957,7 +957,7 @@ export async function setFieldPartnerVisibility(fieldId: string, visible: boolea
     .from('deal_category_fields')
     .update({ visible_to_partners: visible })
     .eq('id', fieldId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/admin/categories')
   revalidatePath('/active-deals')
 }

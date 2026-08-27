@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { parseDeskCsv } from '@/lib/deal-desk-csv'
@@ -42,7 +42,7 @@ export async function importDealsCsv(csvText: string): Promise<ImportResult> {
     payload.push({ ...card, org_id: orgId, associate_id: userId, company_id: companyId })
   }
   const { data, error } = await supabase.from('desk_deals').insert(payload).select('id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath('/deal-desk')
   revalidatePath('/companies')
@@ -100,14 +100,14 @@ export async function updateDeskDeal(id: string, patch: DeskDealPatch) {
   }
   // RLS ensures the caller owns the row; no cross-associate edits possible.
   const { error } = await supabase.from('desk_deals').update(patch).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/deal-desk')
 }
 
 export async function withdrawDeskDeal(id: string) {
   const { supabase } = await requireAuthor()
   const { error } = await supabase.from('desk_deals').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/deal-desk')
 }
 
@@ -123,7 +123,7 @@ export async function addDealMedia(dealId: string, path: string) {
   const { error } = await supabase
     .from('desk_deal_media')
     .insert({ deal_id: dealId, org_id: orgId, url: path, sort_order: count ?? 0 })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/deal-desk')
 }
 
@@ -132,7 +132,7 @@ export async function removeDealMedia(mediaId: string) {
   // Remove the storage object too (path stored in `url`).
   const { data } = await supabase.from('desk_deal_media').select('url').eq('id', mediaId).single()
   const { error } = await supabase.from('desk_deal_media').delete().eq('id', mediaId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (data?.url) await supabase.storage.from('deal-desk').remove([data.url])
   revalidatePath('/deal-desk')
 }
@@ -142,14 +142,14 @@ export async function removeDealMedia(mediaId: string) {
 export async function setSeen(id: string, seen: boolean) {
   const { supabase } = await requireReviewer()
   const { error } = await supabase.from('desk_deals').update({ seen_status: seen }).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/deal-desk')
 }
 
 export async function toggleStar(id: string, starred: boolean) {
   const { supabase } = await requireReviewer()
   const { error } = await supabase.from('desk_deals').update({ starred }).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/deal-desk')
 }
 
@@ -184,7 +184,7 @@ export async function actOnDeal(
     .from('desk_deals')
     .update({ deal_status: DESK_ACTION_TO_STATUS[params.actionType], seen_status: true })
     .eq('id', id)
-  if (dealErr) throw dealErr
+  if (dealErr) throw dbFailure('create the deal', dealErr)
 
   revalidatePath('/deal-desk')
 }

@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { requireRole } from '@/lib/guards'
 import { createClient } from '@/lib/supabase/server'
@@ -116,7 +116,7 @@ export async function createInvestor(params: {
     .select('id')
     .single()
 
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   const pocIds = fields.esv_poc_ids && fields.esv_poc_ids.length > 0
     ? fields.esv_poc_ids
@@ -140,7 +140,7 @@ export async function createInvestor(params: {
         sort_order: c.sort_order ?? i,
       }))
     )
-    if (contactErr) throw contactErr
+    if (contactErr) throw dbFailure('save the contact', contactErr)
   }
 
   // The fund exists either way; the credit is a separate question with its own two signatures.
@@ -248,7 +248,7 @@ export async function updateInvestor(
     .from('investors')
     .update(nextFields)
     .eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   const pocIds = params.esv_poc_ids ?? (params.esv_poc_id ? [params.esv_poc_id] : [])
   await supabase.from('investor_poc_users').delete().eq('investor_id', id)
@@ -278,7 +278,7 @@ export async function updateInvestor(
 export async function deleteInvestor(id: string): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('investors').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 const one = <T>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? (v[0] ?? null) : (v ?? null))
@@ -365,7 +365,7 @@ export async function importInvestorsCsv(csvText: string): Promise<InvestorImpor
         if (mergedMetaTags.length > (existing.meta_tags?.length ?? 0)) patch.meta_tags = mergedMetaTags
         if (Object.keys(patch).length > 0) {
           const { error } = await supabase.from('investors').update(patch).eq('id', existing.id)
-          if (error) throw error
+          if (error) throw dbFailure('save that', error)
         }
         updated++
       } else {
@@ -385,7 +385,7 @@ export async function importInvestorsCsv(csvText: string): Promise<InvestorImpor
           ticket_size_min: row.ticket_size_min,
           ticket_size_max: row.ticket_size_max,
         })
-        if (error) throw error
+        if (error) throw dbFailure('save that', error)
         created++
       }
     } catch (e) {
@@ -419,7 +419,7 @@ export async function addContact(
     })
     .select()
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   return data as InvestorContact
 }
 
@@ -439,13 +439,13 @@ export async function updateContact(
       email: params.email || null,
     })
     .eq('id', contactId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function deleteContact(contactId: string): Promise<void> {
   const { supabase } = await requireInternal()
   const { error } = await supabase.from('investor_contacts').delete().eq('id', contactId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 /**

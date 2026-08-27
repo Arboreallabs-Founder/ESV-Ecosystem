@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { SGP_INTAKE_ACTION_LABELS } from '@/lib/types'
@@ -40,7 +40,7 @@ export async function setSgpCoordinator(targetUserId: string, isCoordinator: boo
     .from('users')
     .update({ is_sgp_coordinator: isCoordinator })
     .eq('id', targetUserId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath('/admin/users')
   revalidatePath('/sgp-desk')
@@ -109,7 +109,7 @@ export async function submitCompanyToPipeline(input: {
     })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath('/my-companies')
   revalidatePath('/sgp-desk')
@@ -152,7 +152,7 @@ export async function getOrCreateMyReferralLink(): Promise<{ token: string }> {
     .insert({ form_id: form.id, created_by: userId, label: me?.name ? `${me.name} — referrals` : 'Partner referrals' })
     .select('token')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/my-companies')
   return { token: data.token as string }
 }
@@ -235,7 +235,7 @@ export async function intakePartnerEntry(input: {
     })
     .select('id')
     .single()
-  if (taskError) throw taskError
+  if (taskError) throw dbFailure('create the task', taskError)
 
   // Move the card. This is what the partner sees, so it is the part that must not be skipped —
   // and it is why the task is created first: a task with no stage move is recoverable, a stage
@@ -253,7 +253,7 @@ export async function intakePartnerEntry(input: {
       .update({ stage_id: (stage as { id: string }).id })
       .eq('id', input.entryId)
       .select('id')
-    if (moveErr) throw moveErr
+    if (moveErr) throw dbFailure('move the submission to its new stage', moveErr)
     // An RLS-filtered update reports success having changed nothing.
     if (!moved || moved.length === 0) throw new UserFacingError('That submission could not be moved.')
   }

@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -44,7 +44,7 @@ export async function createHrPolicy(input: HrPolicyInput): Promise<string> {
     .insert({ org_id: orgId, created_by: userId, title, category: input.category?.trim() || null, body, position: count ?? 0 })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   try {
     const { data: editor } = await supabase.from('users').select('name').eq('id', userId).single()
@@ -72,7 +72,7 @@ export async function updateHrPolicy(id: string, input: HrPolicyInput): Promise<
     .from('hr_policies')
     .update({ title, category, body })
     .eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   try {
     const changes = before ? describeHrChanges(before, { title, category, body }) : ''
@@ -91,6 +91,6 @@ export async function updateHrPolicy(id: string, input: HrPolicyInput): Promise<
 export async function deleteHrPolicy(id: string): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('hr_policies').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/hr')
 }

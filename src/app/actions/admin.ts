@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { mirrorImage, isAlreadyCached } from '@/lib/image-cache'
@@ -41,7 +41,7 @@ export async function addApprovedUser(email: string, name: string, role: string,
     added_by: callerId,
     org_id: orgId,
   })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   if (password) {
     const { data: { session } } = await supabase.auth.getSession()
@@ -82,7 +82,7 @@ export async function updateApprovedUser(
     .from('approved_emails')
     .update({ name: trimmedName, role })
     .eq('email', email)
-  if (emailError) throw emailError
+  if (emailError) throw dbFailure('update the approved-emails list', emailError)
 
   // Also update public.users if they have already logged in
   if (userId) {
@@ -159,7 +159,7 @@ export async function setUserPhotoFromUrl(userId: string, sourceUrl: string | nu
   const raw = sourceUrl?.trim() ?? ''
   if (!raw) {
     const { error } = await supabase.from('users').update({ photo_url: null }).eq('id', userId)
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
     revalidatePath('/admin/users')
     return null
   }
@@ -170,7 +170,7 @@ export async function setUserPhotoFromUrl(userId: string, sourceUrl: string | nu
     : (await mirrorImage(supabase, raw, 'profile-photos', `${userId}/avatar`)).publicUrl
 
   const { error } = await supabase.from('users').update({ photo_url: photoUrl }).eq('id', userId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath('/admin/users')
   revalidatePath('/tasks')

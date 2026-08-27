@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import type { EscalationLinkedType } from '@/lib/types'
@@ -75,7 +75,7 @@ export async function createEscalation(params: {
     linked_id: params.linkedId,
     linked_title: linkedTitle,
   })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function updateEscalationStatus(id: string, status: string) {
@@ -95,7 +95,7 @@ export async function updateEscalationStatus(id: string, status: string) {
 
   const resolved_at = status === 'Resolved' ? new Date().toISOString() : null
   const { error } = await supabase.from('escalations').update({ status, resolved_at }).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/escalations')
   revalidatePath('/dashboard')
 }
@@ -103,7 +103,7 @@ export async function updateEscalationStatus(id: string, status: string) {
 export async function deleteEscalation(id: string) {
   const { supabase } = await requireRole(['founder', 'admin', 'associate'])
   const { error } = await supabase.from('escalations').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/escalations')
 }
 

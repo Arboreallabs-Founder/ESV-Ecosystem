@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { ANGEL_METHOD_LABELS, type AngelMethod } from '@/lib/types'
@@ -63,7 +63,7 @@ export async function createAngelReachout(input: {
     })
     .select('id')
     .single()
-  if (taskErr) throw new Error(taskErr.message)
+  if (taskErr) throw dbFailure('save that', taskErr)
 
   const { data: list, error } = await ctx.supabase
     .from('angel_reachout_lists')
@@ -78,11 +78,11 @@ export async function createAngelReachout(input: {
     })
     .select('id')
     .single()
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
 
   const listId = (list as { id: string }).id
   const { error: seedErr } = await ctx.supabase.rpc('seed_angel_reachout', { p_list_id: listId })
-  if (seedErr) throw new Error(seedErr.message)
+  if (seedErr) throw dbFailure('save that', seedErr)
 
   revalidatePath(`/active-deals/${input.activeDealId}/angels`)
   return listId
@@ -96,7 +96,7 @@ export async function setAngelIncluded(memberId: string, included: boolean, acti
     .update({ included })
     .eq('id', memberId)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) throw new UserFacingError('That investor could not be updated.')
   revalidatePath(`/active-deals/${activeDealId}/angels`)
 }
@@ -118,7 +118,7 @@ export async function setAngelDone(memberId: string, done: boolean, activeDealId
     })
     .eq('id', memberId)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) throw new UserFacingError('That investor could not be updated.')
   revalidatePath(`/active-deals/${activeDealId}/angels`)
 }
@@ -135,7 +135,7 @@ export async function setAngelResponse(memberId: string, response: string, activ
     })
     .eq('id', memberId)
     .select('id')
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
   if (!data || data.length === 0) throw new UserFacingError('That response could not be saved.')
   revalidatePath(`/active-deals/${activeDealId}/angels`)
 }
@@ -173,7 +173,7 @@ export async function commitAngelToDeal(input: {
     investment_amount: input.amount,
     status: 'commitment_received',
   })
-  if (error) throw new Error(error.message)
+  if (error) throw dbFailure('save that', error)
 
   revalidatePath(`/active-deals/${input.activeDealId}/angels`)
   revalidatePath(`/active-deals/${input.activeDealId}`)

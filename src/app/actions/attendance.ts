@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { deriveLinesFromRecords } from '@/lib/attendance'
@@ -54,7 +54,7 @@ export async function openStatement(userId: string, period: string): Promise<str
     .insert({ org_id: orgId, user_id: userId, period_month: period })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate()
   return data.id as string
 }
@@ -74,7 +74,7 @@ export async function openMonthForAll(userIds: string[], period: string): Promis
   const { error } = await supabase
     .from('attendance_statements')
     .insert(missing.map((id) => ({ org_id: orgId, user_id: id, period_month: period })))
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate()
   return missing.length
 }
@@ -121,7 +121,7 @@ export async function pullFromRecords(statementId: string): Promise<{ added: num
         created_by: userId,
       })),
     )
-    if (insErr) throw insErr
+    if (insErr) throw dbFailure('save that', insErr)
   }
 
   revalidate()
@@ -155,7 +155,7 @@ export async function addLine(statementId: string, input: {
     leave_days: input.leave_days ?? 0,
     created_by: userId,
   })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate()
 }
 
@@ -172,7 +172,7 @@ export async function deleteLine(lineId: string): Promise<void> {
     throw new UserFacingError('This statement has been sent. Reopen it to make changes.')
   }
   const { error } = await supabase.from('attendance_statement_lines').delete().eq('id', lineId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate()
 }
 
@@ -185,7 +185,7 @@ export async function setLineWaived(lineId: string, waived: boolean, reason: str
     .from('attendance_statement_lines')
     .update({ waived, waived_reason: waived ? reason.trim() : null })
     .eq('id', lineId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate()
 }
 
@@ -201,7 +201,7 @@ export async function setStatementNotes(statementId: string, input: {
       hr_note: input.hr_note?.trim() || null,
     })
     .eq('id', statementId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidate()
 }
 
@@ -232,7 +232,7 @@ export async function sendStatement(statementId: string): Promise<void> {
     .eq('id', statementId)
     .in('status', ['draft', 'disputed'])
     .select('id, user_id, period_month, task_id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (!data?.length) throw new UserFacingError('Only a draft or a disputed statement can be sent.')
   const st = data[0]
 
@@ -301,7 +301,7 @@ export async function reopenStatement(statementId: string): Promise<void> {
     // A locked statement is a payroll record; correcting it is a payroll decision, not a UI one.
     .in('status', ['sent', 'approved', 'disputed'])
     .select('id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (!data?.length) throw new UserFacingError('A locked statement cannot be reopened here.')
   revalidate()
 }
@@ -318,7 +318,7 @@ export async function approveStatement(statementId: string): Promise<void> {
     .eq('user_id', userId)
     .in('status', ['sent', 'disputed'])
     .select('id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (!data?.length) throw new UserFacingError('This statement is not awaiting your approval.')
   await closeApprovalTask(supabase, statementId)
   revalidate()
@@ -338,7 +338,7 @@ export async function disputeStatement(statementId: string, note: string): Promi
     .eq('user_id', userId)
     .in('status', ['sent', 'approved'])
     .select('id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (!data?.length) throw new UserFacingError('This statement is not open for a dispute.')
   // A dispute is an answer too — the task has served its purpose and should stop nagging.
   await closeApprovalTask(supabase, statementId)
@@ -357,7 +357,7 @@ export async function resolveDispute(statementId: string, note: string): Promise
     .eq('id', statementId)
     .eq('status', 'disputed')
     .select('id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (!data?.length) throw new UserFacingError('That statement is not under dispute.')
   revalidate()
 }
@@ -388,7 +388,7 @@ export async function lockStatement(statementId: string): Promise<void> {
     .eq('id', statementId)
     .in('status', ['sent', 'approved'])
     .select('id')
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   if (!data?.length) throw new UserFacingError('That statement could not be locked.')
   revalidate()
 }

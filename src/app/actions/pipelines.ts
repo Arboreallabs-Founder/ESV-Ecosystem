@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole, requireAuth } from '@/lib/guards'
 import type { StageQuestionFieldType } from '@/lib/types'
@@ -22,7 +22,7 @@ export async function createPipeline(name: string, description: string) {
     .insert({ name: name.trim(), description: description.trim() || null, created_by: userId, org_id: orgId })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   // Seed mandatory stages: Lead (first), Accepted and Rejected (ends)
   await supabase.from('pipeline_stages').insert([
     { pipeline_id: data.id, name: 'Lead', color: '#745FFD', position: -1, stage_type: 'lead' },
@@ -38,14 +38,14 @@ export async function updatePipeline(id: string, name: string, description: stri
     .from('pipelines')
     .update({ name: name.trim(), description: description.trim() || null })
     .eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   // No revalidatePath — router.refresh() in component
 }
 
 export async function deletePipeline(id: string) {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('pipelines').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/pipelines')
 }
 
@@ -54,7 +54,7 @@ export async function addStage(pipelineId: string, name: string, color: string, 
   const { data, error } = await supabase.from('pipeline_stages').insert({
     pipeline_id: pipelineId, name: name.trim(), color, position,
   }).select('id').single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   // No revalidatePath — router.refresh() in component
   return data.id as string
 }
@@ -65,7 +65,7 @@ export async function updateStage(stageId: string, name: string, color: string) 
     .from('pipeline_stages')
     .update({ name: name.trim(), color })
     .eq('id', stageId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   // No revalidatePath — router.refresh() in component
 }
 
@@ -74,7 +74,7 @@ export async function deleteStage(stageId: string) {
   // Move entries to null stage first
   await supabase.from('pipeline_entries').update({ stage_id: null }).eq('stage_id', stageId)
   const { error } = await supabase.from('pipeline_stages').delete().eq('id', stageId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   // No revalidatePath — router.refresh() in component
 }
 
@@ -121,7 +121,7 @@ export async function getEntryStageHistory(entryId: string) {
 export async function deleteEntry(entryId: string) {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('pipeline_entries').delete().eq('id', entryId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 export async function addAssignee(entryId: string, userId: string) {
@@ -189,7 +189,7 @@ export async function saveStageQuestions(stageId: string, items: StageQuestionIt
         position: it.position,
       }))
     )
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
   }
 }
 
@@ -211,7 +211,7 @@ async function upsertStageAnswers(
   const { error } = await supabase
     .from('pipeline_entry_stage_answers')
     .upsert(rows, { onConflict: 'entry_id,question_id' })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 }
 
 // Move an entry into a stage AND record its stage answers in one shot.

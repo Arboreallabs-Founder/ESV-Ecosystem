@@ -1,6 +1,6 @@
 'use server'
 
-import { UserFacingError } from '@/lib/action-errors'
+import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 
@@ -92,7 +92,7 @@ export async function createEvent(input: EventInput): Promise<string> {
     })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   try {
     const { data: editor } = await supabase.from('users').select('name').eq('id', userId).single()
@@ -140,7 +140,7 @@ export async function updateEvent(id: string, input: EventInput): Promise<void> 
   }
 
   const { error } = await supabase.from('bulletin_posts').update(nextFields).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
 
   try {
     const changes = before ? describeEventChanges(before as unknown as Record<string, unknown>, nextFields) : ''
@@ -159,21 +159,21 @@ export async function updateEvent(id: string, input: EventInput): Promise<void> 
 export async function deleteEvent(id: string): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('bulletin_posts').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidateEvents()
 }
 
 export async function toggleEventPin(id: string, pinned: boolean): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('bulletin_posts').update({ pinned }).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidateEvents()
 }
 
 export async function toggleEventCompleted(id: string, completed: boolean): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('bulletin_posts').update({ completed }).eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidateEvents()
 }
 
@@ -185,14 +185,14 @@ export async function toggleEventAttendance(postId: string, going: boolean): Pro
     const { error } = await supabase
       .from('bulletin_event_attendees')
       .upsert({ post_id: postId, org_id: orgId, user_id: userId }, { onConflict: 'post_id,user_id' })
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
   } else {
     const { error } = await supabase
       .from('bulletin_event_attendees')
       .delete()
       .eq('post_id', postId)
       .eq('user_id', userId)
-    if (error) throw error
+    if (error) throw dbFailure('save that', error)
   }
   revalidateEvents()
 }
@@ -204,7 +204,7 @@ export async function addEventAttendee(postId: string, userId: string): Promise<
   const { error } = await supabase
     .from('bulletin_event_attendees')
     .upsert({ post_id: postId, org_id: orgId, user_id: userId }, { onConflict: 'post_id,user_id' })
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   const { data: userRow } = await supabase.from('users').select('name, photo_url').eq('id', userId).single()
   revalidateEvents()
   return { user_id: userId, name: userRow?.name ?? 'Unknown', photo_url: userRow?.photo_url ?? null }
@@ -217,7 +217,7 @@ export async function removeEventAttendee(postId: string, userId: string): Promi
     .delete()
     .eq('post_id', postId)
     .eq('user_id', userId)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidateEvents()
 }
 
@@ -233,7 +233,7 @@ export async function addEventMediaLink(postId: string, label: string | null, ur
     .insert({ post_id: postId, org_id: orgId, label: label?.trim() || null, url: trimmedUrl, created_by: userId })
     .select('id')
     .single()
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidateEvents()
   return data.id as string
 }
@@ -241,6 +241,6 @@ export async function addEventMediaLink(postId: string, label: string | null, ur
 export async function deleteEventMediaLink(id: string): Promise<void> {
   const { supabase } = await requireAdmin()
   const { error } = await supabase.from('bulletin_event_media').delete().eq('id', id)
-  if (error) throw error
+  if (error) throw dbFailure('save that', error)
   revalidateEvents()
 }
