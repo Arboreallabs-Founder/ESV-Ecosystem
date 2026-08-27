@@ -512,3 +512,20 @@ DEFINER`, and same-org-as-each-other would let one tenant merge another tenant's
 `find_investor_duplicates()` groups by name with fund suffixes stripped, so "Blume" and "Blume
 Ventures" surface. Deliberately loose and deliberately not automatic: it over-matches, which is why
 it is a review screen with a chosen keeper and a confirmation.
+
+### `20260923000000_task_assignment_by_coordinators.sql`
+An SGP coordinator could not hand a submission to anybody but themselves.
+
+The 42501 was **not** the INSERT policy — that admits exactly the roles the dropdown offers. The
+action inserts with a RETURNING clause (`.insert(...).select("id")`), and Postgres checks the
+**SELECT** policy on the row being returned. `Associates view own tasks` allowed a row only where
+`assignee_id = auth.uid()`, so an associate creating a task for a colleague passed the write and
+was refused the read-back of the row they had just written.
+
+Worth remembering: a policy set can permit a write and still fail it if the statement reads.
+Anywhere `.insert().select()` meets a SELECT policy narrower than the INSERT one, the same thing
+happens.
+
+SELECT and UPDATE now also admit `created_by` and `assigned_by_id` — you can see and correct work
+you assigned, which is a gap in the task board independent of the Desk. INSERT additionally admits
+an `admin` assignee, on request; `founder` is deliberately excluded.

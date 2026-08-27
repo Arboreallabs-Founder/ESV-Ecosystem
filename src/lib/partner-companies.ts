@@ -76,15 +76,23 @@ export const isSgpCoordinator = cache(async (userId: string): Promise<boolean> =
 /**
  * Who a coordinator may hand a submission to.
  *
- * Associates and general users, per the brief. Not partners — they source leads rather than work
- * them — and not founders, who are the escalation path rather than the queue.
+ * Associates, general users and admins. Not partners — they source leads rather than work them —
+ * and not founders, who are the escalation path rather than the queue. The task policy admits
+ * exactly this set, so the dropdown cannot offer somebody the write would then refuse.
  */
 export const fetchAssignableForSgp = cache(async (): Promise<UserRow[]> => {
   const supabase = await createClient()
+  const user = await getUser()
   const { data } = await supabase
     .from('users')
     .select('*')
-    .in('role', ['associate', 'general'])
+    // Admins included: a submission worth a real conversation usually belongs with one, and a
+    // coordinator could not hand it over. Founders are deliberately not a queue anyone can add to.
+    .in('role', ['associate', 'general', 'admin'])
+    // Explicitly scoped, rather than left to RLS. The policy does scope it today, so this changes
+    // nothing about what is returned -- but a list of people to assign work to should not depend on
+    // a policy elsewhere staying narrow, and reading the query should tell you what it returns.
+    .eq('org_id', user?.org_id ?? '')
     .order('name')
   return (data ?? []) as unknown as UserRow[]
 })
