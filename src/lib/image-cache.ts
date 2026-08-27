@@ -28,10 +28,25 @@ const MAX_BYTES = 5 * 1024 * 1024
 /** A slow origin shouldn't hold a server action open. */
 const FETCH_TIMEOUT_MS = 10_000
 
-const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif'])
+/**
+ * SVG is in the list, which usually deserves a second look, so: it is safe in this application.
+ *
+ * The danger with SVG is that it can carry script. That script only runs when the file is rendered
+ * as a document -- opened directly, or embedded via <object>/<iframe>. Every place we display one
+ * of these is an <img> tag, and browsers do not execute script in an SVG loaded through <img>. The
+ * mirrored copy is also served from the Supabase storage origin rather than ours, so even if it
+ * were rendered as a document it would have no access to a session on this domain.
+ *
+ * Excluding it cost more than it saved: a great many funds publish their logo as an SVG, and the
+ * refusal arrived as an unreadable production error rather than an explanation.
+ */
+const ALLOWED_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/avif', 'image/svg+xml',
+])
 
 const EXT_BY_TYPE: Record<string, string> = {
-  'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/avif': 'avif',
+  'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif',
+  'image/avif': 'avif', 'image/svg+xml': 'svg',
 }
 
 export class ImageCacheError extends Error {}
@@ -107,7 +122,7 @@ export async function mirrorImage(
     throw new ImageCacheError(
       contentType.startsWith('text/')
         ? 'That link points to a web page, not an image. Right-click the photo and copy the image address.'
-        : `Unsupported image type${contentType ? ` (${contentType})` : ''}. Use JPG, PNG, WebP, GIF or AVIF.`,
+        : `Unsupported image type${contentType ? ` (${contentType})` : ''}. Use JPG, PNG, SVG, WebP, GIF or AVIF.`,
     )
   }
 

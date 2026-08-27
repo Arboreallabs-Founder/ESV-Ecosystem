@@ -46,7 +46,10 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
   // Merging is destructive and the RPC refuses anyone else, so this is not offered to an associate
   // as a button that would always error.
   const isLead = ['founder', 'admin', 'super_admin'].includes(userRole)
-  const [activeTab, setActiveTab] = useState<Tab>('all')
+  // A set, not one value. "Show me the VC funds and the family offices" was two searches before,
+  // and an empty set means all -- so the bar still opens showing everything.
+  const [types, setTypes] = useState<ServiceType[]>([])
+  const [letter, setLetter] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   // The id is what a click gives us; the record is fetched. Holding both means the drawer can
   // open immediately with a skeleton rather than waiting for a round trip before anything happens.
@@ -67,8 +70,16 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
     return ['all' as Tab, ...[...counts.entries()].sort((a, b) => b[1] - a[1]).map(([t]) => t as Tab)]
   }, [investors])
 
-  const filtered = investors.filter((inv) => {
-    if (activeTab !== 'all' && inv.service_type !== activeTab) return false
+  /** The first character a reader would file the name under. Digits and symbols land on #. */
+  const initialOf = (name: string) => {
+    const c = (name.trim().match(/[a-z0-9]/i)?.[0] ?? '#').toUpperCase()
+    return /[A-Z]/.test(c) ? c : '#'
+  }
+
+  // Everything except the letter, so the A-Z row can say which letters are actually reachable
+  // under the filters already applied rather than offering 26 buttons half of which find nothing.
+  const matchesExceptLetter = (inv: Investor | InvestorListItem) => {
+    if (types.length > 0 && !types.includes(inv.service_type)) return false
     if (needsPocOnly && pocCoverage(inv.contacts) === 'covered') return false
     if (!search.trim()) return true
     const q = search.toLowerCase()
@@ -81,7 +92,15 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
       (inv.esv_pocs ?? []).some((p) => p.name.toLowerCase().includes(q)) ||
       (inv.referred_by_partner?.name ?? '').toLowerCase().includes(q)
     )
-  })
+  }
+
+  const preLetter = investors.filter(matchesExceptLetter)
+  const availableLetters = useMemo(
+    () => new Set(preLetter.map((i) => initialOf(i.name))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [preLetter],
+  )
+  const filtered = letter ? preLetter.filter((i) => initialOf(i.name) === letter) : preLetter
 
   // Funds with nobody confirmed reachable — the gap worth working through, sized so it is not
   // a vague worry.
@@ -94,6 +113,8 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
       ? investors.length
       : investors.filter((i) => i.service_type === tab).length
   }
+
+  const LETTERS = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')]
 
   function openDetail(id: string) {
     setSelectedId(id)
@@ -151,9 +172,43 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
           label: tab === 'all' ? 'All' : SERVICE_TYPE_LABELS[tab as ServiceType],
           count: countFor(tab),
         }))}
-        value={activeTab}
-        onChange={(v) => setActiveTab(v as Tab)}
+        values={types.length === 0 ? ['all'] : types}
+        onChange={(v) => {
+          // "All" is the absence of a filter, not a value alongside the others -- picking it has
+          // to clear the set rather than join it, or "All + VC Fund" becomes a state that reads as
+          // contradictory and filters as neither.
+          if (v === 'all') { setTypes([]); return }
+          const t = v as ServiceType
+          setTypes((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t])
+        }}
       />
+
+      {/* A-Z. Letters with nothing behind them are disabled rather than hidden, so the row keeps
+          the same shape as you filter and a letter stays where your eye last found it. */}
+      <div className={styles.azRow} role="group" aria-label="Filter by first letter">
+        <button
+          className={letter === null ? styles.azOn : styles.az}
+          onClick={() => setLetter(null)}
+          aria-pressed={letter === null}
+        >
+          All
+        </button>
+        {LETTERS.map((c) => {
+          const has = availableLetters.has(c)
+          return (
+            <button
+              key={c}
+              className={letter === c ? styles.azOn : styles.az}
+              disabled={!has}
+              aria-pressed={letter === c}
+              onClick={() => setLetter(letter === c ? null : c)}
+              title={c === '#' ? 'Names starting with a number or symbol' : undefined}
+            >
+              {c}
+            </button>
+          )
+        })}
+      </div>
 
       {/* The POC gap, sized. Derived from the contacts each time rather than stored, so it can
           never be stale — and it disappears entirely once there is nothing to chase. */}

@@ -292,7 +292,7 @@ export async function updateInvestorNotes(investorId: string, notes: string): Pr
  * and refusing the whole edit for that would be the wrong trade — but the error is surfaced rather
  * than swallowed, so nobody thinks a broken logo saved fine.
  */
-export async function setInvestorLogo(investorId: string, url: string): Promise<void> {
+export async function setInvestorLogo(investorId: string, url: string): Promise<{ error?: string }> {
   const { supabase } = await requireInternal()
   const raw = url.trim()
 
@@ -300,7 +300,7 @@ export async function setInvestorLogo(investorId: string, url: string): Promise<
     const { error } = await supabase.from('investors').update({ logo_url: null }).eq('id', investorId)
     if (error) throw error
     revalidate(investorId)
-    return
+    return {}
   }
 
   let stored = raw
@@ -309,8 +309,12 @@ export async function setInvestorLogo(investorId: string, url: string): Promise<
     try {
       stored = (await mirrorImage(supabase, raw, 'cached-images', `investors/${investorId}/logo`)).publicUrl
     } catch (err) {
+      // Returned, not thrown. Next.js redacts the message of an error thrown out of a Server
+      // Action in a production build -- the caller receives "An error occurred in the Server
+      // Components render", which is exactly what somebody pasting a logo URL saw instead of
+      // "unsupported image type". A returned value is data and survives the boundary intact.
       if (err instanceof ImageCacheError) {
-        throw new Error(`That image could not be fetched — ${err.message}`)
+        return { error: `That image could not be used — ${err.message}` }
       }
       throw err
     }
@@ -319,4 +323,5 @@ export async function setInvestorLogo(investorId: string, url: string): Promise<
   const { error } = await supabase.from('investors').update({ logo_url: stored }).eq('id', investorId)
   if (error) throw error
   revalidate(investorId)
+  return {}
 }

@@ -1493,3 +1493,30 @@
   color: var(--color-text);
 }
 .dupHint { margin: 0.25rem 0 0; font-size: 0.75rem; color: var(--color-muted); }
+
+/* A-Z row. Letters with nothing behind them are disabled rather than removed: a row that changes
+   length as you filter moves every letter under the cursor, and the whole point of an alphabet is
+   that H is always in the same place. */
+.azRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  margin: 0.75rem 0;
+}
+.az, .azOn {
+  min-width: 1.85rem;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.az:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
+.azOn { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
+.az:disabled { opacity: 0.3; cursor: default; }

@@ -44,8 +44,15 @@ export default function InvestorProfile({
   function run(fn: () => Promise<unknown>) {
     setError(null)
     start(async () => {
-      try { await fn(); router.refresh() }
-      catch (err) { setError(err instanceof Error ? err.message : String(err)) }
+      try {
+        const res = await fn()
+        // An action that returns { error } is reporting a refusal it expected. Thrown errors have
+        // their message stripped in a production build, so anything a person needs to read comes
+        // back as a value instead -- see setInvestorLogo.
+        const msg = (res as { error?: string } | undefined)?.error
+        if (msg) { setError(msg); return }
+        router.refresh()
+      } catch (err) { setError(err instanceof Error ? err.message : String(err)) }
     })
   }
 
@@ -129,7 +136,15 @@ export default function InvestorProfile({
             autoFocus
           />
           <button className={profile.primaryBtn} disabled={pending}
-            onClick={() => { run(() => setInvestorLogo(investor.id, draftLogo)); setEditingLogo(false) }}>
+            onClick={() => start(async () => {
+              setError(null)
+              const res = await setInvestorLogo(investor.id, draftLogo)
+              // Stay open on failure: closing first left the message pointing at a field that was
+              // no longer on screen, so there was nothing to fix without starting again.
+              if (res?.error) { setError(res.error); return }
+              setEditingLogo(false)
+              router.refresh()
+            })}>
             Save
           </button>
           {investor.logo_url && (
