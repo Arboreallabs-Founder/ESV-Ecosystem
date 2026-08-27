@@ -144,3 +144,93 @@ export async function countFundsMissingLogos(): Promise<number> {
   return ((data ?? []) as Array<{ website: string | null }>)
     .filter((r) => domainOf(r.website)).length
 }
+
+export type LogoCsvResult = {
+  updated: number
+  skipped: number
+  failed: Array<{ name: string; why: string }>
+  remaining: number
+}
+
+/**
+ * Set logos from a pasted CSV.
+ *
+ * Matched on `id`, not on name. Name matching is what the existing investor importer does and it is
+ * the wrong choice here: the book holds eighteen duplicate name groups, so "Blume" and "Blume
+ * Ventures" would compete for one row and whichever lost would silently take the other's logo.
+ *
+ * Every address is mirrored into our bucket rather than stored as given. A pasted URL from a fund's
+ * own site works today and 404s after their next redesign, and this is exactly the rot the mirror
+ * exists to stop -- the same reason a logo saved one at a time is mirrored too.
+ *
+ * Batched for the same reason as the sweep above: a hundred fetches do not fit in one request.
+ */
+export async function importLogosFromCsv(csv: string, offset = 0, batchSize = 12): Promise<LogoCsvResult> {
+  const { supabase } = await requireRole(['founder', 'admin'])
+
+  const lines = csv.split(/\r?\n/).filter((l) => l.trim())
+  if (lines.length < 2) throw new UserFacingError('That CSV has a header but no rows.')
+
+  // Strip the byte-order mark Excel writes back, or the first column name never matches.
+  const header = lines[0].replace(/^\uFEFF/, '').split(',').map((h) => h.trim().toLowerCase())
+  const idCol = header.indexOf('id')
+  const logoCol = header.indexOf('logo_url')
+  if (idCol === -1 || logoCol === -1) {
+    throw new UserFacingError('The CSV needs an "id" column and a "logo_url" column. Export a fresh one and fill in the logo_url column.')
+  }
+
+  /** Enough CSV to survive a fund name with a comma in it, which Excel will have quoted. */
+  const cells = (line: string): string[] => {
+    const out: string[] = []
+    let cur = '', quoted = false
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i]
+      if (quoted) {
+        if (c === '"' && line[i + 1] === '"') { cur += '"'; i++ }
+        else if (c === '"') quoted = false
+        else cur += c
+      } else if (c === '"') quoted = true
+      else if (c === ',') { out.push(cur); cur = '' }
+      else cur += c
+    }
+    out.push(cur)
+    return out.map((s) => s.trim())
+  }
+
+  const rows = lines.slice(1).map(cells)
+  const batch = rows.slice(offset, offset + Math.max(1, Math.min(batchSize, 25)))
+  const out: LogoCsvResult = {
+    updated: 0, skipped: 0, failed: [],
+    remaining: Math.max(0, rows.length - (offset + batch.length)),
+  }
+
+  for (const r of batch) {
+    const id = r[idCol]
+    const url = (r[logoCol] ?? '').trim()
+    if (!id) { out.skipped++; continue }
+    // Blank means "I did not touch this row", not "remove the logo". Clearing one is a deliberate
+    // act and belongs on the fund itself, not in a column somebody left alone.
+    if (!url) { out.skipped++; continue }
+
+    const { data: inv } = await supabase.from('investors').select('id, name').eq('id', id).maybeSingle()
+    if (!inv) { out.failed.push({ name: id.slice(0, 8), why: 'no fund with that id' }); continue }
+    const fund = inv as { id: string; name: string }
+
+    try {
+      const { publicUrl } = await mirrorImage(supabase, url, 'cached-images', `investors/${fund.id}/logo`)
+      const { error } = await supabase.from('investors').update({ logo_url: publicUrl }).eq('id', fund.id)
+      if (error) { out.failed.push({ name: fund.name, why: `could not save (code ${(error as { code?: string }).code ?? '?'})` }); continue }
+      out.updated++
+    } catch (err) {
+      // The mirror's own refusals are already written for a person — an unreachable host, a link to
+      // a web page rather than an image, a file over the size cap.
+      out.failed.push({ name: fund.name, why: err instanceof Error ? err.message : 'could not fetch' })
+    }
+  }
+
+  if (out.updated > 0) {
+    revalidatePath('/investors')
+    revalidatePath('/active-deals')
+  }
+  return out
+}

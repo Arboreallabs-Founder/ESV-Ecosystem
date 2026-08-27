@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { countFundsMissingLogos, fetchFundLogos } from '@/app/actions/investor-logos'
+import { countFundsMissingLogos, fetchFundLogos, importLogosFromCsv } from '@/app/actions/investor-logos'
 import { describeError } from '@/lib/client-errors'
 import styles from '../investors.module.css'
 
@@ -49,7 +49,47 @@ export default function LogoImportButton() {
     }
   }
 
-  if (missing === 0 && !running && done === 0) return null
+  async function importCsv(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setRunning(true); setError(null)
+    setDone(0); setSkipped(0); setFailed(0)
+    const problems: string[] = []
+    try {
+      const text = await file.text()
+      let offset = 0
+      // Same batching as the sweep: each call commits its own rows, so a failure part-way keeps
+      // everything already imported rather than losing the run.
+      for (let guard = 0; guard < 200; guard++) {
+        const r = await importLogosFromCsv(text, offset, 12)
+        setDone((n) => n + r.updated)
+        setSkipped((n) => n + r.skipped)
+        setFailed((n) => n + r.failed.length)
+        problems.push(...r.failed.map((f) => `${f.name}: ${f.why}`))
+        offset += 12
+        if (r.remaining === 0) break
+      }
+      // Named, not counted. "12 failed" is not something anyone can act on; a list of which funds
+      // and why is a worklist.
+      if (problems.length > 0) setError(`Could not set ${problems.length}: ${problems.slice(0, 6).join(' · ')}${problems.length > 6 ? ' …' : ''}`)
+    } catch (err) {
+      setError(describeError(err).message)
+    } finally {
+      setRunning(false)
+      router.refresh()
+    }
+  }
+
+  if (missing === 0 && !running && done === 0) {
+    // The sweep is finished but a CSV is still a way to replace a favicon with a proper logo.
+    return (
+      <label className={styles.ghostBtn} style={{ cursor: 'pointer' }}>
+        Logos from CSV
+        <input type="file" accept=".csv,text/csv" onChange={importCsv} hidden />
+      </label>
+    )
+  }
 
   return (
     <span className={styles.logoImportWrap}>
@@ -74,6 +114,11 @@ export default function LogoImportButton() {
           {failed > 0 && `, ${failed} unreachable`}
         </span>
       )}
+      <label className={styles.ghostBtn} style={{ cursor: running ? 'default' : 'pointer' }}>
+        Logos from CSV
+        <input type="file" accept=".csv,text/csv" onChange={importCsv} hidden disabled={running} />
+      </label>
+
       {error && <span className={styles.logoImportErr}>{error}</span>}
     </span>
   )
