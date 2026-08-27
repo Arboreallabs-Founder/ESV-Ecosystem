@@ -1520,3 +1520,9 @@
 .az:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); }
 .azOn { background: var(--color-primary); border-color: var(--color-primary); color: #fff; }
 .az:disabled { opacity: 0.3; cursor: default; }
+
+/* Bulk logo import. The note sits beside the button rather than in an alert: it reports three
+   outcomes, and two of them are not failures worth interrupting anyone for. */
+.logoImportWrap { display: inline-flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.logoImportNote { font-size: 0.75rem; color: var(--color-muted); }
+.logoImportErr { font-size: 0.75rem; color: var(--color-destructive); }

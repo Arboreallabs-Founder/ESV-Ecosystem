@@ -9,6 +9,7 @@ import InvestorDetail from './InvestorDetail'
 import InvestorFormModal from './InvestorFormModal'
 import InvestorsImportModal from './InvestorsImportModal'
 import DuplicatesModal from './DuplicatesModal'
+import LogoImportButton from './LogoImportButton'
 import FilterTabs from '@/app/_components/FilterTabs'
 import styles from '../investors.module.css'
 import { WikiButton } from '@/app/_components/WikiPanel'
@@ -157,6 +158,7 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
           </p>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {isLead && <LogoImportButton />}
           {isLead && <button className={styles.ghostBtn} onClick={() => setShowDupes(true)}>Find duplicates</button>}
           {isInternal && <button className={styles.ghostBtn} onClick={() => setShowImport(true)}>Import CSV</button>}
           {canManage && <button className={styles.addBtn} onClick={openCreate}>+ Add Investor</button>}
