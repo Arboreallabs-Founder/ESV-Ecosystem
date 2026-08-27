@@ -4,6 +4,7 @@ import type { InvestorListItem, ServiceType } from '@/lib/types'
 import { formatTicketRange } from '@/lib/format-money'
 import { pocCoverage, POC_COVERAGE_LABELS, SERVICE_TYPE_LABELS } from '@/lib/types'
 import { countryFlagCode } from '@/lib/countries'
+import { AvatarGroup } from '@/app/_components/Avatar'
 import styles from '../investors.module.css'
 
 // Flat outline icons (matching the sidebar's icon style) instead of emoji — emoji render
@@ -136,12 +137,23 @@ export default function InvestorCard({ investor, onClick }: { investor: Investor
         </div>
       )}
 
+      {/* Only when there is something to divide off. The footer carries a border-top and
+          margin-top: auto, so a fund with neither a ticket range nor a POC was drawing a rule
+          across the bottom of the card with nothing beneath it. */}
+      {(ticket || investor.esv_pocs.length > 0) && (
       <div className={styles.cardFooter}>
         {ticket && <span className={styles.ticketRange}>{ticket}</span>}
-        {investor.esv_poc?.name && (
-          <span className={styles.pocChip}>{investor.esv_poc.name}</span>
-        )}
+        {/* Faces, not a name chip. AvatarGroup is what the rest of the app already uses for
+            "who is on this", so the answer looks the same wherever it appears -- and it brings the
+            overlap, the z-index ordering and the +N overflow with it rather than a second
+            hand-rolled version of all three. The name is not lost: each avatar titles itself.
+
+            esv_pocs, not esv_poc. The singular column is a legacy of one-POC-per-fund, so a card
+            with several was quietly showing only the first. The list query has been loading the
+            whole set with photos all along; this was rendering less than it had. */}
+        <AvatarGroup people={investor.esv_pocs} size="xs" max={3} />
       </div>
+      )}
     </div>
   )
 }
