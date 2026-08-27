@@ -26,7 +26,9 @@
   grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
   gap: 1rem;
   align-items: start;
-  margin-bottom: 1.5rem;
+  /* Matches .overview, so the gap between these two blocks is the same whichever order they end up
+     in -- margins collapse to the larger of the two rather than summing. */
+  margin: 1.5rem 0;
 }
 
 .activityCard {

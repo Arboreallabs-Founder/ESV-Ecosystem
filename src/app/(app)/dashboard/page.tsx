@@ -135,8 +135,6 @@ export default async function DashboardPage() {
         <p className={styles.greetingSub}>Here&apos;s what needs attention across the ecosystem.</p>
       </div>
 
-      <DashboardOverviewPanels overview={overview} kpis={stats} />
-
       {/* Bulletin + Recent Activity */}
       <div className={styles.focusGrid}>
         {/* Bulletin updates */}
@@ -234,6 +232,9 @@ export default async function DashboardPage() {
           )}
         </div>
       </div>
+
+      <DashboardOverviewPanels overview={overview} kpis={stats} />
+
 
       <section className={styles.quickSection} aria-labelledby="dashboard-quick-links">
         <div className={styles.sectionHeader}>

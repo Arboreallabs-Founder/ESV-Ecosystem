@@ -10,7 +10,10 @@
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
   gap: 1rem;
-  margin-top: 1.5rem;
+  /* Symmetric on purpose. This block had a top margin and no bottom one, so whatever followed it
+     sat flush against the last panel -- and two translucent cards touching at 0px, each casting
+     its own shadow onto the other's border, reads as one overlapping the other. */
+  margin: 1.5rem 0;
   align-items: start;
 }
 /* The table spans both columns — it is the widest thing on the page and benefits most. */
