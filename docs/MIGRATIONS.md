@@ -529,3 +529,20 @@ happens.
 SELECT and UPDATE now also admit `created_by` and `assigned_by_id` — you can see and correct work
 you assigned, which is a gap in the task board independent of the Desk. INSERT additionally admits
 an `admin` assignee, on request; `founder` is deliberately excluded.
+
+### `20260924000000_partners_only_the_partner_form.sql`
+A partner may hold one link, on the partner form, and nothing else.
+
+`Org internal form links access` is an ALL policy whose role list included `franchise_partner`.
+Permissive policies are OR'd, so the two narrow partner policies beneath it decided nothing —
+the wide one had already said yes. That gave a partner INSERT on **any** form and any number of
+links, SELECT with no `created_by` filter (every link in the org, including internal ones), and
+UPDATE/DELETE on those same rows.
+
+This is the trap `20260910` wrote down after the last occurrence: *"permissive policies are OR'd,
+so adding a narrow one can only widen access; the wide one has to be found and removed."* The
+narrow policies were added and the wide one was left in place.
+
+The one-link cap is a trigger, not a unique index, because the rule is about who the creator is —
+internal users legitimately hold several links on one form (the founder account has three on
+Series A), so `UNIQUE (form_id, created_by)` would break them to constrain partners.

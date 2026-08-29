@@ -1,6 +1,6 @@
 'use server'
 
-import { dbFailure } from '@/lib/action-errors'
+import { dbFailure, UserFacingError } from '@/lib/action-errors'
 import { createClient } from '@/lib/supabase/server'
 import { requireRole, requireAuth } from '@/lib/guards'
 import type { FormNode, FormEdge } from '@/lib/types'
@@ -129,8 +129,31 @@ export async function publishForm(formId: string, published: boolean) {
   if (error) throw dbFailure('save that', error)
 }
 
+/**
+ * A shareable link to a form.
+ *
+ * Internal users may make as many as they like, on any form in the org — a link per campaign or per
+ * event is the point of them. A partner may hold exactly one, on the partner form.
+ *
+ * Both halves of that are enforced in the database (20260924); this checks first so the refusal is a
+ * sentence rather than a constraint error, and so the partner case says which link to use instead.
+ */
 export async function generateFormLink(formId: string, label: string) {
-  const { supabase, userId } = await requireAuth()
+  const { supabase, userId, role } = await requireAuth()
+
+  if (role === 'franchise_partner') {
+    const { data: form } = await supabase
+      .from('forms').select('id, is_partner_form').eq('id', formId).maybeSingle()
+    if (!form || !(form as { is_partner_form?: boolean }).is_partner_form) {
+      throw new UserFacingError('That form is not one you can create a link for.')
+    }
+    const { data: existing } = await supabase
+      .from('form_links').select('token').eq('form_id', formId).eq('created_by', userId).maybeSingle()
+    if (existing) {
+      throw new UserFacingError('You already have a referral link for this form — share that one rather than making another.')
+    }
+  }
+
   const { data, error } = await supabase
     .from('form_links')
     .insert({ form_id: formId, created_by: userId, label: label.trim() || null })

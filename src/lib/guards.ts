@@ -21,10 +21,18 @@ export async function requireAuth() {
   if (!userId) throw new Error('Unauthorized')
   const { data: row } = await supabase
     .from('users')
-    .select('org_id')
+    // role comes back too. The row is already being fetched, and an action that authenticates
+    // anyone still often needs to treat a partner differently — without it the caller has to make a
+    // second round trip for something already in hand.
+    .select('org_id, role')
     .eq('id', userId)
     .single()
-  return { supabase, userId, orgId: row?.org_id as string | null }
+  return {
+    supabase,
+    userId,
+    orgId: row?.org_id as string | null,
+    role: (row?.role ?? null) as string | null,
+  }
 }
 
 export async function requireSuperAdmin() {
