@@ -284,3 +284,23 @@ export async function proposeCompanyAttribution(companyId: string, partnerId: st
   if (!partnerId) throw new UserFacingError('Choose which partner introduced this company.')
   await proposeAttribution({ companyId, partnerId, source: 'retroactive_tag', note })
 }
+
+/**
+ * Clear a referral off the partner's own list.
+ *
+ * Pending is deleted outright: nobody has acted on it and it is their own submission sitting in a
+ * queue, so nothing is lost. Decided is hidden rather than removed, because that row is the record
+ * of who introduced whom and what we said back, and it is what a dispute between two partners
+ * claiming one relationship would be settled against. 20260910 ruled out partner deletion for
+ * exactly that reason; this keeps the half of the rule that still matters.
+ *
+ * The write happens inside a SECURITY DEFINER function. RLS grants rows and never columns, so a
+ * partner UPDATE policy on this table would also let them set status and mark their own referral
+ * accepted.
+ */
+export async function removeInvestorReferral(referralId: string): Promise<'deleted' | 'hidden'> {
+  const ctx = await requireRole(['franchise_partner'])
+  const { data, error } = await ctx.supabase.rpc('remove_investor_referral', { p_id: referralId })
+  if (error) throw dbFailure('remove that referral', error)
+  return (data as 'deleted' | 'hidden') ?? 'hidden'
+}

@@ -248,6 +248,9 @@ export const fetchMyInvestorReferrals = cache(async (): Promise<PartnerInvestorR
   const { data, error } = await supabase
     .from('partner_investor_referrals')
     .select('*, investor:investors!investor_id(id, name), decided_by_user:users!decided_by(name)')
+    // Cleared off the partner's own view. The row survives -- it is the record of who introduced
+    // whom -- and the coordinator queue does not filter it out.
+    .is('dismissed_at', null)
     .order('created_at', { ascending: false })
   if (error) {
     // The table arrives with 20260910; until then the page renders without the section rather

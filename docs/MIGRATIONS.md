@@ -559,3 +559,19 @@ wrong in that direction defeats a rule the schema goes out of its way to enforce
 TEXT with no enum constraint, deliberately. A referral is a claim from outside the building; an
 enum would reject the whole submission over a value we have not thought of rather than recording
 what they said. It is validated where it is used — on accept, against `SERVICE_TYPE_LABELS`.
+
+### `20260927000000_remove_investor_referral.sql`
+A partner can clear a referral off their own list.
+
+`20260910` ruled this out in as many words: *"Deliberately no partner UPDATE or DELETE. Withdrawing
+a referral after we have acted on it rewrites who introduced whom."* That still holds for a decided
+referral — it is what two partners' competing claims would be settled against — but not for a
+pending one, where nobody has acted and nothing is lost.
+
+So the one gesture does two things: **pending is deleted, decided is hidden** via `dismissed_at`.
+The partner view filters on it; the coordinator queue does not.
+
+Done in a `SECURITY DEFINER` function because RLS grants rows and never columns — a partner UPDATE
+policy on this table would also let them write `status` and mark their own referral accepted.
+The `anon` grant is revoked by name, since `REVOKE … FROM PUBLIC` does not remove it (that is how
+`withdraw_partner_attribution` ended up callable by anyone).

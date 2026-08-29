@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { alertError, describeError } from '@/lib/client-errors'
-import { submitInvestorReferral } from '@/app/actions/partner-investor-referrals'
+import { removeInvestorReferral, submitInvestorReferral } from '@/app/actions/partner-investor-referrals'
 import { SERVICE_TYPE_LABELS } from '@/lib/types'
 import type { PartnerInvestorReferral, ServiceType } from '@/lib/types'
 import { formatDateTimeIst } from '@/lib/format-datetime'
@@ -53,8 +53,24 @@ export default function ReferInvestorPanel({ referrals }: { referrals: PartnerIn
     })
   }
 
-  const pendingOnes = referrals.filter((r) => r.status === 'pending')
-  const decided = referrals.filter((r) => r.status !== 'pending')
+  // Removed optimistically so the row goes on click. The server decides whether that meant delete
+  // or hide; either way it is gone from this list, which is what the partner asked for.
+  const [gone, setGone] = useState<string[]>([])
+  function remove(r: PartnerInvestorReferral) {
+    const pending = r.status === 'pending'
+    if (!confirm(pending
+      ? `Remove the referral for ${r.name}? It has not been looked at yet, so it will be deleted.`
+      : `Clear ${r.investor?.name ?? r.name} off your list? The decision stays on our record, it just stops showing here.`)) return
+    setGone((g) => [...g, r.id])
+    start(async () => {
+      try { await removeInvestorReferral(r.id); router.refresh() }
+      catch (err) { setGone((g) => g.filter((x) => x !== r.id)); alertError(err) }
+    })
+  }
+
+  const visible = referrals.filter((r) => !gone.includes(r.id))
+  const pendingOnes = visible.filter((r) => r.status === 'pending')
+  const decided = visible.filter((r) => r.status !== 'pending')
 
   return (
     <div className={styles.referBlock}>
@@ -144,6 +160,15 @@ export default function ReferInvestorPanel({ referrals }: { referrals: PartnerIn
               <span className={styles.referRowName}>{r.name}</span>
               <span className={styles.referRowMeta}>referred {formatDateTimeIst(r.created_at)}</span>
               <span className={styles.referPending}>Pending</span>
+              <button
+                type="button"
+                className={styles.referRemove}
+                onClick={() => remove(r)}
+                aria-label={`Remove the referral for ${r.name}`}
+                title="Remove this referral"
+              >
+                ×
+              </button>
             </div>
           ))}
         </div>
@@ -163,6 +188,15 @@ export default function ReferInvestorPanel({ referrals }: { referrals: PartnerIn
               <span className={r.status === 'accepted' ? styles.referAccepted : styles.referRejected}>
                 {r.status === 'accepted' ? 'Accepted' : 'Not taken forward'}
               </span>
+              <button
+                type="button"
+                className={styles.referRemove}
+                onClick={() => remove(r)}
+                aria-label={`Clear ${r.investor?.name ?? r.name} off the list`}
+                title="Clear this off your list"
+              >
+                ×
+              </button>
             </div>
           ))}
         </div>
