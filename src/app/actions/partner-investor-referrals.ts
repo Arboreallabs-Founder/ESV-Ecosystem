@@ -34,6 +34,8 @@ async function requireCoordinator() {
 
 export type InvestorReferralInput = {
   name: string
+  /** What the partner says this is. Optional: a name with no type is still worth having. */
+  service_type?: ServiceType | null
   contact_name?: string | null
   contact_email?: string | null
   contact_phone?: string | null
@@ -59,11 +61,18 @@ export async function submitInvestorReferral(input: InvestorReferralInput) {
     throw new UserFacingError('Your account is not linked to a partner record yet. Ask Earlyseed Ventures to set that up.')
   }
 
+  // Recorded as given, checked on accept. A referral is a claim from outside; refusing the whole
+  // submission over a type we do not recognise would lose the introduction to save a dropdown.
+  const type = input.service_type && Object.prototype.hasOwnProperty.call(SERVICE_TYPE_LABELS, input.service_type)
+    ? input.service_type
+    : null
+
   const { error } = await ctx.supabase.from('partner_investor_referrals').insert({
     org_id: (me as { org_id?: string | null } | null)?.org_id,
     partner_id: partnerId,
     submitted_by: ctx.userId,
     name,
+    service_type: type,
     contact_name: input.contact_name?.trim() || null,
     contact_email: input.contact_email?.trim() || null,
     contact_phone: input.contact_phone?.trim() || null,

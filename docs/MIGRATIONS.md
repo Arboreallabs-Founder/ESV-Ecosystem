@@ -546,3 +546,16 @@ narrow policies were added and the wide one was left in place.
 The one-link cap is a trigger, not a unique index, because the rule is about who the creator is —
 internal users legitimately hold several links on one form (the founder account has three on
 Series A), so `UNIQUE (form_id, created_by)` would break them to constrain partners.
+
+### `20260926000000_referral_investor_type.sql`
+`partner_investor_referrals.service_type` — what the partner says the investor is.
+
+Accepting a referral as a new record must set `investors.service_type` (NOT NULL), and nobody had
+been asked, so the coordinator guessed from twelve options on behalf of someone who already knew.
+It matters more than tidiness: investor lists exclude `angel_investor` in the database so a
+founder's raise plans never reach an angel who might know them personally, and a type guessed
+wrong in that direction defeats a rule the schema goes out of its way to enforce.
+
+TEXT with no enum constraint, deliberately. A referral is a claim from outside the building; an
+enum would reject the whole submission over a value we have not thought of rather than recording
+what they said. It is validated where it is used — on accept, against `SERVICE_TYPE_LABELS`.

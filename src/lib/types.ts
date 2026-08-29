@@ -926,6 +926,8 @@ export type PartnerInvestorReferral = {
   partner_id: string
   submitted_by: string | null
   name: string
+  /** What the partner said this is. Null on referrals made before the question was asked. */
+  service_type: ServiceType | null
   contact_name: string | null
   contact_email: string | null
   contact_phone: string | null

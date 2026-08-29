@@ -462,3 +462,55 @@
 /* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
    the content out to grey. Still frosted (see the backdrop-filter above). */
 .referModal { background: var(--glass-panel); }
+
+/* Referral modal: the pieces the rewritten form needs that the old one did not have. */
+.referIntro {
+  margin: 0.35rem 0 1rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--color-muted);
+  max-width: 60ch;
+}
+
+.referError {
+  margin-top: 0.875rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: rgba(192, 57, 43, 0.09);
+  color: var(--color-destructive);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.referActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.referPrimary {
+  padding: 0.55rem 1.1rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.referPrimary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.referGhost {
+  padding: 0.55rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-muted);
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.referGhost:hover { color: var(--color-text); }

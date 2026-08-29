@@ -167,7 +167,9 @@ export default function InvestorReferralQueue({ referrals }: { referrals: Partne
                       default nobody chose would defeat that quietly. */}
                   <select
                     className={styles.referralType}
-                    value={types[r.id] ?? ''}
+                    // Pre-filled with what the partner told us. The coordinator confirms rather
+                    // than guesses, and can still override if the partner had it wrong.
+                    value={types[r.id] ?? r.service_type ?? ''}
                     onChange={(e) => setTypes((p) => ({ ...p, [r.id]: e.target.value as ServiceType }))}
                     aria-label="What kind of investor is this?"
                   >
@@ -178,9 +180,9 @@ export default function InvestorReferralQueue({ referrals }: { referrals: Partne
                   </select>
                   <button
                     className={styles.referralPrimary}
-                    disabled={pending || !types[r.id]}
-                    title={types[r.id] ? undefined : 'Pick what kind of investor they are first'}
-                    onClick={() => run(() => acceptReferralAsNew(r.id, types[r.id] as ServiceType))}
+                    disabled={pending || !(types[r.id] ?? r.service_type)}
+                    title={(types[r.id] ?? r.service_type) ? undefined : 'Pick what kind of investor they are first'}
+                    onClick={() => run(() => acceptReferralAsNew(r.id, (types[r.id] ?? r.service_type) as ServiceType))}
                   >
                     {pending ? 'Adding…' : 'We don’t have them — add as new'}
                   </button>

@@ -4,7 +4,8 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { alertError, describeError } from '@/lib/client-errors'
 import { submitInvestorReferral } from '@/app/actions/partner-investor-referrals'
-import type { PartnerInvestorReferral } from '@/lib/types'
+import { SERVICE_TYPE_LABELS } from '@/lib/types'
+import type { PartnerInvestorReferral, ServiceType } from '@/lib/types'
 import { formatDateTimeIst } from '@/lib/format-datetime'
 import styles from '../investors.module.css'
 
@@ -34,6 +35,7 @@ export default function ReferInvestorPanel({ referrals }: { referrals: PartnerIn
         const name = String(fd.get('name') ?? '')
         await submitInvestorReferral({
           name,
+          service_type: (String(fd.get('service_type') ?? '') || null) as ServiceType | null,
           contact_name: String(fd.get('contact_name') ?? ''),
           contact_email: String(fd.get('contact_email') ?? ''),
           contact_phone: String(fd.get('contact_phone') ?? ''),
@@ -84,6 +86,18 @@ export default function ReferInvestorPanel({ referrals }: { referrals: PartnerIn
             <label className={`${styles.referField} ${styles.referFieldWide}`}>
               <span className={styles.referLabel}>Investor or fund name *</span>
               <input className={styles.referInput} name="name" required autoFocus placeholder="Who can you introduce?" />
+            </label>
+            {/* The partner knows what this is, and without it a coordinator picks from twelve
+                options on their behalf. It also decides whether the record can ever reach a
+                founder-facing investor list, since angels are excluded from those. */}
+            <label className={styles.referField}>
+              <span className={styles.referLabel}>What kind of investor?</span>
+              <select className={styles.referInput} name="service_type" defaultValue="">
+                <option value="">Not sure</option>
+                {(Object.entries(SERVICE_TYPE_LABELS) as [ServiceType, string][]).map(([val, label]) => (
+                  <option key={val} value={val}>{label}</option>
+                ))}
+              </select>
             </label>
             <label className={styles.referField}>
               <span className={styles.referLabel}>Website</span>
