@@ -756,6 +756,9 @@ export type FormNode = {
   position_y: number
   question_text: string | null
   answer_type: 'short_text' | 'long_text' | 'mcq' | null
+  /** This question collects the submitter's name/email/phone; the public renderer then skips its
+      own trailing contact step for whichever of those the answers already carry. See 20260928. */
+  contact_field: 'name' | 'email' | 'phone' | null
   options?: FormNodeOption[]
 }
 

@@ -28,7 +28,7 @@ function dbNodesToFlow(dbNodes: FormNode[]): Node[] {
     type: n.type === 'start' ? 'startNode' : n.type === 'end' ? 'endNode' : 'questionNode',
     position: { x: n.position_x, y: n.position_y },
     data: n.type === 'question'
-      ? { questionText: n.question_text ?? '', answerType: n.answer_type ?? 'short_text', options: n.options ?? [] }
+      ? { questionText: n.question_text ?? '', answerType: n.answer_type ?? 'short_text', contactField: n.contact_field ?? null, options: n.options ?? [] }
       : n.type === 'end'
         ? { subtype: n.subtype ?? 'success' }
         : {},
@@ -59,6 +59,9 @@ function flowNodesToDb(nodes: Node[], formId: string) {
     position_y: n.position.y,
     question_text: (n.data as any).questionText ?? null,
     answer_type: (n.data as any).answerType ?? null,
+    // Carried through deliberately: saveFormGraph deletes and reinserts every node, so a field
+    // that is not mapped back out here is silently dropped on the next save.
+    contact_field: (n.data as any).contactField ?? null,
     options: (n.data as any).options ?? [],
   })) as Parameters<typeof saveFormGraph>[1]
 }

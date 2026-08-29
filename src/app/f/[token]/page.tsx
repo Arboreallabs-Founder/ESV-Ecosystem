@@ -16,6 +16,8 @@ interface FormData {
     subtype: string | null
     question_text: string | null
     answer_type: string | null
+    /** Set when this question is the one asking who they are. See 20260928. */
+    contact_field: 'name' | 'email' | 'phone' | null
     options: Array<{ id: string; label: string; position: number }>
   }>
   edges: Array<{

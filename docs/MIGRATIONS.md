@@ -575,3 +575,10 @@ Done in a `SECURITY DEFINER` function because RLS grants rows and never columns 
 policy on this table would also let them write `status` and mark their own referral accepted.
 The `anon` grant is revoked by name, since `REVOKE … FROM PUBLIC` does not remove it (that is how
 `withdraw_partner_attribution` ended up callable by anyone).
+
+### 20260928000000_form_contact_fields.sql
+`form_nodes.contact_field` ('name' | 'email' | 'phone'). The public renderer always appended its own
+"Your Name / Your Email" step after the last question; the Partner Form and Jotforms also ask for
+those as questions, so a founder was asked twice. Tagged questions now feed the submitter fields and
+the trailing step asks only for what is missing, disappearing when nothing is. Tags the existing
+questions on those forms and rebuilds `get_public_form` to carry the new key.

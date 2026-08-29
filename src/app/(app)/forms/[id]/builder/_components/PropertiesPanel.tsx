@@ -47,6 +47,7 @@ export default function PropertiesPanel({ node, onUpdate }: Props) {
   const data = node.data as {
     questionText: string
     answerType: 'short_text' | 'long_text' | 'mcq'
+    contactField: 'name' | 'email' | 'phone' | null
     options: Array<{ id: string; label: string; position: number }>
   }
 
@@ -109,7 +110,13 @@ export default function PropertiesPanel({ node, onUpdate }: Props) {
           value={data.answerType ?? 'short_text'}
           onChange={(e) => {
             const at = e.target.value as 'short_text' | 'long_text' | 'mcq'
-            onUpdate(node.id, { answerType: at, options: at === 'mcq' ? (data.options ?? []) : [] })
+            // Cleared on the way to mcq: a set of options is not somebody's name, and the control
+            // below is hidden for mcq, so a stale tag would be invisible and unclearable.
+            onUpdate(node.id, {
+              answerType: at,
+              options: at === 'mcq' ? (data.options ?? []) : [],
+              ...(at === 'mcq' ? { contactField: null } : {}),
+            })
           }}
         >
           <option value="short_text">Short Text</option>
@@ -117,6 +124,27 @@ export default function PropertiesPanel({ node, onUpdate }: Props) {
           <option value="mcq">Multiple Choice (MCQ)</option>
         </select>
       </div>
+
+      {/* Without this the renderer asks for name and email again after the last question, because
+          it has no way to know that one of these questions already collected them. */}
+      {data.answerType !== 'mcq' && (
+        <div className={styles.panelSection}>
+          <div className={styles.panelLabel}>Collects</div>
+          <select
+            className={styles.panelSelect}
+            value={data.contactField ?? ''}
+            onChange={(e) => onUpdate(node.id, { contactField: e.target.value || null })}
+          >
+            <option value="">Nothing special</option>
+            <option value="name">Their name</option>
+            <option value="email">Their email</option>
+            <option value="phone">Their phone number</option>
+          </select>
+          <p className={styles.panelHint}>
+            Set this when the question asks who they are. We then skip asking for it again at the end.
+          </p>
+        </div>
+      )}
 
       {data.answerType === 'mcq' && (
         <div className={styles.panelSection}>

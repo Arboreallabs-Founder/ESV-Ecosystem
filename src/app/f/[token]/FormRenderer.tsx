@@ -12,6 +12,8 @@ type FormNode = {
   subtype: string | null
   question_text: string | null
   answer_type: string | null
+  /** This question collects the submitter's name/email/phone, so we do not ask again at the end. */
+  contact_field: 'name' | 'email' | 'phone' | null
   options: Array<{ id: string; label: string; position: number }>
 }
 
@@ -94,12 +96,33 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
     setCurrentAnswer(optionId)
   }
 
+  /* What the answers already told us about who this is.
+     Read from the answers rather than from the form, because a branching form can ask for a name on
+     one path and not on another -- what matters is the question they actually reached. */
+  const contactFromAnswers: { name: string; email: string } = { name: '', email: '' }
+  for (const [nodeId, value] of Object.entries(answers)) {
+    const field = nodeMap[nodeId]?.contact_field
+    const text = (value ?? '').trim()
+    if (!text) continue
+    if (field === 'name' && !contactFromAnswers.name) contactFromAnswers.name = text
+    if (field === 'email' && !contactFromAnswers.email) contactFromAnswers.email = text
+  }
+  const needsName = !contactFromAnswers.name
+  const needsEmail = !contactFromAnswers.email
+  // Nothing left to ask: the form already collected both, so the trailing step would just be us
+  // asking a second time for something they typed a minute ago.
+  const needsSubmitterStep = needsName || needsEmail
+
   function handleFinish() {
-    setShowSubmitterStep(true)
+    if (needsSubmitterStep) {
+      setShowSubmitterStep(true)
+      return
+    }
+    void handleSubmit()
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit(e?: React.FormEvent) {
+    e?.preventDefault()
     setSubmitting(true)
     setSubmitError('')
     try {
@@ -119,8 +142,8 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
         formData.pipeline_id,
         formData.first_stage_id,
         answerPayload,
-        submitterName,
-        submitterEmail,
+        contactFromAnswers.name || submitterName,
+        contactFromAnswers.email || submitterEmail,
       )
       setSubmitted(true)
     } catch (err) {
@@ -168,15 +191,23 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
         {showSubmitterStep ? (
           /* Submitter info */
           <form onSubmit={handleSubmit}>
-            <div className={styles.questionText}>Almost done — tell us a bit about yourself</div>
-            <div className={styles.field}>
-              <label className={styles.label}>Your Name</label>
-              <input className={styles.input} value={submitterName} onChange={(e) => setSubmitterName(e.target.value)} placeholder="Full name" />
+            <div className={styles.questionText}>
+              {needsName ? 'Almost done — tell us a bit about yourself' : 'Almost done — where can we reach you?'}
             </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Your Email</label>
-              <input className={styles.input} type="email" value={submitterEmail} onChange={(e) => setSubmitterEmail(e.target.value)} placeholder="you@example.com" />
-            </div>
+            {/* Only what the answers did not already give us. A form that asked for a name gets no
+                name box here; one that asked for both never reaches this screen at all. */}
+            {needsName && (
+              <div className={styles.field}>
+                <label className={styles.label}>Your Name</label>
+                <input className={styles.input} value={submitterName} onChange={(e) => setSubmitterName(e.target.value)} placeholder="Full name" />
+              </div>
+            )}
+            {needsEmail && (
+              <div className={styles.field}>
+                <label className={styles.label}>Your Email</label>
+                <input className={styles.input} type="email" value={submitterEmail} onChange={(e) => setSubmitterEmail(e.target.value)} placeholder="you@example.com" />
+              </div>
+            )}
             {submitError && <p className={styles.errorMsg}>{submitError}</p>}
             <div className={styles.actions}>
               <button type="submit" className={styles.nextBtn} disabled={submitting}>
@@ -199,8 +230,13 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
           /* Success end reached */
           <div>
             <div className={styles.questionText}>You've answered all the questions.</div>
+            {/* This button submits outright when the form already collected name and email, so it
+                needs the error and pending states the trailing step used to own. */}
+            {submitError && <p className={styles.errorMsg}>{submitError}</p>}
             <div className={styles.actions}>
-              <button className={styles.nextBtn} onClick={handleFinish}>Continue →</button>
+              <button className={styles.nextBtn} onClick={handleFinish} disabled={submitting}>
+                {needsSubmitterStep ? 'Continue →' : submitting ? 'Submitting…' : 'Submit'}
+              </button>
             </div>
           </div>
         ) : currentNode?.type === 'question' ? (

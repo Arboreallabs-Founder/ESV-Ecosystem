@@ -78,6 +78,7 @@ export async function saveFormGraph(
     position_y: number
     question_text: string | null
     answer_type: 'short_text' | 'long_text' | 'mcq' | null
+    contact_field: 'name' | 'email' | 'phone' | null
     options: Array<{ id: string; label: string; position: number }>
   }>,
   edges: Array<{
@@ -105,6 +106,7 @@ export async function saveFormGraph(
         position_y: n.position_y,
         question_text: n.question_text,
         answer_type: n.answer_type,
+        contact_field: n.contact_field ?? null,
       }))
     )
     if (nodeErr) throw nodeErr

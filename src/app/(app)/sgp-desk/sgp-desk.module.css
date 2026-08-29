@@ -373,7 +373,10 @@
    The decision that matters is "do we already hold this fund". The queue does the lookup so a
    coordinator is not asked to recall 297 fund names. */
 .referralSection {
-  margin: 0 2.5rem 2rem;
+  /* No horizontal margin. This was the only rule on the page with one, so this panel alone sat
+     inset by 2.5rem a side while the attribution queue above and the triage board below ran the
+     full width -- which reads as the panel being broken rather than deliberately narrower. */
+  margin: 0 0 2rem;
   padding: 1.25rem 1.5rem;
   background: var(--color-card);
   border: 1px solid var(--color-border);
