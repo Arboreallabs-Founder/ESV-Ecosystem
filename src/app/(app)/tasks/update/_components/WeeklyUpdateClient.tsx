@@ -12,6 +12,8 @@ import AutomaticTasks from '@/app/_components/AutomaticTasks'
 import type { AutomaticTask } from '@/lib/automatic-tasks-shared'
 import HealthBadge from '@/app/_components/HealthBadge'
 import type { MandateHealth } from '@/lib/mandate-health'
+import WeekSummary from './WeekSummary'
+import type { SummaryPerson, SummaryMandate } from './WeekSummary'
 
 type TaskRef = { id: string; title: string }
 /** `update` is empty when nothing has been posted on the deal yet. */
@@ -125,6 +127,9 @@ export default function WeeklyUpdateClient({
   const [founderFilter, setFounderFilter] = useState<string>(currentUserRole === 'founder' ? currentUserId : 'all')
   const [copied, setCopied] = useState<string | null>(null)
   const [index, setIndex] = useState(0)
+  /* Cards is the default because the thing this page produces every week -- the per-person
+     WhatsApp message -- is produced there. Summary is for reading, not for sending. */
+  const [mode, setMode] = useState<'cards' | 'summary'>('cards')
 
   const { start: weekStart, end: weekEnd, label: weekLabel, key: weekKey } = useMemo(() => weekRange(weekOffset), [weekOffset])
 
@@ -142,7 +147,10 @@ export default function WeeklyUpdateClient({
     [users, isLead, currentUserId],
   )
 
-  const reports = useMemo<AssociateReport[]>(() => {
+  /* Everyone, including people with nothing this week.
+     The carousel filters those out below -- arrowing through empty cards is noise -- but the
+     summary keeps them, because "reported nothing" is one of the things a review is looking for. */
+  const allReports = useMemo<AssociateReport[]>(() => {
     const inWeek = (dateStr: string) => {
       const d = new Date(dateStr)
       return d >= weekStart && d <= weekEnd
@@ -175,8 +183,63 @@ export default function WeeklyUpdateClient({
           completed, open, mandates, personal,
         }
       })
-      .filter((r) => r.completed.length > 0 || r.open.length > 0 || r.mandates.length > 0 || r.personal.length > 0)
   }, [associates, tasks, activeDeals, dealUpdates, weekTodos, weekKey, founderFilter, weekStart, weekEnd])
+
+  const reports = useMemo(
+    () => allReports.filter((r) =>
+      r.completed.length > 0 || r.open.length > 0 || r.mandates.length > 0 || r.personal.length > 0),
+    [allReports],
+  )
+
+  /* ── The mandate-major half of the summary ───────────────────────────────
+     Grouped by mandate rather than by person, which is the only way the two facts below are
+     visible at all: a mandate with two people on it appears on two separate cards in the carousel,
+     and a mandate with nobody on it appears on none. */
+  const { sharedMandates, unownedMandates, silentMandates } = useMemo(() => {
+    const active = activeDeals.filter((d) => d.deal_state === 'active')
+    const toRow = (d: typeof active[number]): SummaryMandate => ({
+      id: d.id,
+      name: d.entry?.title ?? 'Untitled',
+      update: dealUpdates[d.id] ?? '',
+      health: mandateHealth[d.id],
+      people: d.entry?.assignees ?? [],
+    })
+    const rows = active.map(toRow)
+    return {
+      sharedMandates: rows.filter((m) => m.people.length > 1),
+      unownedMandates: rows.filter((m) => m.people.length === 0),
+      silentMandates: rows.filter((m) => !m.update),
+    }
+  }, [activeDeals, dealUpdates, mandateHealth])
+
+  /* How many of a person's mandates they share with somebody else. Counted from the same rows as
+     sharedMandates so the roster marker and the band below can never disagree. */
+  const summaryPeople = useMemo<SummaryPerson[]>(() => {
+    const sharedPerUser: Record<string, number> = {}
+    for (const m of sharedMandates) {
+      for (const u of m.people) sharedPerUser[u.user_id] = (sharedPerUser[u.user_id] ?? 0) + 1
+    }
+    return allReports.map((r) => ({
+      id: r.id,
+      name: r.name,
+      designation: r.designation,
+      photoUrl: r.photoUrl,
+      done: r.completed.length,
+      open: r.open.length,
+      mandates: r.mandates.length,
+      shared: sharedPerUser[r.id] ?? 0,
+      todos: r.personal.length,
+    }))
+  }, [allReports, sharedMandates])
+
+  /* Opens that person's card. The summary deliberately does not re-render the detail: there is
+     one rendering of a person's week, and the copy button that produces the sent message lives
+     on it. Two would drift. */
+  const openPerson = useCallback((id: string) => {
+    const at = reports.findIndex((r) => r.id === id)
+    setMode('cards')
+    if (at >= 0) setIndex(at)
+  }, [reports])
 
   // Changing the week or the filter can shorten the list out from under the current position.
   useEffect(() => {
@@ -191,6 +254,8 @@ export default function WeeklyUpdateClient({
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
+      // Nothing to arrow through on the summary, where the arrows belong to the page itself.
+      if (mode !== 'cards') return
       // Don't hijack the arrows while someone is inside the week or filter controls.
       const el = document.activeElement
       if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement || el instanceof HTMLTextAreaElement) return
@@ -199,7 +264,7 @@ export default function WeeklyUpdateClient({
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [go])
+  }, [go, mode])
 
   async function copyText(text: string, id: string) {
     try {
@@ -224,12 +289,14 @@ export default function WeeklyUpdateClient({
             <WikiButton sectionKey="tasks" />
           </div>
           <p className={styles.pageSub}>
-            {isLead
-              ? 'One card per person — tasks, mandate updates, and any personal to-dos filed into this week.'
-              : 'Your week — tasks, mandate updates, and any personal to-dos you filed into this week.'}
+            {!isLead
+              ? 'Your week — tasks, mandate updates, and any personal to-dos you filed into this week.'
+              : mode === 'summary'
+                ? 'The whole team on one screen, then the mandates two people share and the ones nobody is on.'
+                : 'One card per person — tasks, mandate updates, and any personal to-dos filed into this week.'}
           </p>
         </div>
-        {reports.length > 1 && (
+        {reports.length > 1 && mode === 'cards' && (
           <button className={styles.copyAllBtn} onClick={copyAll}>
             {copied === '__all__' ? 'Copied all ✓' : `Copy all ${reports.length}`}
           </button>
@@ -245,6 +312,28 @@ export default function WeeklyUpdateClient({
         {weekOffset !== 0 && (
           <button className={styles.thisWeekBtn} onClick={() => setWeekOffset(0)}>This week</button>
         )}
+        {/* Leads only. For everyone else the page is already one card -- their own -- and a
+            summary of one person is the same screen with more chrome. */}
+        {isLead && (
+          <div className={styles.modeSwitch} role="tablist" aria-label="View">
+            <button
+              role="tab"
+              aria-selected={mode === 'cards'}
+              className={`${styles.modeBtn} ${mode === 'cards' ? styles.modeBtnOn : ''}`}
+              onClick={() => setMode('cards')}
+            >
+              Cards
+            </button>
+            <button
+              role="tab"
+              aria-selected={mode === 'summary'}
+              className={`${styles.modeBtn} ${mode === 'summary' ? styles.modeBtnOn : ''}`}
+              onClick={() => setMode('summary')}
+            >
+              Summary
+            </button>
+          </div>
+        )}
         {isLead && (
           <select className={styles.filterSelect} value={founderFilter} onChange={(e) => setFounderFilter(e.target.value)}>
             <option value="all">All founders/admins</option>
@@ -257,7 +346,16 @@ export default function WeeklyUpdateClient({
           person's card would be claiming somebody does. */}
       <AutomaticTasks tasks={automaticTasks} title="Automatic tasks" />
 
-      {!report ? (
+      {isLead && mode === 'summary' ? (
+        <WeekSummary
+          people={summaryPeople}
+          shared={sharedMandates}
+          unowned={unownedMandates}
+          silent={silentMandates}
+          weekLabel={weekLabel}
+          onOpenPerson={openPerson}
+        />
+      ) : !report ? (
         <div className={styles.empty}>
           {isLead
             ? 'Nothing to report for this week.'
