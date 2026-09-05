@@ -1,9 +1,9 @@
 .page { width: 100%; }
 .content { width: 100%; }
 
-/* Full width, matching the widget cards above it. The policy *body* keeps its readable line
-   length via .policyBody's own max-width instead, so prose stays comfortable without the
-   collapsed row and empty state looking narrower than everything else on the page. */
+/* Full width, matching the widget cards above it — the card grid inside gains columns rather
+   than the wrapper gaining a cap. Policy prose keeps its readable measure inside the reader
+   overlay (see policy.module.css), which is where the reading actually happens. */
 .policyListWrap { width: 100%; }
 
 .header {
@@ -27,52 +27,6 @@
 
 .list { display: flex; flex-direction: column; gap: 0.6rem; }
 
-.policy {
-  background: var(--color-card);
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
-  overflow: hidden;
-}
-
-.policyHead {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1.05rem;
-  cursor: pointer;
-}
-.policyHead:hover { background: var(--color-card-raised); }
-
-.policyTitle { font-size: 0.9375rem; font-weight: 600; color: var(--color-text); flex: 1; min-width: 0; }
-.policyCategory {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
-  background: rgba(var(--color-hover-rgb),0.1);
-  color: var(--color-primary);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-.chevron { color: var(--color-muted); font-size: 0.75rem; flex-shrink: 0; transition: transform 0.15s; }
-.chevronOpen { transform: rotate(90deg); }
-
-.policyBody {
-  padding: 0 1.05rem 1rem;
-  font-size: 0.875rem;
-  color: var(--color-text);
-  line-height: 1.65;
-  /* Cap the measure on the prose itself, not the card — the row stays full width like every
-     other surface while long policy text keeps a comfortable line length. */
-  max-width: 78ch;
-  white-space: pre-wrap;
-  border-top: 1px solid var(--color-border);
-  padding-top: 0.85rem;
-}
-.policyFoot { font-size: 0.75rem; color: var(--color-muted); margin-top: 0.75rem; }
-
 .policyActions { display: flex; align-items: center; gap: 0.2rem; flex-shrink: 0; }
 .iconBtn { border: none; background: none; color: var(--color-muted); cursor: pointer; font-size: 0.8rem; line-height: 1; padding: 0.3rem 0.45rem; border-radius: 6px; transition: background 0.12s, color 0.12s; font-family: inherit; }
 .iconBtn:hover { background: var(--color-card-raised); color: var(--color-text); }
@@ -93,6 +47,16 @@
 .input, .textarea { width: 100%; padding: 0.5rem 0.65rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-card-raised); color: var(--color-text); font-size: 0.875rem; font-family: inherit; box-sizing: border-box; }
 .textarea { resize: vertical; min-height: 220px; line-height: 1.6; }
 .input:focus, .textarea:focus { outline: none; border-color: var(--color-primary); }
+
+.fieldHint { font-size: 0.75rem; line-height: 1.6; color: var(--color-muted); margin-top: 0.4rem; }
+.fieldHint code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.6875rem;
+  padding: 0.05rem 0.3rem;
+  border-radius: 4px;
+  background: rgba(var(--color-hover-rgb), 0.1);
+  color: var(--color-primary);
+}
 
 .errBox { background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.3); border-radius: var(--radius-md); padding: 0.6rem 0.75rem; font-size: 0.8125rem; color: var(--color-destructive); margin-top: 0.5rem; }
 
@@ -136,7 +100,7 @@
    Backgrounds already come through as translucent from --color-card in globals.css;
    these rules add the blur + light edge that turn translucency into frosted glass.
    Appended rather than edited inline so the treatment is easy to see and revert. */
-.policy, .clockCard, .birthdayRow {
+.clockCard, .birthdayRow {
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   border-color: var(--glass-border);

@@ -13,38 +13,46 @@ import PeopleTab from './PeopleTab'
 import DocumentsTab from './DocumentsTab'
 import HrClockAdmin from './HrClockAdmin'
 import MyRequests from './MyRequests'
-import Avatar from '@/app/_components/Avatar'
+import PolicyReader from './PolicyReader'
+import { parsePolicy, policyExcerpt, policyOutline } from '@/lib/policy-doc'
 import styles from '../hr-zone.module.css'
+import policyStyles from '../policy.module.css'
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 
-function PolicyRow({ policy, expanded, canEdit, canDelete, onToggle, onEdit, onDelete }: {
-  policy: HrPolicy; expanded: boolean; canEdit: boolean; canDelete: boolean
-  onToggle: () => void; onEdit: () => void; onDelete: () => void
+function PolicyCard({ policy, canEdit, canDelete, onOpen, onEdit, onDelete }: {
+  policy: HrPolicy; canEdit: boolean; canDelete: boolean
+  onOpen: () => void; onEdit: () => void; onDelete: () => void
 }) {
+  // Parsed for the card too, so the excerpt is the policy's opening sentence rather than
+  // whatever markup happens to be on line one, and the count is real sections.
+  const blocks = parsePolicy(policy.body)
+  const sections = policyOutline(blocks).filter((e) => e.level === 2).length
+  const excerpt = policyExcerpt(blocks)
+
   return (
-    <div className={styles.policy}>
-      <div className={styles.policyHead} onClick={onToggle}>
-        <span className={`${styles.chevron} ${expanded ? styles.chevronOpen : ''}`}>›</span>
-        <span className={styles.policyTitle}>{policy.title}</span>
-        {policy.category && <span className={styles.policyCategory}>{policy.category}</span>}
-        {(canEdit || canDelete) && (
-          <div className={styles.policyActions} onClick={(e) => e.stopPropagation()}>
-            {canEdit && <button className={styles.iconBtn} onClick={onEdit} title="Edit">Edit</button>}
-            {canDelete && <button className={styles.iconBtn} onClick={onDelete} title="Delete">Delete</button>}
-          </div>
-        )}
-      </div>
-      {expanded && (
-        <div className={styles.policyBody}>
-          {policy.body}
-          <div className={styles.policyFoot}>
-            Last updated {formatDate(policy.updated_at)}{policy.created_by_user?.name && (
-              <> by <Avatar name={policy.created_by_user.name} photoUrl={policy.created_by_user.photo_url} size="xs" /> {policy.created_by_user.name}</>
-            )}
-          </div>
+    <div className={policyStyles.cardShell}>
+      <button type="button" className={policyStyles.card} onClick={onOpen}>
+        {/* Only the chip goes on the top row — the Edit/Delete tools float there on hover, and
+            anything else in that corner is something they would cover up. */}
+        <div className={policyStyles.cardTop}>
+          <span className={policyStyles.cardChip}>{policy.category || 'Policy'}</span>
+        </div>
+        <h3 className={policyStyles.cardTitle}>{policy.title}</h3>
+        {excerpt && <p className={policyStyles.cardExcerpt}>{excerpt}</p>}
+        <div className={policyStyles.cardFoot}>
+          {sections > 0 && <span>{sections} sections</span>}
+          {sections > 0 && <span aria-hidden="true">·</span>}
+          <span>Updated {formatDate(policy.updated_at)}</span>
+          <span className={policyStyles.cardRead}>Read →</span>
+        </div>
+      </button>
+      {(canEdit || canDelete) && (
+        <div className={policyStyles.cardTools}>
+          {canEdit && <button className={policyStyles.toolBtn} onClick={onEdit} title="Edit">Edit</button>}
+          {canDelete && <button className={policyStyles.toolBtn} onClick={onDelete} title="Delete">Delete</button>}
         </div>
       )}
     </div>
@@ -75,8 +83,9 @@ export default function HrZoneView({
   currentUserId: string
 }) {
   const router = useRouter()
-  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [readingId, setReadingId] = useState<string | null>(null)
   const [editing, setEditing] = useState<HrPolicy | 'new' | null>(null)
+  const reading = policies.find((p) => p.id === readingId) ?? null
   const [, startTransition] = useTransition()
 
   // Birthdays and clock settings are HR-admin config, not something an associate needs — the tab
@@ -133,15 +142,14 @@ export default function HrZoneView({
             {policies.length === 0 ? (
               <div className={styles.empty}>No policies published yet.</div>
             ) : (
-              <div className={styles.list}>
+              <div className={policyStyles.grid}>
                 {policies.map((p) => (
-                  <PolicyRow
+                  <PolicyCard
                     key={p.id}
                     policy={p}
-                    expanded={expandedId === p.id}
                     canEdit={canEditPolicies}
                     canDelete={canDeletePolicies}
-                    onToggle={() => setExpandedId((cur) => (cur === p.id ? null : p.id))}
+                    onOpen={() => setReadingId(p.id)}
                     onEdit={() => setEditing(p)}
                     onDelete={() => handleDelete(p.id)}
                   />
@@ -194,6 +202,17 @@ export default function HrZoneView({
         )}
       </div>
 
+      {/* Reader closes when the edit modal opens over it — two stacked overlays on the same
+          document is one too many, and Save lands you back on the list either way. */}
+      {reading && !editing && (
+        <PolicyReader
+          policy={reading}
+          canEdit={canEditPolicies}
+          onEdit={() => setEditing(reading)}
+          onClose={() => setReadingId(null)}
+        />
+      )}
+
       {editing && (
         <HrPolicyModal
           policy={editing === 'new' ? null : editing}
@@ -245,6 +264,13 @@ function HrPolicyModal({ policy, onClose, onSaved }: { policy: HrPolicy | null; 
           <div className={styles.field}>
             <label className={styles.fieldLabel}>Policy text *</label>
             <textarea className={styles.textarea} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write the full policy…" />
+            {/* Plain text still works and still reads well — this is what the reader will lay
+                out if you use it, not a syntax anyone is obliged to learn. */}
+            <div className={styles.fieldHint}>
+              Formatting: <code>## Section</code>, <code>### Sub-section</code>, <code>- bullet</code>,
+              {' '}<code>1. numbered</code>, <code>&gt; note</code>, <code>**bold**</code>, and
+              {' '}<code>| tables |</code>. Blank lines separate paragraphs.
+            </div>
           </div>
           {error && <div className={styles.errBox}>{error}</div>}
         </div>

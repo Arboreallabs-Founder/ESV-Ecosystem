@@ -1,0 +1,378 @@
+/* Policy cards + the reader they open into.
+   Kept out of hr-zone.module.css because this is a document-typesetting stylesheet, not another
+   few rules for the HR page — the two have nothing to say to each other. */
+
+/* ── The grid of policy cards ─────────────────────────────────────────────
+   auto-fill, so the shelf gains columns on a wide screen instead of the page gaining a cap. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.cardShell { position: relative; display: flex; }
+
+.card {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 1.25rem 1.25rem 1.1rem;
+  text-align: left;
+  font-family: inherit;
+  background: var(--color-card);
+  border: 1.5px solid var(--glass-border, var(--color-border));
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-elevated);
+  border-color: var(--color-primary);
+}
+.card:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+
+/* The purple hairline along the top edge is the only colour the card needs — it reads as a
+   document's binding, and it is what makes these legible as one kind of thing at a glance. */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  opacity: 0.75;
+}
+
+.cardTop { display: flex; align-items: center; gap: 0.5rem; padding-right: 6rem; }
+.cardChip {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  background: rgba(var(--color-hover-rgb), 0.12);
+  color: var(--color-primary);
+  white-space: nowrap;
+}
+
+
+.cardTitle {
+  font-family: var(--font-serif);
+  font-size: 1.375rem;
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.cardExcerpt {
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--color-muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin: 0;
+}
+
+.cardFoot {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: auto;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--color-border);
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+.cardRead { margin-left: auto; color: var(--color-primary); font-weight: 600; }
+
+/* Edit/Delete belong to the card but not to reading it — they surface on hover and on keyboard
+   focus, and they sit outside the card button so a click on them cannot open the reader. */
+.cardTools {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.7rem;
+  display: flex;
+  gap: 0.15rem;
+  opacity: 0;
+  transition: opacity 0.14s;
+}
+.cardShell:hover .cardTools, .cardTools:focus-within { opacity: 1; }
+
+.toolBtn {
+  border: 1px solid var(--color-border);
+  background: var(--glass-panel);
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-family: inherit;
+  line-height: 1;
+  padding: 0.35rem 0.5rem;
+  border-radius: var(--radius-sm);
+  transition: color 0.12s, border-color 0.12s;
+}
+.toolBtn:hover { color: var(--color-text); border-color: var(--color-primary); }
+
+/* ── Reader ───────────────────────────────────────────────────────────────
+   An overlay, so it may cap its width — prose run to the full width of a wide monitor is
+   unreadable, and this is exactly the fixed-artifact exception. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  animation: policyFade 0.16s ease;
+}
+@keyframes policyFade { from { opacity: 0 } to { opacity: 1 } }
+@keyframes policyRise { from { opacity: 0; transform: translateY(12px) scale(0.99) } to { opacity: 1; transform: none } }
+
+.reader {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1100px;
+  height: min(92vh, 1000px);
+  background: var(--glass-panel);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  border: 1px solid var(--glass-border, var(--color-border));
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-elevated);
+  overflow: hidden;
+  animation: policyRise 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.progressTrack { height: 3px; background: rgba(var(--color-hover-rgb), 0.12); flex-shrink: 0; }
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-light));
+  transform-origin: left;
+  transition: transform 0.08s linear;
+}
+
+.readerHead {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.4rem 1.75rem 1.15rem;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+.readerHeadText { min-width: 0; flex: 1; }
+.readerEyebrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  margin-bottom: 0.5rem;
+}
+.readerChip {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  background: rgba(var(--color-hover-rgb), 0.12);
+  color: var(--color-primary);
+}
+.readerAuthor { display: inline-flex; align-items: center; gap: 0.35rem; }
+.readerTitle {
+  font-family: var(--font-serif);
+  font-size: 1.875rem;
+  font-weight: 400;
+  line-height: 1.15;
+  color: var(--color-text);
+  margin: 0;
+}
+.readerActions { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.ghostBtn {
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-md);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.12s;
+}
+.ghostBtn:hover { border-color: var(--color-primary); }
+.closeBtn {
+  border: 1px solid transparent;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  font-size: 1.5rem;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  transition: color 0.12s, border-color 0.12s;
+}
+.closeBtn:hover { color: var(--color-text); border-color: var(--color-border); }
+
+.readerScroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; }
+.readerGrid {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 2.5rem;
+  padding: 1.75rem 1.75rem 4rem;
+  align-items: start;
+}
+
+.toc {
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  max-height: calc(92vh - 12rem);
+  overflow-y: auto;
+}
+.tocLabel {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-muted);
+  margin-bottom: 0.5rem;
+}
+.tocLink {
+  border: none;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  color: var(--color-muted);
+  padding: 0.35rem 0.6rem;
+  border-left: 2px solid var(--color-border);
+  transition: color 0.12s, border-color 0.12s;
+}
+.tocLink:hover { color: var(--color-text); }
+.tocLinkSub { padding-left: 1.2rem; font-size: 0.78125rem; }
+.tocLinkActive { color: var(--color-primary); font-weight: 600; border-left-color: var(--color-primary); }
+
+/* ── The document itself ──────────────────────────────────────────────────
+   The measure is capped on the prose, which is what makes a long policy readable; the reader
+   around it is already a fixed overlay. */
+.doc { max-width: 72ch; color: var(--color-text); }
+
+.h2 {
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
+  font-weight: 400;
+  line-height: 1.25;
+  color: var(--color-text);
+  margin: 2.75rem 0 0.9rem;
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--color-border);
+  scroll-margin-top: 1rem;
+}
+.doc > .h2:first-child { margin-top: 0; padding-top: 0; border-top: none; }
+
+.h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+  margin: 1.9rem 0 0.6rem;
+  padding-left: 0.7rem;
+  border-left: 3px solid var(--color-primary);
+  scroll-margin-top: 1rem;
+}
+
+.h4 {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  margin: 1.5rem 0 0.5rem;
+  scroll-margin-top: 1rem;
+}
+
+.p { font-size: 0.9375rem; line-height: 1.75; margin: 0 0 0.95rem; }
+
+/* Spacing comes from a margin between items, not flex+gap: a flex container blockifies its
+   children, and a blockified <li> has no ::marker — the numbers on an ordered list vanish. */
+.ul, .ol { margin: 0 0 1rem; }
+.ul { list-style: none; padding-left: 0.15rem; }
+.ol { list-style: decimal; padding-left: 1.35rem; }
+.li { font-size: 0.9375rem; line-height: 1.7; }
+.li + .li { margin-top: 0.5rem; }
+.ol > .li::marker { color: var(--color-primary); font-weight: 700; font-size: 0.875rem; }
+
+/* Bullets are drawn rather than listed, so the dot sits on the first line's optical centre and
+   picks up the brand purple instead of the browser's black. */
+.ul > .li { position: relative; padding-left: 1.2rem; }
+.ul > .li::before {
+  content: "";
+  position: absolute;
+  left: 0.15rem;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  opacity: 0.65;
+}
+.li > .ul, .li > .ol { margin: 0.5rem 0 0; }
+.li > .ul > .li::before { background: var(--color-muted); }
+
+.callout {
+  margin: 1.25rem 0;
+  padding: 0.9rem 1.1rem;
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  background: rgba(var(--color-hover-rgb), 0.08);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+.tableWrap { margin: 1.25rem 0 1.5rem; overflow-x: auto; border: 1px solid var(--color-border); border-radius: var(--radius-md); }
+.table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+.table th {
+  text-align: left;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-primary);
+  background: rgba(var(--color-hover-rgb), 0.09);
+  padding: 0.65rem 0.9rem;
+  white-space: nowrap;
+}
+.table td { padding: 0.65rem 0.9rem; border-top: 1px solid var(--color-border); line-height: 1.55; vertical-align: top; }
+.table tbody tr:hover { background: rgba(var(--color-hover-rgb), 0.05); }
+
+@media (max-width: 900px) {
+  .readerGrid { grid-template-columns: minmax(0, 1fr); gap: 1.25rem; padding: 1.25rem 1.25rem 3rem; }
+  .toc { position: static; max-height: none; padding-bottom: 0.75rem; border-bottom: 1px solid var(--color-border); }
+  .backdrop { padding: 0; }
+  .reader { height: 100vh; max-width: none; border-radius: 0; border: none; }
+  .readerHead { padding: 1.1rem 1.15rem 0.9rem; }
+  .readerTitle { font-size: 1.5rem; }
+  .cardTools { opacity: 1; }
+}
