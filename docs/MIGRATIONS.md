@@ -582,3 +582,42 @@ The `anon` grant is revoked by name, since `REVOKE … FROM PUBLIC` does not rem
 those as questions, so a founder was asked twice. Tagged questions now feed the submitter fields and
 the trailing step asks only for what is missing, disappearing when nothing is. Tags the existing
 questions on those forms and rebuilds `get_public_form` to carry the new key.
+
+### 20260930000000_notifications.sql
+`notifications` and `push_tokens`. One table for every "something happened that involves you", and
+one function in front of it.
+
+This reverses `20260814700000`, which chose the escalations table *"rather than a new notifications
+table"*. That was right while one flow needed it. Six do now, and the gap is not cosmetic: **the
+person who submits a leave or expense request is never told the outcome.** No code path told them.
+Kudos recipients got nothing, escalation recipients got a row in a list they had to go and visit,
+and `notify_founders_of_approval` wrote escalation rows it did not mean because there was nowhere
+else to put them. That function and its file are gone; the rows are notifications now.
+
+The second reason is the phone. The bell's "seen" marker was one localStorage timestamp, per
+browser by construction — read it on a laptop and the phone still badges. Read state is `read_at`
+now, and survives the trip.
+
+`kind` is TEXT + CHECK, not an enum, for the reason `20260917000000` and `20260926000000` give:
+`ALTER TYPE … ADD VALUE` cannot run in the transaction that uses the value, and the SQL editor is
+one transaction. `link` is stored rather than derived from kind + an id — the bell renders a link
+and does not know what a task is, which is what keeps the next twelve kinds from touching it.
+
+SELECT is `is_super_admin() OR user_id = auth.uid()` with **no** founder/admin oversight branch: an
+unread pile is not managerial data, and the `*_edit_log` tables already carry the audit. Being
+role-independent is what lets a `franchise_partner` read an escalation addressed to them.
+
+Marking read is a `SECURITY DEFINER` function, not an UPDATE policy — RLS grants rows and never
+columns, the wall `20260927000000` documents. A policy scoped to `user_id = auth.uid()` would also
+let a recipient rewrite `title`, `body` and `link`, which is the one thing this table must not
+allow if it is to stand as the record of what someone was told. `anon` is revoked by name.
+
+`push_tokens` is inert — nothing writes to it until the Capacitor clients exist. It ships now so
+push is one function body filling in rather than a migration plus twelve call sites revisited.
+
+No DELETE policy and no purge job, on the terms `20260914000000` set out: there is no scheduler in
+this app, and the edit logs, `task_pushes`, `fundraise_events` and `deal_stage_history` all grow
+unbounded already.
+
+Broadcasts are opt-in. Announcements and events only notify when the poster ticks "Notify the
+team", off by default — a retroactively logged past event should not badge thirty people.

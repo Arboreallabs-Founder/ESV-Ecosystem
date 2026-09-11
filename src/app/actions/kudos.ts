@@ -3,6 +3,7 @@
 import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
+import { notify } from '@/lib/notifications'
 import type { KudosCategory } from '@/lib/types'
 
 async function requireInternal() {
@@ -30,6 +31,19 @@ export async function giveKudos(input: KudosInput): Promise<void> {
     category: input.category || null,
   })
   if (error) throw dbFailure('save that', error)
+
+  // Kudos nobody sees is a strange thing to have built.
+  const { data: giver } = await supabase.from('users').select('name').eq('id', userId).single()
+  await notify(supabase, {
+    orgId,
+    userIds: [input.recipient_id],
+    actorId: userId,
+    kind: 'kudos_received',
+    title: `${giver?.name ?? 'Someone'} gave you kudos`,
+    body: message,
+    link: '/engage',
+  })
+
   revalidatePath('/engage')
 }
 

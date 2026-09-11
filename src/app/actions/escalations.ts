@@ -3,6 +3,7 @@
 import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
+import { notify } from '@/lib/notifications'
 import type { EscalationLinkedType } from '@/lib/types'
 
 type Option = { id: string; label: string }
@@ -76,6 +77,18 @@ export async function createEscalation(params: {
     linked_title: linkedTitle,
   })
   if (error) throw dbFailure('save that', error)
+
+  // The escalations list still holds the record; this is what makes the recipient look at it.
+  const { data: raiser } = await supabase.from('users').select('name').eq('id', userId).single()
+  await notify(supabase, {
+    orgId,
+    userIds: [params.recipientUserId],
+    actorId: userId,
+    kind: 'escalation_raised',
+    title: subject,
+    body: `Escalated to you by ${raiser?.name ?? 'a colleague'}`,
+    link: '/escalations',
+  })
 }
 
 export async function updateEscalationStatus(id: string, status: string) {

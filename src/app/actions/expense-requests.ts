@@ -3,15 +3,17 @@
 import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
-import { notifyFoundersOfApproval } from '@/lib/notify-founders'
+import { notify, usersWithRoles } from '@/lib/notifications'
 import type { ExpenseType } from '@/lib/types'
+
+const APPROVER_ROLES = ['founder', 'admin', 'hr']
 
 async function requireRequester() {
   return requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
 }
 
 async function requireApprover() {
-  return requireRole(['founder', 'admin', 'hr'])
+  return requireRole(APPROVER_ROLES)
 }
 
 export type ExpenseRequestInput = {
@@ -37,7 +39,22 @@ export async function createExpenseRequest(input: ExpenseRequestInput): Promise<
     invoice_path: input.invoice_path,
   })
   if (error) throw dbFailure('save that', error)
+
+  if (orgId) {
+    const { data: requester } = await supabase.from('users').select('name').eq('id', userId).single()
+    await notify(supabase, {
+      orgId,
+      userIds: await usersWithRoles(supabase, orgId, APPROVER_ROLES),
+      actorId: userId,
+      kind: 'expense_submitted',
+      title: `${requester?.name ?? 'A team member'} submitted an expense`,
+      body: `${input.expense_type}, ₹${input.amount}`,
+      link: '/approvals',
+    })
+  }
+
   revalidatePath('/hr')
+  revalidatePath('/approvals')
 }
 
 export async function withdrawExpenseRequest(id: string): Promise<void> {
@@ -71,20 +88,30 @@ export async function decideExpenseRequest(id: string, decision: 'approved' | 'r
     .eq('id', id)
   if (error) throw dbFailure('save that', error)
 
+  // As with leave: the requester was previously never told either way.
+  await notify(supabase, {
+    orgId,
+    userIds: [existing.requester_id],
+    actorId: userId,
+    kind: 'expense_decided',
+    title: `Expense ${decision}`,
+    body: `${existing.expense_type}, ₹${existing.amount}${note?.trim() ? ` — ${note.trim()}` : ''}`,
+    link: '/hr',
+  })
+
   if (decision === 'approved' && (role === 'admin' || role === 'hr')) {
     const { data: requester } = await supabase.from('users').select('name').eq('id', existing.requester_id).single()
-    await notifyFoundersOfApproval(supabase, {
+    await notify(supabase, {
       orgId,
+      userIds: await usersWithRoles(supabase, orgId, ['founder']),
       actorId: userId,
-      subject: `Expense approved: ${requester?.name ?? 'A team member'}`,
-      body: `${existing.expense_type} expense, ₹${existing.amount}, approved by ${role}.`,
-      linkedType: 'expense_request',
-      linkedId: existing.id,
-      linkedTitle: `${requester?.name ?? 'Expense request'} — ${existing.expense_type}`,
+      kind: 'approval_recorded',
+      title: `Expense approved: ${requester?.name ?? 'A team member'}`,
+      body: `${existing.expense_type}, ₹${existing.amount}, approved by ${role}.`,
+      link: '/approvals',
     })
   }
 
   revalidatePath('/approvals')
   revalidatePath('/hr')
-  revalidatePath('/escalations')
 }

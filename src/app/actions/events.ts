@@ -3,6 +3,10 @@
 import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
+import { notify, usersWithRoles } from '@/lib/notifications'
+
+// Everyone with a bell — the same set that can RSVP.
+const INTERNAL_ROLES = ['founder', 'admin', 'associate', 'general', 'hr']
 
 async function requireAdmin() {
   return requireRole(['founder', 'admin'])
@@ -40,6 +44,8 @@ export type EventInput = {
   media_url?: string | null
   scanned_cards_url?: string | null
   poster_url?: string | null
+  /** Opt-in, off by default: badge every internal user's bell. Only honoured on create. */
+  notify?: boolean
 }
 
 function describeEventChanges(
@@ -101,6 +107,18 @@ export async function createEvent(input: EventInput): Promise<string> {
       event_title: title, action: 'created', changes: 'Created',
     })
   } catch { /* non-fatal: don't block the save if the audit log insert fails */ }
+
+  if (input.notify && orgId) {
+    await notify(supabase, {
+      orgId,
+      userIds: await usersWithRoles(supabase, orgId, INTERNAL_ROLES),
+      actorId: userId,
+      kind: 'event_posted',
+      title,
+      body: input.location ? `${input.event_date} · ${input.location.trim()}` : input.event_date,
+      link: '/events',
+    })
+  }
 
   revalidateEvents()
   return data.id as string

@@ -459,6 +459,7 @@ function EventModal({ event, orgId, onClose, onSaved }: { event: BulletinPost | 
   const [scannedCardsUrl, setScannedCardsUrl] = useState(event?.scanned_cards_url ?? '')
   const [posterUrl, setPosterUrl] = useState(event?.poster_url ?? '')
   const [pinned, setPinned] = useState(event?.pinned ?? false)
+  const [notify, setNotify] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
@@ -472,6 +473,7 @@ function EventModal({ event, orgId, onClose, onSaved }: { event: BulletinPost | 
       media_url: mediaUrl || null, scanned_cards_url: scannedCardsUrl || null,
       poster_url: posterUrl || null,
       pinned,
+      notify,
     }
     startTransition(async () => {
       try {
@@ -529,6 +531,15 @@ function EventModal({ event, orgId, onClose, onSaved }: { event: BulletinPost | 
             <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
             Pin to the top
           </label>
+
+          {/* Off by default, and only on create — retroactively logged past events shouldn't
+              badge everyone's bell, and re-notifying on an edit would just be noise. */}
+          {!event && (
+            <label className={styles.checkboxRow}>
+              <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
+              Notify the team
+            </label>
+          )}
 
           {error && <div className={styles.errBox}>{error}</div>}
         </div>

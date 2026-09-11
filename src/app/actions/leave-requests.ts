@@ -3,15 +3,17 @@
 import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
-import { notifyFoundersOfApproval } from '@/lib/notify-founders'
+import { notify, usersWithRoles } from '@/lib/notifications'
 import type { LeaveType } from '@/lib/types'
+
+const APPROVER_ROLES = ['founder', 'admin', 'hr']
 
 async function requireRequester() {
   return requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
 }
 
 async function requireApprover() {
-  return requireRole(['founder', 'admin', 'hr'])
+  return requireRole(APPROVER_ROLES)
 }
 
 export type LeaveRequestInput = {
@@ -41,7 +43,25 @@ export async function createLeaveRequest(input: LeaveRequestInput): Promise<void
     reason: input.reason?.trim() || null,
   })
   if (error) throw dbFailure('save that', error)
+
+  // Approvers used to find out only by opening /approvals, which is how a request could sit for a
+  // week without anyone having refused it.
+  if (orgId) {
+    const { data: requester } = await supabase.from('users').select('name').eq('id', userId).single()
+    const span = input.start_date === input.end_date ? input.start_date : `${input.start_date} to ${input.end_date}`
+    await notify(supabase, {
+      orgId,
+      userIds: await usersWithRoles(supabase, orgId, APPROVER_ROLES),
+      actorId: userId,
+      kind: 'leave_submitted',
+      title: `${requester?.name ?? 'A team member'} requested leave`,
+      body: `${input.leave_type}, ${span}`,
+      link: '/approvals',
+    })
+  }
+
   revalidatePath('/hr')
+  revalidatePath('/approvals')
 }
 
 export async function withdrawLeaveRequest(id: string): Promise<void> {
@@ -75,24 +95,40 @@ export async function decideLeaveRequest(id: string, decision: 'approved' | 'rej
     .eq('id', id)
   if (error) throw dbFailure('save that', error)
 
-  // Only when an admin or hr approves (never founder, never on reject) does every founder
-  // get notified — see src/lib/notify-founders.ts.
+  const span = existing.start_date === existing.end_date
+    ? existing.start_date
+    : `${existing.start_date} to ${existing.end_date}`
+
+  // The one this whole system exists for: until now, the person who asked for the leave was never
+  // told what happened to it, whichever way it went.
+  await notify(supabase, {
+    orgId,
+    userIds: [existing.requester_id],
+    actorId: userId,
+    kind: 'leave_decided',
+    title: `Leave ${decision}`,
+    body: `${existing.leave_type}, ${span}${note?.trim() ? ` — ${note.trim()}` : ''}`,
+    link: '/hr',
+  })
+
+  // Founders are told when someone other than a founder approves. This used to write escalation
+  // rows (see 20260814700000); it is a notification now, so it stops inflating the open-escalation
+  // count on the dashboard with things nobody escalated.
   if (decision === 'approved' && (role === 'admin' || role === 'hr')) {
     const { data: requester } = await supabase.from('users').select('name').eq('id', existing.requester_id).single()
-    await notifyFoundersOfApproval(supabase, {
+    await notify(supabase, {
       orgId,
+      userIds: await usersWithRoles(supabase, orgId, ['founder']),
       actorId: userId,
-      subject: `Leave approved: ${requester?.name ?? 'A team member'}`,
-      body: `${existing.leave_type} leave, ${existing.start_date} to ${existing.end_date}, approved by ${role}.`,
-      linkedType: 'leave_request',
-      linkedId: existing.id,
-      linkedTitle: `${requester?.name ?? 'Leave request'} — ${existing.leave_type}`,
+      kind: 'approval_recorded',
+      title: `Leave approved: ${requester?.name ?? 'A team member'}`,
+      body: `${existing.leave_type}, ${span}, approved by ${role}.`,
+      link: '/approvals',
     })
   }
 
   revalidatePath('/approvals')
   revalidatePath('/hr')
-  revalidatePath('/escalations')
 }
 
 // Founder/admin/hr can cancel any request from the Team leaves roster, regardless of status

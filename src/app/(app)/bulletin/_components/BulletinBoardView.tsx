@@ -129,13 +129,14 @@ function BulletinPostModal({ post, onClose, onSaved }: { post: BulletinPost | nu
   const [title, setTitle] = useState(post?.title ?? '')
   const [body, setBody] = useState(post?.body ?? '')
   const [pinned, setPinned] = useState(post?.pinned ?? false)
+  const [notify, setNotify] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   function submit() {
     setError(null)
     if (!title.trim()) { setError('Title is required.'); return }
-    const input: BulletinPostInput = { title, body: body || null, pinned }
+    const input: BulletinPostInput = { title, body: body || null, pinned, notify }
     startTransition(async () => {
       try {
         if (post) await updateBulletinPost(post.id, input)
@@ -166,6 +167,15 @@ function BulletinPostModal({ post, onClose, onSaved }: { post: BulletinPost | nu
             <input type="checkbox" checked={pinned} onChange={(e) => setPinned(e.target.checked)} />
             Pin to the top
           </label>
+
+          {/* Off by default, and only on create — an announcement that badges everyone's bell
+              should be a deliberate choice, and re-notifying on an edit would just be noise. */}
+          {!post && (
+            <label className={styles.checkboxRow}>
+              <input type="checkbox" checked={notify} onChange={(e) => setNotify(e.target.checked)} />
+              Notify the team
+            </label>
+          )}
 
           {error && <div className={styles.errBox}>{error}</div>}
         </div>

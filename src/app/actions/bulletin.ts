@@ -3,6 +3,10 @@
 import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
+import { notify, usersWithRoles } from '@/lib/notifications'
+
+// Everyone with a bell. Partners are excluded: the bulletin board is not theirs to read.
+const INTERNAL_ROLES = ['founder', 'admin', 'associate', 'general', 'hr']
 
 async function requireAdmin() {
   return requireRole(['founder', 'admin'])
@@ -19,6 +23,8 @@ export type BulletinPostInput = {
   title: string
   body?: string | null
   pinned?: boolean
+  /** Opt-in, off by default: badge every internal user's bell. Routine notices stay quiet. */
+  notify?: boolean
 }
 
 export async function createBulletinPost(input: BulletinPostInput): Promise<string> {
@@ -39,6 +45,19 @@ export async function createBulletinPost(input: BulletinPostInput): Promise<stri
     .select('id')
     .single()
   if (error) throw dbFailure('save that', error)
+
+  if (input.notify && orgId) {
+    await notify(supabase, {
+      orgId,
+      userIds: await usersWithRoles(supabase, orgId, INTERNAL_ROLES),
+      actorId: userId,
+      kind: 'bulletin_posted',
+      title,
+      body: 'New announcement',
+      link: '/bulletin',
+    })
+  }
+
   revalidatePath('/bulletin')
   return data.id as string
 }

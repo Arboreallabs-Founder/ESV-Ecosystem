@@ -3,6 +3,7 @@
 import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
+import { notify } from '@/lib/notifications'
 import type { Task, TaskComment } from '@/lib/types'
 
 const TASK_SELECT = '*, assignee:assignee_id(name, photo_url), created_by_user:created_by(name, photo_url), assigned_by_user:assigned_by_id(name, photo_url), company:company_id(id, name), desk_deal:desk_deal_id(id, company_name)'
@@ -49,12 +50,24 @@ export async function createTask(formData: FormData): Promise<Task> {
   }).select(TASK_SELECT).single()
 
   if (error) throw dbFailure('save that', error)
+
+  const created = data as unknown as Task
+  await notify(supabase, {
+    orgId,
+    userIds: [assigneeId],
+    actorId: userId,
+    kind: 'task_assigned',
+    title: created.title,
+    body: 'Assigned to you',
+    link: `/tasks?open=${created.id}`,
+  })
+
   // No revalidatePath — TaskBoard adds the returned task to local state directly.
-  return data as unknown as Task
+  return created
 }
 
 export async function updateTask(taskId: string, formData: FormData): Promise<Task> {
-  const { supabase, userId, role } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
+  const { supabase, userId, orgId, role } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
 
   const { data: existing } = await supabase
     .from('tasks')
@@ -104,10 +117,26 @@ export async function updateTask(taskId: string, formData: FormData): Promise<Ta
   }).eq('id', taskId).select(TASK_SELECT).single()
 
   if (error) throw dbFailure('save that', error)
+
+  const updated = data as unknown as Task
+  // Only on a genuine handover. An edit that leaves the assignee alone is not news to them, and
+  // the old bell could never tell the difference — it keyed off the task's created_at.
+  if (existing.assignee_id !== assigneeId) {
+    await notify(supabase, {
+      orgId,
+      userIds: [assigneeId],
+      actorId: userId,
+      kind: 'task_reassigned',
+      title: updated.title,
+      body: 'Reassigned to you',
+      link: `/tasks?open=${taskId}`,
+    })
+  }
+
   revalidatePath('/tasks')
   revalidatePath('/dashboard')
   revalidatePath('/my-todos')
-  return data as unknown as Task
+  return updated
 }
 
 export async function updateTaskStatus(taskId: string, status: string) {
@@ -223,6 +252,26 @@ export async function addTaskComment(taskId: string, body: string) {
   if (!text) throw new UserFacingError('Comment cannot be empty.')
   const { error } = await supabase.from('task_comments').insert({ task_id: taskId, org_id: orgId, body: text, author_id: userId })
   if (error) throw dbFailure('save that', error)
+
+  // The task is read only to address the notification — this action knew nothing about it before.
+  const { data: task } = await supabase
+    .from('tasks')
+    .select('title, assignee_id')
+    .eq('id', taskId)
+    .single()
+  if (task) {
+    const { data: author } = await supabase.from('users').select('name').eq('id', userId).single()
+    await notify(supabase, {
+      orgId,
+      userIds: [task.assignee_id],
+      actorId: userId,
+      kind: 'task_comment',
+      title: task.title,
+      body: `${author?.name ?? 'Someone'} commented`,
+      link: `/tasks?open=${taskId}`,
+    })
+  }
+
   revalidatePath('/tasks')
 }
 

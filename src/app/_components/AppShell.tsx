@@ -9,11 +9,12 @@ import { WikiSidebarButton, WikiRoleProvider } from '@/app/_components/WikiPanel
 import { useTheme } from '@/app/_components/ThemeProvider'
 import { switchDemoPersona, exitDemoMode } from '@/app/actions/demo'
 import HrClockWidget from '@/app/_components/HrClockWidget'
+import { getMyNotifications, markNotificationsRead, markAllNotificationsRead } from '@/app/actions/notifications'
+import type { AppNotification } from '@/lib/notifications'
 import type { HrClockSettings, HrBirthday } from '@/lib/types'
 import styles from '@/app/app-shell.module.css'
 
 type UserRow = { id: string; name: string | null; role: string | null; email: string | null; photo_url?: string | null }
-type TaskAlert = { id: string; title: string; created_at: string; kind: 'assigned' | 'comment'; by?: string }
 
 // The HR clock widget is narrower than general task access — founder/admin/hr only.
 const CLOCK_WIDGET_ROLES = ['founder', 'admin', 'hr']
@@ -38,24 +39,41 @@ function Icon({ d, d2 }: { d: string; d2?: string }) {
 // `bare` skips the outer box styling for reuse inside <NavFlyout>, which already provides
 // its own box (needed when the sidebar is collapsed to an icon rail — there's no column
 // width left to render this in-flow at all).
-function AlertsPanel({ alerts, onSelect, bare }: { alerts: TaskAlert[]; onSelect: (taskId: string) => void; bare?: boolean }) {
+function AlertsPanel({
+  items, loading, unreadCount, onSelect, onMarkAll, bare,
+}: {
+  items: AppNotification[]
+  loading: boolean
+  unreadCount: number
+  onSelect: (n: AppNotification) => void
+  onMarkAll: () => void
+  bare?: boolean
+}) {
   const content = (
     <>
-      <div className={styles.alertsDropdownHead}>Task alerts</div>
-      {alerts.length === 0 ? (
+      <div className={styles.alertsDropdownHead}>
+        Notifications
+        {unreadCount > 0 && (
+          <button type="button" className={styles.alertsMarkAll} onClick={onMarkAll}>Mark all read</button>
+        )}
+      </div>
+      {loading ? (
+        <div className={styles.alertsDropdownEmpty}>Loading…</div>
+      ) : items.length === 0 ? (
         <div className={styles.alertsDropdownEmpty}>No new activity</div>
       ) : (
-        alerts.map((a) => (
+        items.map((n) => (
           <button
-            key={`${a.kind}-${a.id}-${a.created_at}`}
+            key={n.id}
             type="button"
-            className={styles.alertsDropdownItem}
-            onClick={() => onSelect(a.id)}
+            className={`${styles.alertsDropdownItem} ${n.read_at ? '' : styles.alertsDropdownItemUnread}`}
+            onClick={() => onSelect(n)}
           >
-            <span className={styles.alertsDropdownItemTitle}>{a.title}</span>
-            <span className={styles.alertsDropdownItemMeta}>
-              {a.kind === 'comment' ? `${a.by} commented` : 'Assigned to you'}
+            <span className={styles.alertsDropdownItemTitle}>
+              {!n.read_at && <span className={styles.alertsUnreadDot} aria-hidden="true" />}
+              {n.title}
             </span>
+            {n.body && <span className={styles.alertsDropdownItemMeta}>{n.body}</span>}
           </button>
         ))
       )}
@@ -373,7 +391,7 @@ export default function AppShell({
   fullWidth = false,
   demoMode = false,
   demoPersona = 'founder',
-  myTaskAlerts = [],
+  unreadCount = 0,
   clockSettings = null,
   birthdaysToday = [],
 }: {
@@ -382,7 +400,7 @@ export default function AppShell({
   fullWidth?: boolean
   demoMode?: boolean
   demoPersona?: string
-  myTaskAlerts?: TaskAlert[]
+  unreadCount?: number
   clockSettings?: HrClockSettings | null
   birthdaysToday?: HrBirthday[]
 }) {
@@ -442,47 +460,58 @@ export default function AppShell({
   type FlyoutState = { kind: 'group'; label: string; anchor: HTMLElement } | { kind: 'alerts'; anchor: HTMLElement } | null
   const [flyout, setFlyout] = useState<FlyoutState>(null)
 
-  // Alerts bell: "new" = assigned to me (or someone commented on my task) after the last
-  // time I dismissed the bell. The seen-marker lives in localStorage (per user) since
-  // there's no server-side read receipt.
-  const alertsSeenKey = `esv_tasks_alerts_seen_${user.id}`
-  const [alertsSeenAt, setAlertsSeenAt] = useState(0)
+  // Notifications bell. The badge count is server-rendered on every navigation; the list itself is
+  // only fetched when somebody actually opens the panel, the same way TaskDetailModal loads its
+  // comments. Read state lives in the database now, not localStorage — which is what lets reading
+  // something on a laptop clear the badge on a phone.
   const [alertsOpen, setAlertsOpen] = useState(false)
-  useEffect(() => {
-    const stored = Number(localStorage.getItem(alertsSeenKey) ?? 0)
-    setAlertsSeenAt(Number.isFinite(stored) ? stored : 0)
-  }, [alertsSeenKey])
-  const newTaskAlerts = myTaskAlerts.filter((t) => new Date(t.created_at).getTime() > alertsSeenAt)
-  function markAlertsSeen() {
-    const now = Date.now()
-    localStorage.setItem(alertsSeenKey, String(now))
-    setAlertsSeenAt(now)
+  const [items, setItems] = useState<AppNotification[]>([])
+  const [itemsLoading, setItemsLoading] = useState(false)
+  const [loadedOnce, setLoadedOnce] = useState(false)
+  // Held locally so the badge can drop the moment something is read, without a round trip.
+  const [unread, setUnread] = useState(unreadCount)
+  useEffect(() => { setUnread(unreadCount) }, [unreadCount])
+
+  function loadNotifications() {
+    setItemsLoading(!loadedOnce)
+    getMyNotifications()
+      .then((rows) => { setItems(rows); setLoadedOnce(true) })
+      .catch(() => setItems([]))
+      .finally(() => setItemsLoading(false))
   }
-  function closeAlerts() {
-    if (alertsOpen) markAlertsSeen()
-    setAlertsOpen(false)
+  function openAlerts() {
+    setAlertsOpen(true)
+    loadNotifications()
   }
+  function closeAlerts() { setAlertsOpen(false) }
   function toggleAlerts() {
     if (alertsOpen) closeAlerts()
-    else setAlertsOpen(true)
+    else openAlerts()
   }
-  function closeFlyout() {
-    if (flyout?.kind === 'alerts') markAlertsSeen()
-    setFlyout(null)
-  }
+  function closeFlyout() { setFlyout(null) }
   function toggleAlertsFlyout(e: React.MouseEvent<HTMLButtonElement>) {
     if (flyout?.kind === 'alerts') closeFlyout()
-    else setFlyout({ kind: 'alerts', anchor: e.currentTarget })
+    else { setFlyout({ kind: 'alerts', anchor: e.currentTarget }); loadNotifications() }
   }
   function toggleGroupFlyout(label: string, e: React.MouseEvent<HTMLButtonElement>) {
     if (flyout?.kind === 'group' && flyout.label === label) setFlyout(null)
     else setFlyout({ kind: 'group', label, anchor: e.currentTarget })
   }
-  function openAlertTask(taskId: string) {
+  function handleMarkAll() {
+    setItems((prev) => prev.map((n) => n.read_at ? n : { ...n, read_at: new Date().toISOString() }))
+    setUnread(0)
+    markAllNotificationsRead().then(() => router.refresh())
+  }
+  function openNotification(n: AppNotification) {
     closeAlerts()
     closeFlyout()
     setMobileOpen(false)
-    router.push(`/tasks?open=${taskId}`)
+    if (!n.read_at) {
+      setItems((prev) => prev.map((x) => x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x))
+      setUnread((c) => Math.max(0, c - 1))
+      void markNotificationsRead([n.id])
+    }
+    if (n.link) router.push(n.link)
   }
 
   function toggleGroup(label: string) {
@@ -528,8 +557,7 @@ export default function AppShell({
     router.push('/login')
   }
 
-  const canHaveTasks = ['founder', 'admin', 'associate', 'general', 'hr'].includes(role)
-  // Decoupled from canHaveTasks — narrowed to founder/admin/hr only, unlike the task-alerts bell.
+  // Narrowed to founder/admin/hr only, unlike the bell, which every role has.
   const showClockWidget = CLOCK_WIDGET_ROLES.includes(role) && !!clockSettings
 
   const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(role))
@@ -591,27 +619,34 @@ export default function AppShell({
                 </>
               )}
             </Link>
-            {canHaveTasks && (
-              <div className={styles.alertsWrap}>
+            {/* Every role has a bell: an escalation can be addressed to a partner. */}
+            <div className={styles.alertsWrap}>
                 <button
                   type="button"
                   className={styles.alertsBtn}
                   onClick={(e) => { if (sidebarCollapsed) toggleAlertsFlyout(e); else toggleAlerts() }}
                   onBlur={() => { if (!sidebarCollapsed) setTimeout(closeAlerts, 150) }}
-                  title={newTaskAlerts.length > 0 ? `${newTaskAlerts.length} new task${newTaskAlerts.length === 1 ? '' : 's'} assigned to you` : 'No new tasks'}
-                  aria-label="Task alerts"
+                  title={unread > 0 ? `${unread} unread notification${unread === 1 ? '' : 's'}` : 'No new notifications'}
+                  aria-label="Notifications"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
                   </svg>
-                  {newTaskAlerts.length > 0 && (
-                    <span className={styles.alertsBadge}>{newTaskAlerts.length > 9 ? '9+' : newTaskAlerts.length}</span>
+                  {unread > 0 && (
+                    <span className={styles.alertsBadge}>{unread > 9 ? '9+' : unread}</span>
                   )}
                 </button>
-              </div>
-            )}
+            </div>
           </div>
-          {!sidebarCollapsed && alertsOpen && <AlertsPanel alerts={newTaskAlerts} onSelect={openAlertTask} />}
+          {!sidebarCollapsed && alertsOpen && (
+            <AlertsPanel
+              items={items}
+              loading={itemsLoading}
+              unreadCount={unread}
+              onSelect={openNotification}
+              onMarkAll={handleMarkAll}
+            />
+          )}
         </div>
 
         {/* Nav links */}
@@ -849,7 +884,14 @@ export default function AppShell({
 
       {flyout?.kind === 'alerts' && (
         <NavFlyout anchor={flyout.anchor} onClose={closeFlyout}>
-          <AlertsPanel alerts={newTaskAlerts} onSelect={openAlertTask} bare />
+          <AlertsPanel
+            items={items}
+            loading={itemsLoading}
+            unreadCount={unread}
+            onSelect={openNotification}
+            onMarkAll={handleMarkAll}
+            bare
+          />
         </NavFlyout>
       )}
       {flyout?.kind === 'group' && (() => {
@@ -886,23 +928,22 @@ export default function AppShell({
             <img className={styles.brandLogoLight} src="/brand/ecosystem-logo.png" alt="Ecosystem" width={152} height={40} />
             <img className={styles.brandLogoDark} src="/brand/ecosystem-logo-dark.png" alt="" aria-hidden="true" width={152} height={40} />
           </div>
-          {canHaveTasks && (
-            <div className={styles.alertsWrap}>
-              <button
-                className={styles.alertsBtnMobile}
-                onClick={() => { setMobileOpen(true); setAlertsOpen(true) }}
-                aria-label="Task alerts"
-                title={newTaskAlerts.length > 0 ? `${newTaskAlerts.length} new task${newTaskAlerts.length === 1 ? '' : 's'} assigned to you` : 'No new tasks'}
-              >
-                <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
-                </svg>
-                {newTaskAlerts.length > 0 && (
-                  <span className={styles.alertsBadge}>{newTaskAlerts.length > 9 ? '9+' : newTaskAlerts.length}</span>
-                )}
-              </button>
-            </div>
-          )}
+          <div className={styles.alertsWrap}>
+            <button
+              type="button"
+              className={styles.alertsBtnMobile}
+              onClick={() => { setMobileOpen(true); openAlerts() }}
+              aria-label="Notifications"
+              title={unread > 0 ? `${unread} unread notification${unread === 1 ? '' : 's'}` : 'No new notifications'}
+            >
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" />
+              </svg>
+              {unread > 0 && (
+                <span className={styles.alertsBadge}>{unread > 9 ? '9+' : unread}</span>
+              )}
+            </button>
+          </div>
           <button
             className={styles.topbarTheme}
             onClick={toggleTheme}
