@@ -621,3 +621,48 @@ unbounded already.
 
 Broadcasts are opt-in. Announcements and events only notify when the poster ticks "Notify the
 team", off by default — a retroactively logged past event should not badge thirty people.
+
+### 20260929000000_attendance_and_leave_policies.sql
+The two signed HR policy documents as `hr_policies` rows — Attendance and Working Hours, and
+Leave. Data, not schema: no table is created or altered.
+
+Both are transcribed from the circulated PDFs, not rewritten. Where a source contradicts itself
+the contradiction is carried across verbatim and noted in the migration's own header, because a
+policy is the company's word and an import is not the place to edit it. The three known ones:
+the attendance policy says 9 hours per day in §4 and §4.4 but 8 excluding breaks in §4.1; it
+reuses the numbers 4.1/4.2 for two different pairs of clauses (the section numbering here follows
+that document's own table of contents, its only internally consistent one); and the leave policy
+tabulates 10 festival holidays, says 12 in prose, and lists 15.
+
+Bodies are written in the Markdown subset `src/lib/policy-doc.ts` parses. That parser is
+deliberately closed and falls through to paragraphs, so policies written before it render exactly
+as they did. Guarded with `WHERE NOT EXISTS` on the title, so re-running cannot duplicate a row or
+clobber an edit HR has since made in the app.
+
+### 20261001000000_holidays.sql
+`holidays` — the company calendar, one row per non-working day.
+
+Note the timestamp: this was written as `20260930000000` and renamed when
+`20260930000000_notifications.sql` landed on `main` first. Two files sharing a timestamp is not
+cosmetic — the CLI's ledger keys on that prefix, so a fresh environment would apply one and
+silently skip the other. Same-day migrations need distinct timestamps.
+
+The list previously existed only as a table inside the Leave Policy's *prose*, which is
+unreadable to code, and the cost was a live bug: `requestDays()` counted calendar days inclusive,
+so a Friday-to-Monday leave was charged 4 days including the Sunday and a leave spanning Diwali
+was charged for Diwali. That figure feeds the monthly attendance statement and from there a
+salary deduction.
+
+Sundays are deliberately **not** rows. The weekly off is a rule (`src/lib/working-days.ts`), not a
+calendar entry; seeding 52 Sundays a year is a list nobody maintains. Saturday *is* a working day
+here per the Attendance policy, so a holiday falling on one (15-08-2026) is a real row.
+
+The Special Holiday Week is deliberately **not** seeded. The policy grants 5 days of paid leave
+taken within 15 Dec - 5 Jan — an entitlement with its own lapse rule, not a company-wide closure.
+Putting it on the calendar would mark three weeks non-working for everyone and quietly stop
+charging leave taken in them.
+
+RLS is the one departure from the neighbouring HR tables: every internal role **reads** it
+(`hr_birthdays` is founder/admin/hr only), because the leave form shows a live working-day count
+as someone picks dates. Writes stay founder/admin/hr. `UNIQUE (org_id, holiday_date)` stops a
+duplicate double-counting a day off; the seed is `ON CONFLICT DO NOTHING`.
