@@ -833,5 +833,22 @@ version let an associate read entries on other pipelines they'd issued a link fo
 check goes through the `SECURITY DEFINER` `is_associate_intake_pipeline()` rather than a subquery,
 so it can't re-enter a `pipelines` policy (the `20261004000000` recursion class).
 
+### 20261010000000_esv_founder_form_matches_partner_form.sql
+The ESV founder link goes to startup founders who reached out; the team wants the **same intake the
+Partner Form collects**, so the `20261009` five-question placeholder is replaced by a clone of the
+org's live partner form (nodes, MCQ options, branch edges, `contact_field` tags, and its
+founder-facing `display_name`/`description`). Cloned at migration time so builder edits since
+`20260908` come across; rows copied via `jsonb_populate_record` because the `form_*` tables predate
+this migration history and a hand-written column list could drop one. Branch edges hold the chosen
+option's id in `condition_value`, so those are remapped. Afterwards the two forms are independent —
+editing one doesn't change the other. Skipped (with a NOTICE) for any org whose founder form already
+has answers.
+
+**Companies only after acceptance, for this form.** `submit_form_entry()` (`20260726000000`)
+creates-or-links a Company at submission for every public form, which would put every founder who
+reaches out — including ones later rejected — into Companies as a "prospect". `acceptDeal` already
+creates-or-links on acceptance, so for `is_associate_form` the submission-time step is skipped. The
+Partner Form and all other forms keep the old behaviour; the function body is otherwise unchanged.
+
 No scheduler is involved: there is no nightly job that opens or closes a day plan, on the terms
 `20260914000000` set out. A plan exists because someone wrote it.
