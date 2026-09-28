@@ -23,6 +23,52 @@ export type ImportResult = {
   errors: { row: number; message: string }[]
 }
 
+/**
+ * Log a single deal by hand — the associate-side equivalent of the partner form on
+ * `/my-companies` ("only the name is required, since the point is to capture a lead while it's
+ * fresh"). CSV import stays for a batch of post-call summaries; this is for logging one company
+ * the moment you hear about it, without leaving the app to build a spreadsheet row.
+ */
+export type QuickDealInput = {
+  company_name: string
+  sector?: string | null
+  location?: string | null
+  about?: string | null
+  notes?: string | null
+}
+
+export async function createDeskDeal(input: QuickDealInput): Promise<string> {
+  const { supabase, userId, orgId } = await requireAuthor()
+
+  const company_name = input.company_name.trim()
+  if (!company_name) throw new UserFacingError('Company name is required.')
+  if (company_name.length > 40) throw new UserFacingError('Company name exceeds 40 characters.')
+  const about = input.about?.trim() || null
+  if (about && about.length > 50) throw new UserFacingError('About exceeds 50 characters.')
+  const location = input.location?.trim() || null
+  if (location && location.length > 50) throw new UserFacingError('Location exceeds 50 characters.')
+  const sector = input.sector?.trim() || null
+  const notes = input.notes?.trim() || null
+
+  const card = { company_name, sector, location, about, notes }
+  // Create-or-link by name, same helper CSV import uses — a company logged here and one that
+  // later arrives via CSV (or already exists) resolve to the same profile rather than duplicating.
+  let companyId: string | null = null
+  try { companyId = await findOrCreateCompanyForDeskDeal(supabase, orgId, userId, card) }
+  catch { companyId = null }
+
+  const { data, error } = await supabase
+    .from('desk_deals')
+    .insert({ ...card, org_id: orgId, associate_id: userId, company_id: companyId })
+    .select('id')
+    .single()
+  if (error) throw dbFailure('save that', error)
+
+  revalidatePath('/deal-desk')
+  revalidatePath('/companies')
+  return data.id as string
+}
+
 export async function importDealsCsv(csvText: string): Promise<ImportResult> {
   const { supabase, userId, orgId } = await requireAuthor()
 

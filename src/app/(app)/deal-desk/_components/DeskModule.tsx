@@ -9,6 +9,7 @@ import DealStack from './DealStack'
 import DesktopDealTable from './DesktopDealTable'
 import DealDetailOverlay from './DealDetailOverlay'
 import CsvImportModal from './CsvImportModal'
+import QuickAddDealModal from './QuickAddDealModal'
 import FilterTabs from '@/app/_components/FilterTabs'
 import styles from './deal-desk.module.css'
 
@@ -44,6 +45,7 @@ export default function DeskModule({
   const [tab, setTab] = useState<Tab>('unseen')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [importOpen, setImportOpen] = useState(false)
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
   const [, startTransition] = useTransition()
 
   const refresh = () => startTransition(() => router.refresh())
@@ -93,7 +95,12 @@ export default function DeskModule({
             </button>
           ))}
         </div>
-        {isOwnBoard && <button className={styles.primaryBtn} onClick={() => setImportOpen(true)}>Import CSV</button>}
+        {isOwnBoard && (
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button className={styles.ghostBtn} onClick={() => setImportOpen(true)}>Import CSV</button>
+            <button className={styles.primaryBtn} onClick={() => setQuickAddOpen(true)}>+ Log a deal</button>
+          </div>
+        )}
       </div>
 
       {isCardView && (
@@ -110,7 +117,7 @@ export default function DeskModule({
       {feedDeals.length === 0 ? (
         <div className={styles.empty}>
           <div className={styles.emptyTitle}>Nothing here yet</div>
-          <div>{isOwnBoard ? 'Import a CSV to add your first deal.' : 'No deals in this view.'}</div>
+          <div>{isOwnBoard ? 'Log a deal, or import a CSV, to add your first one.' : 'No deals in this view.'}</div>
         </div>
       ) : view === 'table' ? (
         <DesktopDealTable deals={feedDeals} showAssociate={canReview} onOpen={(d) => setSelectedId(d.id)} />
@@ -138,6 +145,7 @@ export default function DeskModule({
         />
       )}
       {importOpen && <CsvImportModal onClose={() => setImportOpen(false)} onImported={refresh} />}
+      {quickAddOpen && <QuickAddDealModal onClose={() => setQuickAddOpen(false)} onAdded={refresh} />}
     </div>
   )
 }
