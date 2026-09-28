@@ -20,6 +20,7 @@ export const fetchKudosRecipientOptions = cache(async (currentUserId: string): P
     .from('users')
     .select('id, name')
     .in('role', INTERNAL_ROLES)
+    .eq('is_external', false)
     .neq('id', currentUserId)
     .order('name')
   return (data ?? []) as Array<{ id: string; name: string }>

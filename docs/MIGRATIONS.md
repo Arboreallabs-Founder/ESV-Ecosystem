@@ -752,5 +752,18 @@ Same shape as `"Internal roles view org users"` (`20260821000000`) on the `users
 additive SELECT policy for the same five internal roles, OR'd in alongside the existing admin-only
 `FOR ALL` policy rather than replacing it, so who can *edit* the allowlist stays founder/admin only.
 
+### 20261006000000_external_users.sql
+`is_external` on `approved_emails` and `users` — see [ROLES.md](ROLES.md#is_external--orthogonal-to-role)
+for the full picture. Deliberately a plain column, not RLS-gated on its own: it's read by ordinary
+app-layer queries (the attendance/leave-balance/kudos roster builders, and `requireRole()`'s
+`isExternal` return value), not by a policy that needs to hide the column from anyone — every
+internal role that can already read a `users` row can already read this one.
+
+`handle_new_user()` is `CREATE OR REPLACE`d rather than left alone, same as `20260700400000` did for
+adding `org_id` — it's the one place a brand-new row's columns get filled in from `approved_emails`,
+so a copy step added anywhere else would only run for people who sign in after that migration,
+silently skipping anyone invited before it. No RLS or enum changes needed: role itself is untouched,
+`is_external` just rides alongside it through the same trigger.
+
 No scheduler is involved: there is no nightly job that opens or closes a day plan, on the terms
 `20260914000000` set out. A plan exists because someone wrote it.

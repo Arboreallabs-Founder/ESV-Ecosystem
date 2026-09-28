@@ -23,6 +23,25 @@
 "Internal" = founder, admin, associate, general, hr. Everything is **org-scoped**: a user only ever
 sees data in their own organization (super_admin excepted).
 
+### `is_external` — orthogonal to role
+A boolean on `approved_emails`/`users` (added 2026-10-06), independent of `role`. It marks someone
+onboarded with a role's app access (in practice, always `general`) who is **not an ESV employee** —
+a contractor or seconded person, not on payroll. Role decides what they can *do* in the app;
+`is_external` decides whether they show up anywhere the app treats "internal role" as "ESV staff":
+- **Excluded** from the attendance roster (`fetchEmployeeRoster`, so also the People tab and the
+  statements `attendance/page.tsx` compiles), the leave-balance roster, and the recipient list for
+  Engage/Kudos.
+- **Blocked server-side** (not just hidden in the UI) from submitting a leave or expense request, and
+  from giving or receiving kudos — `createLeaveRequest`/`createExpenseRequest`/`giveKudos` all throw
+  if the caller (or, for kudos, the recipient) is external.
+- **Unaffected**: everything else the role grants — deal pipeline, tasks, birthdays roster, wiki —
+  works exactly as it would for a non-external person with the same role.
+
+Set on the Add/Edit User forms in `/admin/users` ("External (not an ESV employee)"), persisted to
+both `approved_emails` (so it can be set before first login, same as role) and `users` (copied
+across by `handle_new_user()` at sign-in, same as role/name/org_id). `requireRole()` in
+`src/lib/guards.ts` returns `isExternal` alongside `role`/`orgId` for any action that needs to check it.
+
 ---
 
 ## Capability matrix (quick reference)

@@ -15,5 +15,10 @@ export default async function EngagePage() {
     fetchKudosRecipientOptions(user.id),
   ])
 
-  return <EngageView feed={feed} recipients={recipients} currentUserId={user.id} canModerate={canModerate} />
+  return (
+    <EngageView
+      feed={feed} recipients={recipients} currentUserId={user.id} canModerate={canModerate}
+      isExternal={user.is_external}
+    />
+  )
 }

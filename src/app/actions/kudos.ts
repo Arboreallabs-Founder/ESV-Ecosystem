@@ -17,11 +17,16 @@ export type KudosInput = {
 }
 
 export async function giveKudos(input: KudosInput): Promise<void> {
-  const { supabase, userId, orgId } = await requireInternal()
+  const { supabase, userId, orgId, isExternal } = await requireInternal()
+  // Kudos is ESV-team recognition — external team members neither give nor receive it.
+  if (isExternal) throw new UserFacingError('Kudos is for ESV employees only.')
   const message = input.message.trim()
   if (!message) throw new UserFacingError('Message is required.')
   if (!input.recipient_id) throw new UserFacingError('Please choose who this is for.')
   if (input.recipient_id === userId) throw new UserFacingError('You cannot give kudos to yourself.')
+
+  const { data: recipient } = await supabase.from('users').select('is_external').eq('id', input.recipient_id).single()
+  if (recipient?.is_external) throw new UserFacingError('Kudos is for ESV employees only.')
 
   const { error } = await supabase.from('kudos').insert({
     org_id: orgId,

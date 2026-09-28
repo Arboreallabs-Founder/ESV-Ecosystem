@@ -71,6 +71,7 @@ export default function UsersTable({
   const [addName, setAddName] = useState('')
   const [addRole, setAddRole] = useState<string>('associate')
   const [addPassword, setAddPassword] = useState('')
+  const [addExternal, setAddExternal] = useState(false)
   const [addError, setAddError] = useState('')
 
   // Edit modal
@@ -80,6 +81,7 @@ export default function UsersTable({
   const [editDesignation, setEditDesignation] = useState('')
   const [editCoordinator, setEditCoordinator] = useState(false)
   const [editApprover, setEditApprover] = useState(false)
+  const [editExternal, setEditExternal] = useState(false)
 
   // Revoke modal
   const [photoTarget, setPhotoTarget] = useState<ApprovedUser | null>(null)
@@ -120,6 +122,7 @@ export default function UsersTable({
     setEditDesignation(u.designation ?? '')
     setEditCoordinator(u.is_sgp_coordinator)
     setEditApprover(u.is_sgp_approver)
+    setEditExternal(u.is_external)
   }
 
   function handleAdd(e: React.FormEvent) {
@@ -127,7 +130,7 @@ export default function UsersTable({
     setAddError('')
     startTransition(async () => {
       try {
-        await addApprovedUser(addEmail, addName, addRole, addPassword || undefined)
+        await addApprovedUser(addEmail, addName, addRole, addPassword || undefined, addExternal)
         setUsers((prev) => [...prev, {
           email: addEmail.toLowerCase().trim(),
           name: addName.trim(),
@@ -139,10 +142,11 @@ export default function UsersTable({
           designation: null,
           is_sgp_coordinator: false,
           is_sgp_approver: false,
+          is_external: addExternal,
           hasLoggedIn: false,
         }])
         setShowAdd(false)
-        setAddEmail(''); setAddName(''); setAddRole('associate'); setAddPassword('')
+        setAddEmail(''); setAddName(''); setAddRole('associate'); setAddPassword(''); setAddExternal(false)
       } catch (err) {
         setAddError(String(err))
       }
@@ -156,6 +160,7 @@ export default function UsersTable({
       await updateApprovedUser(
         editTarget.email, editName, editRole, editTarget.userId,
         editTarget.userId ? editDesignation : undefined,
+        editExternal,
       )
       // Separate action: the coordinator flag decides who sees every partner's leads, so it is
       // founder/admin-only and lives apart from the ordinary profile edit.
@@ -172,6 +177,7 @@ export default function UsersTable({
               name: editName.trim(),
               role: editRole as ApprovedUser['role'],
               designation: editTarget.userId ? (editDesignation.trim() || null) : u.designation,
+              is_external: editExternal,
               is_sgp_coordinator: editTarget.userId ? editCoordinator : u.is_sgp_coordinator,
               is_sgp_approver: editTarget.userId ? editApprover : u.is_sgp_approver,
             }
@@ -258,7 +264,7 @@ export default function UsersTable({
                   </td>
                   <td>
                     <span className={`${styles.roleBadge} ${ROLE_CLASS[u.role] ?? styles.roleAssociate}`}>
-                      {ROLE_LABELS[u.role] ?? u.role}
+                      {u.is_external ? `External ${ROLE_LABELS[u.role] ?? u.role}` : (ROLE_LABELS[u.role] ?? u.role)}
                     </span>
                   </td>
                   <td>
@@ -341,6 +347,16 @@ export default function UsersTable({
                 </select>
               </div>
               <div className={styles.field}>
+                <label className={styles.coordinatorRow}>
+                  <input type="checkbox" checked={addExternal} onChange={(e) => setAddExternal(e.target.checked)} />
+                  External (not an ESV employee)
+                </label>
+                <span className={styles.fieldHint}>
+                  Onboarded with the role&apos;s app access, but not ESV staff — excluded from the
+                  attendance roster, leave/expense requests, and Engage/Kudos.
+                </span>
+              </div>
+              <div className={styles.field}>
                 <label className={styles.label}>Password <span style={{ fontWeight: 400, color: 'var(--color-muted)' }}>(optional)</span></label>
                 <input
                   className={styles.input}
@@ -406,6 +422,16 @@ export default function UsersTable({
                     {ROLES.map((r) => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
                   </select>
                 )}
+              </div>
+              <div className={styles.field}>
+                <label className={styles.coordinatorRow}>
+                  <input type="checkbox" checked={editExternal} onChange={(e) => setEditExternal(e.target.checked)} />
+                  External (not an ESV employee)
+                </label>
+                <span className={styles.fieldHint}>
+                  Onboarded with the role&apos;s app access, but not ESV staff — excluded from the
+                  attendance roster, leave/expense requests, and Engage/Kudos.
+                </span>
               </div>
               {editTarget.userId && ['associate', 'admin', 'founder'].includes(editRole) && (
                 <div className={styles.field}>

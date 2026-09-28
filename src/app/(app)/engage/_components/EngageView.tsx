@@ -41,8 +41,10 @@ function Envelope({ kudos, onOpen }: { kudos: Kudos; onOpen: () => void }) {
   )
 }
 
-export default function EngageView({ feed, recipients, currentUserId, canModerate }: {
+export default function EngageView({ feed, recipients, currentUserId, canModerate, isExternal }: {
   feed: Kudos[]; recipients: Array<{ id: string; name: string }>; currentUserId: string; canModerate: boolean
+  /** External team members neither give nor receive kudos — this is ESV-team recognition. */
+  isExternal: boolean
 }) {
   const router = useRouter()
   const [showModal, setShowModal] = useState(false)
@@ -77,7 +79,9 @@ export default function EngageView({ feed, recipients, currentUserId, canModerat
           <div className={styles.pageTitle}>Engage</div>
           <div className={styles.pageSub}>Give a shout-out to a colleague</div>
         </div>
-        <button className={styles.primaryBtn} onClick={() => setShowModal(true)}>+ Give kudos</button>
+        {!isExternal && (
+          <button className={styles.primaryBtn} onClick={() => setShowModal(true)}>+ Give kudos</button>
+        )}
       </div>
 
       <div className={styles.content}>

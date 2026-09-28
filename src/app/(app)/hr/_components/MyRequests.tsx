@@ -19,10 +19,13 @@ function StatusPill({ status }: { status: 'pending' | 'approved' | 'rejected' })
   return <span className={`${styles.statusPill} ${cls}`}>{status}</span>
 }
 
-export default function MyRequests({ leaveRequests, expenseRequests, leaveBalances, holidays, orgId, userId }: {
+export default function MyRequests({ leaveRequests, expenseRequests, leaveBalances, holidays, orgId, userId, isExternal }: {
   leaveRequests: LeaveRequest[]; expenseRequests: ExpenseRequest[]; leaveBalances: Record<string, LeaveBalance> | null
   holidays: Holiday[]
   orgId: string; userId: string
+  /** External team members aren't ESV employees, so leave/expense requests don't apply to them —
+      the submit buttons are hidden rather than left to fail server-side on click. */
+  isExternal: boolean
 }) {
   const router = useRouter()
   const [tab, setTab] = useState<'leave' | 'expense'>('leave')
@@ -46,12 +49,14 @@ export default function MyRequests({ leaveRequests, expenseRequests, leaveBalanc
           <button className={`${styles.requestTab} ${tab === 'leave' ? styles.requestTabActive : ''}`} onClick={() => setTab('leave')}>Leave</button>
           <button className={`${styles.requestTab} ${tab === 'expense' ? styles.requestTabActive : ''}`} onClick={() => setTab('expense')}>Expenses</button>
         </div>
-        {tab === 'leave'
+        {!isExternal && (tab === 'leave'
           ? <button className={styles.ghostBtn} onClick={() => setShowLeaveModal(true)} style={{ marginLeft: 'auto' }}>+ Request leave</button>
-          : <button className={styles.ghostBtn} onClick={() => setShowExpenseModal(true)} style={{ marginLeft: 'auto' }}>+ Submit expense</button>}
+          : <button className={styles.ghostBtn} onClick={() => setShowExpenseModal(true)} style={{ marginLeft: 'auto' }}>+ Submit expense</button>)}
       </div>
 
-      {tab === 'leave' ? (
+      {isExternal ? (
+        <div className={styles.empty}>Leave and expense requests are for ESV employees only.</div>
+      ) : tab === 'leave' ? (
         leaveRequests.length === 0 ? (
           <div className={styles.empty}>No leave requests yet.</div>
         ) : (

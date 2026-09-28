@@ -699,6 +699,8 @@ export type UserRow = {
   designation: string | null
   location: string | null
   photo_url: string | null
+  /** Onboarded with the role's app access but not an ESV employee — see ApprovedUser.is_external. */
+  is_external: boolean
 }
 
 export type ApprovedUser = {
@@ -718,6 +720,10 @@ export type ApprovedUser = {
   is_sgp_coordinator: boolean
   /** Holds the second signature on partner attribution. Nimit, unless somebody else is given it. */
   is_sgp_approver: boolean
+  /** Onboarded with app access (typically `general`) but not an ESV employee — a contractor or
+   *  seconded person. Orthogonal to `role`: keeps them off the attendance roster, leave/expense
+   *  requests, and Engage/Kudos without touching what the role itself grants. */
+  is_external: boolean
   hasLoggedIn: boolean
 }
 

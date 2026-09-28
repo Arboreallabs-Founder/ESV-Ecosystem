@@ -9,7 +9,11 @@ import type { ExpenseType } from '@/lib/types'
 const APPROVER_ROLES = ['founder', 'admin', 'hr']
 
 async function requireRequester() {
-  return requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
+  const ctx = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
+  // External team members aren't ESV employees, so expense reimbursement doesn't apply to them —
+  // same reasoning that keeps them off the attendance roster.
+  if (ctx.isExternal) throw new UserFacingError('Expense requests are for ESV employees only.')
+  return ctx
 }
 
 async function requireApprover() {

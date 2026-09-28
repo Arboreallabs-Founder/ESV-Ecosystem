@@ -83,6 +83,7 @@ export default async function HrZonePage() {
       myLeaveBalances={myLeaveBalances}
       orgId={user.org_id ?? ''}
       userId={user.id}
+      isExternal={user.is_external}
     />
   )
 }

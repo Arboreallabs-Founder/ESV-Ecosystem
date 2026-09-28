@@ -7,11 +7,16 @@ export async function requireRole(roles: string[]) {
   if (!userId) throw new Error('Unauthorized')
   const { data: row } = await supabase
     .from('users')
-    .select('role, org_id')
+    .select('role, org_id, is_external')
     .eq('id', userId)
     .single()
   if (!row || !roles.includes(row.role)) throw new Error('Forbidden')
-  return { supabase, userId, role: row.role as string, orgId: row.org_id as string | null }
+  return {
+    supabase, userId, role: row.role as string, orgId: row.org_id as string | null,
+    // Onboarded with app access (typically `general`) but not an ESV employee — orthogonal to
+    // role. Actions that treat "internal role" as "ESV staff" (leave/expense, kudos) check this.
+    isExternal: !!row.is_external,
+  }
 }
 
 export async function requireAuth() {

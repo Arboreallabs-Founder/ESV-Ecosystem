@@ -63,7 +63,7 @@ function PolicyCard({ policy, canEdit, canDelete, onOpen, onEdit, onDelete }: {
 export default function HrZoneView({
   policies, clockSettings, birthdays, holidays, canEditHolidays,
   canEditPolicies, canDeletePolicies, showClockAdmin,
-  isApprover, pendingApprovalsCount, myLeaveRequests, myExpenseRequests, myLeaveBalances, orgId, userId,
+  isApprover, pendingApprovalsCount, myLeaveRequests, myExpenseRequests, myLeaveBalances, orgId, userId, isExternal,
   roster, compensation, canManagePeople, managers, profilesOk,
   documentTypes, issuableCodes, issuedDocuments, templateFields, currentUserId,
 }: {
@@ -74,6 +74,8 @@ export default function HrZoneView({
   myLeaveRequests: LeaveRequest[]; myExpenseRequests: ExpenseRequest[]
   myLeaveBalances: Record<string, LeaveBalance> | null
   orgId: string; userId: string
+  /** External team members aren't ESV employees, so leave/expense requests don't apply to them. */
+  isExternal: boolean
   roster: EmployeeRow[]
   profilesOk: boolean
   compensation: Record<string, EmployeeCompensation[]>
@@ -177,7 +179,10 @@ export default function HrZoneView({
                 <span style={{ marginLeft: 'auto', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.8125rem' }}>Review →</span>
               </Link>
             )}
-            <MyRequests leaveRequests={myLeaveRequests} expenseRequests={myExpenseRequests} leaveBalances={myLeaveBalances} holidays={holidays} orgId={orgId} userId={userId} />
+            <MyRequests
+              leaveRequests={myLeaveRequests} expenseRequests={myExpenseRequests} leaveBalances={myLeaveBalances}
+              holidays={holidays} orgId={orgId} userId={userId} isExternal={isExternal}
+            />
           </>
         )}
 

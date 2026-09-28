@@ -54,7 +54,7 @@ export const fetchApprovedUsers = cache(async (): Promise<ApprovedUser[]> => {
   const supabase = await createClient()
 
   const [{ data: approved }, { data: active }] = await Promise.all([
-    supabase.from('approved_emails').select('email, name, role, added_at, org_id').order('added_at', { ascending: true }),
+    supabase.from('approved_emails').select('email, name, role, added_at, org_id, is_external').order('added_at', { ascending: true }),
     supabase.from('users').select('id, email, photo_url, designation, is_sgp_coordinator, is_sgp_approver'),
   ])
 
@@ -71,6 +71,7 @@ export const fetchApprovedUsers = cache(async (): Promise<ApprovedUser[]> => {
     designation: activeByEmail.get(a.email)?.designation ?? null,
     is_sgp_coordinator: activeByEmail.get(a.email)?.is_sgp_coordinator ?? false,
     is_sgp_approver: activeByEmail.get(a.email)?.is_sgp_approver ?? false,
+    is_external: a.is_external ?? false,
     hasLoggedIn: activeByEmail.has(a.email),
   }))
 })

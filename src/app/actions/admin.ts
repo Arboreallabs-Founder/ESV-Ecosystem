@@ -28,7 +28,9 @@ function assertAssignableRole(role: string): void {
   }
 }
 
-export async function addApprovedUser(email: string, name: string, role: string, password?: string) {
+export async function addApprovedUser(
+  email: string, name: string, role: string, password?: string, isExternal?: boolean,
+) {
   const { supabase, callerId, orgId } = await requireAdminOrFounder()
   assertAssignableRole(role)
   const normalizedEmail = email.toLowerCase().trim()
@@ -40,6 +42,7 @@ export async function addApprovedUser(email: string, name: string, role: string,
     role,
     added_by: callerId,
     org_id: orgId,
+    is_external: !!isExternal,
   })
   if (error) throw dbFailure('save that', error)
 
@@ -71,6 +74,7 @@ export async function updateApprovedUser(
   role: string,
   userId: string | null,
   designation?: string | null,
+  isExternal?: boolean,
 ) {
   const { supabase } = await requireAdminOrFounder()
   assertAssignableRole(role)
@@ -80,13 +84,13 @@ export async function updateApprovedUser(
   // which is why a job title can't be set before first login.
   const { error: emailError } = await supabase
     .from('approved_emails')
-    .update({ name: trimmedName, role })
+    .update({ name: trimmedName, role, is_external: !!isExternal })
     .eq('email', email)
   if (emailError) throw dbFailure('update the approved-emails list', emailError)
 
   // Also update public.users if they have already logged in
   if (userId) {
-    const patch: Record<string, unknown> = { name: trimmedName, role }
+    const patch: Record<string, unknown> = { name: trimmedName, role, is_external: !!isExternal }
     // undefined means "not being edited"; null means "cleared".
     if (designation !== undefined) patch.designation = designation?.trim() || null
     await supabase.from('users').update(patch).eq('id', userId)

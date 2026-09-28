@@ -34,7 +34,10 @@ export type EmployeeRoster = {
 export const fetchEmployeeRoster = cache(async (): Promise<EmployeeRoster> => {
   const supabase = await createClient()
   const [{ data: users }, { data: profiles, error: profilesError }] = await Promise.all([
-    supabase.from('users').select('*').in('role', STAFF_ROLES).order('name'),
+    // is_external: false — an external team member is onboarded with staff-tier app access but
+    // isn't an ESV employee, so they don't get an employment record, letters, or an attendance
+    // statement (this roster is also what attendance/page.tsx compiles statements against).
+    supabase.from('users').select('*').in('role', STAFF_ROLES).eq('is_external', false).order('name'),
     supabase.from('employee_profiles').select(PROFILE_SELECT),
   ])
 

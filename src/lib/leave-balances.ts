@@ -72,7 +72,8 @@ export const fetchAllLeaveBalances = cache(async (): Promise<LeaveBalanceRow[]> 
   const [policy, holidays, usersRes, balancesRes, approvedRes] = await Promise.all([
     fetchLeavePolicy(),
     fetchHolidayDates(),
-    supabase.from('users').select('id, name, designation, photo_url').in('role', BALANCE_ROSTER_ROLES).order('name'),
+    // is_external: false — external team members aren't ESV employees and don't accrue leave.
+    supabase.from('users').select('id, name, designation, photo_url').in('role', BALANCE_ROSTER_ROLES).eq('is_external', false).order('name'),
     supabase.from('leave_balances').select('id, user_id, leave_type, manual_used_days'),
     supabase.from('leave_requests')
       .select('requester_id, leave_type, start_date, end_date, is_half_day')
