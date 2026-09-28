@@ -14,7 +14,11 @@ export async function getMyTodos(): Promise<PersonalTodo[]> {
   const { supabase, userId } = await requireInternal()
   const { data, error } = await supabase
     .from('personal_todos')
-    .select('*, linked_task:linked_task_id(id, title, status, due_date)')
+    .select(`
+      *,
+      linked_task:linked_task_id(id, title, status, due_date),
+      mentions:personal_todo_mentions(mentioned_user:mentioned_user_id(name, email))
+    `)
     .eq('user_id', userId)
     .order('done', { ascending: true })
     .order('position', { ascending: false })

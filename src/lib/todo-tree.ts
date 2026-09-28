@@ -26,6 +26,19 @@ export function nestTodos(rows: PersonalTodo[]): PersonalTodo[] {
 }
 
 /**
+ * The display names of everyone @mentioned on a to-do, off the real mention rows rather than
+ * re-parsing "@Name" back out of the title text — the title is free text a person can edit around a
+ * mention, so matching against who was actually tagged is the only way to highlight the right span
+ * (and the only one) instead of guessing at capitalised words that happen to follow an "@".
+ */
+export function mentionedNames(todo: PersonalTodo): string[] {
+  return (todo.mentions ?? [])
+    .map((m) => m.mentioned_user)
+    .filter((u): u is NonNullable<typeof u> => !!u)
+    .map((u) => u.name || u.email)
+}
+
+/**
  * When a sub-task happened, for the list and the weekly rollup.
  *
  * Completed items read as the moment they were ticked; open ones as when they were added. Both

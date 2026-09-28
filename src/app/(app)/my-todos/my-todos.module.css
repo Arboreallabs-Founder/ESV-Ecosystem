@@ -282,6 +282,18 @@
 
 .subTitle { font-size: 0.8125rem; color: var(--color-text); flex: 1; min-width: 0; line-height: 1.45; }
 
+/* An @mention inline in a sub-task's sentence, styled to stop at "that's a mention" rather than
+   read as part of the sentence around it — bronze, the same accent the "Mentioned you" section
+   uses, so a tag means the same thing everywhere it appears on this page. */
+.mentionTag {
+  color: var(--color-accent);
+  background: rgba(213, 174, 143, 0.16);
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 0.05rem 0.3rem;
+  margin: 0 -0.05rem;
+}
+
 /* The timestamp the sub-task exists to carry: when it was ticked, or when it was added. Tabular
    figures so a column of times does not jitter as the digits change. */
 .subStamp {
