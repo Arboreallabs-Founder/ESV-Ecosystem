@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
 import { fetchAllTasks } from '@/lib/tasks'
 import { getMyTodos } from '@/app/actions/personal-todos'
+import { fetchMyDayPlans } from '@/lib/day-plans'
+import { todayIst } from '@/lib/ist-date'
 import MyTodosClient from './_components/MyTodosClient'
 
 export default async function MyTodosPage() {
@@ -9,8 +11,14 @@ export default async function MyTodosPage() {
   if (!user) redirect('/login')
   if (!['founder', 'admin', 'associate', 'general', 'hr'].includes(user.role ?? '')) redirect('/dashboard')
 
-  const [todos, allTasks] = await Promise.all([getMyTodos(), fetchAllTasks()])
+  const [todos, allTasks, dayPlans] = await Promise.all([
+    getMyTodos(),
+    fetchAllTasks(),
+    fetchMyDayPlans(user.id),
+  ])
   const myTasks = allTasks.filter((t) => t.assignee_id === user.id)
 
-  return <MyTodosClient todos={todos} myTasks={myTasks} />
+  // "Today" is resolved on the server in IST — the working timezone for everyone here — so a
+  // browser in another zone cannot file a plan against the wrong day.
+  return <MyTodosClient todos={todos} myTasks={myTasks} dayPlans={dayPlans} todayIso={todayIst()} />
 }

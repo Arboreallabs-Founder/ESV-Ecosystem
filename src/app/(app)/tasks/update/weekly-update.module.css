@@ -700,3 +700,48 @@ td.rosterWho {
   transition: border-color 0.12s, background 0.12s;
 }
 .gapChip:hover { border-color: var(--color-primary); background: var(--color-card); }
+
+/* Sub-tasks inside a week's personal to-dos. Indented against a rail so the rollup reads the way
+   the to-do page does, and the completion time sits right-aligned out of the way of the title. */
+.subTodoList {
+  list-style: none;
+  margin: 0.3rem 0 0.4rem 0.35rem;
+  padding: 0 0 0 0.7rem;
+  border-left: 2px solid var(--color-border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.subTodoList li { display: flex; align-items: baseline; gap: 0.4rem; font-size: 0.8125rem; }
+.subTodoTitle { flex: 1; min-width: 0; }
+.subTodoStamp { font-size: 0.6875rem; color: var(--color-muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+/* Daily reports inside a week's card. Date on the left, note on the right — a reader scanning
+   the week wants to land on the day first and read the note second. */
+.dailyList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.55rem; }
+.dailyItem { display: flex; gap: 0.7rem; align-items: baseline; font-size: 0.8125rem; line-height: 1.6; }
+.dailyWhen {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  width: 9.5rem;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+}
+.dailyKind {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.05rem 0.35rem;
+  border-radius: 9999px;
+  background: rgba(var(--color-hover-rgb), 0.12);
+  color: var(--color-primary);
+}
+.dailyNote { flex: 1; min-width: 0; color: var(--color-text); white-space: pre-wrap; }
+
+@media (max-width: 640px) {
+  .dailyItem { flex-direction: column; gap: 0.2rem; }
+  .dailyWhen { width: auto; }
+}

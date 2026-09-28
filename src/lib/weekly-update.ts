@@ -33,8 +33,12 @@ export const fetchWeekTodos = cache(async (): Promise<PersonalTodo[]> => {
   const supabase = await createClient()
   const { data } = await supabase
     .from('personal_todos')
+    // Sub-tasks carry no work week of their own — they inherit the parent's. Fetching them
+    // alongside is what lets the rollup show "Kyoora 1/2" with the two items under it; without
+    // the parent_id arm the parent would render as a bare line with its sub-items missing.
+    // RLS still decides what comes back (a lead sees a sub-task only if its parent is shared).
     .select('*')
-    .not('work_week_start', 'is', null)
+    .or('work_week_start.not.is.null,parent_id.not.is.null')
     .order('created_at', { ascending: true })
   return (data ?? []) as unknown as PersonalTodo[]
 })

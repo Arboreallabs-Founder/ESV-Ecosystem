@@ -666,3 +666,37 @@ RLS is the one departure from the neighbouring HR tables: every internal role **
 (`hr_birthdays` is founder/admin/hr only), because the leave form shows a live working-day count
 as someone picks dates. Writes stay founder/admin/hr. `UNIQUE (org_id, holiday_date)` stops a
 duplicate double-counting a day off; the seed is `ON CONFLICT DO NOTHING`.
+
+### 20261002000000_todo_subtasks_and_day_plans.sql
+Sub-tasks on `personal_todos`, and the `day_plans` table behind the daily plan / end-of-day wrap.
+One migration because they are one feature: you write the day's plan, the lines become to-dos, the
+to-dos hold sub-items, and all of it rolls up into the week.
+
+**Depth is capped at one level**, by trigger rather than convention. A `CHECK` cannot see other
+rows, so `personal_todos_enforce_one_level()` rejects a parent that itself has a parent, and an
+item that already has children from becoming a child. It is `SECURITY DEFINER` so the cap cannot
+be defeated by RLS hiding the parent row. Arbitrary depth was considered and dropped: a personal
+list that allows it becomes an outliner nobody maintains, and the two-level assumption is baked
+into every query and render downstream.
+
+`plan_date` is a third date alongside `due_date` and `work_week_start`, and all three earn their
+place: due date is a commitment, work week is an act of sharing, plan date is an intention revised
+daily. An item can be planned for today, due Friday, and filed under this week at once.
+
+**The visibility change is the load-bearing part.** `20260818000000` made week-assigned to-dos
+readable by founders/admins on the reasoning that assigning a week *is* the opt-in. Day plans work
+differently by explicit decision: a report is read by leadership whether or not you tick anything,
+because submitting it is sending it. So `day_plans` is lead-readable outright, the personal_todos
+lead-read policy widens to `work_week_start IS NOT NULL OR plan_date IS NOT NULL` (a report whose
+items are unreadable is useless), and a third policy lets leads read sub-tasks *of* rows they can
+already see. Anything with no work week and no plan date stays private to its owner, as before.
+The modal says all of this at the point of writing — a surface that looks private and is not would
+be worse than one that is simply honest.
+
+That third policy goes through `todo_parent_is_shared()`, a `SECURITY DEFINER` function, rather
+than a subquery. A policy on `personal_todos` that selects from `personal_todos` re-enters RLS and
+Postgres aborts with infinite recursion — the same reason `get_user_role()` exists rather than a
+subquery over `users`.
+
+No scheduler is involved: there is no nightly job that opens or closes a day plan, on the terms
+`20260914000000` set out. A plan exists because someone wrote it.

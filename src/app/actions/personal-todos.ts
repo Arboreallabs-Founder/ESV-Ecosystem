@@ -18,6 +18,8 @@ export async function getMyTodos(): Promise<PersonalTodo[]> {
     .order('done', { ascending: true })
     .order('position', { ascending: false })
     .order('created_at', { ascending: false })
+  // Flat on purpose — nestTodos() in lib/todo-tree.ts builds the two levels. Sub-tasks come back
+  // in the same result set, so a parent and its children are always consistent with each other.
   return (data ?? []) as unknown as PersonalTodo[]
 }
 
@@ -27,6 +29,10 @@ export async function addPersonalTodo(input: {
   due_date?: string | null
   /** Monday of the work week this belongs to. Setting it also publishes the item to that week's update. */
   work_week_start?: string | null
+  /** Parent item — makes this a sub-task. One level only; the database enforces it. */
+  parent_id?: string | null
+  /** The day this is planned for. Set by the daily plan; visible to founders/admins. */
+  plan_date?: string | null
 }): Promise<string> {
   const { supabase, userId, orgId } = await requireInternal()
   const title = input.title.trim()
@@ -38,6 +44,8 @@ export async function addPersonalTodo(input: {
       notes: input.notes?.trim() || null,
       due_date: input.due_date || null,
       work_week_start: input.work_week_start || null,
+      parent_id: input.parent_id || null,
+      plan_date: input.plan_date || null,
     })
     .select('id')
     .single()
@@ -52,6 +60,7 @@ export async function updatePersonalTodo(id: string, patch: {
   notes?: string | null
   due_date?: string | null
   work_week_start?: string | null
+  plan_date?: string | null
 }): Promise<void> {
   const { supabase } = await requireInternal()
   const update: Record<string, unknown> = {}
@@ -63,6 +72,7 @@ export async function updatePersonalTodo(id: string, patch: {
   if (patch.notes !== undefined) update.notes = patch.notes?.trim() || null
   if (patch.due_date !== undefined) update.due_date = patch.due_date || null
   if (patch.work_week_start !== undefined) update.work_week_start = patch.work_week_start || null
+  if (patch.plan_date !== undefined) update.plan_date = patch.plan_date || null
   const { error } = await supabase.from('personal_todos').update(update).eq('id', id)
   if (error) throw dbFailure('save that', error)
   revalidatePath('/my-todos')

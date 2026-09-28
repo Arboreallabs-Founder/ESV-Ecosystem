@@ -102,9 +102,30 @@ export type PersonalTodo = {
   /** Monday of the work week this belongs to; independent of due_date. */
   work_week_start: string | null
   linked_task_id: string | null
+  /** Parent to-do, one level only (enforced by a trigger). NULL for a top-level item. */
+  parent_id: string | null
+  /** The day you intend to do it, set by the daily plan. Distinct from due_date and work week. */
+  plan_date: string | null
   position: number
   created_at: string
   linked_task?: { id: string; title: string; status: TaskStatus; due_date: string | null } | null
+  /** Populated client-side by nestTodos(); never returned by the query itself. */
+  children?: PersonalTodo[]
+}
+
+export const DAY_PLAN_KINDS = ['morning', 'evening'] as const
+export type DayPlanKind = typeof DAY_PLAN_KINDS[number]
+
+/** A day's plan (morning) or wrap (evening). Readable by founders/admins — see the migration. */
+export type DayPlan = {
+  id: string
+  user_id: string
+  plan_date: string
+  kind: DayPlanKind
+  note: string | null
+  created_at: string
+  updated_at: string
+  user?: { id: string; name: string | null; photo_url: string | null } | null
 }
 
 export const RECURRENCE_TYPES = ['daily', 'weekly', 'monthly'] as const

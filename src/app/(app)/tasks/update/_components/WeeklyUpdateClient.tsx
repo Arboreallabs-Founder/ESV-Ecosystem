@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { alertError } from '@/lib/client-errors'
 import Link from 'next/link'
-import type { Task, ActiveDeal, UserRow, PersonalTodo } from '@/lib/types'
+import type { Task, ActiveDeal, UserRow, PersonalTodo, DayPlan } from '@/lib/types'
 import { weekRange } from '@/lib/week'
+import { nestTodos, todoStamp } from '@/lib/todo-tree'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import Avatar from '@/app/_components/Avatar'
 import styles from '../weekly-update.module.css'
@@ -33,7 +34,10 @@ type AssociateReport = {
   completed: TaskRef[]
   open: TaskRef[]
   mandates: MandateRef[]
-  personal: Array<{ title: string; done: boolean }>
+  /** Sub-tasks ride along with their parent; each carries when it was ticked or added. */
+  personal: Array<{ title: string; done: boolean; children: Array<{ title: string; done: boolean; stamp: string | null }> }>
+  /** The week's daily reports, oldest first. Only non-empty notes make it this far. */
+  daily: Array<{ date: string; kind: 'morning' | 'evening'; note: string }>
 }
 
 /** The exact line the WhatsApp message uses for a mandate. Kept in one place so the card and the
@@ -71,7 +75,12 @@ function buildMessage(report: AssociateReport, weekLabel: string): string {
   if (report.personal.length > 0) {
     lines.push('')
     lines.push(`📝 Personal to-dos (${report.personal.length})`)
-    report.personal.forEach((t) => lines.push(`${t.done ? '☑' : '☐'} ${t.title}`))
+    report.personal.forEach((t) => {
+      lines.push(`${t.done ? '☑' : '☐'} ${t.title}`)
+      // Indented under the parent, each with the time it was ticked — the detail the week's
+      // reader actually wants, and the reason sub-tasks carry a timestamp at all.
+      t.children.forEach((c) => lines.push(`    ${c.done ? '☑' : '☐'} ${c.title}${c.stamp ? ` · ${c.stamp}` : ''}`))
+    })
   }
   return lines.join('\n')
 }
@@ -106,7 +115,7 @@ function Section({
 }
 
 export default function WeeklyUpdateClient({
-  tasks, activeDeals, users, dealUpdates, weekTodos, currentUserId, currentUserRole, automaticTasks,
+  tasks, activeDeals, users, dealUpdates, weekTodos, dayPlans, currentUserId, currentUserRole, automaticTasks,
   mandateHealth,
 }: {
   tasks: Task[]
@@ -115,6 +124,9 @@ export default function WeeklyUpdateClient({
   /** activeDealId -> newest update body. */
   dealUpdates: Record<string, string>
   weekTodos: PersonalTodo[]
+  /** Daily plans and end-of-day wraps. RLS returns everyone's to a founder/admin, your own to
+      anyone else — so this needs no permission branch of its own. */
+  dayPlans: DayPlan[]
   currentUserId: string
   currentUserRole: string
   /** Unowned by design, so they sit above the per-person cards rather than inside one. */
@@ -132,6 +144,12 @@ export default function WeeklyUpdateClient({
   const [mode, setMode] = useState<'cards' | 'summary'>('cards')
 
   const { start: weekStart, end: weekEnd, label: weekLabel, key: weekKey } = useMemo(() => weekRange(weekOffset), [weekOffset])
+  // day_plans.plan_date is a DATE string, so the week bound it is compared against must be one
+  // too — comparing a string to a Date silently matches nothing.
+  const weekEndKey = useMemo(
+    () => `${weekEnd.getFullYear()}-${String(weekEnd.getMonth() + 1).padStart(2, '0')}-${String(weekEnd.getDate()).padStart(2, '0')}`,
+    [weekEnd],
+  )
 
   // Leads review the team; everyone else gets their own card and only their own.
   //
@@ -172,22 +190,35 @@ export default function WeeklyUpdateClient({
             update: dealUpdates[d.id] ?? '',
             health: mandateHealth[d.id],
           }))
-        const personal = weekTodos
-          .filter((t) => t.user_id === a.id && t.work_week_start === weekKey)
-          .map((t) => ({ title: t.title, done: t.done }))
+        // Nest before filtering: a sub-task carries no work week of its own, so filtering first
+        // would strip every child and leave the parents bare.
+        const personal = nestTodos(weekTodos.filter((t) => t.user_id === a.id))
+          .filter((t) => t.work_week_start === weekKey)
+          .map((t) => ({
+            title: t.title,
+            done: t.done,
+            children: (t.children ?? []).map((c) => ({
+              title: c.title, done: c.done, stamp: todoStamp(c),
+            })),
+          }))
+        // Only reports carrying a written note. A plan whose whole content became to-dos is
+        // already represented by those to-dos; repeating it as an empty heading is noise.
+        const daily = dayPlans
+          .filter((p) => p.user_id === a.id && p.plan_date >= weekKey && p.plan_date <= weekEndKey && (p.note ?? '').trim())
+          .map((p) => ({ date: p.plan_date, kind: p.kind, note: (p.note ?? '').trim() }))
         return {
           id: a.id,
           name: a.name ?? a.email,
           designation: a.designation,
           photoUrl: a.photo_url,
-          completed, open, mandates, personal,
+          completed, open, mandates, personal, daily,
         }
       })
-  }, [associates, tasks, activeDeals, dealUpdates, weekTodos, weekKey, founderFilter, weekStart, weekEnd])
+  }, [associates, tasks, activeDeals, dealUpdates, weekTodos, dayPlans, weekKey, weekEndKey, founderFilter, weekStart, weekEnd])
 
   const reports = useMemo(
     () => allReports.filter((r) =>
-      r.completed.length > 0 || r.open.length > 0 || r.mandates.length > 0 || r.personal.length > 0),
+      r.completed.length > 0 || r.open.length > 0 || r.mandates.length > 0 || r.personal.length > 0 || r.daily.length > 0),
     [allReports],
   )
 
@@ -391,6 +422,22 @@ export default function WeeklyUpdateClient({
                 {report.mandates.length > 0 && (
                   <span className={styles.stat}><b>{report.mandates.length}</b> mandate{report.mandates.length === 1 ? '' : 's'}</span>
                 )}
+                {report.daily.length > 0 && (
+                  <Section icon="🗓️" title="Daily reports" count={report.daily.length} empty="">
+                    <ul className={styles.dailyList}>
+                      {report.daily.map((d, i) => (
+                        <li key={i} className={styles.dailyItem}>
+                          <span className={styles.dailyWhen}>
+                            {new Date(`${d.date}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}
+                            <span className={styles.dailyKind}>{d.kind === 'morning' ? 'Plan' : 'Wrap'}</span>
+                          </span>
+                          <span className={styles.dailyNote}>{d.note}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </Section>
+                )}
+
                 {report.personal.length > 0 && (
                   <span className={styles.stat}><b>{report.personal.length}</b> personal</span>
                 )}
@@ -451,6 +498,17 @@ export default function WeeklyUpdateClient({
                         <li key={i} className={t.done ? styles.todoDone : undefined}>
                           <span className={styles.todoBox} aria-hidden="true">{t.done ? '☑' : '☐'}</span>
                           {t.title}
+                          {t.children.length > 0 && (
+                            <ul className={styles.subTodoList}>
+                              {t.children.map((c, j) => (
+                                <li key={j} className={c.done ? styles.todoDone : undefined}>
+                                  <span className={styles.todoBox} aria-hidden="true">{c.done ? '☑' : '☐'}</span>
+                                  <span className={styles.subTodoTitle}>{c.title}</span>
+                                  {c.stamp && <span className={styles.subTodoStamp}>{c.stamp}</span>}
+                                </li>
+                              ))}
+                            </ul>
+                          )}
                         </li>
                       ))}
                     </ul>
