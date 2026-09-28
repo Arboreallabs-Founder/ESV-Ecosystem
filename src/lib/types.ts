@@ -204,6 +204,17 @@ export type HrClockSettings = {
   updated_at: string
 }
 
+// A non-working day on the company calendar. Sundays are NOT rows — the weekly off is a rule
+// (see lib/working-days.ts), not a calendar entry. 'company' is a closure declared mid-year.
+export type Holiday = {
+  id: string
+  holiday_date: string
+  name: string
+  kind: 'public' | 'company'
+  created_by: string | null
+  created_at: string
+}
+
 // 'YYYY-MM-DD' as returned by Postgres for a DATE column — matched against today's IST
 // date by month/day only (the year is stored but not used for the "is today" check).
 export type HrBirthday = {

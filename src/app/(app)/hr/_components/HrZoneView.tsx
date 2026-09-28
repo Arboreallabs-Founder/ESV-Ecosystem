@@ -5,13 +5,14 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createHrPolicy, updateHrPolicy, deleteHrPolicy, type HrPolicyInput } from '@/app/actions/hr-zone'
-import type { HrPolicy, HrClockSettings, HrBirthday, LeaveRequest, ExpenseRequest, LeaveBalance, EmployeeRow, EmployeeCompensation, UserRow, DocumentType, IssuedDocument } from '@/lib/types'
+import type { Holiday, HrPolicy, HrClockSettings, HrBirthday, LeaveRequest, ExpenseRequest, LeaveBalance, EmployeeRow, EmployeeCompensation, UserRow, DocumentType, IssuedDocument } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import FilterTabs from '@/app/_components/FilterTabs'
 import PeopleTab from './PeopleTab'
 import DocumentsTab from './DocumentsTab'
 import HrClockAdmin from './HrClockAdmin'
+import HolidaysTab from './HolidaysTab'
 import MyRequests from './MyRequests'
 import PolicyReader from './PolicyReader'
 import { parsePolicy, policyExcerpt, policyOutline } from '@/lib/policy-doc'
@@ -60,12 +61,14 @@ function PolicyCard({ policy, canEdit, canDelete, onOpen, onEdit, onDelete }: {
 }
 
 export default function HrZoneView({
-  policies, clockSettings, birthdays, canEditPolicies, canDeletePolicies, showClockAdmin,
+  policies, clockSettings, birthdays, holidays, canEditHolidays,
+  canEditPolicies, canDeletePolicies, showClockAdmin,
   isApprover, pendingApprovalsCount, myLeaveRequests, myExpenseRequests, myLeaveBalances, orgId, userId,
   roster, compensation, canManagePeople, managers, profilesOk,
   documentTypes, issuableCodes, issuedDocuments, templateFields, currentUserId,
 }: {
   policies: HrPolicy[]; clockSettings: HrClockSettings | null; birthdays: HrBirthday[]
+  holidays: Holiday[]; canEditHolidays: boolean
   canEditPolicies: boolean; canDeletePolicies: boolean; showClockAdmin: boolean
   isApprover: boolean; pendingApprovalsCount: number
   myLeaveRequests: LeaveRequest[]; myExpenseRequests: ExpenseRequest[]
@@ -91,7 +94,7 @@ export default function HrZoneView({
   // Birthdays and clock settings are HR-admin config, not something an associate needs — the tab
   // only exists for people who can see that card at all.
   const showBirthdaysTab = showClockAdmin && !!clockSettings
-  const [tab, setTab] = useState<'policies' | 'requests' | 'people' | 'documents' | 'birthdays'>('policies')
+  const [tab, setTab] = useState<'policies' | 'requests' | 'holidays' | 'people' | 'documents' | 'birthdays'>('policies')
 
   const pendingCount = myLeaveRequests.filter((r) => r.status === 'pending').length
     + myExpenseRequests.filter((r) => r.status === 'pending').length
@@ -112,6 +115,7 @@ export default function HrZoneView({
           <div className={styles.pageSub}>
             {tab === 'policies' ? 'Company policies'
               : tab === 'requests' ? 'Your leave and expense requests'
+              : tab === 'holidays' ? 'Days nobody is expected to work'
               : tab === 'people' ? 'Employee records — the data HR letters are generated from'
               : tab === 'documents' ? 'Generate letters on ESV letterhead, each verifiable online'
               : 'Clock reminders and team birthdays'}
@@ -128,6 +132,7 @@ export default function HrZoneView({
         tabs={[
           { value: 'policies', label: 'Policies', count: policies.length },
           { value: 'requests', label: 'Requests', count: pendingCount || undefined },
+          { value: 'holidays', label: 'Holidays', count: holidays.length || undefined },
           ...(canManagePeople ? [{ value: 'people', label: 'People', count: roster.length }] : []),
           ...(canManagePeople ? [{ value: 'documents', label: 'Documents', count: issuedDocuments.length || undefined }] : []),
           ...(showBirthdaysTab ? [{ value: 'birthdays', label: 'Birthdays', count: birthdays.length }] : []),
@@ -172,8 +177,12 @@ export default function HrZoneView({
                 <span style={{ marginLeft: 'auto', color: 'var(--color-primary)', fontWeight: 600, fontSize: '0.8125rem' }}>Review →</span>
               </Link>
             )}
-            <MyRequests leaveRequests={myLeaveRequests} expenseRequests={myExpenseRequests} leaveBalances={myLeaveBalances} orgId={orgId} userId={userId} />
+            <MyRequests leaveRequests={myLeaveRequests} expenseRequests={myExpenseRequests} leaveBalances={myLeaveBalances} holidays={holidays} orgId={orgId} userId={userId} />
           </>
+        )}
+
+        {tab === 'holidays' && (
+          <HolidaysTab holidays={holidays} canEdit={canEditHolidays} canDelete={canEditHolidays} />
         )}
 
         {tab === 'people' && canManagePeople && (

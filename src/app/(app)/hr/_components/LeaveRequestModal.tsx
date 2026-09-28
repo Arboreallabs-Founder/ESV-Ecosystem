@@ -1,16 +1,18 @@
 'use client'
 
 import { describeError } from '@/lib/client-errors'
-import { useState, useTransition } from 'react'
+import { useState, useMemo, useTransition } from 'react'
 import { createLeaveRequest, type LeaveRequestInput } from '@/app/actions/leave-requests'
-import { LEAVE_TYPE_LABELS, type LeaveType, type LeaveBalance } from '@/lib/types'
+import { LEAVE_TYPE_LABELS, type LeaveType, type LeaveBalance, type Holiday } from '@/lib/types'
+import { workingDays, nonWorkingDaysIn } from '@/lib/working-days'
 import Spinner from '@/app/_components/Spinner'
 import styles from '../hr-zone.module.css'
 
 const LEAVE_TYPES = Object.keys(LEAVE_TYPE_LABELS) as LeaveType[]
 
-export default function LeaveRequestModal({ balances, onClose, onSaved }: {
-  balances: Record<string, LeaveBalance> | null; onClose: () => void; onSaved: () => void
+export default function LeaveRequestModal({ balances, holidays, onClose, onSaved }: {
+  balances: Record<string, LeaveBalance> | null; holidays: Holiday[]
+  onClose: () => void; onSaved: () => void
 }) {
   const [leaveType, setLeaveType] = useState<LeaveType>('earned')
   const [startDate, setStartDate] = useState('')
@@ -19,6 +21,29 @@ export default function LeaveRequestModal({ balances, onClose, onSaved }: {
   const [isHalfDay, setIsHalfDay] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
+
+  const holidayDates = useMemo(() => new Set(holidays.map((h) => h.holiday_date)), [holidays])
+  const holidayNames = useMemo(() => new Map(holidays.map((h) => [h.holiday_date, h.name])), [holidays])
+
+  /* What this request will actually cost. The same rules the balance uses (lib/working-days.ts),
+     shown before submitting rather than discovered afterwards — the gap between "I booked four
+     days" and "three were deducted" is where leave disputes start. */
+  const cost = useMemo(() => {
+    if (!startDate || !endDate || endDate < startDate) return null
+    const singleDay = startDate === endDate
+    const days = workingDays(startDate, endDate, holidayDates, singleDay && isHalfDay)
+    const skipped = nonWorkingDaysIn(startDate, endDate, holidayDates)
+    return { days, skipped }
+  }, [startDate, endDate, isHalfDay, holidayDates])
+
+  function describeSkipped(dates: string[]): string {
+    const named = dates.map((d) => holidayNames.get(d)).filter(Boolean) as string[]
+    const sundays = dates.length - named.length
+    const parts: string[] = []
+    if (sundays > 0) parts.push(`${sundays} Sunday${sundays === 1 ? '' : 's'}`)
+    parts.push(...named)
+    return parts.join(', ')
+  }
 
   function submit() {
     setError(null)
@@ -74,6 +99,16 @@ export default function LeaveRequestModal({ balances, onClose, onSaved }: {
                 <input type="checkbox" checked={isHalfDay} onChange={(e) => setIsHalfDay(e.target.checked)} />
                 Half day (counts as 0.5)
               </label>
+            </div>
+          )}
+          {cost && (
+            <div className={styles.costNote}>
+              {cost.days === 0 ? (
+                <>These dates are all non-working days — <strong>nothing will be deducted</strong>.</>
+              ) : (
+                <>This request counts as <strong>{cost.days} {cost.days === 1 ? 'day' : 'days'}</strong>.</>
+              )}
+              {cost.skipped.length > 0 && <> Not counted: {describeSkipped(cost.skipped)}.</>}
             </div>
           )}
           <div className={styles.field}>

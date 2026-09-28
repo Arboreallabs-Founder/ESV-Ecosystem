@@ -1,5 +1,7 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { fetchHolidayDates } from './holidays'
+import { eachDate, isNonWorkingDay } from './working-days'
 import type { AttendanceLine, AttendanceLineType, AttendanceStatement } from '@/lib/types'
 
 // Re-exported so server callers have one import site; the definitions live in a module with
@@ -101,16 +103,7 @@ const LEAVE_TYPE_LABELS: Record<string, string> = {
   wfh: 'Work from home',
 }
 
-function eachDate(start: string, end: string): string[] {
-  const out: string[] = []
-  const d = new Date(`${start}T00:00:00`)
-  const last = new Date(`${end}T00:00:00`)
-  while (d <= last) {
-    out.push(d.toISOString().slice(0, 10))
-    d.setDate(d.getDate() + 1)
-  }
-  return out
-}
+
 
 /**
  * The lines the app can fill in for a person and month: approved leave, WFH, and events attended.
@@ -128,7 +121,8 @@ export async function deriveLinesFromRecords(userId: string, period: string): Pr
   endDate.setDate(0)
   const end = endDate.toISOString().slice(0, 10)
 
-  const [leaveRes, eventRes] = await Promise.all([
+  const [holidays, leaveRes, eventRes] = await Promise.all([
+    fetchHolidayDates(),
     // Approved only. A pending request is not yet a fact about the month.
     supabase
       .from('leave_requests')
@@ -152,6 +146,9 @@ export async function deriveLinesFromRecords(userId: string, period: string): Pr
     for (const day of eachDate(r.start_date, r.end_date)) {
       // A request can straddle a month boundary; only the days inside this month belong here.
       if (day < start || day > end) continue
+      // A Sunday or a holiday inside a leave range is not leave — nobody was expected to work it,
+      // so it must not appear as a chargeable line on the statement.
+      if (isNonWorkingDay(day, holidays)) continue
       const isWfh = r.leave_type === 'wfh'
       lines.push({
         entry_date: day,

@@ -449,3 +449,30 @@
   color: var(--color-text);
   margin-bottom: 0.3rem;
 }
+
+/* Small inline pill — marks a holiday added mid-year, apart from the list published in January. */
+.policyCategoryPill {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 9999px;
+  background: rgba(var(--color-hover-rgb), 0.12);
+  color: var(--color-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* What a leave request will cost, shown while the dates are still being picked. Tinted rather
+   than muted: it is the number the person is agreeing to, not a footnote. */
+.costNote {
+  margin: 0 0 0.85rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--color-text);
+  background: rgba(var(--color-hover-rgb), 0.08);
+  border-left: 3px solid var(--color-primary);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}

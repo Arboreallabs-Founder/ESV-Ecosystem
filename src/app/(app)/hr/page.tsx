@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
 import { fetchHrPolicies } from '@/lib/hr-zone'
 import { fetchClockSettings, fetchAllBirthdays } from '@/lib/hr-clock'
+import { fetchHolidays } from '@/lib/holidays'
 import { fetchMyLeaveRequests, fetchPendingLeaveRequests } from '@/lib/leave-requests'
 import { fetchMyExpenseRequests, fetchPendingExpenseRequests } from '@/lib/expense-requests'
 import { fetchMyLeaveBalances } from '@/lib/leave-balances'
@@ -23,10 +24,12 @@ export default async function HrZonePage() {
   // People and compensation are the same tier as the clock admin — founder/admin/HR.
   const canManagePeople = ['founder', 'admin', 'hr'].includes(user.role ?? '')
 
-  const [policies, clockSettings, birthdays, myLeaveRequests, myExpenseRequests, pendingLeave, pendingExpense, myLeaveBalances, roster, allUsers, documentTypes, issuableCodes, issuedDocuments] = await Promise.all([
+  const [policies, clockSettings, birthdays, holidays, myLeaveRequests, myExpenseRequests, pendingLeave, pendingExpense, myLeaveBalances, roster, allUsers, documentTypes, issuableCodes, issuedDocuments] = await Promise.all([
     fetchHrPolicies(),
     showClockAdmin ? fetchClockSettings() : Promise.resolve(null),
     showClockAdmin ? fetchAllBirthdays() : Promise.resolve([]),
+    // Everyone internal reads the calendar — an associate needs to know which days are holidays.
+    fetchHolidays(),
     fetchMyLeaveRequests(user.id),
     fetchMyExpenseRequests(user.id),
     isApprover ? fetchPendingLeaveRequests() : Promise.resolve([]),
@@ -58,6 +61,8 @@ export default async function HrZonePage() {
       policies={policies}
       clockSettings={clockSettings}
       birthdays={birthdays}
+      holidays={holidays}
+      canEditHolidays={showClockAdmin}
       canEditPolicies={canEditPolicies}
       canDeletePolicies={canDeletePolicies}
       showClockAdmin={showClockAdmin}

@@ -1,5 +1,7 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { fetchHolidayDates } from './holidays'
+import { workingDays, type HolidaySet } from './working-days'
 import {
   BALANCE_LEAVE_TYPES, POLICY_COLUMN,
   type LeaveBalance, type LeaveBalanceRow, type LeavePolicy, type LeaveType,
@@ -22,11 +24,11 @@ const DEFAULT_POLICY: Omit<LeavePolicy, 'id' | 'updated_at'> = {
   earned_days: 20, sick_days: 10, my_day_days: 2, compensatory_days: 20, wfh_days: 24,
 }
 
-/** Whole days between two dates, inclusive; a flagged single-day request counts as 0.5. */
-function requestDays(start: string, end: string, isHalfDay: boolean): number {
-  if (isHalfDay) return 0.5
-  const ms = new Date(`${end}T00:00:00`).getTime() - new Date(`${start}T00:00:00`).getTime()
-  return Math.round(ms / 86_400_000) + 1
+/* Working days, not calendar days. This used to count the range inclusive, which charged a
+   Friday-to-Monday leave 4 days including the Sunday, and charged Diwali if a leave spanned it.
+   See lib/working-days.ts for the two rules. */
+function requestDays(start: string, end: string, isHalfDay: boolean, holidays: HolidaySet): number {
+  return workingDays(start, end, holidays, isHalfDay)
 }
 
 /** Half-day granularity — avoids 12.299999999 style float drift in displayed balances. */
@@ -67,8 +69,9 @@ function buildBalance(
 /** Org-wide matrix backing the Balances tab. */
 export const fetchAllLeaveBalances = cache(async (): Promise<LeaveBalanceRow[]> => {
   const supabase = await createClient()
-  const [policy, usersRes, balancesRes, approvedRes] = await Promise.all([
+  const [policy, holidays, usersRes, balancesRes, approvedRes] = await Promise.all([
     fetchLeavePolicy(),
+    fetchHolidayDates(),
     supabase.from('users').select('id, name, designation, photo_url').in('role', BALANCE_ROSTER_ROLES).order('name'),
     supabase.from('leave_balances').select('id, user_id, leave_type, manual_used_days'),
     supabase.from('leave_requests')
@@ -79,7 +82,7 @@ export const fetchAllLeaveBalances = cache(async (): Promise<LeaveBalanceRow[]> 
   const usedFromRequests = new Map<string, number>()
   for (const r of approvedRes.data ?? []) {
     const key = `${r.requester_id}:${r.leave_type}`
-    usedFromRequests.set(key, (usedFromRequests.get(key) ?? 0) + requestDays(r.start_date, r.end_date, r.is_half_day))
+    usedFromRequests.set(key, (usedFromRequests.get(key) ?? 0) + requestDays(r.start_date, r.end_date, r.is_half_day, holidays))
   }
 
   const balanceByKey = new Map<string, RawBalanceRow>()
@@ -110,8 +113,9 @@ export const fetchAllLeaveBalances = cache(async (): Promise<LeaveBalanceRow[]> 
 /** Self-scoped balances — the summary bar and the leave request form. */
 export const fetchMyLeaveBalances = cache(async (userId: string): Promise<Record<string, LeaveBalance>> => {
   const supabase = await createClient()
-  const [policy, balancesRes, approvedRes] = await Promise.all([
+  const [policy, holidays, balancesRes, approvedRes] = await Promise.all([
     fetchLeavePolicy(),
+    fetchHolidayDates(),
     supabase.from('leave_balances').select('leave_type, manual_used_days').eq('user_id', userId),
     supabase.from('leave_requests')
       .select('leave_type, start_date, end_date, is_half_day')
@@ -121,7 +125,7 @@ export const fetchMyLeaveBalances = cache(async (userId: string): Promise<Record
   const usedByType = new Map<LeaveType, number>()
   for (const r of approvedRes.data ?? []) {
     const t = r.leave_type as LeaveType
-    usedByType.set(t, (usedByType.get(t) ?? 0) + requestDays(r.start_date, r.end_date, r.is_half_day))
+    usedByType.set(t, (usedByType.get(t) ?? 0) + requestDays(r.start_date, r.end_date, r.is_half_day, holidays))
   }
   const manualByType = new Map<LeaveType, number>()
   for (const b of balancesRes.data ?? []) manualByType.set(b.leave_type as LeaveType, Number(b.manual_used_days ?? 0))
