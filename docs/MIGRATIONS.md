@@ -713,6 +713,24 @@ TEXT-not-enum reasoning `20260930000000` documents). The mention picker only off
 sub-task's title, not a top-level to-do or `notes` — narrower surface, and it matches the one-level
 depth cap `20261002000000` put in place.
 
+### 20261004000000_fix_todo_mentions_recursion.sql
+**Broke everyone's to-do list in production for the time between the two migrations.**
+`20261003000000`'s new `personal_todos` policy checked `EXISTS (... FROM personal_todo_mentions ...)`
+inline. `personal_todo_mentions`'s own SELECT policy checks `EXISTS (... FROM personal_todos ...)`
+right back. Postgres evaluates every permissive policy on a table for every SELECT against it, so
+*any* query against `personal_todos` — including an owner reading their own list — walked
+`personal_todos -> personal_todo_mentions -> personal_todos` and Postgres aborted with "infinite
+recursion detected in policy". `getMyTodos()` only read the `data` field, not `error`, so the
+failure rendered as a silently empty list rather than a visible one — reported as "my to-dos are
+gone." (`getMyTodos()`/`getMyMentions()` now throw on a read error, in the same commit as this
+migration, so this class of failure surfaces instead of hiding.)
+
+This is the indirect form of the exact bug `todo_parent_is_shared()` exists to prevent
+(`20261002000000`): that one guards a policy that queries its *own* table; this is two tables'
+policies querying *each other*. Same fix, one level removed: `todo_is_mentioned_for_current_user()`
+is `SECURITY DEFINER`, so it reads `personal_todo_mentions` outside RLS instead of through it,
+which is what breaks the cycle.
+
 That third policy goes through `todo_parent_is_shared()`, a `SECURITY DEFINER` function, rather
 than a subquery. A policy on `personal_todos` that selects from `personal_todos` re-enters RLS and
 Postgres aborts with infinite recursion — the same reason `get_user_role()` exists rather than a

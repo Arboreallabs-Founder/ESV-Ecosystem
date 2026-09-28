@@ -12,13 +12,16 @@ async function requireInternal() {
 
 export async function getMyTodos(): Promise<PersonalTodo[]> {
   const { supabase, userId } = await requireInternal()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('personal_todos')
     .select('*, linked_task:linked_task_id(id, title, status, due_date)')
     .eq('user_id', userId)
     .order('done', { ascending: true })
     .order('position', { ascending: false })
     .order('created_at', { ascending: false })
+  // A read failure here (an RLS policy error, say) must not render as an empty list — that reads
+  // as "my to-dos are gone" rather than "the page is broken", and is much worse to debug.
+  if (error) throw dbFailure('load your to-dos', error)
   // Flat on purpose — nestTodos() in lib/todo-tree.ts builds the two levels. Sub-tasks come back
   // in the same result set, so a parent and its children are always consistent with each other.
   return (data ?? []) as unknown as PersonalTodo[]
@@ -31,11 +34,12 @@ export async function getMyTodos(): Promise<PersonalTodo[]> {
  */
 export async function getMyMentions(): Promise<MentionedTodo[]> {
   const { supabase, userId } = await requireInternal()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('personal_todo_mentions')
     .select('todo:todo_id(*, owner:user_id(name, email))')
     .eq('mentioned_user_id', userId)
     .order('created_at', { ascending: false })
+  if (error) throw dbFailure('load your mentions', error)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return ((data ?? []) as any[])
     .map((row) => row.todo)
