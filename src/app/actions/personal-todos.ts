@@ -3,7 +3,8 @@
 import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
-import type { PersonalTodo } from '@/lib/types'
+import { notify } from '@/lib/notifications'
+import type { MentionedTodo, PersonalTodo } from '@/lib/types'
 
 async function requireInternal() {
   return requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
@@ -23,6 +24,24 @@ export async function getMyTodos(): Promise<PersonalTodo[]> {
   return (data ?? []) as unknown as PersonalTodo[]
 }
 
+/**
+ * Sub-tasks someone else @mentioned you on. Joined through personal_todo_mentions rather than
+ * queried off personal_todos directly — a lead's broader read policies on that table would
+ * otherwise pull in every week-assigned or planned item in the org, not just the ones naming you.
+ */
+export async function getMyMentions(): Promise<MentionedTodo[]> {
+  const { supabase, userId } = await requireInternal()
+  const { data } = await supabase
+    .from('personal_todo_mentions')
+    .select('todo:todo_id(*, owner:user_id(name, email))')
+    .eq('mentioned_user_id', userId)
+    .order('created_at', { ascending: false })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ((data ?? []) as any[])
+    .map((row) => row.todo)
+    .filter(Boolean) as MentionedTodo[]
+}
+
 export async function addPersonalTodo(input: {
   title: string
   notes?: string | null
@@ -33,6 +52,9 @@ export async function addPersonalTodo(input: {
   parent_id?: string | null
   /** The day this is planned for. Set by the daily plan; visible to founders/admins. */
   plan_date?: string | null
+  /** Users @mentioned in the title (sub-tasks only — see MyTodosClient's mention picker). Each
+      gets a notification and read-only access to this one row; nothing else on the list opens up. */
+  mentioned_user_ids?: string[]
 }): Promise<string> {
   const { supabase, userId, orgId } = await requireInternal()
   const title = input.title.trim()
@@ -50,9 +72,32 @@ export async function addPersonalTodo(input: {
     .select('id')
     .single()
   if (error) throw dbFailure('save that', error)
+  const todoId = data.id as string
+
+  // Mentioning yourself would just be a note, not a share — drop it before it becomes a row.
+  const mentioned = [...new Set(input.mentioned_user_ids ?? [])].filter((id) => id !== userId)
+  if (mentioned.length > 0) {
+    const { error: mentionErr } = await supabase
+      .from('personal_todo_mentions')
+      .insert(mentioned.map((mentioned_user_id) => ({ todo_id: todoId, mentioned_user_id, org_id: orgId })))
+    // Best-effort: the to-do itself already saved. Losing the mention loses a notification, not the work.
+    if (mentionErr) console.error('[addPersonalTodo] could not save mentions:', mentionErr)
+    else {
+      await notify(supabase, {
+        orgId,
+        userIds: mentioned,
+        actorId: userId,
+        kind: 'mention',
+        title,
+        body: 'Mentioned you in a personal to-do',
+        link: '/my-todos',
+      })
+    }
+  }
+
   revalidatePath('/my-todos')
   revalidatePath('/tasks/update')
-  return data.id as string
+  return todoId
 }
 
 export async function updatePersonalTodo(id: string, patch: {

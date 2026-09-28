@@ -8,6 +8,7 @@ export type NotificationKind =
   | 'expense_submitted' | 'expense_decided'
   | 'kudos_received' | 'escalation_raised' | 'approval_recorded'
   | 'bulletin_posted' | 'event_posted'
+  | 'mention'
 
 export type AppNotification = {
   id: string

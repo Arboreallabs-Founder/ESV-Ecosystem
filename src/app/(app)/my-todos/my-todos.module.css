@@ -374,3 +374,102 @@
 }
 
 .errBox { background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.3); border-radius: var(--radius-md); padding: 0.6rem 0.75rem; font-size: 0.8125rem; color: var(--color-destructive); margin-top: 0.5rem; }
+
+/* ── @mention autocomplete ─────────────────────────────────────────────
+   Anchored under the sub-task input it belongs to. */
+.subInputWrap { position: relative; margin-left: 1.5rem; width: calc(100% - 1.5rem); }
+.subInputWrap .subInput { margin-left: 0; width: 100%; }
+
+.mentionDropdown {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  min-width: 12rem;
+  max-width: 16rem;
+  background: var(--glass-panel);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  overflow: hidden;
+  padding: 0.25rem;
+}
+.mentionOption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  width: 100%;
+  border: none;
+  background: none;
+  border-radius: calc(var(--radius-md) - 4px);
+  padding: 0.4rem 0.5rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.mentionOptionActive, .mentionOption:hover { background: rgba(var(--color-hover-rgb), 0.1); }
+.mentionName { font-size: 0.8125rem; font-weight: 600; color: var(--color-text); }
+.mentionRole { font-size: 0.6875rem; color: var(--color-muted); flex-shrink: 0; }
+
+/* ── Mentioned you ────────────────────────────────────────────────────
+   Someone else's sub-task, surfaced because it names you. Bronze rather than the purple used for
+   your own items everywhere else on this page — it's the one visual cue that this card isn't
+   yours to check off. */
+.mentionsSection { margin-bottom: 1.5rem; }
+.mentionsHead { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.mentionsTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+.mentionsCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: rgba(213, 174, 143, 0.2);
+  color: var(--color-accent);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.mentionCard {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  padding: 0.7rem 0.85rem;
+  background: var(--color-card);
+  border: 1.5px solid var(--color-border);
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}
+
+.mentionDot {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-border);
+  background: var(--color-card-raised);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  color: #fff;
+  margin-top: 0.1rem;
+}
+.mentionDotDone { background: var(--color-accent); border-color: var(--color-accent); }
+
+.mentionBody { flex: 1; min-width: 0; }
+.mentionTitle { font-size: 0.9rem; font-weight: 500; color: var(--color-text); line-height: 1.4; }
+.mentionMeta { font-size: 0.75rem; color: var(--color-muted); margin-top: 0.3rem; }

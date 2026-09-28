@@ -693,6 +693,26 @@ already see. Anything with no work week and no plan date stays private to its ow
 The modal says all of this at the point of writing — a surface that looks private and is not would
 be worse than one that is simply honest.
 
+### 20261003000000_todo_mentions.sql
+`personal_todo_mentions` — a narrow, deliberate crack in the same privacy `20260728000000`
+established: type `@Name` into a sub-task and that one person gets a notification and read-only
+access to that one row, on their own to-do page. Nothing else on the list opens up — not the
+parent, not siblings, not the rest of the board.
+
+Reuses the exact pattern `todo_parent_is_shared()` set in `20261002000000` for the same reason:
+a new SELECT policy on `personal_todos`, `"Users read subtasks mentioning them"`, checks
+`personal_todo_mentions` — a *different* table — so it does not re-enter `personal_todos`' own RLS
+and needs no `SECURITY DEFINER` wrapper (that wrapper is only for a policy that has to look at a row
+it does not otherwise have access to; here the mentioned user is checking a table they can read
+directly). The INSERT policy on `personal_todo_mentions` itself does the mirror check — a caller may
+only tag people on a `personal_todos` row they own — via a plain `EXISTS`, not a definer function,
+since the owner can already see their own row under normal RLS.
+
+Adds `'mention'` to `notifications.kind`'s `CHECK` (dropped and recreated by name, per the
+TEXT-not-enum reasoning `20260930000000` documents). The mention picker only offers itself inside a
+sub-task's title, not a top-level to-do or `notes` — narrower surface, and it matches the one-level
+depth cap `20261002000000` put in place.
+
 That third policy goes through `todo_parent_is_shared()`, a `SECURITY DEFINER` function, rather
 than a subquery. A policy on `personal_todos` that selects from `personal_todos` re-enters RLS and
 Postgres aborts with infinite recursion — the same reason `get_user_role()` exists rather than a

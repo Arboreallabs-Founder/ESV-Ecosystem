@@ -113,6 +113,11 @@ export type PersonalTodo = {
   children?: PersonalTodo[]
 }
 
+/** A sub-task someone else @mentioned you on. Read-only: it lives on the owner's list, not yours. */
+export type MentionedTodo = PersonalTodo & {
+  owner: { name: string | null; email: string } | null
+}
+
 export const DAY_PLAN_KINDS = ['morning', 'evening'] as const
 export type DayPlanKind = typeof DAY_PLAN_KINDS[number]
 

@@ -1,11 +1,11 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { useMemo, useRef, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   addPersonalTodo, updatePersonalTodo, deletePersonalTodo, togglePersonalTodo, portTaskIn, unlinkPersonalTodo,
 } from '@/app/actions/personal-todos'
-import type { DayPlan, PersonalTodo, Task } from '@/lib/types'
+import type { DayPlan, MentionedTodo, PersonalTodo, Task, UserRow } from '@/lib/types'
 import { isPastDue } from '@/lib/task-kpi'
 import { weekRange } from '@/lib/week'
 import { nestTodos, todoStamp } from '@/lib/todo-tree'
@@ -62,22 +62,125 @@ function SubtaskRow({ todo, isDone, pending, onToggle, onDelete }: {
   )
 }
 
+/** Finds the "@word" the cursor is currently inside, if any — start of the '@' must be at the
+    start of the text or after whitespace, and nothing between it and the cursor may be whitespace. */
+function activeMention(text: string, cursor: number): { start: number; query: string } | null {
+  const upToCursor = text.slice(0, cursor)
+  const at = upToCursor.lastIndexOf('@')
+  if (at === -1) return null
+  if (at > 0 && !/\s/.test(text[at - 1])) return null
+  const query = upToCursor.slice(at + 1)
+  if (/\s/.test(query)) return null
+  return { start: at, query }
+}
+
+/**
+ * A sub-task's text input, with @mention autocomplete. Only a name picked from the dropdown
+ * becomes a real mention (recorded by id, notifies that person, and gives them read-only access
+ * to this one row) — typing "@someone" without selecting them is just text, same as anywhere else.
+ */
+function SubtaskInput({ mentionableUsers, onSubmit, onCancel }: {
+  mentionableUsers: UserRow[]
+  onSubmit: (title: string, mentionedUserIds: string[]) => void
+  onCancel: () => void
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [value, setValue] = useState('')
+  const [mentionedIds, setMentionedIds] = useState<string[]>([])
+  const [mention, setMention] = useState<{ start: number; query: string } | null>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
+
+  const suggestions = useMemo(() => {
+    if (!mention) return []
+    const q = mention.query.toLowerCase()
+    return mentionableUsers.filter((u) => (u.name || u.email).toLowerCase().includes(q)).slice(0, 6)
+  }, [mention, mentionableUsers])
+
+  function pickUser(u: UserRow) {
+    if (!mention) return
+    const cursor = inputRef.current?.selectionStart ?? value.length
+    const name = u.name || u.email
+    const before = value.slice(0, mention.start)
+    const after = value.slice(cursor)
+    setValue(`${before}@${name} ${after}`)
+    setMentionedIds((ids) => (ids.includes(u.id) ? ids : [...ids, u.id]))
+    setMention(null)
+    const pos = before.length + name.length + 2
+    // The input re-renders with the new value first; grabbing focus in the same tick would race it.
+    requestAnimationFrame(() => inputRef.current?.setSelectionRange(pos, pos))
+  }
+
+  function submit() {
+    const title = value.trim()
+    if (title) onSubmit(title, mentionedIds)
+    else onCancel()
+  }
+
+  return (
+    <div className={styles.subInputWrap}>
+      <input
+        ref={inputRef}
+        className={styles.subInput}
+        autoFocus
+        placeholder="Sub-task… (@ to mention someone)"
+        value={value}
+        onChange={(e) => {
+          const text = e.target.value
+          setValue(text)
+          setMention(activeMention(text, e.target.selectionStart ?? text.length))
+          setActiveIndex(0)
+        }}
+        onKeyDown={(e) => {
+          if (mention && suggestions.length > 0) {
+            if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIndex((i) => (i + 1) % suggestions.length); return }
+            if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIndex((i) => (i - 1 + suggestions.length) % suggestions.length); return }
+            if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); pickUser(suggestions[activeIndex]); return }
+            if (e.key === 'Escape') { e.preventDefault(); setMention(null); return }
+          }
+          if (e.key === 'Enter') submit()
+          // Escape abandons the line rather than committing a half-typed one.
+          if (e.key === 'Escape') onCancel()
+        }}
+        onBlur={submit}
+      />
+      {/* onMouseDown + preventDefault, not onClick: it keeps focus on the input so picking a name
+          doesn't fire the blur-submit above before the mention is inserted. Same trick this app's
+          modals use to survive a drag-release landing outside them. */}
+      {mention && suggestions.length > 0 && (
+        <div className={styles.mentionDropdown}>
+          {suggestions.map((u, i) => (
+            <button
+              key={u.id}
+              type="button"
+              className={`${styles.mentionOption} ${i === activeIndex ? styles.mentionOptionActive : ''}`}
+              onMouseDown={(e) => { e.preventDefault(); pickUser(u) }}
+            >
+              <span className={styles.mentionName}>{u.name || u.email}</span>
+              {u.designation && <span className={styles.mentionRole}>{u.designation}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TodoRow({
-  todo, isDone, expanded, pending, doneOf,
+  todo, isDone, expanded, pending, doneOf, mentionableUsers,
   onToggle, onToggleExpand, onDelete, onUnlink, onSave, onToggleChild, onDeleteChild, onAddChild,
 }: {
   todo: PersonalTodo; isDone: boolean; expanded: boolean; pending: boolean
   doneOf: (t: PersonalTodo) => boolean
+  mentionableUsers: UserRow[]
   onToggle: () => void; onToggleExpand: () => void; onDelete: () => void; onUnlink: () => void
   onSave: (notes: string, dueDate: string, workWeek: string) => void
   onToggleChild: (child: PersonalTodo) => void
   onDeleteChild: (id: string) => void
-  onAddChild: (title: string) => void
+  onAddChild: (title: string, mentionedUserIds: string[]) => void
 }) {
   const [notes, setNotes] = useState(todo.notes ?? '')
   const [dueDate, setDueDate] = useState(todo.due_date ?? '')
   const [workWeek, setWorkWeek] = useState(todo.work_week_start ?? '')
-  const [childTitle, setChildTitle] = useState('')
   const [addingChild, setAddingChild] = useState(false)
   const due = todo.due_date ? formatDue(todo.due_date) : null
   // A week outside the offered range (an old item) still deserves a readable chip. The current
@@ -91,13 +194,6 @@ function TodoRow({
   const progress = children.length > 0
     ? { done: children.filter(doneOf).length, total: children.length }
     : null
-
-  function submitChild() {
-    const title = childTitle.trim()
-    setChildTitle('')
-    setAddingChild(false)
-    if (title) onAddChild(title)
-  }
 
   return (
     <div className={styles.row}>
@@ -143,18 +239,10 @@ function TodoRow({
             />
           ))}
           {addingChild && (
-            <input
-              className={styles.subInput}
-              autoFocus
-              placeholder="Sub-task…"
-              value={childTitle}
-              onChange={(e) => setChildTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') submitChild()
-                // Escape abandons the line rather than committing a half-typed one.
-                if (e.key === 'Escape') { setChildTitle(''); setAddingChild(false) }
-              }}
-              onBlur={submitChild}
+            <SubtaskInput
+              mentionableUsers={mentionableUsers}
+              onSubmit={(title, mentionedUserIds) => { setAddingChild(false); onAddChild(title, mentionedUserIds) }}
+              onCancel={() => setAddingChild(false)}
             />
           )}
         </div>
@@ -191,8 +279,13 @@ function TodoRow({
   )
 }
 
-export default function MyTodosClient({ todos, myTasks, dayPlans, todayIso }: {
-  todos: PersonalTodo[]; myTasks: Task[]; dayPlans: DayPlan[]; todayIso: string
+export default function MyTodosClient({ todos, myTasks, dayPlans, mentions, mentionableUsers, todayIso }: {
+  todos: PersonalTodo[]; myTasks: Task[]; dayPlans: DayPlan[]
+  /** Sub-tasks someone else @mentioned you on — read-only, live on their list, not yours. */
+  mentions: MentionedTodo[]
+  /** Everyone the @mention picker can offer, already excluding yourself. */
+  mentionableUsers: UserRow[]
+  todayIso: string
 }) {
   const router = useRouter()
   const [newTitle, setNewTitle] = useState('')
@@ -239,9 +332,9 @@ export default function MyTodosClient({ todos, myTasks, dayPlans, todayIso }: {
     })
   }
 
-  function handleAddChild(parentId: string, title: string) {
+  function handleAddChild(parentId: string, title: string, mentionedUserIds: string[]) {
     startTransition(async () => {
-      try { await addPersonalTodo({ title, parent_id: parentId }); router.refresh() }
+      try { await addPersonalTodo({ title, parent_id: parentId, mentioned_user_ids: mentionedUserIds }); router.refresh() }
       catch (err) { alertError(err) }
     })
   }
@@ -286,6 +379,7 @@ export default function MyTodosClient({ todos, myTasks, dayPlans, todayIso }: {
       expanded: expandedId === todo.id,
       pending,
       doneOf,
+      mentionableUsers,
       onToggle: () => handleToggle(todo),
       onToggleExpand: () => setExpandedId((cur) => (cur === todo.id ? null : todo.id)),
       onDelete: () => handleDelete(todo),
@@ -293,7 +387,7 @@ export default function MyTodosClient({ todos, myTasks, dayPlans, todayIso }: {
       onSave: (notes: string, dueDate: string, workWeek: string) => handleSaveDetails(todo.id, notes, dueDate, workWeek),
       onToggleChild: (child: PersonalTodo) => handleToggle(child),
       onDeleteChild: handleDeleteChild,
-      onAddChild: (title: string) => handleAddChild(todo.id, title),
+      onAddChild: (title: string, mentionedUserIds: string[]) => handleAddChild(todo.id, title, mentionedUserIds),
     }
   }
 
@@ -344,6 +438,36 @@ export default function MyTodosClient({ todos, myTasks, dayPlans, todayIso }: {
             {adding ? <Spinner size={14} className="spinnerOnPrimary" /> : 'Add'}
           </button>
         </div>
+
+        {/* Someone else's sub-task, surfaced here because they @mentioned you on it. Read-only —
+            it lives on their list, not yours — so no checkbox, no delete, no edit. */}
+        {mentions.length > 0 && (
+          <div className={styles.mentionsSection}>
+            <div className={styles.mentionsHead}>
+              <span className={styles.mentionsTitle}>Mentioned you</span>
+              <span className={styles.mentionsCount}>{mentions.length}</span>
+            </div>
+            <div className={styles.list}>
+              {mentions.map((m) => {
+                const stamp = todoStamp(m)
+                return (
+                  <div key={m.id} className={styles.mentionCard}>
+                    <span className={`${styles.mentionDot} ${m.done ? styles.mentionDotDone : ''}`} aria-hidden="true">
+                      {m.done && '✓'}
+                    </span>
+                    <div className={styles.mentionBody}>
+                      <div className={`${styles.mentionTitle} ${m.done ? styles.rowTitleDone : ''}`}>{m.title}</div>
+                      <div className={styles.mentionMeta}>
+                        On {m.owner?.name || m.owner?.email || 'someone'}&apos;s list
+                        {stamp && <> · {stamp}</>}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {todos.length === 0 ? (
           <div className={styles.empty}>
