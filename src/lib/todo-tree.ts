@@ -25,17 +25,15 @@ export function nestTodos(rows: PersonalTodo[]): PersonalTodo[] {
     .map((r) => ({ ...r, children: childrenOf.get(r.id) ?? [] }))
 }
 
-/**
- * The display names of everyone @mentioned on a to-do, off the real mention rows rather than
- * re-parsing "@Name" back out of the title text — the title is free text a person can edit around a
- * mention, so matching against who was actually tagged is the only way to highlight the right span
- * (and the only one) instead of guessing at capitalised words that happen to follow an "@".
- */
-export function mentionedNames(todo: PersonalTodo): string[] {
+/** Everyone @mentioned on a to-do, with what's needed to render their tag (a display name and a
+    photo). Off the real mention rows rather than re-parsed out of the title text — the title is
+    free text a person can edit around a mention, so matching against who was actually tagged is
+    the only way to highlight the right span, and the only way to know whose photo it is. */
+export function mentionedUsers(todo: PersonalTodo): Array<{ name: string; photoUrl: string | null }> {
   return (todo.mentions ?? [])
     .map((m) => m.mentioned_user)
     .filter((u): u is NonNullable<typeof u> => !!u)
-    .map((u) => u.name || u.email)
+    .map((u) => ({ name: u.name || u.email, photoUrl: u.photo_url }))
 }
 
 /**

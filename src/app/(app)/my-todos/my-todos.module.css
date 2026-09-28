@@ -65,11 +65,13 @@
   border-radius: var(--radius-md);
   overflow: hidden;
   box-shadow: var(--shadow-card);
-  transition: border-color 0.12s, box-shadow 0.12s;
+  transition: border-color 0.12s, box-shadow 0.12s, background 0.12s;
 }
-.row:hover { border-color: rgba(var(--color-hover-rgb),0.3); box-shadow: var(--shadow-elevated); }
+/* A lift plus a faint tint, not just a border change — the resting-vs-hovered states this app's
+   list rows (pickerRow, mandateLink) already use elsewhere, here on a card rather than a flat row. */
+.row:hover { border-color: rgba(var(--color-hover-rgb),0.3); box-shadow: var(--shadow-elevated); background: var(--color-card-raised); }
 
-.rowMain { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.7rem 0.85rem; }
+.rowMain { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 0.9rem; }
 
 .checkbox {
   flex-shrink: 0;
@@ -77,10 +79,11 @@
   height: 22px;
   border-radius: 50%;
   /* Was var(--color-bg) — the page background, so on the page it visually vanished into the card
-     instead of reading as a control. --color-card-raised plus a visible border gives it its own
-     surface at rest. */
+     instead of reading as a control. --glass-panel is the same near-opaque surface floating
+     dropdowns use, chosen so the checkbox stays visibly its own thing even when .row's hover state
+     tints the card to --color-card-raised — a token this close to it would have blended in. */
   border: 1.5px solid var(--color-border);
-  background: var(--color-card-raised);
+  background: var(--glass-panel);
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
   cursor: pointer;
   display: flex;
@@ -137,7 +140,10 @@
 }
 .notesPreview { font-size: 0.75rem; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 320px; }
 
-.rowActions { display: flex; align-items: center; gap: 0.2rem; flex-shrink: 0; }
+/* Quiet at rest, like .addSubBtn below — a row of edit/remove icons down every card would compete
+   with the to-dos themselves for attention. Visible on focus too, so keyboard use never hides them. */
+.rowActions { display: flex; align-items: center; gap: 0.2rem; flex-shrink: 0; opacity: 0; transition: opacity 0.12s; }
+.row:hover .rowActions, .rowActions:focus-within { opacity: 1; }
 .iconBtn {
   border: none;
   background: none;
@@ -284,13 +290,18 @@
 
 /* An @mention inline in a sub-task's sentence, styled to stop at "that's a mention" rather than
    read as part of the sentence around it — bronze, the same accent the "Mentioned you" section
-   uses, so a tag means the same thing everywhere it appears on this page. */
+   uses, so a tag means the same thing everywhere it appears on this page. The photo is what makes
+   it read as a person rather than a keyword, Slack-style. */
 .mentionTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  vertical-align: -0.15em;
   color: var(--color-accent);
   background: rgba(213, 174, 143, 0.16);
   font-weight: 600;
-  border-radius: 4px;
-  padding: 0.05rem 0.3rem;
+  border-radius: 999px;
+  padding: 0.05rem 0.35rem 0.05rem 0.05rem;
   margin: 0 -0.05rem;
 }
 

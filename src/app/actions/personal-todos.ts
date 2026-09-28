@@ -17,7 +17,7 @@ export async function getMyTodos(): Promise<PersonalTodo[]> {
     .select(`
       *,
       linked_task:linked_task_id(id, title, status, due_date),
-      mentions:personal_todo_mentions(mentioned_user:mentioned_user_id(name, email))
+      mentions:personal_todo_mentions(mentioned_user:mentioned_user_id(name, email, photo_url))
     `)
     .eq('user_id', userId)
     .order('done', { ascending: true })

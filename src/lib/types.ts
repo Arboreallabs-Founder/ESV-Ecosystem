@@ -111,7 +111,7 @@ export type PersonalTodo = {
   linked_task?: { id: string; title: string; status: TaskStatus; due_date: string | null } | null
   /** Who's @mentioned in this row's title, for highlighting it — not for the stored text, which
       stays plain "@Name" so the WhatsApp copy needs no translation step. */
-  mentions?: Array<{ mentioned_user: { name: string | null; email: string } | null }>
+  mentions?: Array<{ mentioned_user: { name: string | null; email: string; photo_url: string | null } | null }>
   /** Populated client-side by nestTodos(); never returned by the query itself. */
   children?: PersonalTodo[]
 }

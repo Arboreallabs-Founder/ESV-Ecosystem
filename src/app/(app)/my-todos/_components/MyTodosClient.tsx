@@ -9,7 +9,7 @@ import {
 import type { DayPlan, MentionedTodo, PersonalTodo, Task, UserRow } from '@/lib/types'
 import { isPastDue } from '@/lib/task-kpi'
 import { weekRange } from '@/lib/week'
-import { mentionedNames, nestTodos, todoStamp } from '@/lib/todo-tree'
+import { mentionedUsers, nestTodos, todoStamp } from '@/lib/todo-tree'
 import Spinner from '@/app/_components/Spinner'
 import Avatar from '@/app/_components/Avatar'
 import { WikiButton } from '@/app/_components/WikiPanel'
@@ -46,20 +46,27 @@ function escapeRegExp(s: string) {
 }
 
 /**
- * A title with "@Name" spans picked out as tags, matched against who was actually @mentioned
- * (`names`) rather than a guess at capitalised words — so it only lights up real mentions, and
- * still works if the name has an apostrophe or other regex-special character in it.
+ * A title with "@Name" spans picked out as tags — each with the mentioned person's photo, Slack-
+ * style — matched against who was actually @mentioned (`users`) rather than a guess at capitalised
+ * words, so it only lights up real mentions and knows whose face to show.
  */
-function MentionedText({ text, names }: { text: string; names: string[] }) {
-  if (names.length === 0) return <>{text}</>
+function MentionedText({ text, users }: { text: string; users: Array<{ name: string; photoUrl: string | null }> }) {
+  if (users.length === 0) return <>{text}</>
+  const byName = new Map(users.map((u) => [u.name, u]))
   // Longest name first, so "Dale" can't steal the match that "Dale Galbano" should get.
-  const pattern = new RegExp(`@(${[...names].sort((a, b) => b.length - a.length).map(escapeRegExp).join('|')})`, 'g')
+  const pattern = new RegExp(`@(${[...byName.keys()].sort((a, b) => b.length - a.length).map(escapeRegExp).join('|')})`, 'g')
   const parts: ReactNode[] = []
   let last = 0
   let match: RegExpExecArray | null
   while ((match = pattern.exec(text))) {
     if (match.index > last) parts.push(text.slice(last, match.index))
-    parts.push(<span key={match.index} className={styles.mentionTag}>{match[0]}</span>)
+    const user = byName.get(match[1])
+    parts.push(
+      <span key={match.index} className={styles.mentionTag}>
+        <Avatar name={user?.name} photoUrl={user?.photoUrl} size="xs" />
+        {match[0]}
+      </span>,
+    )
     last = match.index + match[0].length
   }
   parts.push(text.slice(last))
@@ -83,7 +90,7 @@ function SubtaskRow({ todo, isDone, pending, onToggle, onDelete }: {
         {isDone && '✓'}
       </button>
       <span className={`${styles.subTitle} ${isDone ? styles.rowTitleDone : ''}`}>
-        <MentionedText text={todo.title} names={mentionedNames(todo)} />
+        <MentionedText text={todo.title} users={mentionedUsers(todo)} />
       </span>
       {stamp && <span className={styles.subStamp} title={isDone ? 'Completed' : 'Added'}>{stamp}</span>}
       <button className={styles.subDelete} onClick={onDelete} title="Remove" disabled={pending}>×</button>
