@@ -286,22 +286,27 @@
 }
 .subCheckbox:hover { border-color: var(--color-primary); }
 
-.subTitle { font-size: 0.8125rem; color: var(--color-text); flex: 1; min-width: 0; line-height: 1.45; }
+/* Roomier than the 1.45 default: a mention tag's photo is taller than a line of plain text, and a
+   tight line-height was clipping/crowding it against the line above and below. */
+.subTitle { font-size: 0.8125rem; color: var(--color-text); flex: 1; min-width: 0; line-height: 1.7; }
 
 /* An @mention inline in a sub-task's sentence, styled to stop at "that's a mention" rather than
    read as part of the sentence around it — bronze, the same accent the "Mentioned you" section
    uses, so a tag means the same thing everywhere it appears on this page. The photo is what makes
-   it read as a person rather than a keyword, Slack-style. */
+   it read as a person rather than a keyword, Slack-style. vertical-align: middle rather than a
+   hand-tuned em offset — the tag is taller than the surrounding text (the photo sees to that), and
+   middle is the one alignment that keeps it centred on the text's own line without fighting it. */
 .mentionTag {
   display: inline-flex;
   align-items: center;
-  gap: 0.2rem;
-  vertical-align: -0.15em;
+  vertical-align: middle;
+  gap: 0.25rem;
   color: var(--color-accent);
   background: rgba(213, 174, 143, 0.16);
   font-weight: 600;
+  line-height: 1;
   border-radius: 999px;
-  padding: 0.05rem 0.35rem 0.05rem 0.05rem;
+  padding: 0.15rem 0.4rem 0.15rem 0.15rem;
   margin: 0 -0.05rem;
 }
 
