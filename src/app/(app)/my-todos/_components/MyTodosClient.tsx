@@ -571,6 +571,8 @@ export default function MyTodosClient({ todos, myTasks, dayPlans, mentions, ment
           plans={dayPlans}
           todayIso={todayIso}
           weekOptions={WEEK_OPTIONS}
+          myTasks={myTasks}
+          todos={todos}
           onClose={() => setPlanKind(null)}
           onSaved={() => { setPlanKind(null); router.refresh() }}
         />

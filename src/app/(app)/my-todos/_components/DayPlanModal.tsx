@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { saveDayPlan } from '@/app/actions/day-plans'
-import type { DayPlan, DayPlanKind } from '@/lib/types'
+import type { DayPlan, DayPlanKind, PersonalTodo, Task } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import { describeError } from '@/lib/client-errors'
 import styles from '../my-todos.module.css'
@@ -23,11 +23,15 @@ function longDate(iso: string) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' })
 }
 
-export default function DayPlanModal({ kind, plans, todayIso, weekOptions, onClose, onSaved }: {
+export default function DayPlanModal({ kind, plans, todayIso, weekOptions, myTasks, todos, onClose, onSaved }: {
   kind: DayPlanKind
   plans: DayPlan[]
   todayIso: string
   weekOptions: Array<{ key: string; label: string }>
+  /** Tasks assigned to you, for the "already on your plate" picker below. */
+  myTasks: Task[]
+  /** Your personal to-dos, same reason. */
+  todos: PersonalTodo[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -39,23 +43,54 @@ export default function DayPlanModal({ kind, plans, todayIso, weekOptions, onClo
     [plans, kind, planDate],
   )
 
+  // What's already yours, offered instead of retyping it: open Tasks, and open top-level to-dos
+  // not already filed under this exact date. A to-do already mirroring a Task (linked_task_id) is
+  // left out here — it would otherwise show up twice, once under each list.
+  const openTasks = useMemo(() => myTasks.filter((t) => t.status !== 'Done'), [myTasks])
+  const openTodos = useMemo(
+    () => todos.filter((t) => !t.done && !t.parent_id && !t.linked_task_id && t.plan_date !== planDate),
+    [todos, planDate],
+  )
+
   const [note, setNote] = useState(existing?.note ?? '')
   const [lines, setLines] = useState('')
   const [week, setWeek] = useState('')
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set())
+  const [selectedTodoIds, setSelectedTodoIds] = useState<Set<string>>(new Set())
   const [error, setError] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
 
   const items = lines.split('\n').map((l) => l.trim()).filter(Boolean)
+  const pickedCount = selectedTaskIds.size + selectedTodoIds.size
+
+  function toggleTask(id: string) {
+    setSelectedTaskIds((s) => {
+      const next = new Set(s)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
+  function toggleTodo(id: string) {
+    setSelectedTodoIds((s) => {
+      const next = new Set(s)
+      if (next.has(id)) next.delete(id); else next.add(id)
+      return next
+    })
+  }
 
   function submit() {
     setError(null)
-    if (!note.trim() && items.length === 0) {
-      setError('Add at least one line, or write a note.')
+    if (!note.trim() && items.length === 0 && pickedCount === 0) {
+      setError('Add at least one line, pick something from your list, or write a note.')
       return
     }
     startTransition(async () => {
       try {
-        await saveDayPlan({ kind, plan_date: planDate, note, items, work_week_start: week || null })
+        await saveDayPlan({
+          kind, plan_date: planDate, note, items, work_week_start: week || null,
+          task_ids: [...selectedTaskIds],
+          existing_todo_ids: [...selectedTodoIds],
+        })
         onSaved()
       } catch (e) { setError(describeError(e).message) }
     })
@@ -87,14 +122,56 @@ export default function DayPlanModal({ kind, plans, todayIso, weekOptions, onClo
             own list.
           </div>
 
+          {(openTasks.length > 0 || openTodos.length > 0) && (
+            <div className={styles.field}>
+              <label className={styles.fieldLabel}>Already on your plate</label>
+              <div className={styles.planPickList}>
+                {openTasks.map((t) => {
+                  const on = selectedTaskIds.has(t.id)
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className={`${styles.planPickRow} ${on ? styles.planPickRowOn : ''}`}
+                      onClick={() => toggleTask(t.id)}
+                    >
+                      <span className={`${styles.planPickBox} ${on ? styles.planPickBoxOn : ''}`}>{on && '✓'}</span>
+                      <span className={styles.planPickTitle}>{t.title}</span>
+                      <span className={styles.planPickKind}>Task</span>
+                    </button>
+                  )
+                })}
+                {openTodos.map((t) => {
+                  const on = selectedTodoIds.has(t.id)
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className={`${styles.planPickRow} ${on ? styles.planPickRowOn : ''}`}
+                      onClick={() => toggleTodo(t.id)}
+                    >
+                      <span className={`${styles.planPickBox} ${on ? styles.planPickBoxOn : ''}`}>{on && '✓'}</span>
+                      <span className={styles.planPickTitle}>{t.title}</span>
+                      <span className={styles.planPickKind}>To-do</span>
+                    </button>
+                  )
+                })}
+              </div>
+              <div className={styles.fieldHint}>
+                {pickedCount === 0
+                  ? `Tap anything already assigned to you or already on your list to add it to ${isMorning ? "today's" : "tomorrow's"} plan.`
+                  : `${pickedCount} picked.`}
+              </div>
+            </div>
+          )}
+
           <div className={styles.field}>
             <label className={styles.fieldLabel}>
-              {isMorning ? 'What are you doing today?' : 'What are you doing tomorrow?'}
+              {isMorning ? 'Anything else you\'re doing today?' : 'Anything else for tomorrow?'}
             </label>
             <textarea
               className={styles.textarea}
-              rows={6}
-              autoFocus
+              rows={4}
               placeholder={'One per line…\nKyoora — chase Alteria\nFinish SGP onboarding'}
               value={lines}
               onChange={(e) => setLines(e.target.value)}

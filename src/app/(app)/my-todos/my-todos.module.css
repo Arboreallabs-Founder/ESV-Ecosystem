@@ -502,3 +502,66 @@
 .mentionBody { flex: 1; min-width: 0; }
 .mentionTitle { font-size: 0.9rem; font-weight: 500; color: var(--color-text); line-height: 1.4; }
 .mentionMeta { font-size: 0.75rem; color: var(--color-muted); margin-top: 0.3rem; }
+
+/* ── Day plan: build from what's already there ───────────────────────────
+   A scrollable pick-list of open Tasks and open to-dos, so planning the day doesn't mean retyping
+   things already on your plate. Each row is a toggle, not a one-shot action — unlike .pickerRow in
+   the "Port in a task" modal, which fires immediately on click. */
+.planPickList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  max-height: 11rem;
+  overflow-y: auto;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 0.35rem;
+  background: var(--color-card);
+}
+.planPickRow {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  border: none;
+  background: none;
+  border-radius: calc(var(--radius-md) - 4px);
+  padding: 0.4rem 0.5rem;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.planPickRow:hover { background: rgba(var(--color-hover-rgb), 0.06); }
+.planPickRowOn { background: rgba(var(--color-hover-rgb), 0.1); }
+.planPickBox {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--color-border);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  color: #fff;
+  transition: background 0.12s, border-color 0.12s;
+}
+.planPickBoxOn { background: var(--color-primary); border-color: var(--color-primary); }
+.planPickTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.planPickKind {
+  flex-shrink: 0;
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+}

@@ -31,6 +31,11 @@ export type DayPlanInput = {
   items?: string[]
   /** Monday of the work week to also file the new items into, if any. */
   work_week_start?: string | null
+  /** Already-open personal to-dos folded into this plan — only plan_date changes on them. */
+  existing_todo_ids?: string[]
+  /** Already-open Tasks folded into this plan — ported in as a linked personal_todo first if this
+      is the first time (same as "Port in a task"), then dated, in one step. */
+  task_ids?: string[]
 }
 
 /**
@@ -49,7 +54,11 @@ export async function saveDayPlan(input: DayPlanInput): Promise<{ planId: string
 
   const note = input.note?.trim() || null
   const items = (input.items ?? []).map((t) => t.trim()).filter(Boolean)
-  if (!note && items.length === 0) throw new UserFacingError('Add at least one line, or a note.')
+  const existingTodoIds = [...new Set(input.existing_todo_ids ?? [])]
+  const taskIds = [...new Set(input.task_ids ?? [])]
+  if (!note && items.length === 0 && existingTodoIds.length === 0 && taskIds.length === 0) {
+    throw new UserFacingError('Add at least one line, pick something from your list, or write a note.')
+  }
 
   const { data: plan, error: planErr } = await supabase
     .from('day_plans')
@@ -74,6 +83,59 @@ export async function saveDayPlan(input: DayPlanInput): Promise<{ planId: string
     )
     if (todoErr) throw dbFailure('save that', todoErr)
     created = items.length
+  }
+
+  // Already-open to-dos folded into today's/tomorrow's plan — only plan_date moves on them; notes,
+  // due dates and work weeks the person already set stay exactly as they were.
+  if (existingTodoIds.length > 0) {
+    const { error } = await supabase
+      .from('personal_todos')
+      .update({ plan_date: planDate })
+      .eq('user_id', userId)
+      .in('id', existingTodoIds)
+    if (error) throw dbFailure('save that', error)
+  }
+
+  // Tasks folded into the plan — the same "port in, then it's a to-do" portTaskIn already does,
+  // batched, with plan_date set in the same step. A task already ported earlier just gets dated.
+  if (taskIds.length > 0) {
+    const { data: already, error: alreadyErr } = await supabase
+      .from('personal_todos')
+      .select('id, linked_task_id')
+      .eq('user_id', userId)
+      .in('linked_task_id', taskIds)
+    if (alreadyErr) throw dbFailure('save that', alreadyErr)
+
+    const portedTaskIds = new Set((already ?? []).map((r) => r.linked_task_id as string))
+    const alreadyIds = (already ?? []).map((r) => r.id as string)
+    if (alreadyIds.length > 0) {
+      const { error } = await supabase.from('personal_todos').update({ plan_date: planDate }).in('id', alreadyIds)
+      if (error) throw dbFailure('save that', error)
+    }
+
+    const toPort = taskIds.filter((id) => !portedTaskIds.has(id))
+    if (toPort.length > 0) {
+      const { data: tasksData, error: tasksErr } = await supabase
+        .from('tasks')
+        .select('id, title, status, due_date')
+        .in('id', toPort)
+      if (tasksErr) throw dbFailure('save that', tasksErr)
+      if (tasksData && tasksData.length > 0) {
+        const { error } = await supabase.from('personal_todos').insert(
+          tasksData.map((t) => ({
+            user_id: userId,
+            org_id: orgId,
+            title: t.title,
+            linked_task_id: t.id,
+            done: t.status === 'Done',
+            done_at: t.status === 'Done' ? new Date().toISOString() : null,
+            due_date: t.due_date,
+            plan_date: planDate,
+          })),
+        )
+        if (error) throw dbFailure('save that', error)
+      }
+    }
   }
 
   revalidatePath('/my-todos')
