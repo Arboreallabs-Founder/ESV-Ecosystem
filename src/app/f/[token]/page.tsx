@@ -64,6 +64,8 @@ export default async function PublicFormPage({ params }: { params: Promise<{ tok
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }}>
         <div style={{ textAlign: 'center', padding: '2rem', maxWidth: 420 }}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- static, already-small asset */}
+          <img src="/brand/esv-logo.png" alt="Earlyseed Ventures" style={{ height: 40, width: 'auto', margin: '0 auto 1.75rem', display: 'block' }} />
           <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>{status === 'unpublished' ? '⏳' : '🔒'}</div>
           <h1 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.5rem' }}>{heading}</h1>
           <p style={{ color: '#666', fontSize: '0.9375rem', lineHeight: 1.55 }}>{message}</p>

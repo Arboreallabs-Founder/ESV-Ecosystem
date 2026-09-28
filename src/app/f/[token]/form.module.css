@@ -50,41 +50,22 @@
   z-index: 1;
 }
 
-/* ESV brand accent line */
-.card::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #745FFD, #CEAAFD);
-  border-radius: 20px 20px 0 0;
-}
-
 /* ── Form header ───────────────────────────────────────────────────── */
 .formHeader {
   margin-bottom: 2.5rem;
 }
 
-.brandLine {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
+/* The ESV wordmark. Black on transparent, so it only works on this page's fixed white card — the
+   public form has no dark mode. Height-driven so the wordmark reads the same at any card width. */
+.logo {
+  display: block;
+  height: 44px;
+  width: auto;
+  margin-bottom: 1.75rem;
 }
-
-.brandDot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #745FFD;
-}
-
-.brandName {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: #A39B95;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
+.logoCentered {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .formTitle {
@@ -327,7 +308,7 @@
   margin-top: 0.75rem;
 }
 
-/* ── Footer branding ───────────────────────────────────────────────── */
+/* ── Footer ────────────────────────────────────────────────────────── */
 .footerBrand {
   margin-top: 2rem;
   text-align: center;

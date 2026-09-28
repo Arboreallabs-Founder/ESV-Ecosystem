@@ -158,11 +158,13 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
     return (
       <div className={styles.page}>
         <div className={styles.card}>
+          {/* eslint-disable-next-line @next/next/no-img-element -- static, already-small asset; see Avatar.tsx */}
+          <img src="/brand/esv-logo.png" alt="Earlyseed Ventures" className={`${styles.logo} ${styles.logoCentered}`} />
           <div className={styles.successIcon}>✓</div>
           <h1 className={styles.title}>Thank you!</h1>
           <p className={styles.sub}>Your response has been submitted successfully.</p>
         </div>
-        <div className={styles.footerBrand}>Powered by Earlyseed Ventures</div>
+        <div className={styles.footerBrand}>T&amp;C apply</div>
       </div>
     )
   }
@@ -171,10 +173,8 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
     <div className={styles.page}>
       <div className={styles.card}>
         <div className={styles.formHeader}>
-          <div className={styles.brandLine}>
-            <span className={styles.brandDot} />
-            <span className={styles.brandName}>Earlyseed Ventures</span>
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- static, already-small asset; see Avatar.tsx */}
+          <img src="/brand/esv-logo.png" alt="Earlyseed Ventures" className={styles.logo} />
           {/* The title is the team's internal label; the display name is what this audience
               should read. Blank means they are the same thing. */}
           <div className={styles.formTitle}>{formData.form_display_name || formData.form_title}</div>
@@ -295,7 +295,7 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
           </div>
         )}
       </div>
-      <div className={styles.footerBrand}>Powered by Earlyseed Ventures</div>
+      <div className={styles.footerBrand}>T&amp;C apply</div>
     </div>
   )
 }
