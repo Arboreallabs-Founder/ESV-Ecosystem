@@ -693,6 +693,11 @@ already see. Anything with no work week and no plan date stays private to its ow
 The modal says all of this at the point of writing — a surface that looks private and is not would
 be worse than one that is simply honest.
 
+That third policy goes through `todo_parent_is_shared()`, a `SECURITY DEFINER` function, rather
+than a subquery. A policy on `personal_todos` that selects from `personal_todos` re-enters RLS and
+Postgres aborts with infinite recursion — the same reason `get_user_role()` exists rather than a
+subquery over `users`.
+
 ### 20261003000000_todo_mentions.sql
 `personal_todo_mentions` — a narrow, deliberate crack in the same privacy `20260728000000`
 established: type `@Name` into a sub-task and that one person gets a notification and read-only
@@ -731,10 +736,21 @@ policies querying *each other*. Same fix, one level removed: `todo_is_mentioned_
 is `SECURITY DEFINER`, so it reads `personal_todo_mentions` outside RLS instead of through it,
 which is what breaks the cycle.
 
-That third policy goes through `todo_parent_is_shared()`, a `SECURITY DEFINER` function, rather
-than a subquery. A policy on `personal_todos` that selects from `personal_todos` re-enters RLS and
-Postgres aborts with infinite recursion — the same reason `get_user_role()` exists rather than a
-subquery over `users`.
+### 20261005000000_internal_roles_read_approved_emails.sql
+`fetchAllUsers()` (`src/lib/partners.ts`) reads `approved_emails` to exclude revoked-but-not-deleted
+accounts from any picker built off the full user list — the @mention picker on personal to-dos is
+the newest caller, but the Weekly Update page's founder filter has used it since before this
+migration. `"Org admins manage approved emails"` (`20260700300000`) only grants founder/admin/
+super_admin SELECT on that table, so for every other internal role the inner query silently
+returned zero rows (RLS filters, it does not error) and `fetchAllUsers()` filtered out *every* user
+as a result — reported as "nothing shows up" in the mention dropdown for a non-admin caller, a
+second, independent cause of that symptom alongside the client-side portal bug fixed the same day
+(see `src/app/(app)/my-todos/_components/MyTodosClient.tsx` — the dropdown was also being clipped by
+its card's `overflow: hidden`).
+
+Same shape as `"Internal roles view org users"` (`20260821000000`) on the `users` table: a narrow,
+additive SELECT policy for the same five internal roles, OR'd in alongside the existing admin-only
+`FOR ALL` policy rather than replacing it, so who can *edit* the allowlist stays founder/admin only.
 
 No scheduler is involved: there is no nightly job that opens or closes a day plan, on the terms
 `20260914000000` set out. A plan exists because someone wrote it.

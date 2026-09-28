@@ -1,6 +1,7 @@
 'use client'
 
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import {
   addPersonalTodo, updatePersonalTodo, deletePersonalTodo, togglePersonalTodo, portTaskIn, unlinkPersonalTodo,
@@ -90,6 +91,28 @@ function SubtaskInput({ mentionableUsers, onSubmit, onCancel }: {
   const [mentionedIds, setMentionedIds] = useState<string[]>([])
   const [mention, setMention] = useState<{ start: number; query: string } | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
+  // Viewport coordinates for the portal below — recomputed whenever the mention opens. The dropdown
+  // can't be positioned relative to this input in the normal DOM flow: the input sits inside a
+  // to-do card that clips overflow for its rounded corners, and that clipping would cut the
+  // dropdown off along with anything else that tried to float past the card's edge.
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null)
+  useEffect(() => {
+    if (!mention || !inputRef.current) { setDropdownPos(null); return }
+    const reposition = () => {
+      const rect = inputRef.current?.getBoundingClientRect()
+      if (rect) setDropdownPos({ top: rect.bottom + 4, left: rect.left })
+    }
+    reposition()
+    // The card body scrolls independently of the page (see .cardBody elsewhere in this app), so a
+    // plain window scroll listener wouldn't be enough — capture:true catches scroll on any
+    // ancestor, not just window.
+    window.addEventListener('scroll', reposition, true)
+    window.addEventListener('resize', reposition)
+    return () => {
+      window.removeEventListener('scroll', reposition, true)
+      window.removeEventListener('resize', reposition)
+    }
+  }, [mention])
 
   // Ranked, not just filtered: a name starting with what's typed is the "most relevant person" —
   // it belongs above someone who merely contains the query somewhere in the middle of their name.
@@ -154,11 +177,13 @@ function SubtaskInput({ mentionableUsers, onSubmit, onCancel }: {
         }}
         onBlur={submit}
       />
-      {/* onMouseDown + preventDefault, not onClick: it keeps focus on the input so picking a name
-          doesn't fire the blur-submit above before the mention is inserted. Same trick this app's
-          modals use to survive a drag-release landing outside them. */}
-      {mention && suggestions.length > 0 && (
-        <div className={styles.mentionDropdown}>
+      {/* Portaled to <body>, not rendered in place: the to-do card this input lives in clips
+          overflow for its rounded corners, which would clip the dropdown too if it stayed in the
+          normal DOM flow here. onMouseDown + preventDefault (not onClick) keeps focus on the input
+          so picking a name doesn't fire the blur-submit above before the mention is inserted —
+          same trick this app's modals use to survive a drag-release landing outside them. */}
+      {mention && suggestions.length > 0 && dropdownPos && typeof document !== 'undefined' && createPortal(
+        <div className={styles.mentionDropdown} style={{ top: dropdownPos.top, left: dropdownPos.left }}>
           {suggestions.map((u, i) => (
             <button
               key={u.id}
@@ -176,7 +201,8 @@ function SubtaskInput({ mentionableUsers, onSubmit, onCancel }: {
               </span>
             </button>
           ))}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   )

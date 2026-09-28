@@ -376,15 +376,16 @@
 .errBox { background: rgba(192,57,43,0.08); border: 1px solid rgba(192,57,43,0.3); border-radius: var(--radius-md); padding: 0.6rem 0.75rem; font-size: 0.8125rem; color: var(--color-destructive); margin-top: 0.5rem; }
 
 /* ── @mention autocomplete ─────────────────────────────────────────────
-   Anchored under the sub-task input it belongs to. */
-.subInputWrap { position: relative; margin-left: 1.5rem; width: calc(100% - 1.5rem); }
+   Anchored under the sub-task input it belongs to, but rendered through a portal into <body> — the
+   to-do card the input lives in clips overflow for its rounded corners, which would clip this too
+   if it stayed in normal flow. position: fixed + top/left set inline from the input's own
+   getBoundingClientRect() (see SubtaskInput) is what makes that portal land in the right spot. */
+.subInputWrap { margin-left: 1.5rem; width: calc(100% - 1.5rem); }
 .subInputWrap .subInput { margin-left: 0; width: 100%; }
 
 .mentionDropdown {
-  position: absolute;
-  z-index: 20;
-  top: calc(100% + 0.25rem);
-  left: 0;
+  position: fixed;
+  z-index: 1000;
   min-width: 13rem;
   max-width: 18rem;
   background: var(--glass-panel);
