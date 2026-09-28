@@ -10,6 +10,7 @@ import { isPastDue } from '@/lib/task-kpi'
 import { weekRange } from '@/lib/week'
 import { nestTodos, todoStamp } from '@/lib/todo-tree'
 import Spinner from '@/app/_components/Spinner'
+import Avatar from '@/app/_components/Avatar'
 import { WikiButton } from '@/app/_components/WikiPanel'
 import DayPlanModal from './DayPlanModal'
 import styles from '../my-todos.module.css'
@@ -90,10 +91,20 @@ function SubtaskInput({ mentionableUsers, onSubmit, onCancel }: {
   const [mention, setMention] = useState<{ start: number; query: string } | null>(null)
   const [activeIndex, setActiveIndex] = useState(0)
 
+  // Ranked, not just filtered: a name starting with what's typed is the "most relevant person" —
+  // it belongs above someone who merely contains the query somewhere in the middle of their name.
   const suggestions = useMemo(() => {
     if (!mention) return []
     const q = mention.query.toLowerCase()
-    return mentionableUsers.filter((u) => (u.name || u.email).toLowerCase().includes(q)).slice(0, 6)
+    return mentionableUsers
+      .map((u) => ({ u, name: (u.name || u.email).toLowerCase() }))
+      .filter(({ name }) => name.includes(q))
+      .sort((a, b) => {
+        const rank = (n: string) => (n.startsWith(q) ? 0 : 1)
+        return rank(a.name) - rank(b.name) || a.name.localeCompare(b.name)
+      })
+      .slice(0, 6)
+      .map(({ u }) => u)
   }, [mention, mentionableUsers])
 
   function pickUser(u: UserRow) {
@@ -154,9 +165,15 @@ function SubtaskInput({ mentionableUsers, onSubmit, onCancel }: {
               type="button"
               className={`${styles.mentionOption} ${i === activeIndex ? styles.mentionOptionActive : ''}`}
               onMouseDown={(e) => { e.preventDefault(); pickUser(u) }}
+              onMouseEnter={() => setActiveIndex(i)}
             >
-              <span className={styles.mentionName}>{u.name || u.email}</span>
-              {u.designation && <span className={styles.mentionRole}>{u.designation}</span>}
+              {/* The top match — ranked "most relevant" above — gets a slightly larger photo, the
+                  same way a search box makes its best guess visually heavier than the rest. */}
+              <Avatar name={u.name} email={u.email} photoUrl={u.photo_url} size={i === 0 ? 'md' : 'sm'} />
+              <span className={styles.mentionText}>
+                <span className={styles.mentionName}>{u.name || u.email}</span>
+                {u.designation && <span className={styles.mentionRole}>{u.designation}</span>}
+              </span>
             </button>
           ))}
         </div>

@@ -385,8 +385,8 @@
   z-index: 20;
   top: calc(100% + 0.25rem);
   left: 0;
-  min-width: 12rem;
-  max-width: 16rem;
+  min-width: 13rem;
+  max-width: 18rem;
   background: var(--glass-panel);
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-md);
@@ -398,9 +398,8 @@
 }
 .mentionOption {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 0.6rem;
   width: 100%;
   border: none;
   background: none;
@@ -411,8 +410,9 @@
   cursor: pointer;
 }
 .mentionOptionActive, .mentionOption:hover { background: rgba(var(--color-hover-rgb), 0.1); }
-.mentionName { font-size: 0.8125rem; font-weight: 600; color: var(--color-text); }
-.mentionRole { font-size: 0.6875rem; color: var(--color-muted); flex-shrink: 0; }
+.mentionText { display: flex; flex-direction: column; min-width: 0; gap: 0.05rem; }
+.mentionName { font-size: 0.8125rem; font-weight: 600; color: var(--color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mentionRole { font-size: 0.6875rem; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* ── Mentioned you ────────────────────────────────────────────────────
    Someone else's sub-task, surfaced because it names you. Bronze rather than the purple used for
