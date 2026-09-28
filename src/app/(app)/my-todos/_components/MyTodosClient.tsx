@@ -26,6 +26,11 @@ const WEEK_OPTIONS = [-2, -1, 0, 1, 2, 3].map((offset) => {
 
 const WEEK_LABELS = new Map(WEEK_OPTIONS.map((w) => [w.key, w.label]))
 
+// The chip's job is to flag that an item has left the private list and is filed somewhere — that's
+// only news when the "somewhere" isn't the week you're already looking at by default. Repeating
+// "Week of ... (this week)" on nearly every card just because it's the common case is noise.
+const THIS_WEEK_KEY = weekRange(0).key
+
 function formatDue(dateStr: string) {
   // Same rule as the task board: overdue only after the due day has fully passed.
   return {
@@ -75,8 +80,11 @@ function TodoRow({
   const [childTitle, setChildTitle] = useState('')
   const [addingChild, setAddingChild] = useState(false)
   const due = todo.due_date ? formatDue(todo.due_date) : null
-  // A week outside the offered range (an old item) still deserves a readable chip.
-  const weekLabel = todo.work_week_start ? WEEK_LABELS.get(todo.work_week_start) ?? todo.work_week_start : null
+  // A week outside the offered range (an old item) still deserves a readable chip. The current
+  // week is the default everything lands in, so it's suppressed rather than repeated on every card.
+  const weekLabel = todo.work_week_start && todo.work_week_start !== THIS_WEEK_KEY
+    ? WEEK_LABELS.get(todo.work_week_start) ?? todo.work_week_start
+    : null
   const children = todo.children ?? []
   // Counted off the live optimistic state so ticking a sub-task moves the counter immediately,
   // rather than after the server round trip.

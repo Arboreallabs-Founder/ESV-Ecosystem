@@ -374,17 +374,25 @@
 }
 
 .todoList li {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.45rem;
   font-size: 0.875rem;
   line-height: 1.45;
   color: var(--color-text);
 }
 
+/* Checkbox + title on their own line, separate from the sub-task list below — .todoList li used
+   to be a flex row with the sub-task <ul> as a third flex item, which pushed sub-tasks into a
+   column beside the parent instead of nesting them underneath it. */
+.todoRow { display: flex; align-items: flex-start; gap: 0.45rem; }
+
 .todoBox { color: var(--color-muted); line-height: 1.35; }
 
-.todoDone {
+/* Scoped to .todoRow, not the whole <li>: text-decoration inherits, and an undone child under a
+   done parent must not pick up the parent's strikethrough. */
+.todoDone > .todoRow {
+  color: var(--color-muted);
+  text-decoration: line-through;
+}
+.subTodoList .todoDone {
   color: var(--color-muted);
   text-decoration: line-through;
 }

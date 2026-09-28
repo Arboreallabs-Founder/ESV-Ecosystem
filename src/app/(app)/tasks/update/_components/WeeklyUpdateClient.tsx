@@ -496,8 +496,10 @@ export default function WeeklyUpdateClient({
                     <ul className={styles.todoList}>
                       {report.personal.map((t, i) => (
                         <li key={i} className={t.done ? styles.todoDone : undefined}>
-                          <span className={styles.todoBox} aria-hidden="true">{t.done ? '☑' : '☐'}</span>
-                          {t.title}
+                          <span className={styles.todoRow}>
+                            <span className={styles.todoBox} aria-hidden="true">{t.done ? '☑' : '☐'}</span>
+                            {t.title}
+                          </span>
                           {t.children.length > 0 && (
                             <ul className={styles.subTodoList}>
                               {t.children.map((c, j) => (
