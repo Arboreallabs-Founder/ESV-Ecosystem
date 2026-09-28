@@ -1,7 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import type { TeamReferralLink } from '@/lib/associate-referrals'
+import { setReferralSlug } from '@/app/actions/associate-referrals'
+import { referralPath } from '@/lib/referral-path'
+import { describeError } from '@/lib/client-errors'
 import Avatar from '@/app/_components/Avatar'
 import styles from '../../admin.module.css'
 
@@ -16,22 +19,51 @@ const ROLE_CLASS: Record<string, string> = {
   hr: styles.roleHr,
 }
 
+const smallBtn: React.CSSProperties = {
+  border: '1px solid var(--color-border)', background: 'var(--color-card)',
+  color: 'var(--color-text)', padding: '0.35rem 0.7rem', borderRadius: 'var(--radius-sm)',
+  fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+}
+
 /**
- * Every ESV team member's referral link in one place. Read-only — a link is created the first
- * time someone opens /referrals (or by the 20261008000000 backfill for everyone already here),
- * never from this page. This is for seeing who has one and how it's doing, not managing them.
+ * Every ESV team member's founder link in one place. Links are created the first time someone opens
+ * /referrals (or by the 20261008000000 backfill); here founders/admins can see them, copy them, and
+ * rename the readable /apply/<name> address (20261011000000) — e.g. to settle a clash.
  */
-export default function ReferralLinksTable({ links }: { links: TeamReferralLink[] }) {
+export default function ReferralLinksTable({ links: initial }: { links: TeamReferralLink[] }) {
+  const [links, setLinks] = useState(initial)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const total = links.reduce((sum, l) => sum + l.sourcedCount, 0)
 
-  async function copy(userId: string, token: string) {
+  async function copy(l: TeamReferralLink) {
+    if (!l.token) return
     try {
-      await navigator.clipboard.writeText(`${origin}/f/${token}`)
-      setCopiedId(userId)
-      setTimeout(() => setCopiedId((c) => (c === userId ? null : c)), 1600)
+      await navigator.clipboard.writeText(`${origin}${referralPath(l.slug, l.token)}`)
+      setCopiedId(l.userId)
+      setTimeout(() => setCopiedId((c) => (c === l.userId ? null : c)), 1600)
     } catch { /* clipboard blocked */ }
+  }
+
+  function startEdit(l: TeamReferralLink) {
+    setEditingId(l.userId)
+    setDraft(l.slug ?? '')
+    setEditError(null)
+  }
+
+  function save(userId: string) {
+    setEditError(null)
+    startTransition(async () => {
+      try {
+        const res = await setReferralSlug(userId, draft)
+        setLinks((prev) => prev.map((l) => (l.userId === userId ? { ...l, slug: res.slug } : l)))
+        setEditingId(null)
+      } catch (err) { setEditError(describeError(err).message) }
+    })
   }
 
   return (
@@ -64,33 +96,51 @@ export default function ReferralLinksTable({ links }: { links: TeamReferralLink[
               {links.map((l) => (
                 <tr key={l.userId}>
                   <td><Avatar name={l.name} email={l.email} photoUrl={l.photoUrl} size="sm" /></td>
-                  <td>
-                    <div className={styles.name}>{l.name || l.email}</div>
-                  </td>
+                  <td><div className={styles.name}>{l.name || l.email}</div></td>
                   <td>
                     <span className={`${styles.roleBadge} ${ROLE_CLASS[l.role] ?? styles.roleAssociate}`}>
                       {ROLE_LABELS[l.role] ?? l.role}
                     </span>
                   </td>
                   <td>
-                    {l.token ? (
-                      <button
-                        onClick={() => copy(l.userId, l.token!)}
-                        style={{
-                          border: '1px solid var(--color-border)', background: 'var(--color-card)',
-                          color: 'var(--color-text)', padding: '0.35rem 0.7rem', borderRadius: 'var(--radius-sm)',
-                          fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
-                        }}
-                      >
-                        {copiedId === l.userId ? 'Copied' : 'Copy link'}
-                      </button>
-                    ) : (
+                    {!l.token ? (
                       <span style={{ fontSize: '0.8125rem', color: 'var(--color-muted)' }}>Not created yet</span>
+                    ) : editingId === l.userId ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.8125rem', color: 'var(--color-muted)' }}>/apply/</span>
+                          <input
+                            value={draft}
+                            onChange={(e) => setDraft(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') save(l.userId); if (e.key === 'Escape') setEditingId(null) }}
+                            autoFocus
+                            maxLength={40}
+                            style={{
+                              fontSize: '0.8125rem', padding: '0.3rem 0.5rem', borderRadius: 'var(--radius-sm)',
+                              border: '1.5px solid var(--color-border)', background: 'var(--color-bg)',
+                              color: 'var(--color-text)', fontFamily: 'inherit', width: '9rem',
+                            }}
+                          />
+                          <button style={smallBtn} onClick={() => save(l.userId)} disabled={pending || !draft.trim()}>
+                            {pending ? 'Saving…' : 'Save'}
+                          </button>
+                          <button style={smallBtn} onClick={() => setEditingId(null)} disabled={pending}>Cancel</button>
+                        </div>
+                        {editError && <span style={{ fontSize: '0.75rem', color: 'var(--color-destructive)' }}>{editError}</span>}
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                        <code style={{ fontSize: '0.8125rem', color: 'var(--color-text)' }}>
+                          {l.slug ? `/apply/${l.slug}` : `/f/${l.token.slice(0, 8)}…`}
+                        </code>
+                        <button style={smallBtn} onClick={() => copy(l)}>
+                          {copiedId === l.userId ? 'Copied' : 'Copy'}
+                        </button>
+                        <button style={smallBtn} onClick={() => startEdit(l)}>Rename</button>
+                      </div>
                     )}
                   </td>
-                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                    {l.sourcedCount}
-                  </td>
+                  <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{l.sourcedCount}</td>
                 </tr>
               ))}
             </tbody>

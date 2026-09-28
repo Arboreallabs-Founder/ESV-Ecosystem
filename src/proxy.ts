@@ -11,7 +11,10 @@ import { createServerClient } from '@supabase/ssr'
 // are built as account-free experiences and the app generates share links for them, but they were
 // missing here — so every link we sent a founder bounced them to a login they do not have. The
 // bug was invisible internally because staff open those links already signed in.
-const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth', '/f/', '/fr/', '/il/', '/verify/']
+//
+// '/apply/' is the readable alias for the founder form's /f/ links (20261011000000) — same page, so
+// it must be just as reachable by a founder with no account.
+const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth', '/f/', '/apply/', '/fr/', '/il/', '/verify/']
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })

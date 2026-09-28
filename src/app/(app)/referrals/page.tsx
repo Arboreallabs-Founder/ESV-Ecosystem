@@ -32,7 +32,9 @@ export default async function ReferralsPage() {
       </div>
 
       <ReferralLinkCard
+        userId={user.id}
         initialToken={form?.myToken ?? null}
+        initialSlug={form?.mySlug ?? null}
         pipelineId={form?.pipelineId ?? null}
         sourcedCount={sourced.length}
       />

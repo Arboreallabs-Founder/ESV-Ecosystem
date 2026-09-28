@@ -14,6 +14,8 @@ export type AssociateReferralForm = {
   published: boolean
   pipelineId: string
   myToken: string | null
+  /** Readable name for the link — /apply/<slug>. Assigned automatically (20261011000000). */
+  mySlug: string | null
 }
 
 /** The org's associate-referral form, the associate-intake pipeline it feeds, and this user's own link. */
@@ -24,7 +26,7 @@ export const fetchAssociateReferralForm = cache(async (): Promise<AssociateRefer
 
   const { data: form, error } = await supabase
     .from('forms')
-    .select('id, title, published, pipeline_id, links:form_links(token, created_by)')
+    .select('id, title, published, pipeline_id, links:form_links(token, slug, created_by)')
     .eq('is_associate_form', true)
     .maybeSingle()
   if (error) {
@@ -33,13 +35,15 @@ export const fetchAssociateReferralForm = cache(async (): Promise<AssociateRefer
   }
   if (!form) return null
 
-  const links = (form.links ?? []) as Array<{ token: string; created_by: string }>
+  const links = (form.links ?? []) as Array<{ token: string; slug: string | null; created_by: string }>
+  const mine = links.find((l) => l.created_by === user.id)
   return {
     id: form.id,
     title: form.title,
     published: form.published,
     pipelineId: form.pipeline_id,
-    myToken: links.find((l) => l.created_by === user.id)?.token ?? null,
+    myToken: mine?.token ?? null,
+    mySlug: mine?.slug ?? null,
   }
 })
 
@@ -90,6 +94,7 @@ export type TeamReferralLink = {
   role: string
   photoUrl: string | null
   token: string | null
+  slug: string | null
   sourcedCount: number
 }
 
@@ -112,7 +117,7 @@ export const fetchAllReferralLinks = cache(async (): Promise<TeamReferralLink[]>
   const [{ data: users, error: usersErr }, { data: links, error: linksErr }, { data: entries, error: entriesErr }] = await Promise.all([
     supabase.from('users').select('id, name, email, role, photo_url')
       .in('role', ['founder', 'admin', 'associate', 'general', 'hr']).order('name'),
-    supabase.from('form_links').select('token, created_by').eq('form_id', form.id),
+    supabase.from('form_links').select('token, slug, created_by').eq('form_id', form.id),
     supabase.from('pipeline_entries').select('sourced_by_associate_id')
       .eq('pipeline_id', form.pipeline_id).not('sourced_by_associate_id', 'is', null),
   ])
@@ -121,7 +126,7 @@ export const fetchAllReferralLinks = cache(async (): Promise<TeamReferralLink[]>
     return []
   }
 
-  const tokenByUser = new Map((links ?? []).map((l) => [l.created_by, l.token as string]))
+  const linkByUser = new Map((links ?? []).map((l) => [l.created_by as string, l as { token: string; slug: string | null }]))
   const countByUser = new Map<string, number>()
   for (const e of entries ?? []) {
     const id = e.sourced_by_associate_id as string
@@ -134,7 +139,8 @@ export const fetchAllReferralLinks = cache(async (): Promise<TeamReferralLink[]>
     email: u.email,
     role: u.role,
     photoUrl: u.photo_url,
-    token: tokenByUser.get(u.id) ?? null,
+    token: linkByUser.get(u.id)?.token ?? null,
+    slug: linkByUser.get(u.id)?.slug ?? null,
     sourcedCount: countByUser.get(u.id) ?? 0,
   }))
 })

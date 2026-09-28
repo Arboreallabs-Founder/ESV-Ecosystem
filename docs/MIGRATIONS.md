@@ -850,5 +850,21 @@ reaches out — including ones later rejected — into Companies as a "prospect"
 creates-or-links on acceptance, so for `is_associate_form` the submission-time step is skipped. The
 Partner Form and all other forms keep the old behaviour; the function body is otherwise unchanged.
 
+### 20261011000000_referral_slugs.sql
+Readable founder links: `/apply/sakshay` instead of `/f/<random token>`, since these get posted on
+LinkedIn. `form_links.slug` is a second name for the same link row — `/f/<token>` keeps working and
+attribution is untouched. **Founder form only**, enforced by the `form_links_referral_slug` trigger:
+tokens elsewhere are bearer secrets (`20260920000000`), and a guessable name only makes sense on a
+form that's public by design (worst case, someone submits through a colleague's slug and credits
+them).
+
+Slugs come from the first name (then email local part), lowercased, `-2`/`-3` on a clash, unique
+globally on `lower(slug)` because the URL has no org in it. The trigger assigns one to every new
+founder-form link (so every creation path gets one) and the backfill gives existing links theirs,
+oldest first so the longest-standing person keeps the plain name. `resolve_referral_slug()` is the
+anon-callable lookup `/apply/[slug]` uses; returning the token discloses nothing new, since holding
+the slug already lets you submit through that link. Renaming a slug (`setReferralSlug`, own link or
+any as founder/admin) retires the old `/apply/` address.
+
 No scheduler is involved: there is no nightly job that opens or closes a day plan, on the terms
 `20260914000000` set out. A plan exists because someone wrote it.

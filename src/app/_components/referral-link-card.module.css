@@ -48,3 +48,20 @@
   font-family: inherit;
 }
 .btnPrimary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.editWrap { display: flex; flex-direction: column; gap: 0.35rem; }
+.prefix { font-size: 0.8125rem; color: var(--color-muted); }
+.slugInput {
+  font-size: 0.8125rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: inherit;
+  width: 11rem;
+  outline: none;
+}
+.slugInput:focus { border-color: var(--color-primary); }
+.error { font-size: 0.75rem; color: var(--color-destructive); }
+.hint { font-size: 0.75rem; color: var(--color-muted); }

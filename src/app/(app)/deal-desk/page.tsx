@@ -35,7 +35,9 @@ export default async function DealDeskPage() {
     return (
       <>
         <ReferralLinkCard
+          userId={user.id}
           initialToken={referralForm?.myToken ?? null}
+          initialSlug={referralForm?.mySlug ?? null}
           pipelineId={referralForm?.pipelineId ?? null}
           sourcedCount={sourced.length}
         />
