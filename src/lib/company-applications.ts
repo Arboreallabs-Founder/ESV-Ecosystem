@@ -22,7 +22,7 @@ export type CompanyApplication = {
   submitterName: string | null
   submitterEmail: string | null
   formName: string | null
-  /** Who they came through — a partner, or a team member's link. */
+  /** Who they came through — a partner, a team member's link, or the general /apply link. */
   via: string | null
   answers: ApplicationAnswer[]
 }
@@ -38,6 +38,7 @@ export const fetchCompanyApplications = cache(async (companyId: string): Promise
       form:forms!form_id(title, display_name),
       partner:franchise_partners!sourced_by_partner_id(name),
       associate:users!sourced_by_associate_id(name),
+      link:form_links!form_link_id(is_general),
       answers:pipeline_entry_answers(answer_text, node:form_nodes!node_id(question_text, field_key, contact_field, position_y))
     `)
     .eq('company_id', companyId)
@@ -54,6 +55,7 @@ export const fetchCompanyApplications = cache(async (companyId: string): Promise
     const form = one(e.form) as { title: string | null; display_name: string | null } | null
     const partner = one(e.partner) as { name: string | null } | null
     const associate = one(e.associate) as { name: string | null } | null
+    const link = one(e.link) as { is_general: boolean } | null
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const answers: ApplicationAnswer[] = ((e.answers ?? []) as any[])
       .map((a) => {
@@ -75,7 +77,10 @@ export const fetchCompanyApplications = cache(async (companyId: string): Promise
       submitterName: e.submitter_name,
       submitterEmail: e.submitter_email,
       formName: form?.display_name || form?.title || null,
-      via: partner?.name ? `Partner: ${partner.name}` : associate?.name ? `${associate.name}'s link` : null,
+      via: partner?.name ? `Partner: ${partner.name}`
+        : associate?.name ? `${associate.name}'s link`
+        : link?.is_general ? 'ESV website link'
+        : null,
       answers,
     }
   }).filter((a) => a.answers.length > 0)

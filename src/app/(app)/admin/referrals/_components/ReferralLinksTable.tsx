@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import type { TeamReferralLink } from '@/lib/associate-referrals'
+import type { GeneralFounderLink, TeamReferralLink } from '@/lib/associate-referrals'
 import { setReferralSlug } from '@/app/actions/associate-referrals'
 import { referralPath } from '@/lib/referral-path'
 import { describeError } from '@/lib/client-errors'
@@ -30,7 +30,7 @@ const smallBtn: React.CSSProperties = {
  * /referrals (or by the 20261008000000 backfill); here founders/admins can see them, copy them, and
  * rename the readable /apply/<name> address (20261011000000) — e.g. to settle a clash.
  */
-export default function ReferralLinksTable({ links: initial }: { links: TeamReferralLink[] }) {
+export default function ReferralLinksTable({ links: initial, general }: { links: TeamReferralLink[]; general: GeneralFounderLink | null }) {
   const [links, setLinks] = useState(initial)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -39,6 +39,14 @@ export default function ReferralLinksTable({ links: initial }: { links: TeamRefe
   const [pending, startTransition] = useTransition()
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
   const total = links.reduce((sum, l) => sum + l.sourcedCount, 0)
+
+  async function copyGeneral() {
+    try {
+      await navigator.clipboard.writeText(`${origin}/apply`)
+      setCopiedId('general')
+      setTimeout(() => setCopiedId((c) => (c === 'general' ? null : c)), 1600)
+    } catch { /* clipboard blocked — the link is on screen either way */ }
+  }
 
   async function copy(l: TeamReferralLink) {
     if (!l.token) return
@@ -77,6 +85,34 @@ export default function ReferralLinksTable({ links: initial }: { links: TeamRefe
           </div>
         </div>
       </div>
+
+      {/* The general link (20261013000000): for the website and the company LinkedIn page. Credited to
+          nobody, so it sits apart from the team roster rather than as a row in it. */}
+      {general && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
+          padding: '0.85rem 1.1rem', marginBottom: '1rem',
+          border: '1.5px solid var(--color-border)', borderRadius: 'var(--radius-md)', background: 'var(--color-card)',
+        }}>
+          <div style={{ flex: 1, minWidth: '220px' }}>
+            <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text)' }}>General link</div>
+            <div style={{ fontSize: '0.8125rem', color: 'var(--color-muted)', marginTop: '0.15rem' }}>
+              For the ESV website and company LinkedIn page. Same form, credited to nobody ·
+              {' '}{general.sourcedCount} {general.sourcedCount === 1 ? 'founder' : 'founders'} so far
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <code suppressHydrationWarning style={{
+              fontSize: '0.8125rem', padding: '0.4rem 0.6rem', borderRadius: 'var(--radius-sm)',
+              background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'var(--color-text)',
+            }}>
+              {origin}/apply
+            </code>
+            <button style={smallBtn} onClick={copyGeneral}>{copiedId === 'general' ? 'Copied' : 'Copy'}</button>
+            <a href="/apply" target="_blank" rel="noreferrer" style={{ ...smallBtn, textDecoration: 'none' }}>Open</a>
+          </div>
+        </div>
+      )}
 
       {links.length === 0 ? (
         <div className={styles.empty}>No team members found.</div>

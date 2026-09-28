@@ -890,3 +890,14 @@ grouped by `field_key`, with the services the founder asked for pulled out as hi
 
 No scheduler is involved: there is no nightly job that opens or closes a day plan, on the terms
 `20260914000000` set out. A plan exists because someone wrote it.
+
+### 20261013000000_general_founder_link.sql
+One general link to the ESV founder form, for the website and the company LinkedIn page:
+`/apply` (bare — personal links stay at `/apply/<name>`). It is a `form_links` row on the founder
+form with `is_general = true` and no creator, so `attribute_entry_to_sourcer` credits nobody and it
+doesn't inflate anyone's count on /admin/referrals. Same questions, same ESV Referrals pipeline, same
+company-profile fill on acceptance. One per form (partial unique index); never given a personal slug;
+only founder/admin can delete it or change the flag (`protect_general_link`), since the Share tab
+lets associates manage links and deleting it would break the website's Apply button.
+`resolve_general_founder_link()` resolves it for anonymous visitors, as `resolve_referral_slug` does
+for the personal ones. `form_links.created_by` becomes nullable (a no-op if it already was).

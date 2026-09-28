@@ -87,6 +87,32 @@ export const fetchMySourcedEntries = cache(async (): Promise<SourcedEntry[]> => 
   }))
 })
 
+export type GeneralFounderLink = { token: string; sourcedCount: number }
+
+/**
+ * The founder form's general link — /apply, for the website and the company LinkedIn page, credited
+ * to nobody (20261013000000). Founder/admin read it directly, like the roster below.
+ */
+export const fetchGeneralFounderLink = cache(async (): Promise<GeneralFounderLink | null> => {
+  const supabase = await createClient()
+  const { data: link, error } = await supabase
+    .from('form_links')
+    .select('id, token, form:forms!form_id!inner(is_associate_form)')
+    .eq('is_general', true)
+    .eq('form.is_associate_form', true)
+    .maybeSingle()
+  if (error) {
+    console.error('[associate-referrals] general link read failed:', error.message)
+    return null
+  }
+  if (!link) return null
+
+  const { count, error: countErr } = await supabase
+    .from('pipeline_entries').select('id', { count: 'exact', head: true }).eq('form_link_id', link.id)
+  if (countErr) console.error('[associate-referrals] general link count failed:', countErr.message)
+  return { token: link.token as string, sourcedCount: count ?? 0 }
+})
+
 export type TeamReferralLink = {
   userId: string
   name: string | null
@@ -117,7 +143,7 @@ export const fetchAllReferralLinks = cache(async (): Promise<TeamReferralLink[]>
   const [{ data: users, error: usersErr }, { data: links, error: linksErr }, { data: entries, error: entriesErr }] = await Promise.all([
     supabase.from('users').select('id, name, email, role, photo_url')
       .in('role', ['founder', 'admin', 'associate', 'general', 'hr']).order('name'),
-    supabase.from('form_links').select('token, slug, created_by').eq('form_id', form.id),
+    supabase.from('form_links').select('token, slug, created_by').eq('form_id', form.id).not('created_by', 'is', null),
     supabase.from('pipeline_entries').select('sourced_by_associate_id')
       .eq('pipeline_id', form.pipeline_id).not('sourced_by_associate_id', 'is', null),
   ])

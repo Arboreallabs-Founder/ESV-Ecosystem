@@ -38,7 +38,9 @@ export async function proxy(request: NextRequest) {
   // Page-level code calls getUser() for authoritative validation.
   const { data: { session } } = await supabase.auth.getSession()
   const pathname = request.nextUrl.pathname
-  const isPublicRoute = PUBLIC_ROUTES.some((r) => pathname.startsWith(r))
+  // '/apply' exactly is the general founder link (20261013000000); matched exactly so no other route
+  // starting with those letters goes public by accident.
+  const isPublicRoute = pathname === '/apply' || PUBLIC_ROUTES.some((r) => pathname.startsWith(r))
 
   if (!session && !isPublicRoute) {
     return NextResponse.redirect(new URL('/login', request.url))
