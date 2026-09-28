@@ -41,7 +41,7 @@ export default function ReferralLinksTable({ links }: { links: TeamReferralLink[
           <div className={styles.pageTitle}>Referral Links</div>
           <div className={styles.pageSub}>
             {links.filter((l) => l.token).length} of {links.length} team members have a link ·
-            {' '}{total} company{total === 1 ? '' : ' companies'} sourced through them
+            {' '}{total} {total === 1 ? 'founder' : 'founders'} came in through them
           </div>
         </div>
       </div>
@@ -57,7 +57,7 @@ export default function ReferralLinksTable({ links }: { links: TeamReferralLink[
                 <th>Name</th>
                 <th>Role</th>
                 <th>Link</th>
-                <th style={{ textAlign: 'right' }}>Sourced</th>
+                <th style={{ textAlign: 'right' }}>Founders</th>
               </tr>
             </thead>
             <tbody>

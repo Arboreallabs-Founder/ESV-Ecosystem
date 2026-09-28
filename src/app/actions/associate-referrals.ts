@@ -40,6 +40,8 @@ export async function getOrCreateMyAssociateReferralLink(): Promise<{ token: str
     .single()
   if (error) throw dbFailure('create your referral link', error)
 
+  revalidatePath('/referrals')
+  revalidatePath('/admin/referrals')
   revalidatePath('/deal-desk')
   return { token: data.token as string }
 }

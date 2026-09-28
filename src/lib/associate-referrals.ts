@@ -60,9 +60,16 @@ export const fetchMySourcedEntries = cache(async (): Promise<SourcedEntry[]> => 
   const user = await getUser()
   if (!user) return []
 
+  // Scoped to the referral pipeline: the attribution trigger also credits links on other forms, and
+  // this list sits under a "sourced so far" link that points at this pipeline's board.
+  const { data: pipeline } = await supabase
+    .from('pipelines').select('id').eq('is_associate_intake', true).maybeSingle()
+  if (!pipeline) return []
+
   const { data, error } = await supabase
     .from('pipeline_entries')
     .select('id, title, submitted_at, submitter_name, submitter_email, rejection_reason, stage:pipeline_stages!stage_id(name, stage_type, color)')
+    .eq('pipeline_id', pipeline.id)
     .eq('sourced_by_associate_id', user.id)
     .order('submitted_at', { ascending: false })
   if (error) {
@@ -95,7 +102,7 @@ export const fetchAllReferralLinks = cache(async (): Promise<TeamReferralLink[]>
   const supabase = await createClient()
 
   const { data: form, error: formErr } = await supabase
-    .from('forms').select('id').eq('is_associate_form', true).maybeSingle()
+    .from('forms').select('id, pipeline_id').eq('is_associate_form', true).maybeSingle()
   if (formErr) {
     console.error('[associate-referrals] form read failed:', formErr.message)
     return []
@@ -106,7 +113,8 @@ export const fetchAllReferralLinks = cache(async (): Promise<TeamReferralLink[]>
     supabase.from('users').select('id, name, email, role, photo_url')
       .in('role', ['founder', 'admin', 'associate', 'general', 'hr']).order('name'),
     supabase.from('form_links').select('token, created_by').eq('form_id', form.id),
-    supabase.from('pipeline_entries').select('sourced_by_associate_id').not('sourced_by_associate_id', 'is', null),
+    supabase.from('pipeline_entries').select('sourced_by_associate_id')
+      .eq('pipeline_id', form.pipeline_id).not('sourced_by_associate_id', 'is', null),
   ])
   if (usersErr || linksErr || entriesErr) {
     console.error('[associate-referrals] roster read failed:', usersErr?.message ?? linksErr?.message ?? entriesErr?.message)

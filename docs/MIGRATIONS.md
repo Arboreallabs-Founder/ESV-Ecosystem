@@ -815,5 +815,23 @@ No new RLS: `fetchAllReferralLinks()` (the `/admin/referrals` "everyone's links"
 `form_link` in the org — this page is an app-layer view over data they could already query, not a
 new grant.
 
+### 20261009000000_esv_founder_form.sql
+The link goes to **founders filling it in about their own company**, not to someone passing a lead
+on — the `20261007`/`20261008` copy was worded as a third-party referral. Now: internal title "ESV
+Founder Intake", public `display_name` "Tell us about your startup", questions in the founder's own
+voice. Questions are updated **in place** (matched on the seeded wording), not rebuilt, because
+`pipeline_entry_answers` points at `form_nodes` ids.
+
+It also fixes a double-ask: "Who is the contact…" was free text with no `contact_field`, so
+`FormRenderer`'s trailing name/email step asked again. It's now "Your name" (`contact_field =
+'name'`) plus a new "Your email" (`'email'`) spliced in before the last question — with both tagged
+the trailing step is skipped and the answers land in `submitter_name`/`submitter_email`.
+
+**Narrows `"Sourcing user reads own sourced entries"` to the referral pipeline.** Because
+`attribute_entry_to_sourcer()` credits any internal user's link on *any* form, the `20261007`
+version let an associate read entries on other pipelines they'd issued a link for. The pipeline
+check goes through the `SECURITY DEFINER` `is_associate_intake_pipeline()` rather than a subquery,
+so it can't re-enter a `pipelines` policy (the `20261004000000` recursion class).
+
 No scheduler is involved: there is no nightly job that opens or closes a day plan, on the terms
 `20260914000000` set out. A plan exists because someone wrote it.

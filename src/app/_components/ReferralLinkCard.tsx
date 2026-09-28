@@ -7,9 +7,9 @@ import { alertError } from '@/lib/client-errors'
 import styles from './referral-link-card.module.css'
 
 /**
- * Any ESV team member's own referral link — post it on LinkedIn, send it directly, whatever.
- * Whoever fills it in submits themselves; it lands on the ESV Referrals pipeline credited to
- * whoever shared the link (see supabase/migrations/20261007000000, 20261008000000).
+ * Any ESV team member's own founder link — post it on LinkedIn, send it directly. A founder fills
+ * it in about their own startup; it lands on the ESV Referrals pipeline credited to whoever shared
+ * the link (see supabase/migrations/20261007000000 → 20261009000000).
  */
 export default function ReferralLinkCard({ initialToken, pipelineId, sourcedCount }: {
   initialToken: string | null
@@ -32,13 +32,13 @@ export default function ReferralLinkCard({ initialToken, pipelineId, sourcedCoun
   return (
     <div className={styles.card}>
       <div className={styles.body}>
-        <div className={styles.title}>Your referral link</div>
+        <div className={styles.title}>Your founder link</div>
         <div className={styles.sub}>
-          Share it on LinkedIn or send it directly — whoever fills it in submits themselves, and it
-          lands here credited to you.
+          Post it on LinkedIn or send it to a founder — they tell us about their startup themselves,
+          and it comes back credited to you.
           {sourcedCount > 0 && pipelineId && (
             <> <Link href={`/pipelines/${pipelineId}`} className={styles.subLink}>
-              {sourcedCount} sourced so far →
+              {sourcedCount} {sourcedCount === 1 ? 'founder' : 'founders'} so far →
             </Link></>
           )}
         </div>

@@ -25,8 +25,8 @@ export default async function ReferralsPage() {
             <WikiButton sectionKey="referrals" />
           </div>
           <div className={styles.pageSub}>
-            One link, shareable anywhere — LinkedIn, email, a text. Whoever fills it in submits
-            themselves, and it comes back credited to you.
+            One link, shareable anywhere — LinkedIn, email, a text. Founders fill it in about their
+            own startup, and every submission comes back credited to you.
           </div>
         </div>
       </div>
@@ -39,7 +39,7 @@ export default async function ReferralsPage() {
 
       {sourced.length > 0 && (
         <>
-          <div className={styles.sectionTitle}>What you&apos;ve sourced</div>
+          <div className={styles.sectionTitle}>Founders who came in through your link</div>
           <div className={styles.list}>
             {sourced.map((s) => (
               <div key={s.id} className={styles.card}>
