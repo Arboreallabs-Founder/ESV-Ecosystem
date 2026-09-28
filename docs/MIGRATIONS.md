@@ -765,5 +765,36 @@ so a copy step added anywhere else would only run for people who sign in after t
 silently skipping anyone invited before it. No RLS or enum changes needed: role itself is untouched,
 `is_external` just rides alongside it through the same trigger.
 
+### 20261007000000_associate_referral_form.sql
+A shareable form for associates, the same shape as the partner form (`20260906000000` /
+`20260907000000`): a dedicated "Associate Sourced" pipeline (`is_associate_intake`), a dedicated
+"Associate Referral" form pointed at it (`is_associate_form`), and a `sourced_by_associate_id`
+column on `pipeline_entries` credited to whoever shared the link.
+
+Not built on `desk_deals` (Deal Desk). `createDeskDeal` (same day) already covers "an associate
+types in a company they heard about"; this is the other half — a link sent so the company submits
+*itself* — which needs the anonymous-submission path `/f/[token]` + `submit_form_entry()` already
+provide. Reusing that is strictly less work than building a second one, and it gets a Kanban board
+for free (`/pipelines/[id]`, already generic).
+
+**The attribution trigger is generalised, not duplicated.** `attribute_entry_to_partner()`
+(`20260906000000`) only ever fired for a partner's link. Renamed to `attribute_entry_to_sourcer()`,
+it now does one lookup of the link's creator and credits `sourced_by_partner_id` if they're a
+partner or `sourced_by_associate_id` otherwise (founder/admin/associate/general/hr — anyone without
+a `franchise_partner_id`). This is a strict widening: previously a non-partner's link left an entry
+completely unattributed, so nothing that reads `sourced_by_partner_id` changes behaviour, and
+nothing read `sourced_by_associate_id` before this migration existed for it to affect.
+
+Deliberately **no new `form_links`/`forms` policy**: `"Org internal form links access"`
+(`20260924000000`) already lets founder/admin/associate create and read a link on *any* form in
+their org, which is exactly what letting them issue a link to this one needs. The partner form
+needed its own lock-down policies because a partner is external and was using that breadth to skip
+the SGP coordinator; an associate issuing a link to a different internal form isn't bypassing
+anything, so no equivalent restriction was added here.
+
+The new `"Sourcing user reads own sourced entries"` policy is a plain
+`sourced_by_associate_id = auth.uid()` check — no subquery into `pipeline_entries` itself, so it
+carries none of the indirect-recursion risk `20261004000000` had to fix for personal to-do mentions.
+
 No scheduler is involved: there is no nightly job that opens or closes a day plan, on the terms
 `20260914000000` set out. A plan exists because someone wrote it.

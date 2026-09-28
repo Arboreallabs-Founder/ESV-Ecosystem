@@ -69,6 +69,14 @@ restricted**: RLS only grants founders/admins full visibility and associates the
 `general` role has no access to Deal Desk at all (unlike Pipelines/Active Deals, where general has
 read-only visibility).
 
+Two more ways in, both on an associate's own board: **"+ Log a deal"** is a quick-capture modal
+(name required, everything else optional — `createDeskDeal`) for typing in a company you heard
+about without building a CSV row first. **"Your referral link"** is the shareable half — a public
+`/f/[token]` link, same mechanism as the partner referral link, that a founder fills in themselves;
+it lands on a dedicated "Associate Sourced" pipeline (`/pipelines/[id]`, standard Kanban) credited
+to whoever shared it, not in `desk_deals`. See `docs/MIGRATIONS.md` §`20261007000000` for why the
+two stay separate systems.
+
 ### SGP Desk & partner companies (`/sgp-desk`, `/my-companies`)
 The partner-sourced sibling of Deal Desk. A partner logs a company they've found with their own
 comments (`/my-companies` — only the name is required, since the point is to capture a lead while
