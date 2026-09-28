@@ -1,0 +1,50 @@
+.card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.85rem 1.1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+}
+
+.body { flex: 1; min-width: 220px; }
+.title { font-size: 0.875rem; font-weight: 600; color: var(--color-text); }
+.sub { font-size: 0.8125rem; color: var(--color-muted); margin-top: 0.15rem; }
+.subLink { color: var(--color-primary); font-weight: 600; }
+
+.linkRow { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.linkBox {
+  font-size: 0.8125rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
+.btn {
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-text);
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn:hover { background: var(--color-card-raised); }
+.btnPrimary {
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btnPrimary:disabled { opacity: 0.6; cursor: not-allowed; }

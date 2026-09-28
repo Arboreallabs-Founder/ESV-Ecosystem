@@ -75,3 +75,58 @@ export const fetchMySourcedEntries = cache(async (): Promise<SourcedEntry[]> => 
     stage: Array.isArray(r.stage) ? r.stage[0] ?? null : r.stage ?? null,
   }))
 })
+
+export type TeamReferralLink = {
+  userId: string
+  name: string | null
+  email: string
+  role: string
+  photoUrl: string | null
+  token: string | null
+  sourcedCount: number
+}
+
+/**
+ * Every internal team member, their referral link if they have one, and how many entries it's
+ * brought in. Founder/admin only — "Org internal form links access" (20260924000000) already lets
+ * them read every form_link in the org, this just shapes that into one roster.
+ */
+export const fetchAllReferralLinks = cache(async (): Promise<TeamReferralLink[]> => {
+  const supabase = await createClient()
+
+  const { data: form, error: formErr } = await supabase
+    .from('forms').select('id').eq('is_associate_form', true).maybeSingle()
+  if (formErr) {
+    console.error('[associate-referrals] form read failed:', formErr.message)
+    return []
+  }
+  if (!form) return []
+
+  const [{ data: users, error: usersErr }, { data: links, error: linksErr }, { data: entries, error: entriesErr }] = await Promise.all([
+    supabase.from('users').select('id, name, email, role, photo_url')
+      .in('role', ['founder', 'admin', 'associate', 'general', 'hr']).order('name'),
+    supabase.from('form_links').select('token, created_by').eq('form_id', form.id),
+    supabase.from('pipeline_entries').select('sourced_by_associate_id').not('sourced_by_associate_id', 'is', null),
+  ])
+  if (usersErr || linksErr || entriesErr) {
+    console.error('[associate-referrals] roster read failed:', usersErr?.message ?? linksErr?.message ?? entriesErr?.message)
+    return []
+  }
+
+  const tokenByUser = new Map((links ?? []).map((l) => [l.created_by, l.token as string]))
+  const countByUser = new Map<string, number>()
+  for (const e of entries ?? []) {
+    const id = e.sourced_by_associate_id as string
+    countByUser.set(id, (countByUser.get(id) ?? 0) + 1)
+  }
+
+  return (users ?? []).map((u) => ({
+    userId: u.id,
+    name: u.name,
+    email: u.email,
+    role: u.role,
+    photoUrl: u.photo_url,
+    token: tokenByUser.get(u.id) ?? null,
+    sourcedCount: countByUser.get(u.id) ?? 0,
+  }))
+})

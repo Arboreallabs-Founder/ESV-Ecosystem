@@ -796,5 +796,24 @@ The new `"Sourcing user reads own sourced entries"` policy is a plain
 `sourced_by_associate_id = auth.uid()` check — no subquery into `pipeline_entries` itself, so it
 carries none of the indirect-recursion risk `20261004000000` had to fix for personal to-do mentions.
 
+### 20261008000000_esv_referral_for_everyone.sql
+Opens `20261007000000`'s pipeline/form to every internal role, not just associates — one link
+anyone on the team can post on LinkedIn or send directly. Data-only: the `is_associate_*` column
+and flag names stay as they are (renaming buys nothing this soon after creating them and risks
+more), what changes is the seeded row's public-facing copy (`forms.title`/`description` — shown to
+the anonymous person filling the form in at `/f/[token]`, never internal-only) and the pipeline's
+internal name, from "Associate Sourced" to "ESV Referrals" since it's no longer accurate once every
+role can source through it.
+
+**Backfills a link for everyone already here.** A one-time `DO` block, not an ongoing job: it
+inserts a `form_links` row for every founder/admin/associate/general/hr user who doesn't already
+have one on this form. Anyone who joins afterward gets theirs the normal way — the first time they
+open `/referrals`, via the already-idempotent `getOrCreateMyAssociateReferralLink()`.
+
+No new RLS: `fetchAllReferralLinks()` (the `/admin/referrals` "everyone's links" page) reads off
+`"Org internal form links access"` (`20260924000000`), which already lets founder/admin read every
+`form_link` in the org — this page is an app-layer view over data they could already query, not a
+new grant.
+
 No scheduler is involved: there is no nightly job that opens or closes a day plan, on the terms
 `20260914000000` set out. A plan exists because someone wrote it.

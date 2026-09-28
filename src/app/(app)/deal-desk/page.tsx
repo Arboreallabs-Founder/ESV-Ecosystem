@@ -5,7 +5,7 @@ import { fetchAssociateReferralForm, fetchMySourcedEntries } from '@/lib/associa
 import DeskRoster from './_components/DeskRoster'
 import DeskModule from './_components/DeskModule'
 import DeskOverviewPanel from './_components/DeskOverview'
-import ReferralLinkCard from './_components/ReferralLinkCard'
+import ReferralLinkCard from '@/app/_components/ReferralLinkCard'
 
 // Role-aware landing:
 //   founder/admin (reviewers) → associate roster

@@ -69,13 +69,20 @@ restricted**: RLS only grants founders/admins full visibility and associates the
 `general` role has no access to Deal Desk at all (unlike Pipelines/Active Deals, where general has
 read-only visibility).
 
-Two more ways in, both on an associate's own board: **"+ Log a deal"** is a quick-capture modal
-(name required, everything else optional — `createDeskDeal`) for typing in a company you heard
-about without building a CSV row first. **"Your referral link"** is the shareable half — a public
-`/f/[token]` link, same mechanism as the partner referral link, that a founder fills in themselves;
-it lands on a dedicated "Associate Sourced" pipeline (`/pipelines/[id]`, standard Kanban) credited
-to whoever shared it, not in `desk_deals`. See `docs/MIGRATIONS.md` §`20261007000000` for why the
-two stay separate systems.
+One more way in, on an associate's own board: **"+ Log a deal"** is a quick-capture modal (name
+required, everything else optional — `createDeskDeal`) for typing in a company you heard about
+without building a CSV row first.
+
+### Refer to ESV (`/referrals`, `/admin/referrals`)
+The shareable half of team sourcing — every internal role (founder/admin/associate/general/hr), not
+only associates. `/referrals` gives each person their own public `/f/[token]` link (LinkedIn, email,
+a text — anywhere) via **"Get my link"**; whoever fills it in submits themselves, and it lands on a
+dedicated "ESV Referrals" pipeline (`/pipelines/[id]`, standard Kanban), credited to whoever shared
+it — not in `desk_deals`; same underlying mechanism as the partner referral link on `/my-companies`.
+Every existing internal user already has a link, backfilled once when the feature shipped; anyone
+who joins after gets theirs on first visit. `/admin/referrals` (founder/admin only) lists everyone's
+link and how many companies it's brought in. See `docs/MIGRATIONS.md` §`20261007000000` /
+§`20261008000000` for why this stays a separate system from Deal Desk.
 
 ### SGP Desk & partner companies (`/sgp-desk`, `/my-companies`)
 The partner-sourced sibling of Deal Desk. A partner logs a company they've found with their own

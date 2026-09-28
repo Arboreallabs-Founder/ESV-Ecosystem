@@ -314,6 +314,13 @@ const NAV_ITEMS: NavEntry[] = [
     icon: <Icon d="M9 12h6m-6 4h6m2 5H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5.586a1 1 0 0 1 .707.293l5.414 5.414a1 1 0 0 1 .293.707V19a2 2 0 0 1-2 2Z" />,
   },
   {
+    href: '/referrals',
+    label: 'Refer to ESV',
+    roles: ['founder', 'admin', 'associate', 'general', 'hr'],
+    section: 'Deal Flow',
+    icon: <Icon d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />,
+  },
+  {
     href: '/companies',
     label: 'Companies',
     roles: ['founder', 'admin', 'associate', 'general'],
@@ -339,6 +346,13 @@ const NAV_ITEMS: NavEntry[] = [
     roles: ['founder', 'admin', 'hr'],
     section: 'Database',
     icon: <Icon d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />,
+  },
+  {
+    href: '/admin/referrals',
+    label: 'Referral Links',
+    roles: ['founder', 'admin'],
+    section: 'Admin',
+    icon: <Icon d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />,
   },
   {
     href: '/admin/activity-log',
