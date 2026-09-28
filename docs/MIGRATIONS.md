@@ -866,5 +866,27 @@ anon-callable lookup `/apply/[slug]` uses; returning the token discloses nothing
 the slug already lets you submit through that link. Renaming a slug (`setReferralSlug`, own link or
 any as founder/admin) retires the old `/apply/` address.
 
+### 20261012000000_submission_to_company_profile.sql
+Founder-form and Partner Form answers now reach the company profile. Before this, accepting an entry
+created the company by name only; everything else stayed in `pipeline_entry_answers`.
+
+`form_nodes.field_key` says what each answer means (`website`, `ask`, `annual_revenue`, `deck_url`,
+`prefunding_interest`…) — explicit rather than matched on wording, same reasoning as
+`contact_field`. Tagged here on both forms by their current wording, old and 20260925 variants.
+
+`apply_entry_to_company(entry, overwrite)` maps the tagged answers onto the company: website,
+incorporation type, ARR (last-FY turnover), MRR (last month), pre-money (valuation), ask, sectors
+(submitted first, the team's kept after), the founder (matched by name; LinkedIn added), and the deck
+into Documents. `acceptDeal` calls it with `overwrite = true` — the team chose "latest submission
+wins". Business stage is deliberately **not** mapped: the profile's `stage` is a funding round that
+drives investor matching, the form's is Idea/MVP/Early revenue. `parse_inr_amount()` reads amounts
+as founders type them ("2 Cr", "₹50L", "5,00,000"); unparseable ones are left out rather than
+guessed. `SECURITY DEFINER` with its own org/role check, so an RLS refusal can't make a fill fail
+silently. **No backfill**, by decision — past companies are unchanged until re-accepted; the
+function's `overwrite = false` mode exists for a later one.
+
+The full submission shows on the profile as the Application section (`fetchCompanyApplications`),
+grouped by `field_key`, with the services the founder asked for pulled out as highlights.
+
 No scheduler is involved: there is no nightly job that opens or closes a day plan, on the terms
 `20260914000000` set out. A plan exists because someone wrote it.

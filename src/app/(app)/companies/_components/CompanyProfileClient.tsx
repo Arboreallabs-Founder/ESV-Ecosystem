@@ -28,6 +28,8 @@ import DonutChart from './DonutChart'
 import { SpecField, OVERVIEW_SPECS, TRACTION_SPECS, RAISE_SPECS, PRODUCT_SPECS, CAP_TABLE_SPECS, initValue, coerce, type Spec } from './field-specs'
 import { formatInr, formatDate, initials, locationLabel } from './format'
 import Avatar from '@/app/_components/Avatar'
+import ApplicationSection from './ApplicationSection'
+import type { CompanyApplication } from '@/lib/company-applications'
 import { proposeCompanyAttribution } from '@/app/actions/partner-investor-referrals'
 import { alertError, describeError } from '@/lib/client-errors'
 import styles from '../companies.module.css'
@@ -195,7 +197,7 @@ function AttributionRow({
 
 export default function CompanyProfileClient({
   company, fieldDefs, canManage, canAuthorCard, canCreateDeal, teamMembers, suggestions, dealCategories,
-  canCreditPartner = false, franchisePartners = [], attributionClaim = null,
+  canCreditPartner = false, franchisePartners = [], attributionClaim = null, applications = [],
 }: {
   company: Company; fieldDefs: CompanyFieldDef[]; canManage: boolean; canAuthorCard: boolean; canCreateDeal: boolean; teamMembers: Team; suggestions: SuggestedInvestor[]
   dealCategories: DealCategory[]
@@ -203,6 +205,8 @@ export default function CompanyProfileClient({
   canCreditPartner?: boolean
   franchisePartners?: Array<{ id: string; name: string }>
   attributionClaim?: PartnerAttributionClaim | null
+  /** The form submissions behind this company, newest first. */
+  applications?: CompanyApplication[]
 }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
@@ -283,6 +287,10 @@ export default function CompanyProfileClient({
 
       <div className={styles.profileBody}>
         <div className={styles.profileMain}>
+
+      {/* The founder's own words first: everything below that came from the form was copied out of
+          this, and it also holds what has no field of its own (stage, services they want). */}
+      <ApplicationSection applications={applications} />
 
       {/* Key metrics */}
       <div className={styles.section}>

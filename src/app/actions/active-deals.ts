@@ -238,6 +238,15 @@ export async function acceptDeal(
   // Accepting always means the deal is active — percolate that into the linked company profile.
   await syncCompanyStatusFromDealState(supabase, resolvedCompanyId, 'active')
 
+  // Carry what the founder told us on the form into the profile: website, sectors, revenue, raise,
+  // valuation, founder, deck. Latest submission wins (20261012000000). Only tagged questions map, so
+  // entries from forms without tags are a no-op. Non-fatal like the sync above — the acceptance is
+  // what matters, and the full answers stay readable in the profile's Application section.
+  if (resolvedCompanyId) {
+    const { error: applyErr } = await supabase.rpc('apply_entry_to_company', { p_entry: entryId, p_overwrite: true })
+    if (applyErr) console.error('[acceptDeal] could not fill company profile from submission:', applyErr.message)
+  }
+
   // A partner-sourced entry reaching Accepted is the moment their introduction became a deal, and
   // therefore the moment the fee question arises. File the claim here rather than leaving somebody
   // to notice later: the attribution was recorded on the entry at submission, but nothing was ever

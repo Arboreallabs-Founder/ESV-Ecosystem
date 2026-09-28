@@ -1,0 +1,63 @@
+/* The founder's own submission, on the company profile. */
+
+.meta { font-size: 0.8125rem; color: var(--color-muted); margin: -0.35rem 0 0.9rem; }
+
+.wants { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin-bottom: 1rem; }
+.wantsLabel { font-size: 0.75rem; font-weight: 700; color: var(--color-text); margin-right: 0.15rem; }
+.want {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(116, 95, 253, 0.1);
+  color: var(--color-primary);
+  border: 1px solid rgba(116, 95, 253, 0.25);
+}
+
+/* Groups flow into as many columns as fit — the page fills the screen rather than capping. */
+.groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.75rem;
+}
+
+.group {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  padding: 0.85rem 1rem;
+}
+.groupTitle {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+  margin: 0 0 0.6rem;
+}
+
+.row { display: grid; grid-template-columns: minmax(7.5rem, 40%) 1fr; gap: 0.75rem; padding: 0.35rem 0; }
+.row + .row { border-top: 1px solid var(--color-border); }
+.label { font-size: 0.75rem; color: var(--color-muted); line-height: 1.45; }
+.value { font-size: 0.8125rem; color: var(--color-text); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.value a { color: var(--color-primary); text-decoration: none; }
+.value a:hover { text-decoration: underline; }
+
+/* Long free-text answers read better full-width, under their question. */
+.rowStacked { grid-template-columns: 1fr; gap: 0.2rem; }
+
+.switcher { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.9rem; }
+.switchBtn {
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  color: var(--color-muted);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+.switchBtnOn { color: var(--color-primary); border-color: var(--color-primary); }
+
+.toggle { border: none; background: none; color: var(--color-primary); font-size: 0.8125rem; font-weight: 600; cursor: pointer; font-family: inherit; }

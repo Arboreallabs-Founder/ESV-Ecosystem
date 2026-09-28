@@ -3,6 +3,7 @@ import { getUser } from '@/lib/user'
 import { fetchCompany, fetchCompanyFieldDefs, fetchInvestorSuggestions } from '@/lib/companies'
 import { getInternalUsers, getCategories } from '@/app/actions/active-deals'
 import { isSgpCoordinator } from '@/lib/partner-companies'
+import { fetchCompanyApplications } from '@/lib/company-applications'
 import { createClient } from '@/lib/supabase/server'
 import type { PartnerAttributionClaim } from '@/lib/types'
 import CompanyProfileClient from '../_components/CompanyProfileClient'
@@ -17,7 +18,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
 
   const supabase = await createClient()
   const isLead = ['founder', 'admin'].includes(user.role ?? '')
-  const [fieldDefs, team, suggestions, dealCategories, coordinator, { data: partners }, { data: claimRow }] = await Promise.all([
+  const [fieldDefs, team, suggestions, dealCategories, coordinator, { data: partners }, { data: claimRow }, applications] = await Promise.all([
     fetchCompanyFieldDefs(),
     getInternalUsers().catch(() => []),
     fetchInvestorSuggestions(company.sectors, company.meta_tags, company.stage),
@@ -32,6 +33,8 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
       .eq('company_id', id)
       .neq('status', 'rejected')
       .maybeSingle(),
+    // The form submissions behind this company, shown as the Application section.
+    fetchCompanyApplications(id),
   ])
 
   const canManage = isLead
@@ -43,5 +46,5 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
     ? ({ ...(claimRow as any), partner: one((claimRow as any).partner) } as PartnerAttributionClaim)
     : null
 
-  return <CompanyProfileClient company={company} fieldDefs={fieldDefs} canManage={canManage} canAuthorCard={canAuthorCard} canCreateDeal={canCreateDeal} teamMembers={team} suggestions={suggestions} dealCategories={dealCategories} canCreditPartner={coordinator} franchisePartners={(partners ?? []) as Array<{ id: string; name: string }>} attributionClaim={attributionClaim} />
+  return <CompanyProfileClient company={company} fieldDefs={fieldDefs} canManage={canManage} canAuthorCard={canAuthorCard} canCreateDeal={canCreateDeal} teamMembers={team} suggestions={suggestions} dealCategories={dealCategories} canCreditPartner={coordinator} franchisePartners={(partners ?? []) as Array<{ id: string; name: string }>} attributionClaim={attributionClaim} applications={applications} />
 }
