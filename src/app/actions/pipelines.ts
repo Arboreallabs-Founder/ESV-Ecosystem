@@ -265,18 +265,35 @@ export async function getEntryStageAnswers(entryId: string) {
   return rows.map(({ position, ...r }) => r)
 }
 
+const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null)
+
 export async function getEntryAnswers(entryId: string) {
   const { supabase } = await requireAuth()
   const { data } = await supabase
     .from('pipeline_entry_answers')
-    .select('id, node_id, answer_text, node:form_nodes(question_text, answer_type)')
+    .select('id, node_id, answer_text, question_text, node:form_nodes(question_text, answer_type, position_y)')
     .eq('entry_id', entryId)
-  return (data ?? []).map((row: any) => ({
-    id: row.id,
-    node_id: row.node_id,
-    answer_text: row.answer_text ?? null,
-    node: Array.isArray(row.node) ? (row.node[0] ?? null) : (row.node ?? null),
-  })) as Array<{
+  type AnswerRow = {
+    id: string; node_id: string | null; answer_text: string | null; question_text: string | null
+    node: AnswerNode | AnswerNode[] | null
+  }
+  type AnswerNode = { question_text: string | null; answer_type: string | null; position_y: number | null }
+  return ((data ?? []) as unknown as AnswerRow[])
+    // In the order the form asks them, rather than whatever order the rows came back in.
+    .sort((a, b) => ((one(a.node)?.position_y ?? 0) - (one(b.node)?.position_y ?? 0)))
+    .map((row) => {
+      const node = one(row.node)
+      return {
+        id: row.id,
+        node_id: row.node_id,
+        answer_text: row.answer_text ?? null,
+        // A question since removed from the form still shows, by the wording saved with the answer
+        // (20261016000000).
+        node: node
+          ? { question_text: node.question_text ?? row.question_text ?? null, answer_type: node.answer_type ?? null }
+          : { question_text: row.question_text ?? null, answer_type: null },
+      }
+    }) as Array<{
     id: string
     node_id: string
     answer_text: string | null

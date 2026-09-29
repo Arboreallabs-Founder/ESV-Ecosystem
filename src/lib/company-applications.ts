@@ -39,7 +39,7 @@ export const fetchCompanyApplications = cache(async (companyId: string): Promise
       partner:franchise_partners!sourced_by_partner_id(name),
       associate:users!sourced_by_associate_id(name),
       link:form_links!form_link_id(is_general),
-      answers:pipeline_entry_answers(answer_text, node:form_nodes!node_id(question_text, field_key, contact_field, position_y))
+      answers:pipeline_entry_answers(answer_text, question_text, node:form_nodes!node_id(question_text, field_key, contact_field, position_y))
     `)
     .eq('company_id', companyId)
     .not('form_id', 'is', null)
@@ -61,7 +61,7 @@ export const fetchCompanyApplications = cache(async (companyId: string): Promise
       .map((a) => {
         const node = one(a.node) as { question_text: string | null; field_key: string | null; contact_field: string | null; position_y: number | null } | null
         return {
-          question: node?.question_text ?? '',
+          question: node?.question_text ?? a.question_text ?? '',
           answer: (a.answer_text ?? '').trim(),
           key: node?.field_key ?? null,
           contact: node?.contact_field ?? null,

@@ -91,12 +91,16 @@ export async function saveFormGraph(
 ) {
   const { supabase } = await requireBuilder()
 
-  // Replace all nodes, edges, and options: delete edges and nodes (CASCADE deletes options)
-  await supabase.from('form_edges').delete().eq('form_id', formId)
-  await supabase.from('form_nodes').delete().eq('form_id', formId)
+  // Update in place. This used to delete every node and re-insert it with the same id, which
+  // cascaded to pipeline_entry_answers and silently wiped every stored response to the form on each
+  // save, and dropped form_nodes.field_key, which isn't sent from here (20261016000000). Now nodes
+  // and options are upserted by id and only the ones actually removed are deleted. Edges have
+  // nothing hanging off them, so they are still replaced wholesale.
+  const { error: edgeDelErr } = await supabase.from('form_edges').delete().eq('form_id', formId)
+  if (edgeDelErr) throw dbFailure('save the form', edgeDelErr)
 
   if (nodes.length > 0) {
-    const { error: nodeErr } = await supabase.from('form_nodes').insert(
+    const { error: nodeErr } = await supabase.from('form_nodes').upsert(
       nodes.map(n => ({
         id: n.id,
         form_id: formId,
@@ -107,21 +111,38 @@ export async function saveFormGraph(
         question_text: n.question_text,
         answer_type: n.answer_type,
         contact_field: n.contact_field ?? null,
-      }))
+      })),
+      { onConflict: 'id' },
     )
-    if (nodeErr) throw nodeErr
+    if (nodeErr) throw dbFailure('save the questions', nodeErr)
+  }
 
-    const allOptions = nodes.flatMap(n => n.options.map(o => ({ id: o.id, node_id: n.id, label: o.label, position: o.position })))
-    if (allOptions.length > 0) {
-      await supabase.from('form_node_options').insert(allOptions)
-    }
+  // Questions taken off the canvas. Their answers stay (the FK sets node_id null and each answer
+  // keeps its own copy of the question's wording).
+  const keepIds = nodes.map(n => n.id)
+  let removeNodes = supabase.from('form_nodes').delete().eq('form_id', formId)
+  if (keepIds.length > 0) removeNodes = removeNodes.not('id', 'in', `(${keepIds.join(',')})`)
+  const { error: nodeDelErr } = await removeNodes
+  if (nodeDelErr) throw dbFailure('remove deleted questions', nodeDelErr)
+
+  const allOptions = nodes.flatMap(n => n.options.map(o => ({ id: o.id, node_id: n.id, label: o.label, position: o.position })))
+  const questionIds = nodes.filter(n => n.type === 'question').map(n => n.id)
+  if (questionIds.length > 0) {
+    let removeOptions = supabase.from('form_node_options').delete().in('node_id', questionIds)
+    if (allOptions.length > 0) removeOptions = removeOptions.not('id', 'in', `(${allOptions.map(o => o.id).join(',')})`)
+    const { error: optDelErr } = await removeOptions
+    if (optDelErr) throw dbFailure('save the options', optDelErr)
+  }
+  if (allOptions.length > 0) {
+    const { error: optErr } = await supabase.from('form_node_options').upsert(allOptions, { onConflict: 'id' })
+    if (optErr) throw dbFailure('save the options', optErr)
   }
 
   if (edges.length > 0) {
     const { error: edgeErr } = await supabase.from('form_edges').insert(
       edges.map(e => ({ id: e.id, form_id: formId, source_node_id: e.source_node_id, target_node_id: e.target_node_id, condition_value: e.condition_value, condition_label: e.condition_label }))
     )
-    if (edgeErr) throw edgeErr
+    if (edgeErr) throw dbFailure('save the connections', edgeErr)
   }
 }
 

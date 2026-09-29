@@ -939,3 +939,14 @@ per rule per project per person. Someone taken off a role has their open copy de
 so it doesn't count as completed on their weekly update). **The client's `/pr/` link shows the Drive
 project folder** once it's linked (`get_project_public` returns `drive_url`), since that's where the
 client uploads their data. Ends by re-syncing every live project so shared roles get copies now.
+
+### 20261016000000_form_answers_survive_edits.sql
+**Fixes form responses disappearing.** Saving a form in the builder (`saveFormGraph`) deleted every
+`form_node` and re-inserted it with the same id; `pipeline_entry_answers.node_id` cascaded, so every
+save wiped every stored answer to that form (entries kept their title, which is copied from the
+first answer, and showed "No answers recorded"). The same save dropped `form_nodes.field_key`.
+The builder now upserts nodes and options and deletes only the ones removed. Belt and braces here:
+answers keep their own copy of the question's wording (`question_text`, filled by trigger on
+insert and backfilled), and the node FK is now `ON DELETE SET NULL`, so removing a question keeps
+its answers. The 20261012 `field_key` tags are re-applied. Answers already lost can only come back
+from a Supabase backup.
