@@ -1131,3 +1131,50 @@
   align-items: center;
   gap: 0.35rem;
 }
+
+/* ── Automatic stage tasks (20261017000000) ─────────────────────────── */
+.autoTaskBadge {
+  font-size: 0.625rem; font-weight: 700; letter-spacing: 0.02em;
+  padding: 0.1rem 0.4rem; border-radius: 999px;
+  background: rgba(116, 95, 253, 0.12); color: var(--color-primary); white-space: nowrap;
+}
+.taskDraftRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 11rem 10rem auto 6rem auto;
+  gap: 0.5rem; align-items: center;
+}
+.taskDraftDue { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: var(--color-muted); white-space: nowrap; }
+.taskDraftDue .input { width: 3.5rem; padding-left: 0.4rem; padding-right: 0.2rem; }
+.taskDraftHint { margin: 0.4rem 0 0; font-size: 0.75rem; color: var(--color-muted); line-height: 1.5; }
+@media (max-width: 900px) {
+  .taskDraftRow { grid-template-columns: 1fr 1fr; }
+  .taskDraftTitle { grid-column: 1 / -1; }
+}
+
+/* ── Entry: where it is in the process ─────────────────────────────── */
+.processBlock {
+  display: flex; flex-direction: column; gap: 0.6rem;
+  margin: 0.25rem 0 1rem; padding: 0.9rem 1rem 0.75rem;
+  border: 1.5px solid var(--color-primary-light); border-radius: var(--radius-md);
+  background: rgba(116, 95, 253, 0.05);
+}
+.processFoot { display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; }
+.processNow { font-size: 0.8125rem; font-weight: 600; color: var(--color-text); }
+.nextStageBtn {
+  border: none; background: var(--color-primary); color: #fff; font-family: inherit;
+  font-size: 0.8125rem; font-weight: 600; padding: 0.45rem 0.9rem; border-radius: var(--radius-md); cursor: pointer;
+}
+.nextStageBtn:hover { filter: brightness(1.05); }
+.processHint { font-size: 0.75rem; color: var(--color-muted); }
+
+.entryTaskList { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.entryTaskList li { display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0; border-bottom: 1px solid var(--color-border); font-size: 0.8125rem; }
+.entryTaskBox {
+  width: 0.95rem; height: 0.95rem; border-radius: 4px; border: 1.5px solid var(--color-border); flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 0.6rem; color: #fff;
+}
+.entryTaskDone .entryTaskBox { background: var(--color-success); border-color: var(--color-success); }
+.entryTaskTitle { flex: 1; min-width: 0; color: var(--color-text); text-decoration: none; }
+.entryTaskTitle:hover { color: var(--color-primary); }
+.entryTaskDone .entryTaskTitle { color: var(--color-muted); text-decoration: line-through; }
+.entryTaskUnassigned { font-size: 0.6875rem; color: var(--color-muted); font-style: italic; }

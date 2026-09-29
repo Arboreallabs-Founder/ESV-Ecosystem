@@ -774,6 +774,20 @@ export type PipelineStage = {
   position: number
   stage_type: 'lead' | 'accepted' | 'rejected' | 'custom'
   questions?: PipelineStageQuestion[]
+  /** Tasks raised automatically when an entry enters this stage (20261017000000). */
+  tasks?: PipelineStageTask[]
+}
+
+export type PipelineStageTask = {
+  id: string
+  stage_id: string
+  /** "{name}" becomes the entry's title; without it the title is prefixed with it. */
+  title: string
+  assign_to: 'assignees' | 'mover' | 'user'
+  user_id: string | null
+  due_days: number
+  priority: 'Low' | 'Medium' | 'High'
+  position: number
 }
 
 // Flattened stage-question answer for display in entry & active-deal detail.

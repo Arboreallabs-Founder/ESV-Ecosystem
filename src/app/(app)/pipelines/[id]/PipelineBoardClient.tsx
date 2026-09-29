@@ -4,12 +4,14 @@ import { useState, useTransition } from 'react'
 import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { addStage, updateStage, deleteStage, moveEntry, deleteEntry, addAssignee, removeAssignee, rejectEntry, getEntryAnswers, saveStageQuestions, moveEntryWithStageAnswers, saveEntryStageAnswers, getEntryStageAnswers } from '@/app/actions/pipelines'
+import { addStage, updateStage, deleteStage, moveEntry, deleteEntry, addAssignee, removeAssignee, rejectEntry, getEntryAnswers, saveStageQuestions, moveEntryWithStageAnswers, saveEntryStageAnswers, getEntryStageAnswers, saveStageTasks, getEntryTasks } from '@/app/actions/pipelines'
 import { linkFormToPipeline } from '@/app/actions/forms'
 import { getCategories, acceptDeal } from '@/app/actions/active-deals'
 import { linkPipelineEntryToCompany } from '@/app/actions/companies'
-import type { Pipeline, PipelineStage, PipelineEntry, DealCategory, PipelineStageQuestion, StageAnswerView, StageQuestionFieldType } from '@/lib/types'
+import type { Pipeline, PipelineStage, PipelineEntry, DealCategory, PipelineStageQuestion, PipelineStageTask, StageAnswerView, StageQuestionFieldType } from '@/lib/types'
 import Avatar from '@/app/_components/Avatar'
+import PhaseBar from '@/app/_components/PhaseBar'
+import type { ProjectStage } from '@/lib/project-model'
 import styles from './board.module.css'
 
 const STAGE_COLORS = ['#745FFD', '#16a34a', '#d97706', '#dc2626', '#0ea5e9', '#8b5cf6', '#ec4899', '#14b8a6']
@@ -19,6 +21,12 @@ const QUESTION_TYPE_LABELS: Record<StageQuestionFieldType, string> = {
 }
 
 type QuestionDraft = { key: string; id?: string; label: string; field_type: StageQuestionFieldType; required: boolean }
+type TaskDraft = { key: string; id?: string; title: string; assign_to: PipelineStageTask['assign_to']; user_id: string | null; due_days: number; priority: PipelineStageTask['priority'] }
+type EntryTask = { id: string; title: string; status: string; due_date: string | null; assignee: { name: string | null; photo_url: string | null } | null }
+
+const ASSIGN_LABELS: Record<PipelineStageTask['assign_to'], string> = {
+  assignees: 'Entry’s assignees', mover: 'Whoever moves it here', user: 'A specific person',
+}
 
 function inputTypeFor(t: StageQuestionFieldType) {
   return t === 'numeric' || t === 'percentage' ? 'number' : t === 'url' ? 'url' : 'text'
@@ -80,12 +88,14 @@ export default function PipelineBoardClient({
   const [stageError, setStageError] = useState('')
   const [stageIsPending, startStageTransition] = useTransition()
   const [stageQuestions, setStageQuestions] = useState<QuestionDraft[]>([])
+  const [stageTasks, setStageTasks] = useState<TaskDraft[]>([])
 
   // Entry detail
   const [selectedEntry, setSelectedEntry] = useState<PipelineEntry | null>(null)
   const [selectedAnswers, setSelectedAnswers] = useState<AnswerItem[]>([])
   const [answersLoading, setAnswersLoading] = useState(false)
   const [selectedStageAnswers, setSelectedStageAnswers] = useState<StageAnswerView[]>([])
+  const [selectedTasks, setSelectedTasks] = useState<EntryTask[]>([])
 
   // Stage-question answer modal — capture on move-in, and admin edit later
   const [answerModal, setAnswerModal] = useState<{ mode: 'move' | 'edit'; entryId: string; stageId: string; stageName: string; questions: PipelineStageQuestion[] } | null>(null)
@@ -155,11 +165,12 @@ export default function PipelineBoardClient({
   const acceptedStageIds = new Set(pipeline.stages.filter((s) => s.stage_type === 'accepted').map((s) => s.id))
 
   function openAddStage() {
-    setEditStage(null); setStageName(''); setStageColor(STAGE_COLORS[pipeline.stages.filter(s => s.stage_type === 'custom').length % STAGE_COLORS.length]); setStageError(''); setStageQuestions([]); setShowStageModal(true)
+    setEditStage(null); setStageName(''); setStageColor(STAGE_COLORS[pipeline.stages.filter(s => s.stage_type === 'custom').length % STAGE_COLORS.length]); setStageError(''); setStageQuestions([]); setStageTasks([]); setShowStageModal(true)
   }
   function openEditStage(s: PipelineStage) {
     setEditStage(s); setStageName(s.name); setStageColor(s.color); setStageError('')
     setStageQuestions((s.questions ?? []).map((q) => ({ key: q.id, id: q.id, label: q.label, field_type: q.field_type, required: q.required })))
+    setStageTasks((s.tasks ?? []).map((t) => ({ key: t.id, id: t.id, title: t.title, assign_to: t.assign_to, user_id: t.user_id, due_days: t.due_days, priority: t.priority })))
     setShowStageModal(true)
   }
 
@@ -172,6 +183,17 @@ export default function PipelineBoardClient({
   function removeQuestionDraft(key: string) {
     setStageQuestions((qs) => qs.filter((q) => q.key !== key))
   }
+  function addTaskDraft() {
+    setStageTasks((ts) => [...ts, { key: crypto.randomUUID(), title: '', assign_to: 'assignees', user_id: null, due_days: 2, priority: 'Medium' }])
+  }
+  function setTaskDraft(key: string, patch: Partial<TaskDraft>) {
+    setStageTasks((ts) => ts.map((t) => t.key === key ? { ...t, ...patch } : t))
+  }
+  function removeTaskDraft(key: string) {
+    setStageTasks((ts) => ts.filter((t) => t.key !== key))
+  }
+  // Lead, Accepted and Rejected keep their name and colour; only their automatic tasks are editable.
+  const editingSystemStage = !!editStage && editStage.stage_type !== 'custom'
 
   function handleSaveStage(e: React.FormEvent) {
     e.preventDefault()
@@ -180,14 +202,21 @@ export default function PipelineBoardClient({
     const items = stageQuestions
       .filter((q) => q.label.trim())
       .map((q, i) => ({ id: q.id, label: q.label.trim(), field_type: q.field_type, required: q.required, position: i }))
+    const taskItems = stageTasks
+      .filter((t) => t.title.trim())
+      .map((t, i) => ({ id: t.id, title: t.title.trim(), assign_to: t.assign_to, user_id: t.user_id, due_days: t.due_days, priority: t.priority, position: i }))
     startStageTransition(async () => {
       try {
         if (editStage) {
-          await updateStage(editStage.id, stageName, stageColor)
-          await saveStageQuestions(editStage.id, items)
+          if (!editingSystemStage) {
+            await updateStage(editStage.id, stageName, stageColor)
+            await saveStageQuestions(editStage.id, items)
+          }
+          await saveStageTasks(editStage.id, taskItems)
         } else {
           const newId = await addStage(pipeline.id, stageName, stageColor, pipeline.stages.filter(s => s.stage_type === 'custom').length)
           if (items.length > 0) await saveStageQuestions(newId, items)
+          if (taskItems.length > 0) await saveStageTasks(newId, taskItems)
         }
         setShowStageModal(false)
         router.refresh()
@@ -366,14 +395,17 @@ export default function PipelineBoardClient({
     setSelectedEntry(entry)
     setSelectedAnswers([])
     setSelectedStageAnswers([])
+    setSelectedTasks([])
     setAnswersLoading(true)
     try {
-      const [answers, stageAnswers] = await Promise.all([
+      const [answers, stageAnswers, tasks] = await Promise.all([
         getEntryAnswers(entry.id),
         getEntryStageAnswers(entry.id),
+        getEntryTasks(entry.id),
       ])
       setSelectedAnswers(answers)
       setSelectedStageAnswers(stageAnswers)
+      setSelectedTasks(tasks)
     } finally {
       setAnswersLoading(false)
     }
@@ -529,8 +561,13 @@ export default function PipelineBoardClient({
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <span className={styles.columnCount}>{stageEntries.length}</span>
-                    {canManage && !isMandatory && (
-                      <button className={styles.stageMenuBtn} onClick={() => openEditStage(stage)} title="Edit stage">⚙</button>
+                    {(stage.tasks?.length ?? 0) > 0 && (
+                      <span className={styles.autoTaskBadge} title={`Raises ${stage.tasks!.length} task${stage.tasks!.length === 1 ? '' : 's'} when an entry arrives: ${stage.tasks!.map((t) => t.title).join(', ')}`}>
+                        {stage.tasks!.length} auto
+                      </span>
+                    )}
+                    {canManage && (
+                      <button className={styles.stageMenuBtn} onClick={() => openEditStage(stage)} title={isMandatory ? 'Automatic tasks' : 'Edit stage'}>⚙</button>
                     )}
                   </div>
                 </div>
@@ -820,8 +857,9 @@ export default function PipelineBoardClient({
       {showStageModal && (
         <div className={styles.overlay} onMouseDown={(e) => e.target === e.currentTarget && setShowStageModal(false)}>
           <div className={styles.modal} onMouseDown={(e) => e.stopPropagation()}>
-            <div className={styles.modalTitle}>{editStage ? 'Edit Stage' : 'Add Stage'}</div>
+            <div className={styles.modalTitle}>{editingSystemStage ? `${editStage!.name}: automatic tasks` : editStage ? 'Edit Stage' : 'Add Stage'}</div>
             <form onSubmit={handleSaveStage}>
+              {!editingSystemStage && <>
               <div className={styles.field}>
                 <label className={styles.label}>Stage Name *</label>
                 <input className={styles.input} value={stageName} onChange={(e) => setStageName(e.target.value)} required autoFocus placeholder="e.g. In Review" />
@@ -868,9 +906,55 @@ export default function PipelineBoardClient({
                 )}
                 <button type="button" className={styles.addQuestionBtn} onClick={addQuestionDraft}>+ Add question</button>
               </div>
+              </>}
+              <div className={styles.field}>
+                <label className={styles.label}>
+                  Automatic Tasks <span style={{ fontWeight: 400, textTransform: 'none', letterSpacing: 0, color: 'var(--color-muted)' }}>(raised when an entry enters this stage, closed when it leaves)</span>
+                </label>
+                {stageTasks.length > 0 && (
+                  <div className={styles.questionDraftList}>
+                    {stageTasks.map((t) => (
+                      <div key={t.key} className={styles.taskDraftRow}>
+                        <input
+                          className={`${styles.input} ${styles.taskDraftTitle}`}
+                          value={t.title}
+                          onChange={(e) => setTaskDraft(t.key, { title: e.target.value })}
+                          placeholder="e.g. Schedule an intro call with {name}"
+                        />
+                        <select className={styles.select} value={t.assign_to} onChange={(e) => setTaskDraft(t.key, { assign_to: e.target.value as TaskDraft['assign_to'] })}>
+                          {(Object.keys(ASSIGN_LABELS) as TaskDraft['assign_to'][]).map((a) => <option key={a} value={a}>{ASSIGN_LABELS[a]}</option>)}
+                        </select>
+                        {t.assign_to === 'user' ? (
+                          <select className={styles.select} value={t.user_id ?? ''} onChange={(e) => setTaskDraft(t.key, { user_id: e.target.value || null })}>
+                            <option value="">Pick a person…</option>
+                            {teamMembers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                          </select>
+                        ) : <span />}
+                        <label className={styles.taskDraftDue}>
+                          Due in
+                          <input type="number" min={0} max={365} className={styles.input} value={t.due_days}
+                                 onChange={(e) => setTaskDraft(t.key, { due_days: Number(e.target.value) || 0 })} />
+                          days
+                        </label>
+                        <select className={styles.select} value={t.priority} onChange={(e) => setTaskDraft(t.key, { priority: e.target.value as TaskDraft['priority'] })}>
+                          <option value="High">High</option>
+                          <option value="Medium">Medium</option>
+                          <option value="Low">Low</option>
+                        </select>
+                        <button type="button" className={styles.questionRemoveBtn} onClick={() => removeTaskDraft(t.key)} title="Remove">×</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button type="button" className={styles.addQuestionBtn} onClick={addTaskDraft}>+ Add automatic task</button>
+                <p className={styles.taskDraftHint}>
+                  Write <code>{'{name}'}</code> where the entry’s name should go; otherwise the task is titled “Entry name: your task”.
+                  Tasks for the entry’s assignees wait unassigned until someone is assigned.
+                </p>
+              </div>
               {stageError && <p className={styles.errorMsg}>{stageError}</p>}
               <div className={styles.modalActions}>
-                {editStage && (
+                {editStage && !editingSystemStage && (
                   <button type="button" className={styles.deleteBtn} onClick={() => { setShowStageModal(false); handleDeleteStage(editStage) }}>Delete Stage</button>
                 )}
                 <button type="button" className={styles.cancelBtn} onClick={() => setShowStageModal(false)}>Cancel</button>
@@ -899,6 +983,64 @@ export default function PipelineBoardClient({
                 </span>
               )}
             </div>
+
+            {/* Where it is in the process: every stage in order, Rejected off to the side. */}
+            {(() => {
+              const path = sortedStages.filter((s) => s.stage_type !== 'rejected')
+              const at = path.findIndex((s) => s.id === selectedEntry.stage_id)
+              const isRejected = !!selectedEntry.stage_id && rejectedStageIds.has(selectedEntry.stage_id)
+              const next = isRejected ? null : path[at + 1] ?? null
+              return (
+                <div className={styles.processBlock}>
+                  <PhaseBar
+                    stage={(selectedEntry.stage_id ?? '') as ProjectStage}
+                    variant="detailed"
+                    steps={path.map((s) => ({ key: s.id, label: s.name }))}
+                  />
+                  <div className={styles.processFoot}>
+                    <span className={styles.processNow}>
+                      {isRejected ? 'Rejected' : at >= 0 ? `Step ${at + 1} of ${path.length}: ${path[at].name}` : 'Not in a stage yet'}
+                    </span>
+                    {next && canMoveEntry(selectedEntry) && (
+                      <button
+                        type="button"
+                        className={styles.nextStageBtn}
+                        onClick={() => {
+                          handleMoveEntry(selectedEntry.id, next.id)
+                          if (!acceptedStageIds.has(next.id) && !stageHasQuestions(next.id) && (selectedEntry.assignees?.length ?? 0) > 0) {
+                            setSelectedEntry((prev) => prev ? { ...prev, stage_id: next.id } : null)
+                          }
+                        }}
+                      >
+                        Move to {next.name} →
+                      </button>
+                    )}
+                  </div>
+                  {(next?.tasks?.length ?? 0) > 0 && (
+                    <div className={styles.processHint}>
+                      Moving on raises: {next!.tasks!.map((t) => t.title.replace('{name}', selectedEntry.title ?? 'this entry')).join(' · ')}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+
+            {selectedTasks.length > 0 && (
+              <div className={styles.field}>
+                <label className={styles.label}>Tasks</label>
+                <ul className={styles.entryTaskList}>
+                  {selectedTasks.map((t) => (
+                    <li key={t.id} className={t.status === 'Done' ? styles.entryTaskDone : undefined}>
+                      <span className={styles.entryTaskBox} aria-hidden="true">{t.status === 'Done' ? '✓' : ''}</span>
+                      <Link href={`/tasks?open=${t.id}`} className={styles.entryTaskTitle}>{t.title}</Link>
+                      {t.assignee
+                        ? <Avatar name={t.assignee.name} photoUrl={t.assignee.photo_url} size="xs" />
+                        : <span className={styles.entryTaskUnassigned} title="Waiting for someone to be assigned to the entry">Unassigned</span>}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Rejection reason (if rejected) */}
             {selectedEntry.rejection_reason && (

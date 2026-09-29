@@ -23,7 +23,7 @@ export const fetchPipeline = cache(async (id: string): Promise<Pipeline | null> 
     supabase.from('pipelines').select('*').eq('id', id).single(),
     supabase
       .from('pipeline_stages')
-      .select('*, questions:pipeline_stage_questions(*)')
+      .select('*, questions:pipeline_stage_questions(*), tasks:pipeline_stage_tasks(*)')
       .eq('pipeline_id', id)
       .order('position', { ascending: true }),
     supabase.from('pipeline_entries').select('pipeline_id').eq('pipeline_id', id),
@@ -32,6 +32,7 @@ export const fetchPipeline = cache(async (id: string): Promise<Pipeline | null> 
   const withQuestions = (stages ?? []).map((s: any) => ({
     ...s,
     questions: (s.questions ?? []).sort((a: any, b: any) => a.position - b.position),
+    tasks: ((s.tasks ?? []) as Array<{ position: number }>).sort((a, b) => a.position - b.position),
   }))
   return { ...p, stages: withQuestions, entry_count: (counts ?? []).length }
 })

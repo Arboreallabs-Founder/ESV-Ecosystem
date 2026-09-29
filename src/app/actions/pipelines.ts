@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache'
 import { requireRole, requireAuth } from '@/lib/guards'
 import type { StageQuestionFieldType } from '@/lib/types'
 
+const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null)
+
 async function requireInternal() {
   const { supabase } = await requireRole(['founder', 'admin', 'associate'])
   return supabase
@@ -215,6 +217,67 @@ async function upsertStageAnswers(
 }
 
 // Move an entry into a stage AND record its stage answers in one shot.
+// ── Automatic stage tasks (20261017000000) ──────────────────────────────────
+
+type StageTaskItem = {
+  id?: string
+  title: string
+  assign_to: 'assignees' | 'mover' | 'user'
+  user_id: string | null
+  due_days: number
+  priority: 'Low' | 'Medium' | 'High'
+  position: number
+}
+
+/** Replace a stage's task templates: update kept ones by id, insert new, delete removed. Tasks
+    already raised from a removed template stay on people's boards. */
+export async function saveStageTasks(stageId: string, items: StageTaskItem[]) {
+  const { supabase, orgId } = await requireAdmin()
+  for (const t of items) {
+    if (!t.title.trim()) throw new UserFacingError('Every automatic task needs a title.')
+    if (t.assign_to === 'user' && !t.user_id) throw new UserFacingError(`Pick who "${t.title.trim()}" goes to.`)
+  }
+  const { data: existing, error: readErr } = await supabase.from('pipeline_stage_tasks').select('id').eq('stage_id', stageId)
+  if (readErr) throw dbFailure('load the stage tasks', readErr)
+  const keep = new Set(items.filter((t) => t.id).map((t) => t.id as string))
+  const remove = (existing ?? []).map((r) => r.id as string).filter((id) => !keep.has(id))
+  if (remove.length) {
+    const { error } = await supabase.from('pipeline_stage_tasks').delete().in('id', remove)
+    if (error) throw dbFailure('remove stage tasks', error)
+  }
+  if (items.length) {
+    const { error } = await supabase.from('pipeline_stage_tasks').upsert(items.map((t) => ({
+      id: t.id ?? crypto.randomUUID(),
+      stage_id: stageId,
+      org_id: orgId,
+      title: t.title.trim(),
+      assign_to: t.assign_to,
+      user_id: t.assign_to === 'user' ? t.user_id : null,
+      due_days: Math.max(0, Math.min(365, Math.round(t.due_days || 0))),
+      priority: t.priority,
+      position: t.position,
+    })), { onConflict: 'id' })
+    if (error) throw dbFailure('save the stage tasks', error)
+  }
+}
+
+/** The tasks an entry's stages have raised, newest first, for the entry detail. */
+export async function getEntryTasks(entryId: string) {
+  const { supabase } = await requireAuth()
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('id, title, status, due_date, assignee:users!assignee_id(name, photo_url)')
+    .eq('pipeline_entry_id', entryId)
+    .eq('source', 'pipeline')
+    .order('created_at', { ascending: false })
+  if (error) {
+    console.error('[pipelines] entry tasks read failed:', error.message)
+    return []
+  }
+  type Row = { id: string; title: string; status: string; due_date: string | null; assignee: { name: string | null; photo_url: string | null } | Array<{ name: string | null; photo_url: string | null }> | null }
+  return ((data ?? []) as unknown as Row[]).map((t) => ({ ...t, assignee: one(t.assignee) }))
+}
+
 export async function moveEntryWithStageAnswers(
   entryId: string,
   stageId: string,
@@ -264,8 +327,6 @@ export async function getEntryStageAnswers(entryId: string) {
   rows.sort((a, b) => a.stage_name.localeCompare(b.stage_name) || a.position - b.position)
   return rows.map(({ position, ...r }) => r)
 }
-
-const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null)
 
 export async function getEntryAnswers(entryId: string) {
   const { supabase } = await requireAuth()

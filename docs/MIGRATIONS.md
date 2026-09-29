@@ -950,3 +950,14 @@ answers keep their own copy of the question's wording (`question_text`, filled b
 insert and backfilled), and the node FK is now `ON DELETE SET NULL`, so removing a question keeps
 its answers. The 20261012 `field_key` tags are re-applied. Answers already lost can only come back
 from a Supabase backup.
+
+### 20261017000000_pipeline_stage_tasks.sql
+**Automatic tasks on pipeline stages.** `pipeline_stage_tasks` holds task templates per stage
+(Lead/Accepted/Rejected included): a title (`{name}` → the entry's title), who it goes to
+(`assignees` = everyone assigned, one copy each; `mover` = whoever moved it; `user` = a named
+person), due-in days and priority. A trigger on `pipeline_entries` (insert and stage change) calls
+`raise_stage_tasks()`, so every route into a stage raises them (board moves, accept, reject, and
+anonymous form submissions into the first stage) and closes the open ones from the stage the entry
+left. `tasks.source` gains `'pipeline'`, with `pipeline_entry_id` and `stage_task_id`. A trigger on
+`pipeline_entry_assignees` hands a waiting unassigned task to the first person assigned, gives later
+assignees their own copy, and removes an unassigned person's open copies.

@@ -43,6 +43,14 @@ board (`/pipelines/[id]`) — mandatory Lead/Accepted/Rejected stages plus custo
 typed question fields per custom stage, multi-assignee, rejection-reason capture, drag-and-drop.
 Accepting an entry creates an **Active Deal**.
 
+Each entry shows the pipeline as a step-by-step bar (every stage in order, Rejected off to the side)
+with a **Move to next stage** button, alongside the board's drag-and-drop. Stages stay freely
+addable and removable, and each one (Lead, Accepted and Rejected included, via their ⚙) can carry
+**automatic tasks**: raised on the task board when an entry enters the stage, however it gets there,
+and closed when it leaves. Each goes to the entry's assignees (a copy each), whoever moved it, or a
+named person, with a due-in and priority. The entry lists the tasks its stages have raised
+(20261017000000).
+
 `/forms` has two tabs. **Forms** is the list and builder. **Share** (formerly the separate `/share`
 page, which now redirects here) is where anyone who can build a form issues their own link: pick a
 published form, add a private label, get a URL and a downloadable QR, and see per-link submission
