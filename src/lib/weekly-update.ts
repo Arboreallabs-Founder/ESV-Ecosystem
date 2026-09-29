@@ -42,3 +42,31 @@ export const fetchWeekTodos = cache(async (): Promise<PersonalTodo[]> => {
     .order('created_at', { ascending: true })
   return (data ?? []) as unknown as PersonalTodo[]
 })
+
+export type LatestTaskComment = { body: string; author: string | null; created_at: string }
+
+/**
+ * Newest comment per task, keyed by task id, so the Weekly Update can show where each task stands
+ * in the words of whoever last touched it. Read through RLS ("Task comments follow task
+ * visibility"), so nobody sees a comment on a task they can't see.
+ */
+export const fetchLatestTaskComments = cache(async (): Promise<Record<string, LatestTaskComment>> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('task_comments')
+    .select('task_id, body, created_at, author:users!author_id(name)')
+    .order('created_at', { ascending: false })
+  if (error) {
+    console.error('[weekly-update] task comments read failed:', error.message)
+    return {}
+  }
+  const latest: Record<string, LatestTaskComment> = {}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const row of (data ?? []) as any[]) {
+    // Newest first, so the first sighting of a task is its latest comment.
+    if (row.task_id in latest) continue
+    const author = Array.isArray(row.author) ? row.author[0] : row.author
+    latest[row.task_id] = { body: row.body, author: author?.name ?? null, created_at: row.created_at }
+  }
+  return latest
+})

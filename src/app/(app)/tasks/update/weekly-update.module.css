@@ -753,3 +753,10 @@ td.rosterWho {
   .dailyItem { flex-direction: column; gap: 0.2rem; }
   .dailyWhen { width: auto; }
 }
+
+/* The task's latest comment, under its title. Muted and one line: context, not a second item. */
+.taskComment {
+  display: block; margin-top: 0.15rem;
+  font-size: 0.75rem; color: var(--color-muted); line-height: 1.4;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}

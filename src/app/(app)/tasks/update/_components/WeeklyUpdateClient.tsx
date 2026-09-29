@@ -14,11 +14,13 @@ import type { AutomaticTask } from '@/lib/automatic-tasks-shared'
 import HealthBadge from '@/app/_components/HealthBadge'
 import type { MandateHealth } from '@/lib/mandate-health'
 import WeekSummary from './WeekSummary'
+import type { LatestTaskComment } from '@/lib/weekly-update'
 import PhaseBar from '@/app/_components/PhaseBar'
 import { ROLE_META, STAGE_META, serviceLabel, trackFor, type ProjectStage, type ProjectSummary } from '@/lib/project-model'
 import type { SummaryPerson, SummaryMandate } from './WeekSummary'
 
-type TaskRef = { id: string; title: string }
+/** `comment` is the task's newest comment, when it has one. */
+type TaskRef = { id: string; title: string; comment?: LatestTaskComment }
 /** `update` is empty when nothing has been posted on the deal yet. */
 type MandateRef = {
   id: string
@@ -77,6 +79,16 @@ function projectDetail(p: ProjectSummary): string {
   return ''
 }
 
+/** The task's latest comment, indented under it, in the copied message. */
+function pushComment(lines: string[], t: TaskRef) {
+  if (t.comment) lines.push(`    💬 ${commentLine(t.comment)}`)
+}
+
+function commentLine(c: LatestTaskComment): string {
+  const body = c.body.replace(/\s+/g, ' ').trim()
+  return `${c.author ? `${c.author.split(' ')[0]}: ` : ''}${body.length > 160 ? `${body.slice(0, 157)}…` : body}`
+}
+
 /**
  * The WhatsApp-ready text. This is the artifact the exec assistant actually sends, so the card is
  * a *presentation* of it rather than a replacement — the copy button hands over exactly this,
@@ -88,11 +100,11 @@ function buildMessage(report: AssociateReport, weekLabel: string): string {
   lines.push('')
   lines.push(`✅ Completed (${report.completed.length})`)
   if (report.completed.length === 0) lines.push('None')
-  else report.completed.forEach((t, i) => lines.push(`${i + 1}. ${t.title}`))
+  else report.completed.forEach((t, i) => { lines.push(`${i + 1}. ${t.title}`); pushComment(lines, t) })
   lines.push('')
   lines.push(`🔲 Open (${report.open.length})`)
   if (report.open.length === 0) lines.push('None')
-  else report.open.forEach((t, i) => lines.push(`${i + 1}. ${t.title}`))
+  else report.open.forEach((t, i) => { lines.push(`${i + 1}. ${t.title}`); pushComment(lines, t) })
   if (report.mandates.length > 0) {
     lines.push('')
     // One line per mandate rather than a comma list — each carries its own latest update, which
@@ -149,7 +161,7 @@ function Section({
 
 export default function WeeklyUpdateClient({
   tasks, activeDeals, users, dealUpdates, weekTodos, dayPlans, currentUserId, currentUserRole, automaticTasks,
-  mandateHealth, projects,
+  mandateHealth, projects, taskComments,
 }: {
   tasks: Task[]
   activeDeals: ActiveDeal[]
@@ -168,6 +180,8 @@ export default function WeeklyUpdateClient({
   mandateHealth: Record<string, MandateHealth>
   /** Every project the viewer can see; each card keeps the ones that person holds a role on. */
   projects: ProjectSummary[]
+  /** taskId -> newest comment. */
+  taskComments: Record<string, LatestTaskComment>
 }) {
   const [weekOffset, setWeekOffset] = useState(0)
   const founders = useMemo(() => users.filter((u) => ['founder', 'admin'].includes(u.role)), [users])
@@ -215,8 +229,8 @@ export default function WeeklyUpdateClient({
         )
         const completed = relevant
           .filter((t) => t.status === 'Done' && t.completed_at && inWeek(t.completed_at))
-          .map((t) => ({ id: t.id, title: t.title }))
-        const open = relevant.filter((t) => t.status !== 'Done').map((t) => ({ id: t.id, title: t.title }))
+          .map((t) => ({ id: t.id, title: t.title, comment: taskComments[t.id] }))
+        const open = relevant.filter((t) => t.status !== 'Done').map((t) => ({ id: t.id, title: t.title, comment: taskComments[t.id] }))
         const mandates = activeDeals
           .filter((d) => d.deal_state === 'active' && d.entry?.assignees?.some((x) => x.user_id === a.id))
           .map((d) => ({
@@ -260,7 +274,7 @@ export default function WeeklyUpdateClient({
           completed, open, mandates, projects: myProjects, personal, daily,
         }
       })
-  }, [associates, tasks, activeDeals, dealUpdates, weekTodos, dayPlans, weekKey, weekEndKey, founderFilter, weekStart, weekEnd, projects, mandateHealth])
+  }, [associates, tasks, activeDeals, dealUpdates, weekTodos, dayPlans, weekKey, weekEndKey, founderFilter, weekStart, weekEnd, projects, mandateHealth, taskComments])
 
   const reports = useMemo(
     () => allReports.filter((r) =>
@@ -500,6 +514,11 @@ export default function WeeklyUpdateClient({
                         {/* ?open= is the task board's existing deep-link — it opens straight
                             into that task's detail modal. */}
                         <Link href={`/tasks?open=${t.id}`} className={styles.entryLink}>{t.title}</Link>
+                        {t.comment && (
+                          <span className={styles.taskComment} title={t.comment.body}>
+                            💬 {commentLine(t.comment)}
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ol>
@@ -510,6 +529,11 @@ export default function WeeklyUpdateClient({
                     {report.open.map((t) => (
                       <li key={t.id}>
                         <Link href={`/tasks?open=${t.id}`} className={styles.entryLink}>{t.title}</Link>
+                        {t.comment && (
+                          <span className={styles.taskComment} title={t.comment.body}>
+                            💬 {commentLine(t.comment)}
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ol>
