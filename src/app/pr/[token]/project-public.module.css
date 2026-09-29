@@ -22,15 +22,13 @@
 .muted { margin: 0; font-size: 0.8125rem; color: var(--color-muted); line-height: 1.55; }
 .checklist { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.875rem; color: var(--color-text); line-height: 1.45; }
 .optional { color: var(--color-muted); }
-.track { display: flex; flex-direction: column; gap: 0.5rem; padding-bottom: 0.5rem; }
-.trackName { font-size: 0.875rem; font-weight: 700; color: var(--color-text); }
 .payments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
-.payments li { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.875rem; color: var(--color-text); }
+.payments li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.25rem 1rem; font-size: 0.875rem; color: var(--color-text); }
 .paid { color: var(--color-success); font-weight: 600; }
 .due { color: var(--color-muted); }
 .contact { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); display: flex; align-items: center; gap: 0.75rem; }
 .contactName { font-size: 0.875rem; font-weight: 700; color: var(--color-text); }
-.contactEmail { font-size: 0.8125rem; color: var(--color-primary); text-decoration: none; }
+.contactEmail { font-size: 0.8125rem; color: var(--color-primary); text-decoration: none; overflow-wrap: anywhere; }
 .driveBtn {
   display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 1rem;
   padding: 0.6rem 1rem; border-radius: var(--radius-md);
@@ -38,3 +36,52 @@
 }
 .driveBtn:hover { filter: brightness(1.05); }
 .inlineLink { color: var(--color-primary); font-weight: 600; }
+
+/* ── Stages ─────────────────────────────────────────────────────────
+   A vertical list on phones (every stage readable, nothing to scroll sideways), a row of dots
+   joined by a line from 640px up. */
+.steps { list-style: none; margin: 0.25rem 0 0; padding: 0; display: flex; flex-direction: column; }
+.step { position: relative; display: flex; align-items: center; gap: 0.75rem; padding: 0.4rem 0; }
+.step + .step::before {
+  content: ''; position: absolute; left: 0.4rem; bottom: calc(50% + 0.5rem); height: calc(100% - 1rem);
+  width: 2px; background: var(--color-border);
+}
+.stepDone + .step::before, .stepDone + .stepDone::before { background: var(--color-primary); }
+.stepDot { width: 0.8rem; height: 0.8rem; border-radius: 50%; flex-shrink: 0; background: var(--color-border); position: relative; z-index: 1; }
+.stepLabel { font-size: 0.875rem; color: var(--color-muted); }
+.stepDone .stepDot { background: var(--color-primary); }
+.stepDone .stepLabel { color: var(--color-text); }
+.stepCurrent .stepDot { background: var(--color-primary); box-shadow: 0 0 0 4px rgba(116, 95, 253, 0.22); }
+.stepCurrent .stepLabel { color: var(--color-primary); font-weight: 700; }
+.stepPaused .stepDot { background: var(--color-muted); box-shadow: 0 0 0 4px rgba(163, 155, 149, 0.22); }
+.stepPaused .stepLabel { color: var(--color-text); font-weight: 700; }
+
+@media (min-width: 640px) {
+  .steps { flex-direction: row; }
+  .step { flex: 1 1 0; flex-direction: column; gap: 0.45rem; padding: 0; text-align: center; }
+  .step + .step::before {
+    left: auto; right: calc(50% + 0.6rem); bottom: auto; top: 0.35rem;
+    width: calc(100% - 1.2rem); height: 2px;
+  }
+  .stepLabel { font-size: 0.75rem; line-height: 1.25; }
+}
+
+/* ── Deliverables ───────────────────────────────────────────────── */
+.track { display: flex; flex-direction: column; gap: 0.4rem; padding: 0.35rem 0; }
+.trackHead { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.15rem 0.75rem; }
+.trackName { font-size: 0.875rem; font-weight: 700; color: var(--color-text); }
+.trackStep { font-size: 0.8125rem; color: var(--color-primary); font-weight: 600; }
+.trackDone { font-size: 0.8125rem; color: var(--color-success); font-weight: 600; }
+.progress { height: 6px; border-radius: 999px; background: var(--color-border); overflow: hidden; }
+.progressFill { display: block; height: 100%; border-radius: 999px; background: var(--color-primary); }
+
+/* ── Phones ─────────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .page { padding: 1rem 0.75rem 2.5rem; }
+  .card { padding: 1.25rem 1.1rem 1.5rem; border-radius: var(--radius-lg); }
+  .logo { height: 30px; margin-bottom: 1.1rem; }
+  .title { font-size: 1.3rem; }
+  .section { margin-top: 1.25rem; padding-top: 1rem; }
+  .driveBtn { display: flex; justify-content: center; width: 100%; text-align: center; padding: 0.75rem 1rem; }
+  .checklist { padding-left: 1.05rem; }
+}

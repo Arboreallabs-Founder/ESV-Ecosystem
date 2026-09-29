@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
-import PhaseBar from '@/app/_components/PhaseBar'
 import Avatar from '@/app/_components/Avatar'
-import { STAGE_META, SERVICE_META, trackFor, type ProjectService, type ProjectStage, type TrackStep } from '@/lib/project-model'
+import { PROJECT_STAGES, STAGE_META, SERVICE_META, stageIndex, trackFor, type ProjectService, type ProjectStage, type TrackStep } from '@/lib/project-model'
 import styles from './project-public.module.css'
 
 type PublicProject = {
@@ -24,6 +23,26 @@ type PublicProject = {
 /** What the client sees: where the engagement is, each deliverable's progress, and what we still
     need from them. No account; the token is the key and get_project_public decides what it buys.
     Client-facing copy, so no em dashes. */
+/** The engagement's stages as a list the client can read on a phone: vertical on narrow screens,
+    a row on wider ones (project-public.module.css). Plain dots, no symbols. */
+function ClientSteps({ stage }: { stage: ProjectStage }) {
+  const current = stageIndex(stage)
+  const complete = stage === 'completed'
+  return (
+    <ol className={styles.steps}>
+      {PROJECT_STAGES.map((s, i) => {
+        const state = complete || i < current ? styles.stepDone : i === current ? (stage === 'dormant' ? styles.stepPaused : styles.stepCurrent) : styles.stepTodo
+        return (
+          <li key={s} className={`${styles.step} ${state}`} aria-current={i === current ? 'step' : undefined}>
+            <span className={styles.stepDot} aria-hidden="true" />
+            <span className={styles.stepLabel}>{i === current && stage === 'dormant' ? 'On hold' : STAGE_META[s].label}</span>
+          </li>
+        )
+      })}
+    </ol>
+  )
+}
+
 const CLIENT_STAGE_TEXT: Record<ProjectStage, string> = {
   lead: 'We are setting up an introductory call.',
   first_call: 'We have an introductory call scheduled.',
@@ -72,13 +91,13 @@ export default async function ProjectPublicPage({ params }: { params: Promise<{ 
 
         {p.drive_url && (
           <a href={p.drive_url} target="_blank" rel="noreferrer" className={styles.driveBtn}>
-            Open your project folder on Google Drive ↗
+            Open your project folder on Google Drive
           </a>
         )}
 
         <div className={styles.section}>
-          <PhaseBar stage={p.stage} variant="detailed" />
           <p className={styles.stageText}><strong>{STAGE_META[p.stage].label}.</strong> {CLIENT_STAGE_TEXT[p.stage]}</p>
+          <ClientSteps stage={p.stage} />
         </div>
 
         {showData && (
@@ -112,10 +131,19 @@ export default async function ProjectPublicPage({ params }: { params: Promise<{ 
             <h2 className={styles.h2}>Deliverables</h2>
             {p.services.map((s) => {
               const track = trackFor(s.service)
+              const at = Math.max(0, track.findIndex((t) => t.step === s.step))
+              // Progress through the steps after "not started": 0 of 3 drafts … 3 of 3.
+              const pct = Math.round((at / (track.length - 1)) * 100)
               return (
                 <div key={s.label} className={styles.track}>
-                  <div className={styles.trackName}>{s.label || SERVICE_META[s.service].label}</div>
-                  <PhaseBar stage={s.step as ProjectStage} variant="detailed" steps={track.map((t) => ({ key: t.step, label: t.label }))} />
+                  <div className={styles.trackHead}>
+                    <span className={styles.trackName}>{s.label || SERVICE_META[s.service].label}</span>
+                    <span className={s.step === 'final' ? styles.trackDone : styles.trackStep}>{track[at].label}</span>
+                  </div>
+                  <div className={styles.progress} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}
+                       aria-label={`${s.label}: ${track[at].label}`}>
+                    <span className={styles.progressFill} style={{ width: `${pct}%` }} />
+                  </div>
                 </div>
               )
             })}
