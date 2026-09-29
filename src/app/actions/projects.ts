@@ -91,11 +91,13 @@ export async function createProject(input: {
     }
   }
 
-  const { data, error } = await c.supabase.from('projects')
-    .insert({ org_id: c.orgId, name, company_id: companyId, notes: input.notes?.trim() || null, created_by: c.userId })
-    .select('id').single()
+  // The id is made here rather than read back with .select(): the read-back is checked against the
+  // SELECT policy, can_see_project(), which looks the project up in the table — and a row being
+  // inserted isn't visible to that lookup yet, so the insert was refused (42501) for everyone.
+  const id = crypto.randomUUID()
+  const { error } = await c.supabase.from('projects')
+    .insert({ id, org_id: c.orgId, name, company_id: companyId, notes: input.notes?.trim() || null, created_by: c.userId })
   if (error) throw dbFailure('create the project', error)
-  const id = data.id as string
 
   const members = [
     ...(input.connectIds ?? []).map((u) => ({ project_id: id, user_id: u, role: 'connect' })),
