@@ -82,11 +82,14 @@ first conversation, and its company goes into Companies whether or not they take
   person can hold several roles. Payments are recorded by founders, admins or the project lead;
   partner credit by founders/admins only (no claim flow). A credited partner sees the project on
   their portal.
-- **Tasks are raised automatically** for each step and assigned to the matching role (Connect for
-  the first call, Lead for proposal/data/payments/handover, Finance for models and the valuer,
-  Design for decks), and closed when the project moves past them.
+- **Tasks are raised automatically** for each step, one copy for everyone holding the matching
+  role (Connect for the first call, Lead for proposal/data/payments/handover, Finance for models and
+  the valuer, Design for decks), and closed when the project moves past them. Each person's
+  projects, with their stage and roles, also appear on their card in the Weekly Update.
+- Projects are only ever created by hand ("+ New project"); nothing creates one automatically.
 - **Client link** (`/pr/<token>`, "Copy client link" on the project): read-only status, each
-  deliverable's progress, what data is still outstanding, and payment status.
+  deliverable's progress, what data is still outstanding, payment status, and a button to the
+  Google Drive project folder once it's linked (where the client uploads their data).
 - Visibility: every internal user sees every project; external users only the ones they're on.
 
 ### Deal Desk (`/deal-desk`)

@@ -31,3 +31,10 @@
 .contact { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); display: flex; align-items: center; gap: 0.75rem; }
 .contactName { font-size: 0.875rem; font-weight: 700; color: var(--color-text); }
 .contactEmail { font-size: 0.8125rem; color: var(--color-primary); text-decoration: none; }
+.driveBtn {
+  display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 1rem;
+  padding: 0.6rem 1rem; border-radius: var(--radius-md);
+  background: var(--color-primary); color: #fff; font-size: 0.875rem; font-weight: 600; text-decoration: none;
+}
+.driveBtn:hover { filter: brightness(1.05); }
+.inlineLink { color: var(--color-primary); font-weight: 600; }

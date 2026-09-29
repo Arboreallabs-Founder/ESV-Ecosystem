@@ -930,3 +930,12 @@ Deals where Prefunding was a category with one "Engagement Letter" field.
   completed; archived left alone), their assignees becoming leads. A Prefunding-only deal is
   archived; a deal with other categories just loses Prefunding. `deal_categories.retired` hides
   Prefunding from every category picker.
+
+### 20261015000000_projects_task_copies_and_drive_link.sql
+Projects follow-up (decisions of 2026-09-29). **Everyone holding a role gets their own copy** of
+that role's task: `project_role_holders()` returns everyone in the role (falling back to the leads,
+then the connects), `sync_project_tasks` inserts one task per holder, and the unique index is now
+per rule per project per person. Someone taken off a role has their open copy deleted (not ticked,
+so it doesn't count as completed on their weekly update). **The client's `/pr/` link shows the Drive
+project folder** once it's linked (`get_project_public` returns `drive_url`), since that's where the
+client uploads their data. Ends by re-syncing every live project so shared roles get copies now.

@@ -14,6 +14,8 @@ type PublicProject = {
   advance_received: boolean
   balance_received: boolean
   changes_used: number
+  /** The Google Drive project folder, once the team has made it (20261015000000). */
+  drive_url?: string | null
   services: Array<{ service: ProjectService; label: string; step: TrackStep }>
   checklist: Array<{ label: string; service: ProjectService | null; status: 'pending' | 'received' | 'na'; optional: boolean }>
   contact: { name: string | null; email: string | null; photo_url: string | null } | null
@@ -68,6 +70,12 @@ export default async function ProjectPublicPage({ params }: { params: Promise<{ 
           <div className={styles.services}>{p.services.map((s) => s.label).join(' · ')}</div>
         )}
 
+        {p.drive_url && (
+          <a href={p.drive_url} target="_blank" rel="noreferrer" className={styles.driveBtn}>
+            Open your project folder on Google Drive ↗
+          </a>
+        )}
+
         <div className={styles.section}>
           <PhaseBar stage={p.stage} variant="detailed" />
           <p className={styles.stageText}><strong>{STAGE_META[p.stage].label}.</strong> {CLIENT_STAGE_TEXT[p.stage]}</p>
@@ -86,6 +94,11 @@ export default async function ProjectPublicPage({ params }: { params: Promise<{ 
                   </li>
                 ))}
               </ul>
+            )}
+            {p.drive_url && outstanding.length > 0 && (
+              <p className={styles.muted}>
+                Please upload these to your <a href={p.drive_url} target="_blank" rel="noreferrer" className={styles.inlineLink}>project folder</a>.
+              </p>
             )}
             <p className={styles.muted}>
               {p.checklist.length - outstanding.length} of {p.checklist.length} items received.

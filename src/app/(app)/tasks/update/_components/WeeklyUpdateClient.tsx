@@ -14,6 +14,8 @@ import type { AutomaticTask } from '@/lib/automatic-tasks-shared'
 import HealthBadge from '@/app/_components/HealthBadge'
 import type { MandateHealth } from '@/lib/mandate-health'
 import WeekSummary from './WeekSummary'
+import PhaseBar from '@/app/_components/PhaseBar'
+import { ROLE_META, STAGE_META, serviceLabel, trackFor, type ProjectStage, type ProjectSummary } from '@/lib/project-model'
 import type { SummaryPerson, SummaryMandate } from './WeekSummary'
 
 type TaskRef = { id: string; title: string }
@@ -26,6 +28,16 @@ type MandateRef = {
   health?: MandateHealth
 }
 
+/** A project someone holds a role on (20261014000000), with where it stands. */
+type ProjectRef = {
+  id: string
+  name: string
+  stage: ProjectStage
+  roles: string[]
+  /** What's happening inside the stage: data received, or each deliverable's step. */
+  detail: string
+}
+
 type AssociateReport = {
   id: string
   name: string
@@ -34,6 +46,7 @@ type AssociateReport = {
   completed: TaskRef[]
   open: TaskRef[]
   mandates: MandateRef[]
+  projects: ProjectRef[]
   /** Sub-tasks ride along with their parent; each carries when it was ticked or added. */
   personal: Array<{ title: string; done: boolean; children: Array<{ title: string; done: boolean; stamp: string | null }> }>
   /** The week's daily reports, oldest first. Only non-empty notes make it this far. */
@@ -47,6 +60,21 @@ function mandateLine(m: MandateRef): string {
   // the update after it says why. A score with no context invites arguing with the formula.
   const health = m.health && m.health.score !== null ? `[${m.health.label}] ` : ''
   return `${health}${m.name}: ${m.update || '(no update yet)'}`
+}
+
+/** Same idea as mandateLine: one definition for the card and the copied text. */
+function projectLine(p: ProjectRef): string {
+  return `${p.name}: ${STAGE_META[p.stage].label} (${p.roles.join(', ')})${p.detail ? ` · ${p.detail}` : ''}`
+}
+
+function projectDetail(p: ProjectSummary): string {
+  if (p.stage === 'data' && p.checklist_total > 0) return `data ${p.checklist_done}/${p.checklist_total} in`
+  if (p.stage === 'work' || p.stage === 'handover') {
+    return p.services
+      .map((s) => `${serviceLabel(s.service, s.label)} ${trackFor(s.service).find((t) => t.step === s.step)?.label.toLowerCase() ?? ''}`.trim())
+      .join(', ')
+  }
+  return ''
 }
 
 /**
@@ -71,6 +99,11 @@ function buildMessage(report: AssociateReport, weekLabel: string): string {
     // would be unreadable run together.
     lines.push('📁 Active mandates')
     report.mandates.forEach((m) => lines.push(mandateLine(m)))
+  }
+  if (report.projects.length > 0) {
+    lines.push('')
+    lines.push('🗂 Projects')
+    report.projects.forEach((p) => lines.push(projectLine(p)))
   }
   if (report.personal.length > 0) {
     lines.push('')
@@ -116,7 +149,7 @@ function Section({
 
 export default function WeeklyUpdateClient({
   tasks, activeDeals, users, dealUpdates, weekTodos, dayPlans, currentUserId, currentUserRole, automaticTasks,
-  mandateHealth,
+  mandateHealth, projects,
 }: {
   tasks: Task[]
   activeDeals: ActiveDeal[]
@@ -133,6 +166,8 @@ export default function WeeklyUpdateClient({
   automaticTasks: AutomaticTask[]
   /** activeDealId -> health. Derived from the fundraise entries, so it is never stored anywhere. */
   mandateHealth: Record<string, MandateHealth>
+  /** Every project the viewer can see; each card keeps the ones that person holds a role on. */
+  projects: ProjectSummary[]
 }) {
   const [weekOffset, setWeekOffset] = useState(0)
   const founders = useMemo(() => users.filter((u) => ['founder', 'admin'].includes(u.role)), [users])
@@ -190,6 +225,17 @@ export default function WeeklyUpdateClient({
             update: dealUpdates[d.id] ?? '',
             health: mandateHealth[d.id],
           }))
+        // Live projects they hold any role on, plus ones completed this week so the finish shows.
+        const myProjects = projects
+          .filter((p) => p.members.some((m) => m.user_id === a.id))
+          .filter((p) => p.stage !== 'dormant' && (p.stage !== 'completed' || inWeek(p.stage_changed_at)))
+          .map((p) => ({
+            id: p.id,
+            name: p.name,
+            stage: p.stage,
+            roles: [...new Set(p.members.filter((m) => m.user_id === a.id).map((m) => ROLE_META[m.role].label))],
+            detail: projectDetail(p),
+          }))
         // Nest before filtering: a sub-task carries no work week of its own, so filtering first
         // would strip every child and leave the parents bare.
         const personal = nestTodos(weekTodos.filter((t) => t.user_id === a.id))
@@ -211,14 +257,14 @@ export default function WeeklyUpdateClient({
           name: a.name ?? a.email,
           designation: a.designation,
           photoUrl: a.photo_url,
-          completed, open, mandates, personal, daily,
+          completed, open, mandates, projects: myProjects, personal, daily,
         }
       })
-  }, [associates, tasks, activeDeals, dealUpdates, weekTodos, dayPlans, weekKey, weekEndKey, founderFilter, weekStart, weekEnd])
+  }, [associates, tasks, activeDeals, dealUpdates, weekTodos, dayPlans, weekKey, weekEndKey, founderFilter, weekStart, weekEnd, projects, mandateHealth])
 
   const reports = useMemo(
     () => allReports.filter((r) =>
-      r.completed.length > 0 || r.open.length > 0 || r.mandates.length > 0 || r.personal.length > 0 || r.daily.length > 0),
+      r.completed.length > 0 || r.open.length > 0 || r.mandates.length > 0 || r.projects.length > 0 || r.personal.length > 0 || r.daily.length > 0),
     [allReports],
   )
 
@@ -422,6 +468,9 @@ export default function WeeklyUpdateClient({
                 {report.mandates.length > 0 && (
                   <span className={styles.stat}><b>{report.mandates.length}</b> mandate{report.mandates.length === 1 ? '' : 's'}</span>
                 )}
+                {report.projects.length > 0 && (
+                  <span className={styles.stat}><b>{report.projects.length}</b> project{report.projects.length === 1 ? '' : 's'}</span>
+                )}
                 {report.daily.length > 0 && (
                   <Section icon="🗓️" title="Daily reports" count={report.daily.length} empty="">
                     <ul className={styles.dailyList}>
@@ -484,6 +533,26 @@ export default function WeeklyUpdateClient({
                             <span className={m.update ? styles.mandateUpdate : styles.mandateNone}>
                               {m.update || '(no update yet)'}
                             </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </Section>
+                )}
+
+                {report.projects.length > 0 && (
+                  <Section icon="🗂" title="Projects" count={report.projects.length} empty="">
+                    <ul className={styles.mandateList}>
+                      {report.projects.map((p) => (
+                        <li key={p.id} className={styles.mandate}>
+                          <Link href={`/projects/${p.id}`} className={styles.mandateLink}>
+                            <span className={styles.mandateName}>
+                              {p.name}
+                              <span className={styles.mandateNone}>{p.roles.join(', ')}</span>
+                              <span className={styles.mandateArrow} aria-hidden="true">↗</span>
+                            </span>
+                            <PhaseBar stage={p.stage} />
+                            {p.detail && <span className={styles.mandateUpdate}>{p.detail}</span>}
                           </Link>
                         </li>
                       ))}

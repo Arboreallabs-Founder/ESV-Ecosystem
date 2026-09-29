@@ -8,6 +8,7 @@ import { fetchDayPlansBetween } from '@/lib/day-plans'
 import { istDate } from '@/lib/ist-date'
 import { fetchAutomaticTasks } from '@/lib/automatic-tasks'
 import { fetchMandateHealth } from '@/lib/fundraise'
+import { fetchProjects } from '@/lib/projects'
 import WeeklyUpdateClient from './_components/WeeklyUpdateClient'
 
 export default async function TasksUpdatePage() {
@@ -17,7 +18,7 @@ export default async function TasksUpdatePage() {
 
   // A window rather than the selected week: the page lets you page back through weeks client-side,
   // and refetching on every arrow press would be a round trip for data this small.
-  const [tasks, activeDeals, users, dealUpdates, weekTodos, dayPlans, automaticTasks, mandateHealth] = await Promise.all([
+  const [tasks, activeDeals, users, dealUpdates, weekTodos, dayPlans, automaticTasks, mandateHealth, projects] = await Promise.all([
     fetchAllTasks(),
     fetchActiveDeals(),
     fetchAllUsers(),
@@ -28,6 +29,9 @@ export default async function TasksUpdatePage() {
     // list is how someone concludes the feature does not work.
     fetchAutomaticTasks(),
     fetchMandateHealth(),
+    // Each person's projects and where they stand. A failed read shows the update without them
+    // rather than failing the whole page.
+    fetchProjects().catch((e) => { console.error('[weekly-update] projects read failed:', e); return [] }),
   ])
 
   return (
@@ -42,6 +46,7 @@ export default async function TasksUpdatePage() {
       currentUserRole={user.role ?? ''}
       automaticTasks={automaticTasks}
       mandateHealth={mandateHealth}
+      projects={projects}
     />
   )
 }
