@@ -59,6 +59,36 @@ Investor commitments live here too: add/remove investors per deal, track investi
 (not_started → commitment_received → funds_received → shares_transferred), amounts, shares, and
 per-investor fees.
 
+### Projects (`/projects`)
+Prefunding engagements (pitch decks, projections, valuation reports, market research, datarooms,
+and custom work), moved out of Active Deals (20261014000000). Every lead is a project from the
+first conversation, and its company goes into Companies whether or not they take the proposal.
+
+- **Shared stages**, once per project: Lead → First call → Proposal → Data → Advance → In progress
+  → Handover → Completed, or Dormant if the proposal is declined (reason required; revivable). The
+  list shows each project's compact phase bar; the project page shows the detailed one plus a
+  "Next step" panel with the gates for the current stage.
+- **Services cart** at the proposal stage: pick services, type a price per line (no fixed price
+  list), and the page shows subtotal, 18% GST, total and the 50% advance. The proposal itself is
+  written outside the app and linked.
+- **Data checklist**, seeded from the accepted services and editable; each item is Pending,
+  Received or N/A. Data → Advance needs every item settled and the Google Drive folder linked.
+- **Work** starts once the advance is recorded. Each service then has its own track: two drafts
+  before the final, or valuation's model → registered valuer → approval → draft report → client
+  approval → signed report and deck. A final can't go out until the balance is recorded. When every
+  track is final the project moves to Handover; up to two post-handover changes are logged, the
+  third is refused.
+- **Stakeholders**: Connect, Project lead, Design team, Finance team, picked with photo chips; one
+  person can hold several roles. Payments are recorded by founders, admins or the project lead;
+  partner credit by founders/admins only (no claim flow). A credited partner sees the project on
+  their portal.
+- **Tasks are raised automatically** for each step and assigned to the matching role (Connect for
+  the first call, Lead for proposal/data/payments/handover, Finance for models and the valuer,
+  Design for decks), and closed when the project moves past them.
+- **Client link** (`/pr/<token>`, "Copy client link" on the project): read-only status, each
+  deliverable's progress, what data is still outstanding, and payment status.
+- Visibility: every internal user sees every project; external users only the ones they're on.
+
 ### Deal Desk (`/deal-desk`)
 Associate-sourced pre-acceptance deal intake, separate from the Pipelines flow — associates import
 deal cards via CSV, review call notes (with voice-note recording), and founders/admins triage them

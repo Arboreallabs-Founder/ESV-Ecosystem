@@ -275,6 +275,15 @@ const NAV_ITEMS: NavEntry[] = [
     ],
   },
   {
+    // Prefunding engagements (decks, projections, valuations…), moved out of Active Deals. External
+    // users see it too, but only the projects they hold a role on (can_see_project, 20261014000000).
+    href: '/projects',
+    label: 'Projects',
+    roles: ['founder', 'admin', 'associate', 'general', 'hr'],
+    section: 'Deal Flow',
+    icon: <Icon d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859M12 3v8.25m0 0-3-3m3 3 3-3m-9.75 12h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />,
+  },
+  {
     href: '/deal-desk',
     label: 'Deal Desk',
     roles: ['founder', 'admin', 'associate'],

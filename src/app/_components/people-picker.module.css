@@ -1,0 +1,53 @@
+.picker {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem;
+  min-height: 2.35rem;
+  padding: 0.3rem 0.45rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  cursor: text;
+}
+.picker:focus-within { border-color: var(--color-primary); }
+.disabled { cursor: default; background: transparent; border-style: dashed; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  padding: 0.15rem 0.3rem 0.15rem 0.2rem;
+  border-radius: 999px;
+  background: var(--color-card-raised);
+  border: 1px solid var(--color-border);
+  font-size: 0.8125rem; color: var(--color-text);
+}
+.chipName { font-weight: 600; max-width: 10rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chipX {
+  border: none; background: none; cursor: pointer; color: var(--color-muted);
+  font-size: 0.95rem; line-height: 1; padding: 0 0.15rem; font-family: inherit;
+}
+.chipX:hover { color: var(--color-destructive); }
+
+.input {
+  flex: 1; min-width: 6rem;
+  border: none; outline: none; background: transparent;
+  font-size: 0.8125rem; color: var(--color-text); font-family: inherit;
+  padding: 0.2rem 0.1rem;
+}
+
+.dropdown {
+  position: fixed; z-index: 1000;
+  padding: 0.3rem;
+  background: var(--glass-panel);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+  backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+}
+.option {
+  display: flex; align-items: center; gap: 0.6rem; width: 100%;
+  border: none; background: none; cursor: pointer; text-align: left; font-family: inherit;
+  padding: 0.4rem 0.5rem; border-radius: calc(var(--radius-md) - 4px);
+}
+.optionActive, .option:hover { background: rgba(var(--color-hover-rgb), 0.1); }
+.optionText { display: flex; flex-direction: column; min-width: 0; gap: 0.05rem; }
+.optionName { font-size: 0.8125rem; font-weight: 600; color: var(--color-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.optionRole { font-size: 0.6875rem; color: var(--color-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

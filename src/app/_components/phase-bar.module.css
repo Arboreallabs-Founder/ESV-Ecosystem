@@ -1,0 +1,43 @@
+.bar { min-width: 0; }
+.track { display: flex; list-style: none; margin: 0; padding: 0; }
+.step { position: relative; display: flex; flex-direction: column; align-items: flex-start; }
+.dotRow { display: flex; align-items: center; }
+.line { height: 2px; background: var(--color-border); }
+.lineDone { background: var(--color-primary); }
+.dot {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: var(--color-border);
+  color: #fff;
+  flex-shrink: 0;
+  font-weight: 700;
+}
+.done .dot { background: var(--color-primary); }
+.current .dot { background: var(--color-primary); box-shadow: 0 0 0 3px rgba(116, 95, 253, 0.25); }
+.stopped .dot { background: var(--color-muted); box-shadow: 0 0 0 3px rgba(163, 155, 149, 0.25); }
+.label { font-weight: 600; color: var(--color-text); white-space: nowrap; }
+.current .label { color: var(--color-primary); }
+.stopped .label { color: var(--color-muted); }
+.todo .label { color: var(--color-muted); font-weight: 500; }
+.date { display: block; font-weight: 400; color: var(--color-muted); font-size: 0.6875rem; margin-top: 0.1rem; }
+
+/* Compact: the list card. Dots only, the current step named under its dot. */
+.compact { padding-bottom: 1.2rem; }
+.compact .track { align-items: center; }
+.compact .step { justify-content: center; }
+.compact .line { width: 0.7rem; }
+.compact .dot { width: 0.55rem; height: 0.55rem; }
+.compact .current .dot, .compact .stopped .dot { width: 0.8rem; height: 0.8rem; }
+/* Under its own dot, out of the flow, so naming the step doesn't push the dots after it apart. */
+.compact .label { position: absolute; top: 100%; left: 0; font-size: 0.75rem; margin-top: 0.3rem; }
+.compact .step + .step .label { left: 0.7rem; }
+
+/* Detailed: the project page. Every step named, evenly spread, scrolls rather than squashes. */
+.detailed { overflow-x: auto; padding-bottom: 0.25rem; }
+.detailed .track { min-width: 100%; }
+.detailed .step { flex: 1 1 0; min-width: 5.5rem; align-items: center; text-align: center; }
+.detailed .dotRow { width: 100%; justify-content: center; position: relative; }
+.detailed .line { position: absolute; right: calc(50% + 0.85rem); width: calc(100% - 1.7rem); top: 50%; transform: translateY(-50%); }
+.detailed .dot { width: 1.5rem; height: 1.5rem; font-size: 0.7rem; position: relative; z-index: 1; }
+.detailed .todo .dot { background: var(--color-card-solid); border: 2px solid var(--color-border); }
+.detailed .label { font-size: 0.75rem; margin-top: 0.45rem; white-space: normal; line-height: 1.25; padding: 0 0.2rem; }

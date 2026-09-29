@@ -1,0 +1,33 @@
+/* The client's view. A public card: one of the few things that caps its width, because it is a
+   document rather than a workspace (same as the fundraise status link). */
+.page {
+  flex: 1; min-height: 100vh; overflow-y: auto;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 2.5rem 1rem 4rem; background: var(--color-bg);
+}
+.card {
+  width: 100%; max-width: 760px;
+  padding: 2rem 2rem 2.25rem;
+  background: var(--color-card); border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-xl); box-shadow: var(--shadow-card);
+}
+.logo { height: 36px; width: auto; display: block; margin-bottom: 1.5rem; }
+.eyebrow { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-muted); }
+.title { margin: 0.35rem 0 0; font-size: 1.5rem; font-weight: 800; letter-spacing: -0.02em; color: var(--color-text); overflow-wrap: break-word; }
+.sub { font-size: 0.9rem; color: var(--color-muted); line-height: 1.6; }
+.services { margin-top: 0.4rem; font-size: 0.875rem; color: var(--color-primary); font-weight: 600; }
+.section { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); display: flex; flex-direction: column; gap: 0.75rem; }
+.h2 { margin: 0; font-size: 0.95rem; font-weight: 700; color: var(--color-text); }
+.stageText { margin: 0.25rem 0 0; font-size: 0.9rem; line-height: 1.55; color: var(--color-text); }
+.muted { margin: 0; font-size: 0.8125rem; color: var(--color-muted); line-height: 1.55; }
+.checklist { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.875rem; color: var(--color-text); line-height: 1.45; }
+.optional { color: var(--color-muted); }
+.track { display: flex; flex-direction: column; gap: 0.5rem; padding-bottom: 0.5rem; }
+.trackName { font-size: 0.875rem; font-weight: 700; color: var(--color-text); }
+.payments { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.4rem; }
+.payments li { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.875rem; color: var(--color-text); }
+.paid { color: var(--color-success); font-weight: 600; }
+.due { color: var(--color-muted); }
+.contact { margin-top: 1.75rem; padding-top: 1.25rem; border-top: 1px solid var(--color-border); display: flex; align-items: center; gap: 0.75rem; }
+.contactName { font-size: 0.875rem; font-weight: 700; color: var(--color-text); }
+.contactEmail { font-size: 0.8125rem; color: var(--color-primary); text-decoration: none; }

@@ -14,7 +14,7 @@ import { createServerClient } from '@supabase/ssr'
 //
 // '/apply/' is the readable alias for the founder form's /f/ links (20261011000000) — same page, so
 // it must be just as reachable by a founder with no account.
-const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth', '/f/', '/apply/', '/fr/', '/il/', '/verify/']
+const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth', '/f/', '/apply/', '/fr/', '/pr/', '/il/', '/verify/']
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })

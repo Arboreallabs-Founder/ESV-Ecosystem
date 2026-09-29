@@ -55,7 +55,10 @@ export const fetchCategories = cache(async (): Promise<DealCategory[]> => {
     .select('*, fields:deal_category_fields(*)')
     .order('created_at', { ascending: true })
   const rows = (data ?? []) as DealCategoryRow[]
-  return rows.map((c) => ({
+  // Retired categories (Prefunding, moved to Projects in 20261014000000) stay in the table for
+  // history but are offered nowhere. Filtered here, not in the query, so this still works before
+  // the migration adds the column.
+  return rows.filter((c) => !(c as { retired?: boolean }).retired).map((c) => ({
     ...c,
     fields: sortFields(c.fields),
   }))

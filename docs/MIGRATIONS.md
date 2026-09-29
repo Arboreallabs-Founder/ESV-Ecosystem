@@ -901,3 +901,32 @@ only founder/admin can delete it or change the flag (`protect_general_link`), si
 lets associates manage links and deleting it would break the website's Apply button.
 `resolve_general_founder_link()` resolves it for anonymous visitors, as `resolve_referral_slug` does
 for the personal ones. `form_links.created_by` becomes nullable (a no-op if it already was).
+
+### 20261014000000_projects.sql
+**Projects**: prefunding engagements get their own section (`/projects`), moved out of Active
+Deals where Prefunding was a category with one "Engagement Letter" field.
+
+- `projects` moves through shared stages once (lead → first_call → proposal → data → advance → work
+  → handover → completed, or dormant when the proposal is declined). Payments (advance/balance),
+  Drive folder, proposal link, post-handover changes (`changes_used`, CHECK ≤ 2), partner credit and
+  the client's `share_token` live on it.
+- `project_services` is the cart (ex-GST `price_inr`, typed per project) and, once work starts,
+  each service's own track: draft_1 → draft_2 → final, or for valuation model_built → with_valuer →
+  valuer_approved → draft_report → client_approved → final.
+- `project_members` holds Connect / Lead / Design / Finance; one person can hold several.
+- `project_checklist_items` is the data checklist, seeded from the services on acceptance
+  (templates in `src/lib/project-model.ts`, from the Aaiba Design and Grounded Cafe proposals).
+- `project_events` is the timeline.
+- Visibility: `can_see_project()`: every internal user sees every project; external users only
+  those they hold a role on. `guard_project_update` restricts partner credit to founder/admin and
+  payments to founder/admin/project lead.
+- Tasks: `tasks.source` gains `'project'` and `tasks.project_id`. `sync_project_tasks()` raises the
+  current step's task for the matching role holder and closes the ones the project moved past; one
+  task per rule per project ever (unique index), so a task ticked off early doesn't come back.
+- `get_project_public(token)` backs the client's read-only `/pr/<token>` page (stages, tracks,
+  outstanding data, payment status, contact; never prices or notes). `get_partner_projects()` backs
+  the "Projects you brought in" section of the partner portal.
+- Existing Prefunding deals were moved over (active → in progress, dormant → dormant, closed →
+  completed; archived left alone), their assignees becoming leads. A Prefunding-only deal is
+  archived; a deal with other categories just loses Prefunding. `deal_categories.retired` hides
+  Prefunding from every category picker.
