@@ -57,7 +57,9 @@
 /* Pipeline cards grid */
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
+  /* Every row as tall as the tallest card, so all cards are the same size. */
+  grid-auto-rows: 1fr;
   gap: 1.25rem;
 }
 
@@ -108,7 +110,10 @@
 .cardMeta {
   display: flex;
   gap: 1.25rem;
-  margin-top: 0.125rem;
+  /* Pinned to the bottom with the stage chips under it, so they line up across cards however long
+     each description is. */
+  margin-top: auto;
+  padding-top: 0.125rem;
 }
 
 .metaItem {
@@ -122,8 +127,11 @@
 .stageRow {
   display: flex;
   flex-wrap: wrap;
+  align-content: flex-start;
   gap: 0.375rem;
   margin-top: 0.25rem;
+  /* Room for two lines of chips whether a pipeline fills one or two, so the counts above line up. */
+  min-height: 3.6rem;
 }
 
 .stageChip {
@@ -293,7 +301,10 @@
 /* Card wrapper so we can have a delete button alongside the link */
 .cardWrapper {
   position: relative;
+  display: flex;
 }
+/* The link fills its cell rather than sizing to its own content. */
+.cardWrapper > .card { flex: 1; min-width: 0; }
 
 .cardDeleteBtn {
   position: absolute;
