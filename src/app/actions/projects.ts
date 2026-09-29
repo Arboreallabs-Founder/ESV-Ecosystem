@@ -463,6 +463,19 @@ export async function setChecklistStatus(itemId: string, status: 'pending' | 're
   refresh(data.project_id as string)
 }
 
+/** "Received all data required": every item still pending becomes received in one go. Items
+    already marked N/A stay N/A — the client said those don't apply, which isn't the same as sent. */
+export async function markAllChecklistReceived(projectId: string) {
+  const c = await ctx()
+  const { data, error } = await c.supabase.from('project_checklist_items')
+    .update({ status: 'received', updated_by: c.userId, updated_at: new Date().toISOString() })
+    .eq('project_id', projectId).eq('status', 'pending')
+    .select('id')
+  if (error) throw dbFailure('mark the data received', error)
+  if (data?.length) await logEvent(c, projectId, 'note', `All required data received (${data.length} item${data.length === 1 ? '' : 's'} ticked).`)
+  refresh(projectId)
+}
+
 export async function addChecklistItem(projectId: string, label: string, service: ProjectService | null) {
   const c = await ctx()
   if (!label.trim()) throw new UserFacingError('Describe what you need from them.')

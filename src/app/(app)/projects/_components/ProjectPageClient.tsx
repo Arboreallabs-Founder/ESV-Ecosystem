@@ -13,7 +13,7 @@ import {
   type ProjectDetail, type ProjectService, type ProjectStage,
 } from '@/lib/project-model'
 import {
-  acceptProposal, addChecklistItem, addProjectNote, addProjectService, clearPayment, completeFirstCall,
+  acceptProposal, addChecklistItem, markAllChecklistReceived, addProjectNote, addProjectService, clearPayment, completeFirstCall,
   completeProject, deleteProject, finishDataGathering, logChangeRequest, markProposalSent, moveServiceStep,
   overrideStage, recordPayment, rejectProposal, removeChecklistItem, removeProjectService, reviveProject,
   scheduleFirstCall, setChecklistStatus, setProjectPartner, setProjectRole, updateProjectBasics, updateProjectService,
@@ -175,6 +175,12 @@ export default function ProjectPageClient({ project: p, people, partners, isFoun
             <div className={styles.panelTitle}>
               Data checklist
               <span className={styles.panelHint}>{p.checklist.length - pendingItems} of {p.checklist.length} in</span>
+              {pendingItems > 0 && (
+                <button className={`${styles.smallPrimaryBtn} ${styles.panelTitleAction}`} disabled={pending}
+                        onClick={() => run(() => markAllChecklistReceived(p.id))}>
+                  Received all data required ✓
+                </button>
+              )}
             </div>
             <Checklist p={p} run={run} pending={pending} />
           </section>
