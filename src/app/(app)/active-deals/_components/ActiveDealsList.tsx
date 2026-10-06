@@ -48,6 +48,15 @@ function formatDate(iso: string) {
 // State filter: 'open' = everything except archived (the default working set).
 type StateFilter = 'open' | DealState
 
+/**
+ * Which half of the lifecycle this list is showing.
+ *
+ * Closed deals left Active Deals entirely and live at /completed-deals. They are a different kind
+ * of thing to look at — a finished cap table and a fee record, read for reporting — and leaving
+ * them in the working list meant scrolling past history to find the deal you are actually on.
+ */
+export type DealScope = 'active' | 'completed'
+
 export default function ActiveDealsList({
   deals: initialDeals,
   categories,
@@ -56,6 +65,7 @@ export default function ActiveDealsList({
   partnerSummaries = {},
   team = [],
   documentsByDeal = {},
+  scope = 'active',
 }: {
   deals: ActiveDeal[]
   categories: DealCategory[]
@@ -67,6 +77,8 @@ export default function ActiveDealsList({
   team?: Array<{ id: string; name: string | null; photo_url: string | null; designation: string | null; email: string | null; phone: string | null }>
   /** The deal's IM / financials / deck / MIS / data room links, for the share message. */
   documentsByDeal?: Record<string, ActiveDealDocument[]>
+  /** 'active' hides closed deals; 'completed' shows only those. See DealScope. */
+  scope?: DealScope
 }) {
   const router = useRouter()
   const [stateFilter, setStateFilter] = useState<StateFilter>('open')
@@ -101,9 +113,14 @@ export default function ActiveDealsList({
   const canManage = userRole === 'founder' || userRole === 'admin'
   const canEditState = !['franchise_partner', 'general'].includes(userRole)
 
+  const completed = scope === 'completed'
+
+  // The scope split is applied after the optimistic overrides, so closing a deal from the Active
+  // list makes it leave the list there and then rather than at the next refresh.
   const deals = initialDeals
     .filter((d) => !deletedIds.has(d.id))
     .map((d) => stateOverrides[d.id] ? { ...d, deal_state: stateOverrides[d.id] } : d)
+    .filter((d) => (d.deal_state === 'closed') === completed)
 
   const usedCategories = categories.filter((cat) => deals.some((d) => d.categories.some((c) => c.category.id === cat.id)))
 
@@ -166,12 +183,16 @@ export default function ActiveDealsList({
       <div className={styles.header}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div className={styles.pageTitle}>Active Deals</div>
+            <div className={styles.pageTitle}>{completed ? 'Completed Deals' : 'Active Deals'}</div>
             <WikiButton sectionKey="activeDeals" />
           </div>
-          <div className={styles.pageSub}>{stateCount('open')} live · {deals.length} total</div>
+          <div className={styles.pageSub}>
+            {completed
+              ? `${deals.length} closed deal${deals.length === 1 ? '' : 's'}`
+              : `${stateCount('open')} live · ${deals.length} total`}
+          </div>
         </div>
-        {canManage && (
+        {canManage && !completed && (
           <div className={styles.headerActions}>
             <button className={styles.ghostBtn} onClick={() => setShowImport(true)}>Import CSV</button>
             <button className={styles.primaryBtn} onClick={() => setShowNew(true)}>+ New deal</button>
@@ -179,15 +200,19 @@ export default function ActiveDealsList({
         )}
       </div>
 
-      {/* State filter (archived hidden unless selected) */}
-      <FilterTabs
-        tabs={[
-          { value: 'open', label: 'All', count: stateCount('open') },
-          ...DEAL_STATES.map((s) => ({ value: s, label: DEAL_STATE_META[s].label, dot: DEAL_STATE_META[s].color, count: stateCount(s) })),
-        ]}
-        value={stateFilter}
-        onChange={(v) => setStateFilter(v as StateFilter)}
-      />
+      {/* State filter. Omitted when completed, where every row is the same state anyway — and
+          'Closed' is no longer offered on the active list, since picking it would empty it. */}
+      {!completed && (
+        <FilterTabs
+          tabs={[
+            { value: 'open', label: 'All', count: stateCount('open') },
+            ...DEAL_STATES.filter((s) => s !== 'closed')
+              .map((s) => ({ value: s, label: DEAL_STATE_META[s].label, dot: DEAL_STATE_META[s].color, count: stateCount(s) })),
+          ]}
+          value={stateFilter}
+          onChange={(v) => setStateFilter(v as StateFilter)}
+        />
+      )}
 
       {/* Category filter (compact) */}
       {usedCategories.length > 0 && (

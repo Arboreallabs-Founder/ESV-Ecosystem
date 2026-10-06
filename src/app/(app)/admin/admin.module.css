@@ -457,3 +457,39 @@
   background: rgba(213, 174, 143, 0.22);
   color: var(--color-accent);
 }
+
+/* ── "See their view": the partner's own earnings page, rendered for an admin ── */
+.viewAsBtn {
+  flex: 0 0 auto;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.5rem 0.9rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.viewAsBtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+/* Pressed state is the one that matters: the figures on screen are deliberately narrower than
+   the admin's, and nothing else on the page says so. */
+.viewAsBtn[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: rgba(116, 95, 253, 0.1);
+  color: var(--color-primary);
+}
+
+.viewAsNote {
+  margin: 0 0 1.25rem;
+  padding: 0.7rem 0.9rem;
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  background: rgba(116, 95, 253, 0.06);
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--color-muted);
+  max-width: 80ch;
+}

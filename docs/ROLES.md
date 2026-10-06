@@ -226,6 +226,13 @@ Approvals below. This is not a user-facing escalations capability.
   `get_partner_referral_tree`, a SECURITY DEFINER function — the underlying view is revoked from
   `authenticated` because it bypasses RLS by construction.
 
+### Who signs off partner attribution
+Every credit to a partner takes **two signatures from two different people**: a coordinator
+(founder, admin, or anyone flagged `is_sgp_coordinator`) and an approver (founder, admin, or anyone
+flagged `is_sgp_approver`, widened from the flag alone on 2026-10-06). `apply_partner_attribution`
+refuses a claim whose two signatures are the same person, so proposing or coordinating a claim rules
+you out of approving it — the two-human rule is enforced in the database, not the UI.
+
 ### Partner earnings & deal shares
 - A partner's earning on a deal = **split% × base**. `split%` defaults to the partner's **Standard Fee
   Split** (`franchise_partners.success_fee_split_pct`) and is overridable per deal; `base` is the deal's

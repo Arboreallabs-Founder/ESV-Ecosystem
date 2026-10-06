@@ -1049,3 +1049,15 @@ sheet. **Backward compatible by construction**: every per-kind split falls back 
 falls back to the partner standard, so with nothing set the arithmetic is identical to before. The
 function signature changed (breakdown columns added), so it is dropped and recreated rather than
 replaced. See `scripts/import/fwda_tranche2.sql` for the data this was built against.
+
+### 20261025000000_admins_can_approve_attribution.sql
+**Founders and admins can give the second signature, not just the flagged approver.** 20260919000000
+made the approver a flag rather than a role so one named person signed each fee off; in practice
+that made a single inbox the bottleneck for every claim, and claims that wait stop being filed.
+`sgp_can_approve()` now returns true for founders and admins as well as anyone carrying
+`is_sgp_approver`, and the action guard matches. **Deliberately unchanged:**
+`apply_partner_attribution` still refuses a claim whose coordinator and founder signatures come from
+the same person — widening *who* may give the second signature does not widen *how many* one person
+may give, so every attribution still needs two humans. `is_sgp_approver` is kept rather than
+dropped: it still marks who is expected to do this rather than merely permitted, and it is how an
+associate holds the second signature without being an admin.

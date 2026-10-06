@@ -24,6 +24,13 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
   if (!user || !['founder', 'admin', 'associate', 'franchise_partner', 'general'].includes(user.role ?? '')) redirect('/login')
   if (!deal) notFound()
 
+  // A closed deal is founder/admin/associate only, matching /completed-deals. Gating the list
+  // without gating the page it links to would only hide the door, not lock it: `general` reaches
+  // the same finished cap table and fee record by typing the URL.
+  if (deal.deal_state === 'closed' && !['founder', 'admin', 'associate'].includes(user.role ?? '')) {
+    redirect('/active-deals')
+  }
+
   // `general` can't view investors (getDealInvestors' guard rejects them), so skip the fetch
   // entirely for that role — the dashboard hides the investor section for them anyway.
   const canViewInvestors = user.role !== 'general'

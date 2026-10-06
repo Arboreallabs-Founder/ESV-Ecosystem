@@ -7,6 +7,7 @@ import { setPartnerDealShare } from '@/app/actions/partners'
 import { PARTNER_TIER_LABELS } from '@/lib/types'
 import type { PartnerDealEarning, PartnerShareBase, PartnerReferralTreeNode, PartnerTier } from '@/lib/types'
 import PartnerReferralTree from './PartnerReferralTree'
+import PartnerEarningsView from '../../../earnings/_components/PartnerEarningsView'
 import styles from '../../admin.module.css'
 
 function formatINR(n: number) {
@@ -36,6 +37,8 @@ export default function PartnerEarnings({
 }) {
   const [rows, setRows] = useState<Row[]>(deals.map((d) => ({ ...d, splitInput: String(d.split_pct) })))
   const [, startTransition] = useTransition()
+  // "What does this partner actually see?" — asked whenever a partner queries their number.
+  const [partnerView, setPartnerView] = useState(false)
 
   function persist(dealId: string, base: PartnerShareBase, splitPct: number | null) {
     startTransition(async () => {
@@ -85,8 +88,38 @@ export default function PartnerEarnings({
             {PARTNER_TIER_LABELS[tier]} · Standard Fee Split {standardSplit}% · {rows.length} deal{rows.length !== 1 ? 's' : ''}
           </div>
         </div>
+        <button
+          type="button"
+          className={styles.viewAsBtn}
+          onClick={() => setPartnerView((v) => !v)}
+          aria-pressed={partnerView}
+        >
+          {partnerView ? 'Back to the full picture' : 'See their view'}
+        </button>
       </div>
 
+      {partnerView ? (
+        <>
+          <p className={styles.viewAsNote}>
+            Exactly what {partnerName} sees on their own My Earnings page — same component, same
+            figures. They get their own share and nothing else: no org totals, no base selector, no
+            other partners, no investor rows.
+          </p>
+          <PartnerEarningsView
+            partnerName={partnerName}
+            deals={rows.map((r) => ({
+              active_deal_id: r.active_deal_id,
+              deal_title: r.deal_title,
+              accepted_at: r.accepted_at,
+              split_pct: r.split_pct,
+              share_amount: r.share_amount,
+            }))}
+            tree={tree}
+            voice="third"
+          />
+        </>
+      ) : (
+      <>
       {/* Summary */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {[
@@ -175,6 +208,8 @@ export default function PartnerEarnings({
             </tbody>
           </table>
         </div>
+      )}
+      </>
       )}
     </div>
   )

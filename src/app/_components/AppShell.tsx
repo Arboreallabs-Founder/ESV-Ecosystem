@@ -266,6 +266,15 @@ const NAV_ITEMS: NavEntry[] = [
         badgeColor: 'var(--color-primary)',
       },
       {
+        // Closed deals, out of the working list. Narrower than Deals: a finished cap table and a
+        // fee record is a different disclosure from the live pipeline.
+        href: '/completed-deals',
+        label: 'Completed',
+        roles: ['founder', 'admin', 'associate'],
+        icon: <Icon d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />,
+        badgeColor: 'var(--color-primary)',
+      },
+      {
         href: '/admin/categories',
         label: 'Categories',
         roles: ['founder', 'admin'],

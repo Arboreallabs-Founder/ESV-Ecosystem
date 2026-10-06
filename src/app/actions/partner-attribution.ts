@@ -34,18 +34,29 @@ async function requireCoordinator() {
 }
 
 /**
- * The second signature. A flag rather than the founder role: "any founder" would make it whoever
- * opens the Desk first, and the whole point is that one named person signs the fee off.
+ * The second signature: founders, admins, and anyone flagged is_sgp_approver.
+ *
+ * This started as the flag alone, so that one named person signed each fee off rather than whoever
+ * opened the Desk first. That made a single inbox the bottleneck for every claim, and claims that
+ * wait stop being filed — so admins were added (20261025000000).
+ *
+ * What stops this becoming one signature is elsewhere and is untouched: apply_partner_attribution
+ * refuses a claim whose coordinator and founder signatures are the same person. An admin who
+ * coordinated a claim still cannot approve it. The flag survives because it still marks who is
+ * *expected* to do this, and is how an associate can hold the second signature without being an
+ * admin.
  */
 async function requireApprover() {
   const ctx = await requireRole(['founder', 'admin', 'associate'])
+  if (['founder', 'admin'].includes(ctx.role)) return ctx
+
   const { data } = await ctx.supabase
     .from('users')
     .select('is_sgp_approver')
     .eq('id', ctx.userId)
     .maybeSingle()
   if (!(data as { is_sgp_approver?: boolean } | null)?.is_sgp_approver) {
-    throw new UserFacingError('Only the founder approver can sign off partner attribution.')
+    throw new UserFacingError('Only a founder, an admin or the named approver can sign off partner attribution.')
   }
   return ctx
 }
