@@ -688,6 +688,9 @@
   margin-bottom: 0;
 }
 .formRow > .field { flex: 1; }
+/* The currency picker holds two short options; letting it take an equal third of the row would
+   push the amounts it qualifies into a corner. */
+.formRow > .fieldNarrow { flex: 0 0 8.5rem; }
 
 .field {
   display: flex;

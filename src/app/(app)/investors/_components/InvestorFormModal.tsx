@@ -13,6 +13,7 @@ import { parseBirthday, mdToDisplay, ageFrom } from '@/lib/birthday'
 import {
   PersonIcon, PeopleIcon, TargetIcon, RupeeIcon, GlobeIcon, LinkIcon, CalendarIcon,
   ShieldIcon, CheckCircleIcon, BuildingIcon, BriefcaseIcon, TagIcon, HandshakeIcon, ChartIcon,
+  DollarIcon,
 } from './InvestorFormIcons'
 import styles from '../investors.module.css'
 
@@ -92,6 +93,11 @@ export default function InvestorFormModal({
   const pocInputRef = useRef<HTMLInputElement>(null)
   const [ticketMin, setTicketMin] = useState(initial?.ticket_size_min?.toString() ?? '')
   const [ticketMax, setTicketMax] = useState(initial?.ticket_size_max?.toString() ?? '')
+  // Defaults to rupees because almost every fund here is one, but it has to be asked: the amounts
+  // are stored bare, so a dollar fund saved as INR reads 80x wrong on the card.
+  const [ticketCurrency, setTicketCurrency] = useState<'INR' | 'USD'>(initial?.ticket_currency ?? 'INR')
+  const isUsd = ticketCurrency === 'USD'
+  const symbol = isUsd ? '$' : '₹'
   const [sectors, setSectors] = useState<string[]>(initial?.sectors ?? [])
   const [businessTypes, setBusinessTypes] = useState<string[]>(initial?.business_types ?? [])
   const [metaTags, setMetaTags] = useState<string[]>(initial?.meta_tags ?? [])
@@ -161,6 +167,7 @@ export default function InvestorFormModal({
           esv_poc_ids: isPartner ? [] : esvPocs,
           ticket_size_min: ticketMin ? Number(ticketMin) : null,
           ticket_size_max: ticketMax ? Number(ticketMax) : null,
+          ticket_currency: ticketCurrency,
           stage: stage.trim() || null,
           referred_by_partner_id: isPartner ? null : (referredBy || null),
           onboarding_form_completed: showOnboardingKyc ? onboardingDone : false,
@@ -184,6 +191,7 @@ export default function InvestorFormModal({
           esv_poc_ids: esvPocs,
           ticket_size_min: ticketMin ? Number(ticketMin) : null,
           ticket_size_max: ticketMax ? Number(ticketMax) : null,
+          ticket_currency: ticketCurrency,
           stage: stage.trim() || null,
           // No referred_by_partner_id. Changing who is credited is a claim on a fee, not a form
           // field — it goes through the SGP Desk, and the database refuses the direct write.
@@ -321,18 +329,27 @@ export default function InvestorFormModal({
             </div>
           </Section>
 
-          <Section icon={<RupeeIcon />} title="Investment Range (&#8377;)">
+          <Section icon={isUsd ? <DollarIcon /> : <RupeeIcon />} title={`Investment Range (${symbol})`}>
             <div className={styles.formRow}>
-              <div className={styles.field}>
-                <label className={styles.label}>Ticket Min (&#8377;)</label>
-                <WithIcon icon={<RupeeIcon size={16} />}>
-                  <input className={styles.input} type="number" min={0} step={100000} value={ticketMin} onChange={(e) => setTicketMin(e.target.value)} placeholder="e.g. 500000" />
+              <div className={`${styles.field} ${styles.fieldNarrow}`}>
+                <label className={styles.label}>Currency</label>
+                <WithIcon icon={isUsd ? <DollarIcon size={16} /> : <RupeeIcon size={16} />}>
+                  <select className={styles.select} value={ticketCurrency} onChange={(e) => setTicketCurrency(e.target.value as 'INR' | 'USD')}>
+                    <option value="INR">&#8377; INR</option>
+                    <option value="USD">$ USD</option>
+                  </select>
                 </WithIcon>
               </div>
               <div className={styles.field}>
-                <label className={styles.label}>Ticket Max (&#8377;)</label>
+                <label className={styles.label}>Ticket Min ({symbol})</label>
+                <WithIcon icon={isUsd ? <DollarIcon size={16} /> : <RupeeIcon size={16} />}>
+                  <input className={styles.input} type="number" min={0} step={isUsd ? 10000 : 100000} value={ticketMin} onChange={(e) => setTicketMin(e.target.value)} placeholder={isUsd ? 'e.g. 250000' : 'e.g. 500000'} />
+                </WithIcon>
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Ticket Max ({symbol})</label>
                 <WithIcon icon={<ChartIcon size={16} />}>
-                  <input className={styles.input} type="number" min={0} step={5000000} value={ticketMax} onChange={(e) => setTicketMax(e.target.value)} placeholder="e.g. 50000000" />
+                  <input className={styles.input} type="number" min={0} step={isUsd ? 100000 : 5000000} value={ticketMax} onChange={(e) => setTicketMax(e.target.value)} placeholder={isUsd ? 'e.g. 2000000' : 'e.g. 50000000'} />
                 </WithIcon>
               </div>
             </div>

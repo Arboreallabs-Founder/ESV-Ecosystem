@@ -39,6 +39,10 @@ export const RupeeIcon = (p: { size?: number }) => (
   <Svg {...p}><path d="M7 4h10M7 8h10M7 12h4a4 4 0 0 0 0-8M7 12h1l7 8" /></Svg>
 )
 
+export const DollarIcon = (p: { size?: number }) => (
+  <Svg {...p}><path d="M12 3v18M16 7.5A3.5 3.5 0 0 0 12.5 5h-1a3 3 0 0 0 0 6h1a3 3 0 0 1 0 6h-1A3.5 3.5 0 0 1 8 16.5" /></Svg>
+)
+
 export const GlobeIcon = (p: { size?: number }) => (
   <Svg {...p}><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0c2.2 0 4-4 4-9s-1.8-9-4-9-4 4-4 9 1.8 9 4 9ZM3.6 9h16.8M3.6 15h16.8" /></Svg>
 )

@@ -58,6 +58,7 @@ export async function createInvestor(params: {
   esv_poc_ids?: string[]
   ticket_size_min: number | null
   ticket_size_max: number | null
+  ticket_currency: 'INR' | 'USD'
   stage: string | null
   referred_by_partner_id: string | null
   onboarding_form_completed?: boolean
@@ -104,6 +105,11 @@ export async function createInvestor(params: {
       esv_poc_id: fields.esv_poc_id || null,
       ticket_size_min: fields.ticket_size_min,
       ticket_size_max: fields.ticket_size_max,
+      // Null only where no amount was given. A number with no currency is the state the import left
+      // 22 funds in, and it is not one the form should be able to create.
+      ticket_currency: (fields.ticket_size_min == null && fields.ticket_size_max == null)
+        ? null
+        : fields.ticket_currency,
       stage: fields.stage || null,
       onboarding_form_completed: fields.onboarding_form_completed ?? false,
       onboarding_form_url: fields.onboarding_form_url || null,
@@ -138,6 +144,11 @@ export async function createInvestor(params: {
         phone: c.phone || null,
         email: c.email || null,
         sort_order: c.sort_order ?? i,
+        // Verified as of now. Someone inside the building just looked this person up in order to
+        // type them in, so the column default of 'unknown' was describing the wrong thing — it made
+        // a contact sourced today read "Never verified" and sent the fund to the POC hunt queue.
+        employment_status: 'active',
+        last_verified_at: new Date().toISOString(),
       }))
     )
     if (contactErr) throw dbFailure('save the contact', contactErr)
@@ -163,7 +174,8 @@ export async function createInvestor(params: {
 const LOGGED_FIELD_LABELS: Record<string, string> = {
   name: 'Name', country: 'Country', website: 'Website', sectors: 'Sectors',
   business_types: 'Business types', meta_tags: 'Meta-tags', service_type: 'Type',
-  ticket_size_min: 'Ticket min', ticket_size_max: 'Ticket max', stage: 'Stage',
+  ticket_size_min: 'Ticket min', ticket_size_max: 'Ticket max',
+  ticket_currency: 'Ticket currency', stage: 'Stage',
   // referred_by_partner_id was here. It has to come out with the field itself: describeChanges
   // diffs `before` against the update payload, and the payload no longer carries this key — so
   // every edit of a tagged investor would have logged "Referred by partner: <id> → —" and claimed
@@ -202,6 +214,7 @@ export async function updateInvestor(
     esv_poc_ids?: string[]
     ticket_size_min: number | null
     ticket_size_max: number | null
+    ticket_currency: 'INR' | 'USD'
     stage: string | null
     // No referred_by_partner_id. Taking it out of the signature rather than accepting and ignoring
     // it: a parameter that is quietly dropped is how a caller ends up believing it saved something.
@@ -224,6 +237,9 @@ export async function updateInvestor(
     service_type: params.service_type,
     ticket_size_min: params.ticket_size_min,
     ticket_size_max: params.ticket_size_max,
+    ticket_currency: (params.ticket_size_min == null && params.ticket_size_max == null)
+      ? null
+      : params.ticket_currency,
     stage: params.stage || null,
     onboarding_form_completed: params.onboarding_form_completed ?? false,
     onboarding_form_url: params.onboarding_form_url || null,
@@ -416,6 +432,9 @@ export async function addContact(
       phone: params.phone || null,
       email: params.email || null,
       sort_order: params.sort_order,
+      // Same as createInvestor: added by hand today is verified today, not unknown.
+      employment_status: 'active',
+      last_verified_at: new Date().toISOString(),
     })
     .select()
     .single()
