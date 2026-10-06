@@ -98,6 +98,13 @@ export async function getPartnerEarnings(partnerId: string): Promise<PartnerDeal
     split_pct: num(r.split_pct),
     share_amount: num(r.share_amount),
     is_sourced: !!r.is_sourced,
+    transaction_base: num(r.transaction_base),
+    success_base: num(r.success_base),
+    carry_base: num(r.carry_base),
+    other_base: num(r.other_base),
+    split_transaction_pct: num(r.split_transaction_pct),
+    split_success_pct: num(r.split_success_pct),
+    split_carry_pct: num(r.split_carry_pct),
   }))
 }
 

@@ -218,6 +218,9 @@ Approvals below. This is not a user-facing escalations capability.
 - Linking an investor under another investor is a **claim like any other**: coordinator proposes,
   approver signs, and a database trigger refuses the direct write. It decides who gets paid, so it
   takes the same two signatures as a direct partner tag. Propose it from the investor's profile.
+- A partner **reads** every investor in their subtree (`/investors`), not just direct referrals —
+  they are credited for all of it. They may still **edit** only the ones they introduced directly,
+  and investor contacts stay internal either way.
 - **Who sees the tree:** a partner sees the tree rooted at themselves (`/earnings`); founders, admins
   and associates see any of them (`/admin/partners/[partnerId]`). Both read
   `get_partner_referral_tree`, a SECURITY DEFINER function — the underlying view is revoked from

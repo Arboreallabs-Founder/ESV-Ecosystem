@@ -710,6 +710,15 @@ export type PartnerDealEarning = {
   split_pct: number
   share_amount: number
   is_sourced: boolean
+  /** What the share is made of, so the number can be checked against a fee sheet rather than
+   *  taken on trust. Added with per-kind splits — see supabase/migrations/20261024000000. */
+  transaction_base: number
+  success_base: number
+  carry_base: number
+  other_base: number
+  split_transaction_pct: number
+  split_success_pct: number
+  split_carry_pct: number
 }
 
 // Privacy-scoped subset shown to a partner on their own earnings page.

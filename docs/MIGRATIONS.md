@@ -1021,3 +1021,31 @@ banner on `/admin/partners` counts. Now a LEFT JOIN with `COALESCE(fp.partner_ti
 unlinked account behaves exactly as before, and the org check is back on the user's own `org_id`
 rather than the partner record's. Venture gating is untouched — an account with no partner row
 cannot be venture-tier.
+
+### 20261023000000_partner_reads_referral_subtree.sql
+**A partner's investor list follows the chain, like everything else already did.** 20261018/19 moved
+credit, earnings and the tree diagram onto the subtree but left the investor LIST matching
+`referred_by_partner_id = <partner>`, i.e. direct referrals only — so a partner with Aster → Bluefin
+→ Coral saw one fund on `/investors` while `/earnings` showed a tree of four and paid them on all of
+it. Adds a permissive SELECT policy rather than editing the existing one, whose name is not knowable
+from the repo (same situation as 20260828000000). The id set comes from
+`my_partner_investor_ids()` — no arguments, derived from `auth.uid()`, SECURITY DEFINER because the
+roots view is revoked from `authenticated`, and set-returning/STABLE so the planner resolves it once
+per query instead of running a recursive CTE per row. UPDATE stays pinned to direct referrals and
+`investor_contacts` is untouched: being credited for a chain is a reason to see a fund, not to edit
+its record or read its contact book.
+
+### 20261024000000_fee_kinds_and_split_per_kind.sql
+**A partner's cut differs by which fee it is.** The model was one split against one base, which is
+true of PJ/HS/PR (50% of both transaction and success fees) and false of everyone else — Robin takes
+25% of the transaction fee and **none** of the success fee; so do RD (45%) and Nishant (50%);
+Soonicorn and Signal take 60% of the success fee and nothing of the transaction fee. Under the old
+model Robin's FWDA share computed as 25% × (trx + success) = ₹2,62,500 against an actual ₹1,57,500 —
+a lakh out, stated confidently. `active_deal_investor_fees.fee_kind`
+(`transaction`/`success`/`carry`/`other`, defaulting to `other`) and
+`active_deal_partner_shares.split_{transaction,success,carry}_pct` fix it; `get_partner_earnings` now
+sums kind by kind and returns the per-kind bases and splits so a number can be checked against a fee
+sheet. **Backward compatible by construction**: every per-kind split falls back to `split_pct`, which
+falls back to the partner standard, so with nothing set the arithmetic is identical to before. The
+function signature changed (breakdown columns added), so it is dropped and recreated rather than
+replaced. See `scripts/import/fwda_tranche2.sql` for the data this was built against.
