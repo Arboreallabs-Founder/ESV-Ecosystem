@@ -1544,3 +1544,146 @@
   transition: opacity 0.12s, color 0.12s;
 }
 .referRemove:hover { opacity: 1; color: var(--color-destructive); }
+
+/* ── Introduced by: the referral chain (20261018000000) ────────────────────── */
+.introBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.introHead {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+.introValue {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  line-height: 1.5;
+}
+
+.introMuted {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.introPartnerTag {
+  display: inline-block;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(116, 95, 253, 0.14);
+  color: var(--color-primary);
+  vertical-align: middle;
+}
+
+.introLink {
+  color: var(--color-primary);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+}
+.introLink:hover { border-bottom-color: var(--color-primary); }
+
+.introAction,
+.introCancel,
+.introPropose {
+  align-self: flex-start;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: filter 0.12s, background 0.12s;
+}
+
+.introAction,
+.introCancel {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-muted);
+}
+.introAction:hover,
+.introCancel:hover { color: var(--color-primary); border-color: var(--color-primary); }
+
+.introPropose {
+  border: none;
+  background: var(--color-primary);
+  color: #fff;
+}
+.introPropose:hover { filter: brightness(1.05); }
+.introPropose:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.introPicker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.introInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.65rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.introInput:focus { border-color: var(--color-primary); }
+
+.introResults {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 13rem;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.introResult {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  width: 100%;
+  text-align: left;
+  padding: 0.45rem 0.65rem;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+.introResult:last-child { border-bottom: none; }
+.introResult:hover { background: var(--color-card-raised); }
+
+.introConfirm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-card);
+}
+
+.introButtons {
+  display: flex;
+  gap: 0.5rem;
+}

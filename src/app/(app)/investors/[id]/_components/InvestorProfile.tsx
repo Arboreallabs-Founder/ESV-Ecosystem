@@ -15,6 +15,7 @@ import {
 } from '@/app/actions/investor-profile'
 import { formatTicketRange } from '@/lib/format-money'
 import { personInitials as initials } from '@/app/_components/Avatar'
+import IntroducedBy from './IntroducedBy'
 import ContactFormModal from '../../_components/ContactFormModal'
 import InvestorFormModal from '../../_components/InvestorFormModal'
 import panels from '@/app/_components/panels/panels.module.css'
@@ -224,6 +225,19 @@ export default function InvestorProfile({
         </section>
 
         <div className={panels.overviewSide}>
+          {/* ── Who introduced them ──
+               The root of the fee question. A partner directly, or another investor whose own chain
+               leads to one — see supabase/migrations/20261018000000. */}
+          <section className={panels.panel}>
+            <IntroducedBy
+              investorId={investor.id}
+              investorName={investor.name}
+              partnerName={investor.referred_by_partner?.name ?? null}
+              referrer={investor.referred_by_investor ?? null}
+              canPropose={['founder', 'admin', 'associate'].includes(userRole)}
+            />
+          </section>
+
           {/* ── Notes / thesis ──
                The fund's own words. Not a tag, and not something the structured fields can hold —
                it is also where thematic matching reads from and where the ticket sizes the source

@@ -1,0 +1,233 @@
+/* The referral tree.
+ *
+ * Connectors are drawn with borders on the list items rather than an SVG overlay, so they follow
+ * the text wherever it reflows — including on a phone, where a diagram with fixed geometry would
+ * either scroll sideways or overlap itself. */
+
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Summary strip ─────────────────────────────────────────────────────────── */
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 1rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.statValue {
+  font-family: var(--font-serif);
+  font-size: 1.3rem;
+  color: var(--color-text);
+  line-height: 1.1;
+}
+
+.statLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-muted);
+}
+
+/* ── The tree itself ───────────────────────────────────────────────────────── */
+.tree {
+  padding: 1.25rem;
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  /* Deep chains indent; the container scrolls rather than the page. */
+  overflow-x: auto;
+}
+
+.rootNode {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-md);
+  background: rgba(116, 95, 253, 0.1);
+  border: 1.5px solid var(--color-primary);
+}
+
+.rootBadge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-primary);
+}
+
+.rootName {
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: var(--color-text);
+}
+
+.branch {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1.35rem;
+}
+
+/* Each level is nested one step in, hanging off the line its parent draws. */
+.branch .branch {
+  margin-left: 0.4rem;
+}
+
+.node {
+  position: relative;
+  padding: 0.5rem 0 0 1.35rem;
+  /* The vertical run connecting this node to its siblings. */
+  border-left: 1.5px solid var(--color-border);
+}
+
+/* The last child stops the vertical run at its own elbow instead of carrying it past. */
+.node:last-child {
+  border-left-color: transparent;
+}
+
+.node::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 1.45rem;
+  width: 1.2rem;
+  border-top: 1.5px solid var(--color-border);
+}
+
+/* Redraws the segment a transparent border-left removed on the last child. */
+.node:last-child::after {
+  content: '';
+  position: absolute;
+  left: -1.5px;
+  top: 0;
+  height: 1.45rem;
+  border-left: 1.5px solid var(--color-border);
+}
+
+/* ── A node ────────────────────────────────────────────────────────────────── */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.55rem 0.8rem;
+  background: var(--color-card-raised);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  /* Keeps a long fund name from stretching the row to the width of the scroll container. */
+  max-width: 34rem;
+}
+
+.cardMain {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.toggle {
+  flex: 0 0 auto;
+  width: 1.15rem;
+  height: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-size: 0.9rem;
+  line-height: 1;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.toggle:hover { color: var(--color-primary); border-color: var(--color-primary); }
+
+.toggleSpacer {
+  flex: 0 0 auto;
+  width: 1.15rem;
+}
+
+.name,
+.nameLink {
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.nameLink {
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: color 0.12s, border-color 0.12s;
+}
+.nameLink:hover { color: var(--color-primary); border-bottom-color: var(--color-primary); }
+
+.directTag {
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(213, 174, 143, 0.22);
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  padding-left: 1.65rem;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}
+
+.metaItem { color: var(--color-text); }
+.metaBranch { color: var(--color-muted); }
+
+/* ── Empty + footnote ──────────────────────────────────────────────────────── */
+.empty {
+  padding: 1.75rem;
+  background: var(--color-card);
+  border: 1.5px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.emptyTitle {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-serif);
+  font-size: 1.05rem;
+  color: var(--color-text);
+}
+
+.emptyBody {
+  margin: 0 auto;
+  font-size: 0.8125rem;
+  color: var(--color-muted);
+  line-height: 1.55;
+  max-width: 48ch;
+}
+
+.footnote {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  line-height: 1.55;
+  max-width: 80ch;
+}

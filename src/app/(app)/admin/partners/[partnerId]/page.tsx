@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
 import { fetchPartnerUsers } from '@/lib/partners'
-import { getPartnerEarnings } from '@/app/actions/partners'
+import { getPartnerEarnings, getPartnerReferralTree } from '@/app/actions/partners'
 import PartnerEarnings from '../_components/PartnerEarnings'
 
 export default async function PartnerDetailPage({ params }: { params: Promise<{ partnerId: string }> }) {
@@ -11,9 +11,10 @@ export default async function PartnerDetailPage({ params }: { params: Promise<{ 
 
   // The roster and the earnings have nothing to do with each other, so they go together rather
   // than one waiting on the other.
-  const [partnerUsers, earnings] = await Promise.all([
+  const [partnerUsers, earnings, tree] = await Promise.all([
     fetchPartnerUsers(),
     getPartnerEarnings(partnerId),
+    getPartnerReferralTree(partnerId),
   ])
   const partnerUser = partnerUsers.find((u) => u.franchise_partner_id === partnerId)
   if (!partnerUser || !partnerUser.franchise_partners) redirect('/admin/partners')
@@ -24,6 +25,8 @@ export default async function PartnerDetailPage({ params }: { params: Promise<{ 
       partnerName={partnerUser.franchise_partners.name || partnerUser.name || 'Partner'}
       standardSplit={partnerUser.franchise_partners.success_fee_split_pct}
       deals={earnings}
+      tier={partnerUser.franchise_partners.partner_tier ?? 'sgp'}
+      tree={tree}
     />
   )
 }

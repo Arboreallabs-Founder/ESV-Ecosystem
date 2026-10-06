@@ -4,7 +4,9 @@ import { useState, useTransition } from 'react'
 import { alertError } from '@/lib/client-errors'
 import Link from 'next/link'
 import { setPartnerDealShare } from '@/app/actions/partners'
-import type { PartnerDealEarning, PartnerShareBase } from '@/lib/types'
+import { PARTNER_TIER_LABELS } from '@/lib/types'
+import type { PartnerDealEarning, PartnerShareBase, PartnerReferralTreeNode, PartnerTier } from '@/lib/types'
+import PartnerReferralTree from './PartnerReferralTree'
 import styles from '../../admin.module.css'
 
 function formatINR(n: number) {
@@ -22,11 +24,15 @@ export default function PartnerEarnings({
   partnerName,
   standardSplit,
   deals,
+  tier,
+  tree,
 }: {
   partnerId: string
   partnerName: string
   standardSplit: number
   deals: PartnerDealEarning[]
+  tier: PartnerTier
+  tree: PartnerReferralTreeNode[]
 }) {
   const [rows, setRows] = useState<Row[]>(deals.map((d) => ({ ...d, splitInput: String(d.split_pct) })))
   const [, startTransition] = useTransition()
@@ -76,7 +82,7 @@ export default function PartnerEarnings({
           <Link href="/admin/partners" className={styles.emailLink} style={{ fontSize: '0.8125rem' }}>← Partners</Link>
           <div className={styles.pageTitle} style={{ marginTop: '0.35rem' }}>{partnerName} — Deals & Earnings</div>
           <div className={styles.pageSub}>
-            Standard Fee Split {standardSplit}% · {rows.length} deal{rows.length !== 1 ? 's' : ''}
+            {PARTNER_TIER_LABELS[tier]} · Standard Fee Split {standardSplit}% · {rows.length} deal{rows.length !== 1 ? 's' : ''}
           </div>
         </div>
       </div>
@@ -101,6 +107,11 @@ export default function PartnerEarnings({
             </div>
           </div>
         ))}
+      </div>
+
+      <div style={{ marginBottom: '1.75rem' }}>
+        <div className={styles.pageTitle} style={{ fontSize: '1.05rem', marginBottom: '0.75rem' }}>Referral tree</div>
+        <PartnerReferralTree partnerName={partnerName} rows={tree} linkInvestors />
       </div>
 
       {rows.length === 0 ? (

@@ -30,6 +30,9 @@ type ActiveDealListRow = {
   deal_state: DealState | null
   logo_url: string | null
   visible_to_partners?: boolean | null
+  total_raise?: number | null
+  external_raised?: number | null
+  min_ticket?: number | null
   entry?: ActiveDealEntryListRow | ActiveDealEntryListRow[] | null
   categories?: Array<{ category?: DealCategoryRow | null }> | null
   field_values?: FieldValueRow[] | null
@@ -154,6 +157,7 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
   const [dealsRes, catsRes] = await Promise.all([
     supabase.from('active_deals').select(`
       id, pipeline_entry_id, created_at, deal_state, logo_url, visible_to_partners,
+      total_raise, external_raised, min_ticket,
       entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url))),
       categories:active_deal_categories(category:deal_categories(id, name, description, color, created_at, fields:deal_category_fields(*))),
       field_values:active_deal_field_values(field_id, value)
@@ -169,6 +173,9 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
       deal_state: (row.deal_state ?? 'active') as import('@/lib/types').DealState,
       logo_url: row.logo_url ?? null,
       visible_to_partners: row.visible_to_partners !== false,
+      total_raise: row.total_raise ?? null,
+      external_raised: row.external_raised ?? null,
+      min_ticket: row.min_ticket ?? null,
       entry: (() => {
         const e = first(row.entry)
         if (!e) {
@@ -954,6 +961,140 @@ export async function setDealPartnerVisibility(activeDealId: string, visible: bo
 
   revalidatePath('/active-deals')
   revalidatePath('/portal')
+}
+
+/**
+ * The shape of the round: what is being raised, what an outside party already filled, the minimum
+ * cheque.
+ *
+ * Internal, not admin. Unlike partner visibility these are facts about the deal that an associate
+ * working it would be the first to learn, and gating them behind founder/admin means they are
+ * entered late or not at all. What a partner may *see* of them is settled in the database
+ * (20261021000000), not here.
+ *
+ * Empty string clears the field. The three are sent together so clearing one is distinguishable
+ * from not touching it, which a partial payload cannot express.
+ */
+export async function setActiveDealRaiseShape(activeDealId: string, input: {
+  total_raise: number | null
+  external_raised: number | null
+  min_ticket: number | null
+}) {
+  const { supabase } = await requireInternal()
+
+  for (const [label, v] of [
+    ['The round total', input.total_raise],
+    ['The external raise', input.external_raised],
+    ['The minimum ticket', input.min_ticket],
+  ] as const) {
+    if (v == null) continue
+    if (!Number.isFinite(v)) throw new UserFacingError(`${label} has to be a number.`)
+    if (v < 0) throw new UserFacingError(`${label} cannot be negative.`)
+  }
+
+  // Checked here as well as by the CHECK constraint, so it arrives as a sentence rather than a
+  // constraint name. The database is still what enforces it.
+  if (input.total_raise != null && input.external_raised != null && input.external_raised > input.total_raise) {
+    throw new UserFacingError(
+      'The external raise is larger than the whole round. Raise the round total, or lower what is '
+      + 'recorded as raised outside.',
+    )
+  }
+
+  const { data, error } = await supabase
+    .from('active_deals')
+    .update({
+      total_raise: input.total_raise,
+      external_raised: input.external_raised,
+      min_ticket: input.min_ticket,
+    })
+    .eq('id', activeDealId)
+    .select('id')
+
+  if (error) throw dbFailure('save that', error)
+  if (!data || data.length === 0) {
+    throw new UserFacingError('That deal could not be updated — it may have been removed.')
+  }
+
+  revalidatePath('/active-deals')
+  revalidatePath(`/active-deals/${activeDealId}`)
+  revalidatePath('/portal')
+}
+
+/**
+ * Which venture partners are on a deal.
+ *
+ * An SGP's access is the blanket visible_to_partners toggle; a venture partner sees nothing until
+ * someone puts them on a deal by name (20261020000000). Founder/admin only, for the same reason
+ * setDealPartnerVisibility is: this is a disclosure decision, not a field edit.
+ *
+ * Takes the whole set rather than add/remove calls — the UI is a list of checkboxes, and two
+ * people editing it should not be able to interleave into a state neither chose.
+ */
+export async function setDealPartnerAccess(activeDealId: string, partnerIds: string[]) {
+  const { supabase, userId } = await requireAdmin()
+
+  const wanted = Array.from(new Set(partnerIds.filter(Boolean)))
+
+  const { error: delErr } = await supabase
+    .from('active_deal_partner_access')
+    .delete()
+    .eq('active_deal_id', activeDealId)
+  if (delErr) throw dbFailure('save that', delErr)
+
+  if (wanted.length > 0) {
+    const { error: insErr } = await supabase
+      .from('active_deal_partner_access')
+      .insert(wanted.map((partner_id) => ({
+        active_deal_id: activeDealId,
+        partner_id,
+        granted_by: userId,
+      })))
+    if (insErr) throw dbFailure('save that', insErr)
+  }
+
+  revalidatePath('/active-deals')
+  revalidatePath(`/active-deals/${activeDealId}`)
+  revalidatePath('/portal')
+}
+
+/** Who is currently on a deal, for the grant list. Internal only — partners read their own row. */
+export async function getDealPartnerAccess(activeDealId: string): Promise<string[]> {
+  const { supabase } = await requireInternal()
+  const { data } = await supabase
+    .from('active_deal_partner_access')
+    .select('partner_id')
+    .eq('active_deal_id', activeDealId)
+  return ((data ?? []) as Array<{ partner_id: string }>).map((r) => r.partner_id)
+}
+
+/**
+ * The venture partners and which of them are on this deal.
+ *
+ * Only venture-tier partners are listed: an SGP's access is the blanket visible_to_partners toggle,
+ * so offering a grant for one would imply a control that does nothing. Loaded together so the
+ * checkbox list cannot render against a stale half of itself.
+ */
+export async function getVenturePartnerAccess(activeDealId: string): Promise<{
+  partners: Array<{ id: string; name: string }>
+  granted: string[]
+}> {
+  const { supabase } = await requireInternal()
+  const [partnersRes, grantedRes] = await Promise.all([
+    supabase
+      .from('franchise_partners')
+      .select('id, name')
+      .eq('partner_tier', 'venture')
+      .order('name', { ascending: true }),
+    supabase
+      .from('active_deal_partner_access')
+      .select('partner_id')
+      .eq('active_deal_id', activeDealId),
+  ])
+  return {
+    partners: (partnersRes.data ?? []) as Array<{ id: string; name: string }>,
+    granted: ((grantedRes.data ?? []) as Array<{ partner_id: string }>).map((r) => r.partner_id),
+  }
 }
 
 /**

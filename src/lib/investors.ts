@@ -62,7 +62,7 @@ export const fetchInvestor = cache(async (id: string): Promise<Investor | null> 
     .select(`
       id, name, country, website, sectors, business_types, meta_tags, service_type,
       esv_poc_id, ticket_size_min, ticket_size_max, stage,
-      referred_by_partner_id, created_by, created_at, username,
+      referred_by_partner_id, referred_by_investor_id, created_by, created_at, username,
       onboarding_form_completed, onboarding_form_url, kyc_done,
       birthday_md, birthday_year,
       excluded_sectors, connect_strength, stage_min, stage_max, stage_raw,
@@ -70,6 +70,7 @@ export const fetchInvestor = cache(async (id: string): Promise<Investor | null> 
       poc_search_task_id, poc_search_started_at, notes, logo_url,
       esv_pocs:investor_poc_users(user:users(id, name, photo_url)),
       referred_by_partner:franchise_partners!referred_by_partner_id(name),
+      referred_by_investor:investors!referred_by_investor_id(id, name),
       contacts:investor_contacts(
         id, investor_id, name, role, linkedin_url, linkedin_status,
         phone, email, sort_order, created_at,
@@ -101,6 +102,9 @@ export const fetchInvestor = cache(async (id: string): Promise<Investor | null> 
     excluded_sectors: row.excluded_sectors ?? [],
     connect_strength: row.connect_strength ?? 'unknown',
     esv_poc_names: row.esv_poc_names ?? [],
+    // PostgREST returns an embedded one-to-one as an array under some planner shapes.
+    referred_by_partner: Array.isArray(row.referred_by_partner) ? row.referred_by_partner[0] ?? null : row.referred_by_partner ?? null,
+    referred_by_investor: Array.isArray(row.referred_by_investor) ? row.referred_by_investor[0] ?? null : row.referred_by_investor ?? null,
     onboarding_form_completed: row.onboarding_form_completed ?? false,
     kyc_done: row.kyc_done ?? false,
     esv_pocs: (row.esv_pocs ?? []).map((p: any) => {

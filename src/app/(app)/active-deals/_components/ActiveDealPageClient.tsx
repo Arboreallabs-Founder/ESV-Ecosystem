@@ -10,6 +10,8 @@ import type { ActiveDeal, ActiveDealDocument, ActiveDealInvestor, ActiveDealInve
 import { ACTIVE_DEAL_INVESTOR_STATUSES, ACTIVE_DEAL_INVESTOR_STATUS_META, DEAL_STATES, DEAL_STATE_META, SERVICE_TYPE_LABELS } from '@/lib/types'
 import { computeFeeAmount } from '@/lib/deal-fees'
 import { StatusGauge, StatusDonut, type DonutSegment } from './DealCharts'
+import RoundShape from './RoundShape'
+import VenturePartnerAccess from './VenturePartnerAccess'
 import DealUpdates from './DealUpdates'
 import DealDocuments from './DealDocuments'
 import Avatar from '@/app/_components/Avatar'
@@ -267,14 +269,18 @@ export default function ActiveDealPageClient({
     : investors.reduce((s, i) => s + (i.investment_amount ?? 0), 0)
   const commitmentCount = partnerSummary ? partnerSummary.commitment_count : investors.length
 
-  // What the company is raising, read off a field the partner can already see. Deliberately not
-  // sent by the summary: a percentage whose denominator is not on the page is a number nobody can
-  // check, and if the field is closed to partners the bar should disappear with it.
-  const partnerTarget = (() => {
-    if (!isPartner) return null
+  // ── The round ─────────────────────────────────────────────────────────────────
+  // Real columns now (20261021000000), carried to partners by the summary function rather than
+  // inferred. The old path sniffed the categories for a field whose label matched /capital being
+  // raised/i and used it as the denominator — which worked only where somebody had created a field
+  // with that exact wording and opened it to partners, so most deals showed no bar at all.
+  //
+  // The field fallback is kept for the total alone, so deals that only ever had the custom field
+  // keep their progress bar until someone fills the column in.
+  const fieldTarget = (() => {
     for (const { category, field_values } of deal.categories) {
       for (const f of category.fields) {
-        if (!f.visible_to_partners) continue
+        if (isPartner && !f.visible_to_partners) continue
         if (!/capital being raised/i.test(f.label)) continue
         const raw = field_values.find((v) => v.field_id === f.id)?.value
         const n = raw ? Number(String(raw).replace(/[^0-9.]/g, '')) : NaN
@@ -283,6 +289,9 @@ export default function ActiveDealPageClient({
     }
     return null
   })()
+  const totalRaise = (isPartner ? partnerSummary?.total_raise ?? null : deal.total_raise) ?? fieldTarget
+  const externalRaised = isPartner ? partnerSummary?.external_raised ?? null : deal.external_raised
+  const minTicket = isPartner ? partnerSummary?.min_ticket ?? null : deal.min_ticket
   const totalShares = investors.reduce((s, i) => s + (i.shares ?? 0), 0)
   const totalEarnings = investors.reduce(
     (s, i) => s + i.fees.reduce((fs, f) => fs + (computeFeeAmount(f, i.investment_amount, dealFieldValues) ?? 0), 0),
@@ -370,6 +379,11 @@ export default function ActiveDealPageClient({
                 {partnerVisible ? 'Visible to partners' : 'Hidden from partners'}
               </button>
             )}
+            {/* Sits next to the blanket toggle because the two together are the whole answer to
+                "who outside ESV can open this deal". */}
+            {canSetPartnerVisibility && (
+              <VenturePartnerAccess dealId={deal.id} dealVisibleToPartners={partnerVisible} />
+            )}
             {canManageDeal && <button className={styles.ghostBtn} onClick={() => setShowEdit(true)}>Edit deal</button>}
             {canDeleteDeal && (
               <button className={styles.dangerBtn} onClick={handleDeleteDeal} disabled={deletePending}>
@@ -385,25 +399,22 @@ export default function ActiveDealPageClient({
       </div>
 
       {/* ── Investor dashboard (hidden from general) ─────────────────────────── */}
+      {/* Everyone who can see the raise at all sees the same round card — the minimum ticket and the
+          external raise are explicitly for partners too. Only editing is gated. */}
+      {canSeeRaiseProgress && (
+        <RoundShape
+          dealId={deal.id}
+          totalRaise={totalRaise}
+          externalRaised={externalRaised}
+          minTicket={minTicket}
+          committed={totalCommitted}
+          canEdit={canManageDeal}
+        />
+      )}
+
       {isPartner && canSeeRaiseProgress && (
         <div className={styles.dashCard}>
           <div className={styles.detailSectionTitle}>Raise progress</div>
-          {/* The percentage is the thing a partner actually wants: "is this deal nearly done".
-              Only shown when the target is a field they can already see, so the bar never implies
-              a number that is not on the page. */}
-          {partnerTarget != null && partnerTarget > 0 && (
-            <div className={styles.raiseBarWrap}>
-              <div className={styles.raiseBar}>
-                <div
-                  className={styles.raiseBarFill}
-                  style={{ width: `${Math.min(100, Math.round((totalCommitted / partnerTarget) * 100))}%` }}
-                />
-              </div>
-              <span className={styles.raiseBarLabel}>
-                {Math.round((totalCommitted / partnerTarget) * 100)}% of {formatINR(partnerTarget)}
-              </span>
-            </div>
-          )}
           <div className={styles.statRow}>
             <div className={styles.statBlock}>
               <span className={styles.statLabel}>Committed so far</span>

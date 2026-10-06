@@ -961,3 +961,63 @@ anonymous form submissions into the first stage) and closes the open ones from t
 left. `tasks.source` gains `'pipeline'`, with `pipeline_entry_id` and `stage_task_id`. A trigger on
 `pipeline_entry_assignees` hands a waiting unassigned task to the first person assigned, gives later
 assignees their own copy, and removes an unassigned person's open copies.
+
+### 20261018000000_investor_referral_tree.sql
+**Referrals that branch, so a partner's investor can introduce an investor.** Adds
+`investors.referred_by_investor_id` beside the existing `referred_by_partner_id`; at most one is set
+(`investors_one_referrer`), so a partner tag marks a chain's **root** and the other column is the
+links below it. A `BEFORE INSERT OR UPDATE` trigger refuses cycles (A→B→A has no root and would
+recurse forever) and caps chains at 32. `investor_root_partner(uuid)` walks one chain up;
+`investor_referral_roots` is the whole forest as a view — **revoked from `authenticated`**, because
+it is deliberately not `security_invoker` (the walk must cross rows the caller cannot read) and an
+open view would hand any partner the org's entire referral graph. `guard_partner_attribution()` is
+extended to cover the new column: placing an investor under one of Robin's investors credits Robin
+exactly as tagging them to Robin would, so it takes the same two signatures.
+`partner_attribution_claims` gains `referrer_investor_id` and the source `'investor_chain'`;
+`apply_partner_attribution` re-resolves the root at write time and refuses if the chain moved
+between the two signatures. **ESV pays the root partner gross and models nothing below it** — how
+the partner and their investors divide that is their own arrangement.
+
+### 20261019000000_partner_earnings_over_tree.sql
+**Earnings follow the whole subtree.** `get_partner_earnings` asked
+`i.referred_by_partner_id = p_partner_id`, which scored a chained investor zero and usually dropped
+the deal from the partner's page entirely. It now resolves each investor to its root partner via
+`investor_referral_roots`; fee resolution, base selector and split are untouched. Worked example:
+Robin → A → B, B invests 1 Cr at a 6% investor fee, Robin on 50/50 → Robin is owed 3,00,000, i.e. 3%
+of the gross crore. Adds `get_partner_referral_tree(uuid)` (the tree to draw — a partner may read
+only their own, internal roles any) and `search_investors_for_chain(text, uuid)` (the picker, which
+offers only investors already inside some partner's tree, since nobody else can pass credit on).
+
+### 20261020000000_venture_partners.sql
+**Venture Partners, as a tier rather than a role.** `franchise_partners.partner_tier` is `'sgp'`
+(default — nothing changes for anyone existing) or `'venture'`. A venture partner has **identical
+referral rights** and sees a deal only when named on it, via the new `active_deal_partner_access`.
+A second `user_role` enum value was rejected: `'franchise_partner'` appears in 68 app checks plus a
+long tail of RLS policies, all of which would need widening to keep referral parity, and each one
+missed is a silent permission hole. Same reasoning as `is_sgp_coordinator` (20260826000000). The
+single predicate `partner_can_see_deal(uuid)` is what every partner-facing read now asks, so the
+tiers cannot drift apart; `entry_has_partner_visible_deal` delegates to it.
+`active_deals.visible_to_partners` stays the master switch for **both** tiers — a grant does not
+override a deal someone deliberately hid. `active_deal_partner_shares` and `get_partner_earnings`
+are untouched: money owed must not vanish because a deal stopped being visible.
+
+### 20261021000000_active_deal_raise_shape.sql
+**What the round actually looks like.** `active_deals` gains `total_raise`, `external_raised` (of
+the round, how much an outside party has already committed) and `min_ticket`, with CHECKs for
+non-negative amounts and `external_raised <= total_raise`. What is still **open** is derived
+(`total − external − committed through us`), never stored — a stored remaining disagrees with the
+investor rows the moment one is edited, invisibly. `get_partner_deal_summary` and
+`get_partner_deal_summaries` carry all three, so **partners see the minimum ticket and the external
+raise** by instruction; both also move onto `partner_can_see_deal`, which previously would have let
+a venture partner read every deal's summary while the entry policy correctly refused them the page.
+
+### 20261022000000_partner_can_see_deal_unlinked.sql
+**Fixes an empty portal for partner users with no partner record.** `partner_can_see_deal()`
+(20261020000000) inner-joined `franchise_partners` on `users.franchise_partner_id`; the path it
+replaced never touched that table. A `franchise_partner` whose `franchise_partner_id` is still NULL
+therefore matched nothing and saw no deals at all — and that is the routine state between creating a
+partner user and filling in their agreement, which is what the "N partners are missing details"
+banner on `/admin/partners` counts. Now a LEFT JOIN with `COALESCE(fp.partner_tier, 'sgp')`, so an
+unlinked account behaves exactly as before, and the org check is back on the user's own `org_id`
+rather than the partner record's. Venture gating is untouched — an account with no partner row
+cannot be venture-tier.

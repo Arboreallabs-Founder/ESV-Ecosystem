@@ -519,3 +519,34 @@ export async function getInvestorFull(investorId: string): Promise<Investor | nu
     ),
   } as Investor
 }
+
+/**
+ * Investors that could have passed credit on, for the chain picker.
+ *
+ * Restricted to investors already inside some partner's tree, because they are the only ones an
+ * introduction can credit — the fee follows the chain to a root partner, and an investor with no
+ * root has nobody to pay. Offering the whole fund database and failing at the last step would make
+ * the rule discoverable only by hitting it.
+ *
+ * Goes through an RPC rather than a query: the view it reads is revoked from `authenticated` on
+ * purpose (it bypasses RLS by construction, so an open view would hand out the whole referral
+ * graph), and the function re-checks the caller and the org itself.
+ */
+export async function searchInvestorsForChain(term: string, excludeInvestorId: string): Promise<Array<{
+  id: string
+  name: string
+  root_partner_name: string | null
+}>> {
+  const { supabase } = await requireRole(['founder', 'admin', 'associate'])
+  const q = term.trim()
+  if (q.length < 2) return []
+
+  const { data, error } = await supabase.rpc('search_investors_for_chain', {
+    p_term: q,
+    p_exclude: excludeInvestorId,
+  })
+  if (error) throw dbFailure('search investors', error)
+
+  return ((data ?? []) as Array<{ id: string; name: string; root_partner_name: string | null }>)
+    .map((r) => ({ id: r.id, name: r.name, root_partner_name: r.root_partner_name ?? null }))
+}

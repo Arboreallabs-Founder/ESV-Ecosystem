@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getUser } from '@/lib/user'
-import { getMyEarnings } from '@/app/actions/partners'
+import { getMyEarnings, getMyReferralTree } from '@/app/actions/partners'
+import PartnerReferralTree from '../admin/partners/_components/PartnerReferralTree'
 import styles from './earnings.module.css'
 
 function formatINR(n: number) {
@@ -16,7 +17,8 @@ export default async function MyEarningsPage() {
   if (!user) redirect('/login')
   if (user.role !== 'franchise_partner') redirect('/active-deals')
 
-  const deals = await getMyEarnings()
+  // Independent queries; neither should wait on the other.
+  const [deals, tree] = await Promise.all([getMyEarnings(), getMyReferralTree()])
   const total = deals.reduce((s, d) => s + d.share_amount, 0)
 
   return (
@@ -27,6 +29,14 @@ export default async function MyEarningsPage() {
           Your share of each deal you sourced or referred an investor to.
         </div>
       </div>
+
+      {/* The tree sits above the table because it is the answer to "why is this deal on my list" —
+          an investor two hops away still earns the partner their share. Investor names are not
+          links here: a partner cannot open a fund record. */}
+      <section className={styles.treeSection}>
+        <h2 className={styles.sectionTitle}>Your referral tree</h2>
+        <PartnerReferralTree partnerName={user.name || 'You'} rows={tree} />
+      </section>
 
       {deals.length === 0 ? (
         <div className={styles.empty}>

@@ -67,6 +67,16 @@ Investor commitments live here too: add/remove investors per deal, track investi
 (not_started → commitment_received → funds_received → shares_transferred), amounts, shares, and
 per-investor fees.
 
+**The round** (20261021000000) is three numbers on the deal: `total_raise`, `external_raised` (of
+that round, how much an outside party has already filled) and `min_ticket`. What is still open is
+derived — total − external − committed through us — and never stored, since a stored remaining
+disagrees with the investor rows the moment one is edited. A stacked bar shows the three slices.
+Internal roles edit it inline; **the minimum ticket and the external raise are visible to partners
+too**, carried by `get_partner_deal_summary` rather than inferred, since they are what a partner
+needs before putting the deal in front of anyone. This replaces an older heuristic that sniffed the
+deal's custom fields for a label matching /capital being raised/i and used it as the denominator,
+which worked only where somebody had created a field with that exact wording.
+
 ### Projects (`/projects`)
 Prefunding engagements (pitch decks, projections, valuation reports, market research, datarooms,
 and custom work), moved out of Active Deals (20261014000000). Every lead is a project from the
@@ -202,8 +212,22 @@ This is what makes the multi-tenancy real: every other role is pinned to one `or
 ### Partner Portal (`/portal`, `/submissions`, `/earnings`)
 Franchise-partner-only surface: browse published forms and their own issued links (`/portal`), see
 entries that came in through those links (`/submissions`), and view their own computed earnings
-share per deal (`/earnings`) — no org totals, no other investors' data, computed server-side so
-partners never read another partner's rows.
+share per deal plus their **referral tree** (`/earnings`) — no org totals, no other investors' data,
+computed server-side so partners never read another partner's rows.
+
+Partners come in two **tiers** (`franchise_partners.partner_tier`, 2026-10-06) with identical
+referral rights: an **SGP** sees every deal left visible to partners; a **Venture Partner** sees only
+deals they have been named on, granted from the deal page beside the visibility toggle. It is a tier
+rather than a second role on purpose — see [ROLES.md](ROLES.md#partner_tier--sgp-vs-venture-partner).
+
+### The referral tree (`/earnings`, `/admin/partners/[partnerId]`)
+Referrals branch: a partner introduces an investor, and that investor introduces another. Credit
+rolls up the chain to the partner at its root, and **ESV pays that partner gross** of the investor
+fee — nothing below the root is modelled, because a split we do not pay is a number we would get
+wrong. Both pages draw the tree (nested lists with CSS connectors, not `@xyflow/react`, which stays
+confined to the form builder) with each investor's own investment and their branch total. Placing an
+investor under another goes through the same two-signature attribution claim as any other credit, is
+proposed from the investor's profile, and is cycle-guarded in the database.
 
 ### Wiki (`/wiki`)
 Static in-app reference documentation (`src/lib/wiki.ts`), readable by every authenticated role.

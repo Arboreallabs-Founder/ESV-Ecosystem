@@ -2773,3 +2773,143 @@
   border-color: rgba(var(--color-hover-rgb), 0.35);
   background: var(--color-card-raised);
 }
+
+/* ── The round: total, external, open, minimum ticket (20261021000000) ─────── */
+/* One stacked bar rather than three: the question is "how much of this round is left", and three
+   separate meters make the reader do the subtraction the bar should be doing for them. */
+.roundBarWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.roundBar {
+  display: flex;
+  height: 0.6rem;
+  border-radius: 999px;
+  overflow: hidden;
+  /* The track is the open portion — no third element to keep in sync with the other two. */
+  background: var(--color-border);
+}
+
+.roundSegExternal { background: var(--color-accent); }
+.roundSegCommitted { background: var(--color-primary); }
+
+.roundLegend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+  font-size: 0.7rem;
+  color: var(--color-muted);
+}
+
+.roundLegendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.roundDot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 999px;
+  flex: 0 0 auto;
+}
+
+.dotExternal { background: var(--color-accent); }
+.dotCommitted { background: var(--color-primary); }
+.dotOpen { background: var(--color-border); }
+
+.roundEdit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.roundField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1 1 11rem;
+  min-width: 0;
+}
+
+.roundInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem 0.7rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.roundInput:focus { border-color: var(--color-primary); }
+
+.roundActions {
+  display: flex;
+  gap: 0.5rem;
+  flex: 0 0 auto;
+}
+
+.roundHint {
+  flex: 1 1 100%;
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+  max-width: 70ch;
+}
+
+/* ── Venture partner grants (20261020000000) ───────────────────────────────── */
+.ventureAccess { position: relative; }
+
+.venturePanel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  z-index: 20;
+  width: min(22rem, calc(100vw - 2rem));
+  padding: 0.85rem 1rem;
+  background: var(--color-card-solid);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-elevated);
+}
+
+.ventureList {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.ventureRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.ventureHint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+.ventureWarn {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: var(--color-warning);
+}

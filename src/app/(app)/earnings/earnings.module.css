@@ -80,3 +80,16 @@
   border: 1.5px dashed var(--color-border);
   border-radius: var(--radius-md);
 }
+
+/* ── Referral tree (20261018000000) ────────────────────────────────────────── */
+.treeSection {
+  margin-bottom: 2rem;
+}
+
+.sectionTitle {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  font-weight: 400;
+  color: var(--color-text);
+  margin: 0 0 0.75rem;
+}

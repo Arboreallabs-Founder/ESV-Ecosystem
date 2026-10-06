@@ -27,6 +27,21 @@ function short(n: number, currency: 'INR' | 'USD'): string {
 const trim = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 
 /**
+ * One amount, short, in the units its readers use.
+ *
+ * Exported for deal money — the round, what an outside party has filled, the minimum cheque — which
+ * is rupees throughout, unlike investor ticket sizes. Same `short()` the range formatter uses, so a
+ * crore never renders two different ways on one page.
+ */
+export function formatMoneyShort(
+  amount: number | null | undefined,
+  currency: 'INR' | 'USD' = 'INR',
+): string | null {
+  if (amount == null || !Number.isFinite(amount)) return null
+  return short(amount, currency)
+}
+
+/**
  * A ticket range, or null when there is nothing meaningful to show.
  *
  * A null currency renders the bare numbers with a note rather than a symbol: the amount is real,

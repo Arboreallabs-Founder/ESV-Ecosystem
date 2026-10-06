@@ -61,6 +61,48 @@ function revalidateSgp() {
 type Subject = { companyId: string; investorId?: never } | { investorId: string; companyId?: never }
 
 /**
+ * Propose that one investor introduced another.
+ *
+ * The branch in "Robin brings an investor, that investor brings another". It is the same claim as
+ * any other — it decides which partner gets paid, just reached one hop further along — so it goes
+ * through the same two signatures, and the database refuses the direct write either way
+ * (guard_partner_attribution, extended in 20261018000000).
+ *
+ * partner_id on the claim is the referrer's ROOT partner, resolved here so the person signing sees
+ * who they are about to credit, and re-resolved at apply time so a chain that moved between the two
+ * signatures cannot pay the wrong partner.
+ */
+export async function proposeInvestorChain(input: {
+  investorId: string
+  referrerInvestorId: string
+  note?: string | null
+}): Promise<string> {
+  const ctx = await requireRole(['founder', 'admin', 'associate'])
+
+  if (input.investorId === input.referrerInvestorId) {
+    throw new UserFacingError('An investor cannot have introduced themselves.')
+  }
+
+  const { data: root, error: rootErr } = await ctx.supabase
+    .rpc('investor_root_partner', { p_investor_id: input.referrerInvestorId })
+  if (rootErr) throw dbFailure('work out who that credits', rootErr)
+  if (!root) {
+    throw new UserFacingError(
+      'That investor does not roll up to any partner, so this introduction would credit nobody. '
+      + 'Settle their own chain first.',
+    )
+  }
+
+  return proposeAttribution({
+    investorId: input.investorId,
+    partnerId: root as string,
+    source: 'investor_chain',
+    referrerInvestorId: input.referrerInvestorId,
+    note: input.note,
+  })
+}
+
+/**
  * File a claim.
  *
  * A coordinator proposing counts as the first signature — they are the person the first signature
@@ -73,6 +115,8 @@ export async function proposeAttribution(input: Subject & {
   note?: string | null
   referralId?: string | null
   pipelineEntryId?: string | null
+  /** Set only by proposeInvestorChain: the investor who made the introduction. */
+  referrerInvestorId?: string | null
 }): Promise<string> {
   const ctx = await requireRole(['founder', 'admin', 'associate'])
   if (!ctx.orgId) throw new UserFacingError('No organisation in scope.')
@@ -94,6 +138,7 @@ export async function proposeAttribution(input: Subject & {
       source: input.source,
       referral_id: input.referralId ?? null,
       pipeline_entry_id: input.pipelineEntryId ?? null,
+      referrer_investor_id: input.referrerInvestorId ?? null,
       note: input.note?.trim() || null,
       proposed_by: ctx.userId,
       status: coordinates ? 'pending_founder' : 'pending_coordinator',

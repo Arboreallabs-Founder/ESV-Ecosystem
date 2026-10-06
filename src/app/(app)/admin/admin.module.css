@@ -437,3 +437,23 @@
   font-size: 0.8125rem;
   line-height: 1.5;
 }
+
+/* ── Partner tier (20261020000000) ─────────────────────────────────────────── */
+/* An SGP's badge is quiet; a Venture Partner's is the one worth noticing, since it is the
+   narrower grant and the reason a deal may be missing from their portal. */
+.tierTag {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  white-space: nowrap;
+  background: rgba(163, 155, 149, 0.16);
+  color: var(--color-muted);
+}
+
+.tierTag[data-tier='venture'] {
+  background: rgba(213, 174, 143, 0.22);
+  color: var(--color-accent);
+}

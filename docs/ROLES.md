@@ -18,10 +18,34 @@
 | **associate** | Internal | Day-to-day operator with limited admin/edit rights; tasks scoped to self. |
 | **general** | Internal | Narrow operator added 2026-08-05. Read-only on the deal pipeline (pipelines/active deals/companies/investors); full task access (same as associate). Lost HR policies/Bulletin/Events edit rights on 2026-08-14 when `hr` took over that tier — now read-only there too, same as associate. |
 | **hr** | Internal | Narrow HR-operator role added 2026-08-14. Nav access limited to the Team section only (Tasks, Bulletin, Events, HR Zone, Approvals, Engage) — no Dashboard, Deal Flow, Database, or Admin section access. Can create/edit (not delete) HR Zone policies, Bulletin posts, and Events; full task parity with general; sole role (with founder/admin) that can see/adjust the HR clock-in/out widget and manage birthdays; one of three leave/expense approvers. |
-| **franchise_partner** | External | Referral partner. Read-mostly; scoped to their **own** links & referrals. |
+| **franchise_partner** | External | Referral partner. Read-mostly; scoped to their **own** links & referrals. Two **tiers** — see below. |
 
 "Internal" = founder, admin, associate, general, hr. Everything is **org-scoped**: a user only ever
 sees data in their own organization (super_admin excepted).
+
+### `partner_tier` — SGP vs Venture Partner
+A column on `franchise_partners` (added 2026-10-06), `'sgp'` (default) or `'venture'`. **Not a
+separate role**, and deliberately so: a Venture Partner has *identical* referral rights to an SGP,
+and those rights are spread across 68 `'franchise_partner'` checks in the app plus a long tail of
+RLS policies. A second enum value would mean widening every one of them to preserve parity, and each
+one missed would be a silent permission hole. The one thing that differs is deal visibility, so that
+is the only thing that forks. Same reasoning as `is_sgp_coordinator`.
+
+| Tier | Which deals they can open |
+| --- | --- |
+| `sgp` | Every deal with `active_deals.visible_to_partners` true — today's behaviour, unchanged. |
+| `venture` | Only deals with an explicit row in `active_deal_partner_access`, **and** still visible to partners. |
+
+A partner user with **no `franchise_partners` row yet** (created, agreement not filled in) counts as
+`sgp` — `partner_tier` is read through `COALESCE(..., 'sgp')`, so nobody is narrowed by not having
+been set up yet. Only a partner explicitly marked `venture` is gated to named deals.
+
+`visible_to_partners` remains the master switch for both tiers: a per-deal grant does **not**
+override a deal somebody deliberately hid. Every partner-facing read asks one predicate,
+`partner_can_see_deal(uuid)`, so the tiers cannot drift apart across the portal, the summary
+functions and the entry policy. Set the tier in Admin → Partners; grant deals from the deal page,
+next to the visibility toggle. Earnings are **not** gated by it — a venture partner who introduced an
+investor is owed for that whether or not anyone put them on the deal page.
 
 ### `is_external` — orthogonal to role
 A boolean on `approved_emails`/`users` (added 2026-10-06), independent of `role`. It marks someone
@@ -184,10 +208,26 @@ Approvals below. This is not a user-facing escalations capability.
 - **Manage deal investors** (add/remove, set investing Yes/No, amounts) and **fees** (add/edit/
   toggle/delete): Internal only.
 
+### The referral tree
+- An investor is credited to a partner **directly** (`investors.referred_by_partner_id`, the root of
+  a chain) or to **another investor** (`referred_by_investor_id`) — never both. Credit rolls up the
+  chain to whichever partner is at its root, however many hops away.
+- **ESV pays the root partner gross** of the investor fee and models nothing below that. Robin → A →
+  B, B invests 1 Cr at 6% with Robin on 50/50 → Robin is owed 3,00,000. What Robin and A then settle
+  between themselves is their own arrangement and is deliberately not tracked.
+- Linking an investor under another investor is a **claim like any other**: coordinator proposes,
+  approver signs, and a database trigger refuses the direct write. It decides who gets paid, so it
+  takes the same two signatures as a direct partner tag. Propose it from the investor's profile.
+- **Who sees the tree:** a partner sees the tree rooted at themselves (`/earnings`); founders, admins
+  and associates see any of them (`/admin/partners/[partnerId]`). Both read
+  `get_partner_referral_tree`, a SECURITY DEFINER function — the underlying view is revoked from
+  `authenticated` because it bypasses RLS by construction.
+
 ### Partner earnings & deal shares
 - A partner's earning on a deal = **split% × base**. `split%` defaults to the partner's **Standard Fee
   Split** (`franchise_partners.success_fee_split_pct`) and is overridable per deal; `base` is the deal's
   **total org earning** or the earning from the **partner's referred investors**, chosen per deal.
+  "Referred investors" means their whole **subtree**, not only direct introductions (2026-10-06).
 - **Admin/Founder** manage this on a **per-partner page** (`/admin/partners/[partnerId]`): every deal the
   partner is tied to (deal **sourced via their link**, or one of their **referred investors is on the
   deal**), each row showing org total earning, referred earning, a base selector, an editable

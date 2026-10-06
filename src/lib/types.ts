@@ -554,7 +554,11 @@ export type Investor = {
   ticket_size_min: number | null
   ticket_size_max: number | null
   stage: string | null
+  /** Set only on a root: a partner introduced this investor directly. */
   referred_by_partner_id: string | null
+  /** Set when another investor introduced them. Credit rolls up the chain to the root partner —
+   *  never both columns at once (investors_one_referrer). */
+  referred_by_investor_id: string | null
   created_by: string | null
   created_at: string
   // Auto-generated at creation from the investor's name, future-proofing for possible
@@ -589,6 +593,8 @@ export type Investor = {
   esv_poc?: { name: string } | null
   esv_pocs?: Array<{ id: string; name: string; photo_url: string | null }>
   referred_by_partner?: { name: string } | null
+  /** The investor one hop up the chain, when this one was introduced by another investor. */
+  referred_by_investor?: { id: string; name: string } | null
   contacts?: InvestorContact[]
 }
 
@@ -660,6 +666,35 @@ export type FranchisePartner = {
   /** 'MM-DD' — the contact person's birthday; year is usually unknown. */
   contact_birthday_md: string | null
   contact_birthday_year: number | null
+  /** 'sgp' sees every portal-visible deal; 'venture' sees only deals they are explicitly granted.
+   *  Referral rights are identical — see supabase/migrations/20261020000000. */
+  partner_tier: PartnerTier
+}
+
+export const PARTNER_TIERS = ['sgp', 'venture'] as const
+export type PartnerTier = typeof PARTNER_TIERS[number]
+
+export const PARTNER_TIER_LABELS: Record<PartnerTier, string> = {
+  sgp: 'SGP',
+  venture: 'Venture Partner',
+}
+
+/**
+ * One investor in a partner's referral tree, as returned by get_partner_referral_tree.
+ *
+ * Flat on purpose: the function returns edges and the client nests them (buildReferralTree), because
+ * the layout has to walk the list anyway.
+ */
+export type PartnerReferralTreeNode = {
+  investor_id: string
+  investor_name: string
+  service_type: string | null
+  /** NULL at depth 1 — the partner is the parent there. */
+  parent_investor_id: string | null
+  /** 1 = introduced by the partner directly. */
+  depth: number
+  invested_total: number
+  deal_count: number
 }
 
 export type PartnerShareBase = 'total' | 'referred'
@@ -955,6 +990,10 @@ export type PartnerDealSummary = {
   company_website: string | null
   committed_total: number
   commitment_count: number
+  /** The round, which a partner may quote. See supabase/migrations/20261021000000. */
+  total_raise: number | null
+  external_raised: number | null
+  min_ticket: number | null
   assignees: Array<{
     user_id: string
     name: string | null
@@ -1021,7 +1060,7 @@ export type PartnerInvestorReferral = {
  * the process — it is the process.
  */
 export const ATTRIBUTION_SOURCES = [
-  'form_submission', 'manual_submission', 'investor_referral', 'retroactive_tag',
+  'form_submission', 'manual_submission', 'investor_referral', 'retroactive_tag', 'investor_chain',
 ] as const
 export type AttributionSource = typeof ATTRIBUTION_SOURCES[number]
 
@@ -1030,6 +1069,7 @@ export const ATTRIBUTION_SOURCE_LABELS: Record<AttributionSource, string> = {
   manual_submission: 'Submitted directly',
   investor_referral: 'Investor referral',
   retroactive_tag: 'Tagged by us',
+  investor_chain: 'Introduced by their investor',
 }
 
 export const ATTRIBUTION_STATUSES = [
@@ -1059,6 +1099,9 @@ export type PartnerAttributionClaim = {
   source: AttributionSource
   referral_id: string | null
   pipeline_entry_id: string | null
+  /** On an `investor_chain` claim: the investor who made the introduction. partner_id is their
+   *  root partner, who is the one actually paid. */
+  referrer_investor_id: string | null
   status: AttributionStatus
   note: string | null
   proposed_by: string | null
@@ -1076,6 +1119,7 @@ export type PartnerAttributionClaim = {
   proposer?: { name: string | null; photo_url: string | null } | null
   coordinator?: { name: string | null } | null
   founder?: { name: string | null } | null
+  referrer_investor?: { id: string; name: string } | null
 }
 
 /** What the claim is about, whichever kind it is. */
@@ -1131,6 +1175,12 @@ export type ActiveDeal = {
   logo_url: string | null
   /** False hides the deal from the partner portal. Internal roles always see it. */
   visible_to_partners: boolean
+  /** The full round being raised, in rupees. */
+  total_raise: number | null
+  /** Of total_raise, how much an outside party has already committed. Visible to partners. */
+  external_raised: number | null
+  /** Smallest cheque into the direct cap, in rupees. Visible to partners. */
+  min_ticket: number | null
   entry: {
     title: string | null
     submitter_name: string | null

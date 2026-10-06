@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { upsertPartnerDetails, updatePartnerDetails } from '@/app/actions/partners'
+import { PARTNER_TIER_LABELS } from '@/lib/types'
 import type { PartnerUser } from '@/lib/types'
 import { mdToDisplay } from '@/lib/birthday'
 import styles from '../../admin.module.css'
@@ -76,6 +77,7 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
                 <th>Name</th>
                 <th>Email</th>
                 <th>Firm Name</th>
+                <th>Tier</th>
                 <th>Agreement</th>
                 <th>Standard Fee Split</th>
                 <th>Contract</th>
@@ -92,6 +94,13 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
                       <a className={styles.emailLink} href={`mailto:${u.email}`}>{u.email}</a>
                     </td>
                     <td>{p?.name || <span style={{ color: 'var(--color-muted)' }}>—</span>}</td>
+                    <td>
+                      {p ? (
+                        <span className={styles.tierTag} data-tier={p.partner_tier ?? 'sgp'}>
+                          {PARTNER_TIER_LABELS[p.partner_tier ?? 'sgp']}
+                        </span>
+                      ) : <span style={{ color: 'var(--color-muted)' }}>—</span>}
+                    </td>
                     <td>{p?.agreement_type || <span style={{ color: 'var(--color-muted)' }}>—</span>}</td>
                     <td>{p ? <span className={styles.feeSplit}>{p.success_fee_split_pct}%</span> : <span style={{ color: 'var(--color-muted)' }}>—</span>}</td>
                     <td>
@@ -202,6 +211,20 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
                   defaultValue={editTarget.franchise_partners?.contact_email || editTarget.email || ''}
                   placeholder="rahul@abc.com"
                 />
+              </div>
+              <div className={styles.field}>
+                <label className={styles.label}>Tier</label>
+                <select
+                  className={styles.select}
+                  name="partner_tier"
+                  defaultValue={editTarget.franchise_partners?.partner_tier || 'sgp'}
+                >
+                  <option value="sgp">SGP — sees every deal on the portal</option>
+                  <option value="venture">Venture Partner — only deals they are named on</option>
+                </select>
+                <p className={styles.fieldHint}>
+                  Referral rights are the same either way. This decides which deals they can open.
+                </p>
               </div>
               <div className={styles.field}>
                 <label className={styles.label}>Agreement Type</label>
