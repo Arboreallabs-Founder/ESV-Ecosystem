@@ -1139,17 +1139,25 @@
   background: rgba(116, 95, 253, 0.12); color: var(--color-primary); white-space: nowrap;
 }
 .taskDraftRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 11rem 10rem auto 6rem auto;
-  gap: 0.5rem; align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.625rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
 }
+.taskDraftTitle { width: 100%; }
+.taskDraftWho, .taskDraftWhen {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem;
+}
+/* Selects share the line evenly and may shrink below their content. */
+.taskDraftWho .taskDraftSelect { flex: 1 1 9rem; min-width: 0; }
+.taskDraftWhen .taskDraftSelect { flex: 1 1 6rem; min-width: 0; }
+.taskDraftSelect { padding-left: 0.6rem; padding-right: 0.5rem; }
 .taskDraftDue { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.75rem; color: var(--color-muted); white-space: nowrap; }
 .taskDraftDue .input { width: 3.5rem; padding-left: 0.4rem; padding-right: 0.2rem; }
+.taskDraftRemove { flex: 0 0 auto; margin-left: auto; }
 .taskDraftHint { margin: 0.4rem 0 0; font-size: 0.75rem; color: var(--color-muted); line-height: 1.5; }
-@media (max-width: 900px) {
-  .taskDraftRow { grid-template-columns: 1fr 1fr; }
-  .taskDraftTitle { grid-column: 1 / -1; }
-}
 
 /* ── Entry: where it is in the process ─────────────────────────────── */
 .processBlock {

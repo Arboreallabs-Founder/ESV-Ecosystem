@@ -921,27 +921,31 @@ export default function PipelineBoardClient({
                           onChange={(e) => setTaskDraft(t.key, { title: e.target.value })}
                           placeholder="e.g. Schedule an intro call with {name}"
                         />
-                        <select className={styles.select} value={t.assign_to} onChange={(e) => setTaskDraft(t.key, { assign_to: e.target.value as TaskDraft['assign_to'] })}>
-                          {(Object.keys(ASSIGN_LABELS) as TaskDraft['assign_to'][]).map((a) => <option key={a} value={a}>{ASSIGN_LABELS[a]}</option>)}
-                        </select>
-                        {t.assign_to === 'user' ? (
-                          <select className={styles.select} value={t.user_id ?? ''} onChange={(e) => setTaskDraft(t.key, { user_id: e.target.value || null })}>
-                            <option value="">Pick a person…</option>
-                            {teamMembers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                        <div className={styles.taskDraftWho}>
+                          <select className={`${styles.select} ${styles.taskDraftSelect}`} value={t.assign_to} onChange={(e) => setTaskDraft(t.key, { assign_to: e.target.value as TaskDraft['assign_to'] })}>
+                            {(Object.keys(ASSIGN_LABELS) as TaskDraft['assign_to'][]).map((a) => <option key={a} value={a}>{ASSIGN_LABELS[a]}</option>)}
                           </select>
-                        ) : <span />}
-                        <label className={styles.taskDraftDue}>
-                          Due in
-                          <input type="number" min={0} max={365} className={styles.input} value={t.due_days}
-                                 onChange={(e) => setTaskDraft(t.key, { due_days: Number(e.target.value) || 0 })} />
-                          days
-                        </label>
-                        <select className={styles.select} value={t.priority} onChange={(e) => setTaskDraft(t.key, { priority: e.target.value as TaskDraft['priority'] })}>
-                          <option value="High">High</option>
-                          <option value="Medium">Medium</option>
-                          <option value="Low">Low</option>
-                        </select>
-                        <button type="button" className={styles.questionRemoveBtn} onClick={() => removeTaskDraft(t.key)} title="Remove">×</button>
+                          {t.assign_to === 'user' && (
+                            <select className={`${styles.select} ${styles.taskDraftSelect}`} value={t.user_id ?? ''} onChange={(e) => setTaskDraft(t.key, { user_id: e.target.value || null })}>
+                              <option value="">Pick a person…</option>
+                              {teamMembers.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            </select>
+                          )}
+                        </div>
+                        <div className={styles.taskDraftWhen}>
+                          <label className={styles.taskDraftDue}>
+                            Due in
+                            <input type="number" min={0} max={365} className={styles.input} value={t.due_days}
+                                   onChange={(e) => setTaskDraft(t.key, { due_days: Number(e.target.value) || 0 })} />
+                            days
+                          </label>
+                          <select className={`${styles.select} ${styles.taskDraftSelect}`} value={t.priority} onChange={(e) => setTaskDraft(t.key, { priority: e.target.value as TaskDraft['priority'] })}>
+                            <option value="High">High</option>
+                            <option value="Medium">Medium</option>
+                            <option value="Low">Low</option>
+                          </select>
+                          <button type="button" className={`${styles.questionRemoveBtn} ${styles.taskDraftRemove}`} onClick={() => removeTaskDraft(t.key)} title="Remove">×</button>
+                        </div>
                       </div>
                     ))}
                   </div>
