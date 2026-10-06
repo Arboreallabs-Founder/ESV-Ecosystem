@@ -5,7 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { alertError } from '@/lib/client-errors'
 import {
-  coordinatorApprove, founderApprove, founderApproveMany, rejectAttribution, withdrawAttribution,
+  coordinatorApprove, discardAttributionClaim, founderApprove, founderApproveMany,
+  rejectAttribution, withdrawAttribution,
 } from '@/app/actions/partner-attribution'
 import {
   ATTRIBUTION_SOURCE_LABELS, ATTRIBUTION_STATUS_COLORS, ATTRIBUTION_STATUS_LABELS,
@@ -26,12 +27,17 @@ import styles from '../sgp-desk.module.css'
  * money, and splitting them across screens is how one gets missed.
  */
 export default function AttributionQueue({
-  claims, canCoordinate, canApprove,
+  claims, canCoordinate, canApprove, canDiscard = false,
 }: {
   claims: PartnerAttributionClaim[]
   canCoordinate: boolean
-  /** Holds the second signature. Nimit, unless somebody else has been given it. */
+  /** Holds the second signature: founders, admins, and anyone flagged is_sgp_approver. The
+   *  database still refuses a claim whose two signatures are the same person, so this widens who
+   *  may sign second, not how many signatures one person may give. */
   canApprove: boolean
+  /** Founder/admin: may delete a claim outright. For clearing demo and legacy rows, not for
+   *  deciding real ones — that is "Not credited", which keeps the reason on the record. */
+  canDiscard?: boolean
 }) {
   const router = useRouter()
   const [pending, start] = useTransition()
@@ -111,7 +117,25 @@ export default function AttributionQueue({
         )}
         {claim.rejected_note && <div className={styles.closed}>Not credited: {claim.rejected_note}</div>}
 
-        {actions && <div className={styles.cardActions}>{actions}</div>}
+        {(actions || (canDiscard && claim.status !== 'approved')) && (
+          <div className={styles.cardActions}>
+            {actions}
+            {canDiscard && claim.status !== 'approved' && (
+              <button
+                className={styles.discardBtn}
+                disabled={pending}
+                title="Delete this claim. For demo and legacy rows — a real one should be decided, not deleted."
+                onClick={() => {
+                  if (!confirm(`Delete the claim on ${subject}? This removes the row entirely. `
+                    + 'To turn down a real claim, use "Not credited" instead — that keeps the reason on the record.')) return
+                  run(() => discardAttributionClaim(claim.id))
+                }}
+              >
+                Discard
+              </button>
+            )}
+          </div>
+        )}
       </div>
     )
   }

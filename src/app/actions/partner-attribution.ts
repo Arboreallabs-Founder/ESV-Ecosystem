@@ -334,6 +334,50 @@ export async function withdrawAttribution(claimId: string, reason: string): Prom
   revalidateSgp()
 }
 
+/**
+ * Delete a claim outright.
+ *
+ * Not the same gesture as "Not credited", and offered alongside it rather than instead of it.
+ * Rejecting is a decision about a real claim and the reason stays on the record, which is what a
+ * dispute between two partners would be settled against. This is for rows that are not a record of
+ * anything — demo data, duplicates, a test tag from before the system was in use — where keeping
+ * them is noise that makes the real queue harder to read.
+ *
+ * Founder/admin only, and never an approved claim: once a claim is approved the subject carries the
+ * partner's tag, and deleting the claim would leave that credit standing with nothing explaining
+ * where it came from. Taking approved credit back is withdrawAttribution, which demands a reason.
+ */
+export async function discardAttributionClaim(claimId: string): Promise<void> {
+  const { supabase } = await requireRole(['founder', 'admin'])
+
+  const { data: claim } = await supabase
+    .from('partner_attribution_claims')
+    .select('status')
+    .eq('id', claimId)
+    .maybeSingle()
+  if (!claim) throw new UserFacingError('That claim could not be found.')
+  if ((claim as { status: string }).status === 'approved') {
+    throw new UserFacingError(
+      'That claim is approved, so the partner is credited on the record. Withdraw the credit '
+      + 'instead — deleting the claim would leave the tag with nothing explaining it.',
+    )
+  }
+
+  const { data, error } = await supabase
+    .from('partner_attribution_claims')
+    .delete()
+    .eq('id', claimId)
+    .neq('status', 'approved')
+    .select('id')
+  if (error) throw dbFailure('remove that claim', error)
+  // An RLS-filtered delete reports success having removed nothing.
+  if (!data || data.length === 0) {
+    throw new UserFacingError('That claim could not be removed. Reload to see its current state.')
+  }
+
+  revalidateSgp()
+}
+
 /** Founder/admin only — it decides who holds the second signature. */
 export async function setSgpApprover(targetUserId: string, isApprover: boolean): Promise<void> {
   const { supabase } = await requireRole(['founder', 'admin'])

@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { alertError, describeError } from '@/lib/client-errors'
 import { intakePartnerEntry } from '@/app/actions/partner-companies'
+import { deleteEntry } from '@/app/actions/pipelines'
 import {
   SGP_INTAKE_ACTIONS, SGP_INTAKE_ACTION_LABELS, SGP_INTAKE_ACTION_HINTS,
 } from '@/lib/types'
@@ -39,10 +40,12 @@ export type QueueEntry = {
 type Tab = 'queue' | 'moving' | 'done'
 
 export default function SgpDeskClient({
-  entries, assignable,
+  entries, assignable, canDiscard = false,
 }: {
   entries: QueueEntry[]
   assignable: UserRow[]
+  /** Founder/admin: delete a submission outright, for clearing demo and legacy rows. */
+  canDiscard?: boolean
 }) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('queue')
@@ -166,11 +169,28 @@ export default function SgpDeskClient({
                   they bothered — so it is shown in full rather than truncated. */}
               {e.partner_notes && <p className={styles.comments}>{e.partner_notes}</p>}
 
-              {e.stage?.stage_type === 'lead' && (
+              {(e.stage?.stage_type === 'lead' || canDiscard) && (
                 <div className={styles.cardActions}>
-                  <button className={styles.primaryBtn} onClick={() => openIntake(e)}>
-                    Decide what happens next
-                  </button>
+                  {e.stage?.stage_type === 'lead' && (
+                    <button className={styles.primaryBtn} onClick={() => openIntake(e)}>
+                      Decide what happens next
+                    </button>
+                  )}
+                  {canDiscard && (
+                    <button
+                      className={styles.discardBtn}
+                      title="Delete this submission. For demo and legacy rows — a real one should be triaged, not deleted."
+                      onClick={() => {
+                        if (!confirm(`Delete the submission "${e.title ?? 'Untitled'}"? `
+                          + 'This removes the entry from the board entirely.')) return
+                        startTransition(async () => {
+                          try { await deleteEntry(e.id); router.refresh() } catch (err) { alertError(err) }
+                        })
+                      }}
+                    >
+                      Discard
+                    </button>
+                  )}
                 </div>
               )}
             </article>

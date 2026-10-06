@@ -723,3 +723,25 @@
   max-width: 15rem;
 }
 .referralType:focus { outline: none; border-color: var(--color-primary); }
+
+/* ── Discard: delete a row rather than decide it ───────────────────────────── */
+/* Quiet until hovered, and destructive-coloured only then. It sits beside the real decision on
+   every card, and a red button next to "Approve" invites the wrong click. */
+.discardBtn {
+  margin-left: auto;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.4rem 0.7rem;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s;
+}
+.discardBtn:hover {
+  color: var(--color-destructive);
+  border-color: var(--color-destructive);
+}
+.discardBtn:disabled { opacity: 0.5; cursor: not-allowed; }
