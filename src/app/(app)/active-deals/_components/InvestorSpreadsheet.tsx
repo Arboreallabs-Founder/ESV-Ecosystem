@@ -37,6 +37,9 @@ type Props = {
   dealTitle: string
   categories: CategoryTab[]
   isReadOnly?: boolean
+  /** ESV's fee per investor and the fee totals. False for partners: what we charge on a deal is
+   *  not theirs to read, and the referrer of one investor could otherwise price the whole round. */
+  canSeeFees?: boolean
   initialInvestors: ActiveDealInvestor[]
   initialDealFieldValues: FieldValue[]
   initialAllInvestors: PickerInvestor[]
@@ -49,6 +52,7 @@ export default function InvestorSpreadsheet({
   dealTitle,
   categories,
   isReadOnly = false,
+  canSeeFees = true,
   initialInvestors,
   initialDealFieldValues,
   initialAllInvestors,
@@ -274,7 +278,11 @@ export default function InvestorSpreadsheet({
   }
 
   // One column per distinct fee label across the visible (tab-scoped) investors, in first-seen order.
+  // Gated here rather than at each render point. Every fee column, every fee cell and every fee
+  // total is derived from this one list, so emptying it removes all of them at once — there is no
+  // second place to forget, and a fee column added later is covered without being thought about.
   const feeColumns = useMemo<FeeColumn[]>(() => {
+    if (!canSeeFees) return []
     const seen = new Map<string, FeeColumn>()
     for (const inv of visibleInvestors) {
       for (const fee of inv.fees) {
@@ -282,7 +290,7 @@ export default function InvestorSpreadsheet({
       }
     }
     return [...seen.values()]
-  }, [visibleInvestors])
+  }, [visibleInvestors, canSeeFees])
 
   // Running total of commitment amounts in row order — matches the reference sheet.
   const rows = visibleInvestors.reduce<Array<{ inv: ActiveDealInvestor; cumulative: number }>>((acc, inv) => {

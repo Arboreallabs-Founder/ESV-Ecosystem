@@ -3,7 +3,7 @@
 import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { createInvestor, updateInvestor } from '@/app/actions/investors'
-import { SERVICE_TYPE_LABELS } from '@/lib/types'
+import { SERVICE_TYPE_LABELS, needsPoc } from '@/lib/types'
 import type { Investor, ServiceType } from '@/lib/types'
 import { COUNTRY_OPTIONS } from '@/lib/countries'
 import { STAGE_OPTIONS, SECTOR_OPTIONS, BUSINESS_TYPE_OPTIONS, THESIS_TAG_OPTIONS } from '@/lib/taxonomies'
@@ -126,7 +126,7 @@ export default function InvestorFormModal({
   const stageList = stage ? stage.split(',').map((s) => s.trim()).filter(Boolean) : []
   const isPartner = userRole === 'franchise_partner'
   const canSetReferredBy = ['founder', 'admin'].includes(userRole)
-  const showContacts = serviceType !== 'angel_investor'
+  const showContacts = needsPoc(serviceType)
   const showOnboardingKyc = serviceType === 'angel_investor' && !isPartner
 
   function setContact(key: string, field: keyof ContactDraft, val: string) {

@@ -433,6 +433,8 @@ export type ServiceType =
   | 'vc_fund' | 'angel_fund' | 'family_office' | 'angel_investor'
   | 'debt_fund' | 'corporate_vc' | 'private_equity' | 'growth_equity'
   | 'fund_of_funds' | 'accelerator' | 'sovereign_wealth' | 'merchant_bank'
+  /** An ESV vehicle on a cap table — an SPV or LLP of ours, not a fund anyone pitches. */
+  | 'internal_vehicle'
 
 export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   vc_fund: 'VC Fund',
@@ -447,6 +449,26 @@ export const SERVICE_TYPE_LABELS: Record<ServiceType, string> = {
   accelerator: 'Accelerator / Incubator',
   sovereign_wealth: 'Sovereign Wealth Fund',
   merchant_bank: 'Merchant Bank / Investment Bank',
+  internal_vehicle: 'Internal Vehicle (ESV)',
+}
+
+/**
+ * Types that do not need a point of contact.
+ *
+ * An angel investor IS the contact — there is no fund behind them to find someone at. An internal
+ * vehicle's contact is whoever is reading the screen. Both were previously expressed as a bare
+ * `service_type !== 'angel_investor'` in four separate components; a set and a helper mean the
+ * second exemption did not have to be added in four places, and a third will not either.
+ */
+export const POC_EXEMPT_SERVICE_TYPES: readonly ServiceType[] = ['angel_investor', 'internal_vehicle']
+
+export function needsPoc(serviceType: ServiceType): boolean {
+  return !POC_EXEMPT_SERVICE_TYPES.includes(serviceType)
+}
+
+/** Ours, rather than somebody we raise from. Kept off outreach lists and POC hunts. */
+export function isInternalVehicle(serviceType: ServiceType): boolean {
+  return serviceType === 'internal_vehicle'
 }
 
 export const LINKEDIN_STATUS_OPTIONS = [
@@ -719,6 +741,8 @@ export type PartnerDealEarning = {
   split_transaction_pct: number
   split_success_pct: number
   split_carry_pct: number
+  /** Taken off this partner's earnings: zero share, and never shown on their own page. */
+  is_excluded: boolean
 }
 
 // Privacy-scoped subset shown to a partner on their own earnings page.
@@ -941,6 +965,14 @@ export type PipelineEntry = {
 
 // ── Active Deals ──────────────────────────────────────────────────────────────
 
+export const VALUATION_BASES = ['pre', 'post'] as const
+export type ValuationBasis = typeof VALUATION_BASES[number]
+
+export const VALUATION_BASIS_LABELS: Record<ValuationBasis, string> = {
+  pre: 'Pre-money',
+  post: 'Post-money',
+}
+
 export const DEAL_STATES = ['active', 'dormant', 'closed', 'archived'] as const
 export type DealState = typeof DEAL_STATES[number]
 
@@ -1003,6 +1035,8 @@ export type PartnerDealSummary = {
   total_raise: number | null
   external_raised: number | null
   min_ticket: number | null
+  valuation: number | null
+  valuation_basis: ValuationBasis | null
   assignees: Array<{
     user_id: string
     name: string | null
@@ -1190,6 +1224,10 @@ export type ActiveDeal = {
   external_raised: number | null
   /** Smallest cheque into the direct cap, in rupees. Visible to partners. */
   min_ticket: number | null
+  /** Company valuation at the time of this investment, in rupees. Read with valuation_basis. */
+  valuation: number | null
+  /** Whether `valuation` includes this round. NULL means nobody recorded which. */
+  valuation_basis: ValuationBasis | null
   entry: {
     title: string | null
     submitter_name: string | null

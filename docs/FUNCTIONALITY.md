@@ -77,6 +77,11 @@ needs before putting the deal in front of anyone. This replaces an older heurist
 deal's custom fields for a label matching /capital being raised/i and used it as the denominator,
 which worked only where somebody had created a field with that exact wording.
 
+**Valuation** (20261027000000) is its own card below it, answering the next question: the round is
+how much is being raised, this is what that buys. Stored with a pre/post basis, because the same
+number means two different things without it — the implied stake for the round is shown only when
+the basis is recorded. Visible to partners for the same reason the minimum ticket is.
+
 ### Projects (`/projects`)
 Prefunding engagements (pitch decks, projections, valuation reports, market research, datarooms,
 and custom work), moved out of Active Deals (20261014000000). Every lead is a project from the

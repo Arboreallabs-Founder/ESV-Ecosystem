@@ -33,6 +33,8 @@ type ActiveDealListRow = {
   total_raise?: number | null
   external_raised?: number | null
   min_ticket?: number | null
+  valuation?: number | null
+  valuation_basis?: string | null
   entry?: ActiveDealEntryListRow | ActiveDealEntryListRow[] | null
   categories?: Array<{ category?: DealCategoryRow | null }> | null
   field_values?: FieldValueRow[] | null
@@ -157,7 +159,7 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
   const [dealsRes, catsRes] = await Promise.all([
     supabase.from('active_deals').select(`
       id, pipeline_entry_id, created_at, deal_state, logo_url, visible_to_partners,
-      total_raise, external_raised, min_ticket,
+      total_raise, external_raised, min_ticket, valuation, valuation_basis,
       entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url))),
       categories:active_deal_categories(category:deal_categories(id, name, description, color, created_at, fields:deal_category_fields(*))),
       field_values:active_deal_field_values(field_id, value)
@@ -176,6 +178,8 @@ export async function getActiveDealsData(): Promise<{ deals: import('@/lib/types
       total_raise: row.total_raise ?? null,
       external_raised: row.external_raised ?? null,
       min_ticket: row.min_ticket ?? null,
+      valuation: row.valuation ?? null,
+      valuation_basis: (row.valuation_basis as import('@/lib/types').ValuationBasis | null) ?? null,
       entry: (() => {
         const e = first(row.entry)
         if (!e) {
@@ -1007,6 +1011,51 @@ export async function setActiveDealRaiseShape(activeDealId: string, input: {
       total_raise: input.total_raise,
       external_raised: input.external_raised,
       min_ticket: input.min_ticket,
+    })
+    .eq('id', activeDealId)
+    .select('id')
+
+  if (error) throw dbFailure('save that', error)
+  if (!data || data.length === 0) {
+    throw new UserFacingError('That deal could not be updated — it may have been removed.')
+  }
+
+  revalidatePath('/active-deals')
+  revalidatePath(`/active-deals/${activeDealId}`)
+  revalidatePath('/portal')
+}
+
+/**
+ * What the company was worth when the money went in.
+ *
+ * Internal, like the round: an associate working the deal learns this first, and gating it behind
+ * founder/admin means it is entered late or not at all. What a partner may *see* of it is settled
+ * in the database (20261027000000).
+ *
+ * The basis is accepted as null. "103 Cr" with nobody sure whether the raise is inside it is a real
+ * state of knowledge, and forcing a choice would have somebody guess — which is worse, because the
+ * page derives an implied stake from it.
+ */
+export async function setActiveDealValuation(activeDealId: string, input: {
+  valuation: number | null
+  valuation_basis: 'pre' | 'post' | null
+}) {
+  const { supabase } = await requireInternal()
+
+  if (input.valuation != null) {
+    if (!Number.isFinite(input.valuation)) throw new UserFacingError('The valuation has to be a number.')
+    if (input.valuation < 0) throw new UserFacingError('The valuation cannot be negative.')
+  }
+  if (input.valuation_basis != null && !['pre', 'post'].includes(input.valuation_basis)) {
+    throw new UserFacingError('A valuation is either pre-money or post-money.')
+  }
+
+  const { data, error } = await supabase
+    .from('active_deals')
+    .update({
+      valuation: input.valuation,
+      // Clearing the figure clears the basis with it: a basis on its own describes nothing.
+      valuation_basis: input.valuation == null ? null : input.valuation_basis,
     })
     .eq('id', activeDealId)
     .select('id')

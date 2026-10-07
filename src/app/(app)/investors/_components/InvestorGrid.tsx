@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { pocCoverage, SERVICE_TYPE_LABELS } from '@/lib/types'
+import { needsPoc, pocCoverage, SERVICE_TYPE_LABELS } from '@/lib/types'
 import type { PartnerInvestorReferral, Investor, InvestorListItem, ServiceType } from '@/lib/types'
 import InvestorCard from './InvestorCard'
 import InvestorDetail from './InvestorDetail'
@@ -81,7 +81,9 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
   // under the filters already applied rather than offering 26 buttons half of which find nothing.
   const matchesExceptLetter = (inv: Investor | InvestorListItem) => {
     if (types.length > 0 && !types.includes(inv.service_type)) return false
-    if (needsPocOnly && pocCoverage(inv.contacts) === 'covered') return false
+    // An exempt type can never "need a POC", so it must not appear in the filter that lists
+    // the ones that do — otherwise the queue never empties.
+    if (needsPocOnly && (!needsPoc(inv.service_type) || pocCoverage(inv.contacts) === 'covered')) return false
     if (!search.trim()) return true
     const q = search.toLowerCase()
     return (
@@ -105,8 +107,8 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
 
   // Funds with nobody confirmed reachable — the gap worth working through, sized so it is not
   // a vague worry.
-  const needsPoc = investors.filter(
-    (i) => i.service_type !== 'angel_investor' && pocCoverage(i.contacts) !== 'covered',
+  const needsPocCount = investors.filter(
+    (i) => needsPoc(i.service_type) && pocCoverage(i.contacts) !== 'covered',
   ).length
 
   function countFor(tab: Tab) {
@@ -214,13 +216,13 @@ export default function InvestorGrid({ investors, userRole, canManage = true, in
 
       {/* The POC gap, sized. Derived from the contacts each time rather than stored, so it can
           never be stale — and it disappears entirely once there is nothing to chase. */}
-      {isInternal && needsPoc > 0 && (
+      {isInternal && needsPocCount > 0 && (
         <button
           className={needsPocOnly ? styles.pocFilterOn : styles.pocFilter}
           onClick={() => setNeedsPocOnly(!needsPocOnly)}
           aria-pressed={needsPocOnly}
         >
-          {needsPocOnly ? '← All funds' : `${needsPoc} funds need a POC`}
+          {needsPocOnly ? '← All funds' : `${needsPocCount} funds need a POC`}
         </button>
       )}
 

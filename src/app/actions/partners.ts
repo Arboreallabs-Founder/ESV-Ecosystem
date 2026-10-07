@@ -105,6 +105,7 @@ export async function getPartnerEarnings(partnerId: string): Promise<PartnerDeal
     split_transaction_pct: num(r.split_transaction_pct),
     split_success_pct: num(r.split_success_pct),
     split_carry_pct: num(r.split_carry_pct),
+    is_excluded: !!r.is_excluded,
   }))
 }
 
@@ -132,6 +133,36 @@ export async function setPartnerDealShare(
   if (error) throw dbFailure('save that', error)
 }
 
+/**
+ * Take a deal off a partner's earnings, or put it back.
+ *
+ * Upsert rather than update: a deal with no share row is on the standard split, and excluding it is
+ * the first thing anyone has configured about it. The split is kept either way, so including it
+ * again restores what was agreed rather than resetting to the standard.
+ */
+export async function setPartnerDealExcluded(
+  activeDealId: string,
+  partnerId: string,
+  excluded: boolean,
+) {
+  const { supabase, orgId } = await requireRole(['founder', 'admin'])
+  const { error } = await supabase
+    .from('active_deal_partner_shares')
+    .upsert(
+      {
+        active_deal_id: activeDealId,
+        partner_id: partnerId,
+        org_id: orgId,
+        excluded,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'active_deal_id,partner_id' },
+    )
+  if (error) throw dbFailure('save that', error)
+  revalidatePath(`/admin/partners/${partnerId}`)
+  revalidatePath('/earnings')
+}
+
 // Partner: only their own final share per deal (no org totals).
 export async function getMyEarnings(): Promise<MyDealEarning[]> {
   const { supabase, userId } = await requireRole(['franchise_partner'])
@@ -144,13 +175,25 @@ export async function getMyEarnings(): Promise<MyDealEarning[]> {
   if (!partnerId) return []
   const { data, error } = await supabase.rpc('get_partner_earnings', { p_partner_id: partnerId })
   if (error) throw dbFailure('save that', error)
-  return (data ?? []).map((r: any) => ({
-    active_deal_id: r.active_deal_id,
-    deal_title: r.deal_title,
-    accepted_at: r.accepted_at,
-    split_pct: num(r.split_pct),
-    share_amount: num(r.share_amount),
-  }))
+  // Excluded deals are filtered here, not in SQL: the function has to keep returning them or an
+  // admin could never see an exclusion, let alone undo one.
+  type MyRow = {
+    active_deal_id: string
+    deal_title: string | null
+    accepted_at: string
+    split_pct: number | string | null
+    share_amount: number | string | null
+    is_excluded: boolean | null
+  }
+  return ((data ?? []) as MyRow[])
+    .filter((r) => !r.is_excluded)
+    .map((r) => ({
+      active_deal_id: r.active_deal_id,
+      deal_title: r.deal_title,
+      accepted_at: r.accepted_at,
+      split_pct: num(r.split_pct),
+      share_amount: num(r.share_amount),
+    }))
 }
 
 // ── The referral tree ───────────────────────────────────────────────────────────

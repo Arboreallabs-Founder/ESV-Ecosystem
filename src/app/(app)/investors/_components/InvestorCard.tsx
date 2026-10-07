@@ -2,7 +2,7 @@
 
 import type { InvestorListItem, ServiceType } from '@/lib/types'
 import { formatTicketRange } from '@/lib/format-money'
-import { pocCoverage, POC_COVERAGE_LABELS, SERVICE_TYPE_LABELS } from '@/lib/types'
+import { needsPoc, pocCoverage, POC_COVERAGE_LABELS, SERVICE_TYPE_LABELS } from '@/lib/types'
 import { countryFlagCode } from '@/lib/countries'
 import { AvatarGroup } from '@/app/_components/Avatar'
 import styles from '../investors.module.css'
@@ -74,6 +74,7 @@ const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
   accelerator: '#c77d2e',
   sovereign_wealth: '#4a5a75',
   merchant_bank: '#6b4226',
+  internal_vehicle: '#6b7280',
 }
 
 export default function InvestorCard({ investor, onClick }: { investor: InvestorListItem; onClick: () => void }) {
@@ -107,7 +108,7 @@ export default function InvestorCard({ investor, onClick }: { investor: Investor
           {SERVICE_TYPE_LABELS[investor.service_type]}
         </span>
         {/* Funds only: an angel is their own contact, so "needs a POC" is meaningless for them. */}
-        {investor.service_type !== 'angel_investor' && coverage !== 'covered' && (
+        {needsPoc(investor.service_type) && coverage !== 'covered' && (
           <span className={coverage === 'none' || coverage === 'all_left' ? styles.pocGap : styles.pocSoft}>
             {POC_COVERAGE_LABELS[coverage]}
           </span>

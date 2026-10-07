@@ -15,6 +15,10 @@ export default async function ActiveDealInvestorsPage({ params }: { params: Prom
   if (!deal) notFound()
 
   const isReadOnly = user.role === 'franchise_partner'
+  // What ESV charges on a deal is not a partner's to read. They reach this page to see the
+  // commitments their own referrals are part of; the fee columns and their totals are our margin,
+  // and a partner who referred one investor could otherwise price the entire round.
+  const canSeeFees = user.role !== 'franchise_partner'
 
   const [{ investors, dealFieldValues }, allInvestors, internalUsers, franchisePartners] = await Promise.all([
     getDealInvestors(id),
@@ -29,6 +33,7 @@ export default async function ActiveDealInvestorsPage({ params }: { params: Prom
       dealTitle={deal.title ?? 'Untitled deal'}
       categories={deal.categories}
       isReadOnly={isReadOnly}
+      canSeeFees={canSeeFees}
       initialInvestors={investors}
       initialDealFieldValues={dealFieldValues}
       initialAllInvestors={allInvestors}

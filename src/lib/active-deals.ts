@@ -38,6 +38,8 @@ type ActiveDealRow = {
   total_raise?: number | null
   external_raised?: number | null
   min_ticket?: number | null
+  valuation?: number | null
+  valuation_basis?: string | null
   entry?: EntryRow | EntryRow[] | null
   categories?: Array<{ category?: DealCategoryRow | DealCategoryRow[] | null }> | null
   field_values?: FieldValueRow[] | null
@@ -77,6 +79,8 @@ const ACTIVE_DEAL_SELECT = `
   total_raise,
   external_raised,
   min_ticket,
+  valuation,
+  valuation_basis,
   entry:pipeline_entries(title, submitter_name, submitter_email, submitted_at, pipeline_id, company_id, company:companies!company_id(id, name, logo_url, one_liner, share_intro, website), assignees:pipeline_entry_assignees(user_id, user:users(name, photo_url)), form_link:form_links!form_link_id(creator:users!created_by(franchise_partner:franchise_partners!franchise_partner_id(id, name)))),
   categories:active_deal_categories(
     category:deal_categories(
@@ -105,6 +109,8 @@ function shapeActiveDealRow(row: ActiveDealRow): ActiveDeal {
     total_raise: row.total_raise ?? null,
     external_raised: row.external_raised ?? null,
     min_ticket: row.min_ticket ?? null,
+    valuation: row.valuation ?? null,
+    valuation_basis: (row.valuation_basis as ActiveDeal['valuation_basis']) ?? null,
     logo_url: row.logo_url ?? null,
     entry: {
       title: entry?.title ?? null,

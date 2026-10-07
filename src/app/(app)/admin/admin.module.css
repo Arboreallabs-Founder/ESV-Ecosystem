@@ -493,3 +493,39 @@
   color: var(--color-muted);
   max-width: 80ch;
 }
+
+/* ── Excluding a deal from one partner's earnings ──────────────────────────── */
+.excludeBtn {
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.3rem 0.6rem;
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.12s, border-color 0.12s;
+}
+.excludeBtn:hover { color: var(--color-primary); border-color: var(--color-primary); }
+.excludeBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Still legible, visibly not counted. Struck through rather than hidden, because an exclusion
+   nobody can see is one nobody can undo. */
+.excludedRow td { opacity: 0.5; text-decoration: line-through; }
+.excludedRow td:last-child { opacity: 1; text-decoration: none; }
+
+.excludedTag {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.5625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.1rem 0.35rem;
+  border-radius: 999px;
+  background: rgba(163, 155, 149, 0.2);
+  color: var(--color-muted);
+  text-decoration: none;
+}

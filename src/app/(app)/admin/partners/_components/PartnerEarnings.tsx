@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react'
 import { alertError } from '@/lib/client-errors'
 import Link from 'next/link'
-import { setPartnerDealShare } from '@/app/actions/partners'
+import { setPartnerDealExcluded, setPartnerDealShare } from '@/app/actions/partners'
 import { PARTNER_TIER_LABELS } from '@/lib/types'
 import type { PartnerDealEarning, PartnerShareBase, PartnerReferralTreeNode, PartnerTier } from '@/lib/types'
 import PartnerReferralTree from './PartnerReferralTree'
@@ -39,6 +39,24 @@ export default function PartnerEarnings({
   const [, startTransition] = useTransition()
   // "What does this partner actually see?" — asked whenever a partner queries their number.
   const [partnerView, setPartnerView] = useState(false)
+  const [excludePending, startExclude] = useTransition()
+
+  function toggleExcluded(r: Row) {
+    const next = !r.is_excluded
+    setRows((prev) => prev.map((x) => x.active_deal_id === r.active_deal_id
+      ? { ...x, is_excluded: next, share_amount: next ? 0 : computeShare(x.base_type, x.split_pct, x.org_total_earning, x.referred_earning) }
+      : x))
+    startExclude(async () => {
+      try {
+        await setPartnerDealExcluded(r.active_deal_id, partnerId, next)
+      } catch (err) {
+        // Put the row back. A deal that still reads "Excluded" after a refused write is a claim
+        // that a partner is not owed something they are.
+        setRows((prev) => prev.map((x) => x.active_deal_id === r.active_deal_id ? r : x))
+        alertError(err)
+      }
+    })
+  }
 
   function persist(dealId: string, base: PartnerShareBase, splitPct: number | null) {
     startTransition(async () => {
@@ -74,9 +92,13 @@ export default function PartnerEarnings({
     persist(dealId, row.base_type, isNaN(Number(raw)) && raw !== '' ? null : override)
   }
 
-  const totalOrg = rows.reduce((s, r) => s + r.org_total_earning, 0)
-  const totalReferred = rows.reduce((s, r) => s + r.referred_earning, 0)
-  const totalShare = rows.reduce((s, r) => s + r.share_amount, 0)
+  // Excluded deals are out of every total, not just the share. share_amount is already zeroed by
+  // the function, but org total and referred earning are not, and summing those would describe a
+  // deal this partner is explicitly not part of.
+  const counted = rows.filter((r) => !r.is_excluded)
+  const totalOrg = counted.reduce((s, r) => s + r.org_total_earning, 0)
+  const totalReferred = counted.reduce((s, r) => s + r.referred_earning, 0)
+  const totalShare = counted.reduce((s, r) => s + r.share_amount, 0)
 
   return (
     <div className={styles.page}>
@@ -164,12 +186,16 @@ export default function PartnerEarnings({
                 <th>Share From</th>
                 <th>Split %</th>
                 <th>Partner Share</th>
+                <th />
               </tr>
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.active_deal_id}>
-                  <td><div className={styles.name}>{r.deal_title || 'Untitled'}</div></td>
+                <tr key={r.active_deal_id} className={r.is_excluded ? styles.excludedRow : undefined}>
+                  <td>
+                    <div className={styles.name}>{r.deal_title || 'Untitled'}</div>
+                    {r.is_excluded && <span className={styles.excludedTag}>Excluded</span>}
+                  </td>
                   <td>
                     <span style={{ fontSize: '0.75rem', color: 'var(--color-muted)' }}>
                       {r.is_sourced ? 'Sourced' : 'Referral'}
@@ -203,6 +229,19 @@ export default function PartnerEarnings({
                     />
                   </td>
                   <td><span className={styles.feeSplit} style={{ color: 'var(--color-primary)', fontWeight: 700 }}>{formatINR(r.share_amount)}</span></td>
+                  <td>
+                    <button
+                      type="button"
+                      className={styles.excludeBtn}
+                      disabled={excludePending}
+                      title={r.is_excluded
+                        ? 'Put this deal back on their earnings.'
+                        : 'Take this deal off their earnings. It disappears from their own page and drops out of every total.'}
+                      onClick={() => toggleExcluded(r)}
+                    >
+                      {r.is_excluded ? 'Include' : 'Exclude'}
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>

@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation'
 import type { Investor, InvestorContact, InvestmentStage, PortfolioEntry } from '@/lib/types'
 import {
   INVESTMENT_STAGES, INVESTMENT_STAGE_LABELS, POC_COVERAGE_LABELS, POC_EMPLOYMENT_LABELS,
-  SERVICE_TYPE_LABELS, pocCoverage,
+  SERVICE_TYPE_LABELS, needsPoc, pocCoverage,
 } from '@/lib/types'
 import {
   addPortfolioEntry, assignPocSearch, clearPocSearch, deletePortfolioEntry,
@@ -162,7 +162,7 @@ export default function InvestorProfile({
       {error && <div className={profile.error}>{error}</div>}
 
       {/* The gap, and the way to act on it, in the same place. */}
-      {investor.service_type !== 'angel_investor' && coverage !== 'covered' && (
+      {needsPoc(investor.service_type) && coverage !== 'covered' && (
         <PocGapBanner
           investor={investor}
           coverage={coverage}

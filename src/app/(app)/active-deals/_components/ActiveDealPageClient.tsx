@@ -11,6 +11,7 @@ import { ACTIVE_DEAL_INVESTOR_STATUSES, ACTIVE_DEAL_INVESTOR_STATUS_META, DEAL_S
 import { computeFeeAmount } from '@/lib/deal-fees'
 import { StatusGauge, StatusDonut, type DonutSegment } from './DealCharts'
 import RoundShape from './RoundShape'
+import ValuationCard from './ValuationCard'
 import VenturePartnerAccess from './VenturePartnerAccess'
 import DealUpdates from './DealUpdates'
 import DealDocuments from './DealDocuments'
@@ -292,6 +293,8 @@ export default function ActiveDealPageClient({
   const totalRaise = (isPartner ? partnerSummary?.total_raise ?? null : deal.total_raise) ?? fieldTarget
   const externalRaised = isPartner ? partnerSummary?.external_raised ?? null : deal.external_raised
   const minTicket = isPartner ? partnerSummary?.min_ticket ?? null : deal.min_ticket
+  const valuation = isPartner ? partnerSummary?.valuation ?? null : deal.valuation
+  const valuationBasis = isPartner ? partnerSummary?.valuation_basis ?? null : deal.valuation_basis
   const totalShares = investors.reduce((s, i) => s + (i.shares ?? 0), 0)
   const totalEarnings = investors.reduce(
     (s, i) => s + i.fees.reduce((fs, f) => fs + (computeFeeAmount(f, i.investment_amount, dealFieldValues) ?? 0), 0),
@@ -408,6 +411,18 @@ export default function ActiveDealPageClient({
           externalRaised={externalRaised}
           minTicket={minTicket}
           committed={totalCommitted}
+          canEdit={canManageDeal}
+        />
+      )}
+
+      {/* Below the round, because it answers the next question: the round is how much is being
+          raised, this is what that buys. */}
+      {canSeeRaiseProgress && (
+        <ValuationCard
+          dealId={deal.id}
+          valuation={valuation}
+          valuationBasis={valuationBasis}
+          totalRaise={totalRaise}
           canEdit={canManageDeal}
         />
       )}

@@ -226,6 +226,18 @@ Approvals below. This is not a user-facing escalations capability.
   `get_partner_referral_tree`, a SECURITY DEFINER function — the underlying view is revoked from
   `authenticated` because it bypasses RLS by construction.
 
+### What a partner must not see on a deal
+- **ESV's fee.** The "ESV Earnings" tile on the deal page is behind `canViewInvestors`, which
+  excludes partners. The investor table (`/active-deals/[id]/investors`) admits partners read-only
+  and used to render the fee columns and their totals to them — fixed 2026-10-07 by emptying
+  `feeColumns` for partners, which removes the headers, the per-investor cells and the totals row in
+  one place rather than three.
+- **Deal terms.** `deal_category_fields.visible_to_partners` defaults false and only the company's
+  own numbers were opened (20260905000000). A fee field turned on by hand in Admin → Deal Categories
+  would be visible to partners, so that toggle is worth auditing after anyone edits categories.
+- What a partner *is* shown about money: the round, the minimum ticket, the external raise, the
+  committed total and count, the valuation — and their own share, never ESV's.
+
 ### Who signs off partner attribution
 Every credit to a partner takes **two signatures from two different people**: a coordinator
 (founder, admin, or anyone flagged `is_sgp_coordinator`) and an approver (founder, admin, or anyone

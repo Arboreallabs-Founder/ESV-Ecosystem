@@ -4,7 +4,7 @@ import { useEffect, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { deleteContact, getInvestorPortfolio } from '@/app/actions/investors'
-import { DEAL_STATE_META, SERVICE_TYPE_LABELS } from '@/lib/types'
+import { DEAL_STATE_META, SERVICE_TYPE_LABELS, needsPoc } from '@/lib/types'
 import { formatTicketRange } from '@/lib/format-money'
 import type { Investor, InvestorContact, InvestorPortfolioItem, ServiceType } from '@/lib/types'
 import { countryFlagCode } from '@/lib/countries'
@@ -30,6 +30,7 @@ const SERVICE_TYPE_COLOR: Record<ServiceType, string> = {
   accelerator: '#c77d2e',
   sovereign_wealth: '#4a5a75',
   merchant_bank: '#6b4226',
+  internal_vehicle: '#6b7280',
 }
 
 type Props = {
@@ -53,7 +54,7 @@ export default function InvestorDetail({ investor, userRole, onClose, onDeleted 
   // associates, never deletes. See docs/ROLES.md "Investors & Partners - HR access".
   const canEdit = canManage || ['associate', 'hr', 'franchise_partner'].includes(userRole)
   const isInternal = ['founder', 'admin', 'associate', 'hr'].includes(userRole)
-  const showContacts = investor.service_type !== 'angel_investor'
+  const showContacts = needsPoc(investor.service_type)
   const typeColor = SERVICE_TYPE_COLOR[investor.service_type]
 
   function handleDeleteInvestor() {

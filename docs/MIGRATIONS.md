@@ -1061,3 +1061,27 @@ the same person — widening *who* may give the second signature does not widen 
 may give, so every attribution still needs two humans. `is_sgp_approver` is kept rather than
 dropped: it still marks who is expected to do this rather than merely permitted, and it is how an
 associate holds the second signature without being an admin.
+
+### 20261026000000_exclude_deal_from_partner_earnings.sql
+**Take one deal off one partner's earnings.** A deal reaches a partner's page because they sourced
+it or one of their investors is on it — usually right, occasionally not (an investor who came in
+independently and was tagged later, a deal the partner was taken off, a duplicate). The only lever
+was setting the split to 0, which leaves the deal on their page at ₹0 and invites the question
+rather than settling it. `active_deal_partner_shares.excluded` drops it instead: `share_amount` is
+zeroed **inside** the function so no caller can total a column that should not have been counted,
+and `getMyEarnings` filters the row out before a partner sees it. A flag rather than deleting the
+share row, so the agreed split survives and including it again restores it. The function still
+**returns** excluded rows, carrying `is_excluded` — filtering them in SQL would hide them from the
+admin too, and an exclusion nobody can see is one nobody can undo.
+
+### 20261027000000_active_deal_valuation.sql
+**What the company was worth when the money went in.** `active_deals.valuation` plus
+`valuation_basis` (`pre`/`post`, nullable). The basis is a column rather than a convention because
+"₹103 Cr" means two different things depending on whether the round sits inside it — on FWDA's
+₹16 Cr round that is ₹16 Cr of company, and the implied stake is 15.5% or 13.4% accordingly. The
+deal page derives what the round buys **only** when the basis is recorded; a percentage from a guess
+reads exactly like one from a fact. The workbook's 3x and 10x figures are deliberately not stored —
+they are the valuation times three and ten, storing a multiplication is how two numbers come to
+disagree, and a projection beside a fact gets read as one. Carried to partners by both summary
+functions, same reasoning as the minimum ticket (20261021000000): it is in the deck, and a partner
+quoting a stale one is worse than them knowing it. Backfills FWDA Tranche 2 at ₹103 Cr pre.
