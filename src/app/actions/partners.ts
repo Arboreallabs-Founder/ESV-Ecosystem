@@ -281,11 +281,12 @@ export async function setPartnerTier(partnerId: string, tier: PartnerTier) {
 // ── The partner ledger ──────────────────────────────────────────────────────────
 
 const LEDGER_SELECT =
-  'id, partner_id, entry_type, amount, entry_date, reference, active_deal_id, note, created_by, created_at, ' +
+  'id, partner_id, entry_type, amount, gst_amount, entry_date, reference, active_deal_id, note, created_by, created_at, ' +
   'deal:active_deals!active_deal_id(entry:pipeline_entries!pipeline_entry_id(title))'
 
-type LedgerRow = Omit<PartnerLedgerEntry, 'amount' | 'deal'> & {
+type LedgerRow = Omit<PartnerLedgerEntry, 'amount' | 'gst_amount' | 'deal'> & {
   amount: number | string
+  gst_amount: number | string | null
   deal?: { entry?: { title: string | null } | { title: string | null }[] | null }
        | Array<{ entry?: { title: string | null } | { title: string | null }[] | null }>
        | null
@@ -298,7 +299,12 @@ function shapeLedger(rows: LedgerRow[]): PartnerLedgerEntry[] {
   return rows.map((r) => {
     const deal = one(r.deal)
     const entry = deal ? one(deal.entry) : null
-    return { ...r, amount: num(r.amount), deal: entry ? { title: entry.title } : null }
+    return {
+      ...r,
+      amount: num(r.amount),
+      gst_amount: r.gst_amount == null ? null : num(r.gst_amount),
+      deal: entry ? { title: entry.title } : null,
+    }
   })
 }
 
@@ -333,6 +339,9 @@ export async function getPartnerLedger(partnerId: string): Promise<{
       payout_total: num(s.payout_total),
       buy_in_outstanding: num(s.buy_in_outstanding),
       earnings_settled: num(s.earnings_settled),
+      gst_total: num(s.gst_total),
+      payout_gst_total: num(s.payout_gst_total),
+      payout_with_gst: num(s.payout_with_gst),
     },
   }
 }
@@ -369,6 +378,7 @@ export async function addPartnerLedgerEntry(input: {
   partnerId: string
   entryType: PartnerLedgerEntryType
   amount: number
+  gstAmount?: number | null
   entryDate: string
   reference?: string | null
   activeDealId?: string | null
@@ -382,6 +392,9 @@ export async function addPartnerLedgerEntry(input: {
   if (!Number.isFinite(input.amount) || input.amount <= 0) {
     throw new UserFacingError('Give the amount, as a number greater than zero. The kind of entry decides which way it moves.')
   }
+  if (input.gstAmount != null && (!Number.isFinite(input.gstAmount) || input.gstAmount < 0)) {
+    throw new UserFacingError('GST has to be a number, and cannot be negative.')
+  }
   if (input.entryType === 'payout' && !input.reference?.trim()) {
     throw new UserFacingError('A payout needs a receipt or UTR number — without one it cannot be reconciled against the bank.')
   }
@@ -391,6 +404,8 @@ export async function addPartnerLedgerEntry(input: {
     partner_id: input.partnerId,
     entry_type: input.entryType,
     amount: input.amount,
+    // Stored beside the base, never folded into it: amount is what settles, GST is only cash.
+    gst_amount: input.gstAmount ?? null,
     entry_date: input.entryDate,
     reference: input.reference?.trim() || null,
     active_deal_id: input.activeDealId || null,

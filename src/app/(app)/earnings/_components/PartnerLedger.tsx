@@ -47,6 +47,7 @@ export default function PartnerLedger({
 
   const [entryType, setEntryType] = useState<PartnerLedgerEntryType>('payment')
   const [amount, setAmount] = useState('')
+  const [gst, setGst] = useState('')
   const [entryDate, setEntryDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [reference, setReference] = useState('')
   const [note, setNote] = useState('')
@@ -59,15 +60,17 @@ export default function PartnerLedger({
     const parsed = Number(amount.replace(/[,\s₹]/g, ''))
     start(async () => {
       try {
+        const gstParsed = gst.trim() === '' ? null : Number(gst.replace(/[,\s₹]/g, ''))
         await addPartnerLedgerEntry({
           partnerId,
           entryType,
           amount: parsed,
+          gstAmount: gstParsed,
           entryDate,
           reference: reference || null,
           note: note || null,
         })
-        setAdding(false); setAmount(''); setReference(''); setNote('')
+        setAdding(false); setAmount(''); setGst(''); setReference(''); setNote('')
         router.refresh()
       } catch (err) { alertError(err) }
     })
@@ -106,6 +109,13 @@ export default function PartnerLedger({
           value={owedToPartner}
           hint={`${inr(earned)} earned, ${inr(summary.earnings_settled)} settled`}
         />
+        {summary.payout_gst_total > 0 && (
+          <Balance
+            label="Paid out incl GST"
+            value={summary.payout_with_gst}
+            hint={`${inr(summary.payout_total)} + ${inr(summary.payout_gst_total)} GST — cash, not a balance`}
+          />
+        )}
       </div>
 
       {adding && canEdit && (
@@ -123,6 +133,25 @@ export default function PartnerLedger({
             <label className={styles.ledgerLabel} htmlFor="le-amount">Amount (₹)</label>
             <input id="le-amount" className={styles.ledgerInput} inputMode="numeric"
                    value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="e.g. 500000" />
+          </div>
+          <div className={styles.ledgerField}>
+            <label className={styles.ledgerLabel} htmlFor="le-gst">
+              GST (optional)
+              {/* Writes the figure, not the rate: an invoice states an amount, and rates get
+                  rounded and split across CGST/SGST in ways that do not reproduce cleanly. */}
+              <button
+                type="button"
+                className={styles.ledgerGstFill}
+                onClick={() => {
+                  const base = Number(amount.replace(/[,\s₹]/g, ''))
+                  if (Number.isFinite(base) && base > 0) setGst(Math.round(base * 0.18).toString())
+                }}
+              >
+                18%
+              </button>
+            </label>
+            <input id="le-gst" className={styles.ledgerInput} inputMode="numeric"
+                   value={gst} onChange={(e) => setGst(e.target.value)} placeholder="e.g. 48240" />
           </div>
           <div className={styles.ledgerField}>
             <label className={styles.ledgerLabel} htmlFor="le-date">Date</label>
@@ -184,6 +213,11 @@ export default function PartnerLedger({
                     <span className={LEDGER_ENTRY_DIRECTION[e.entry_type] === 'owes' ? styles.ledgerOwes : styles.ledgerSettles}>
                       {LEDGER_ENTRY_DIRECTION[e.entry_type] === 'owes' ? '+' : '−'}{inr(e.amount)}
                     </span>
+                    {e.gst_amount != null && e.gst_amount > 0 && (
+                      <div className={styles.ledgerGstLine}>
+                        + {inr(e.gst_amount)} GST · {inr(e.amount + e.gst_amount)} moved
+                      </div>
+                    )}
                   </td>
                   {canEdit && (
                     <td>
@@ -201,7 +235,9 @@ export default function PartnerLedger({
       <p className={styles.ledgerFoot}>
         {voice === 'first' ? 'Adjusted from earnings' : `Adjusted from ${partnerName}'s earnings`} means
         earnings held back and put towards the buy-in rather than paid out — it reduces the buy-in and
-        settles the same amount of what is owed.
+        settles the same amount of what is owed. GST sits on top of a line and moves cash only — it
+        never changes what is owed or what has been settled, because the tax is remitted rather than
+        earned.
       </p>
     </section>
   )

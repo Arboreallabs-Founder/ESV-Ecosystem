@@ -757,6 +757,9 @@ export type PartnerLedgerEntry = {
   entry_type: PartnerLedgerEntryType
   amount: number
   entry_date: string
+  /** Tax on top of `amount`, as the invoice states it. Never part of a balance — it moves cash,
+   *  not what is owed. Null where the line carries no tax. */
+  gst_amount: number | null
   /** Receipt or UTR. The reason a payout line is reconcilable against a bank statement. */
   reference: string | null
   active_deal_id: string | null
@@ -776,6 +779,11 @@ export type PartnerLedgerSummary = {
   buy_in_outstanding: number
   /** Payouts plus adjustments: an adjustment settles earnings just as a payout does. */
   earnings_settled: number
+  /** GST across every line, and on payouts alone. Neither feeds a balance. */
+  gst_total: number
+  payout_gst_total: number
+  /** Payouts plus their GST — what actually left the bank. */
+  payout_with_gst: number
 }
 
 export type PartnerShareBase = 'total' | 'referred'

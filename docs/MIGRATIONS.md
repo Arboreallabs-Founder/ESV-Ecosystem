@@ -1101,3 +1101,17 @@ buy-in outstanding is not clamped at zero, because an overpayment is real and sh
 would hide money owed back. The buy-in is a line rather than a column on `franchise_partners`, so a
 renegotiated partner gets a second line and keeps the first. Partners read their own account and
 write nothing — writing would be deciding you had paid; associates read, founders/admins write.
+
+### 20261030000000_partner_ledger_gst.sql
+**GST on a ledger line.** A partner invoices us for their share and the invoice carries tax, so what
+leaves the bank is not what settles the debt. `gst_amount` sits beside `amount` — and the decision
+worth stating is that **GST never moves a balance**: `amount` is the base (what is owed, what is
+settled, what comes off the buy-in) and `gst_amount` is cash only. A payout of ₹2,68,000 + ₹48,240
+GST settles ₹2,68,000 of earnings and moves ₹3,16,240 through the bank; if GST reduced earnings
+owed, the partner would be short by the tax they then remit and the buy-in would read as paid down
+faster than it was. The summary gains `gst_total`, `payout_gst_total` and `payout_with_gst` (the
+bank figure) — none of which feed `buy_in_outstanding` or `earnings_settled`. An **amount** is
+stored rather than a rate: rates get rounded differently per invoice and split across CGST/SGST that
+need not sum to a clean percentage, so the form offers an 18% quick-fill but writes the figure. Note
+this does **not** explain the FWDA import's PJ gap — ₹2,68,000 of per-row cells against a ₹2,90,000
+header, 8.2%, which is not 18% of the base or of either fee component.
