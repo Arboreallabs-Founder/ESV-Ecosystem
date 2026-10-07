@@ -93,3 +93,149 @@
   color: var(--color-text);
   margin: 0 0 0.75rem;
 }
+
+/* ── Partner ledger (20261029000000) ───────────────────────────────────────── */
+.ledgerSection { margin-bottom: 2rem; }
+
+.ledgerHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.ledgerAddBtn {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.45rem 0.85rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: border-color 0.12s, color 0.12s;
+}
+.ledgerAddBtn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+.ledgerBalances {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.ledgerBalance {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 1rem;
+  background: var(--color-surface);
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.ledgerBalanceLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+}
+
+.ledgerBalanceValue { font-size: 1.15rem; font-weight: 700; color: var(--color-text); }
+.ledgerBalanceAccent { font-size: 1.35rem; font-weight: 700; color: var(--color-primary); }
+.ledgerBalanceHint { font-size: 0.7rem; color: var(--color-muted); line-height: 1.4; }
+
+/* ── Adding an entry ───────────────────────────────────────────────────────── */
+.ledgerForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  border: 1.5px solid var(--color-primary-light);
+  border-radius: var(--radius-md);
+  background: rgba(116, 95, 253, 0.05);
+}
+
+.ledgerField { display: flex; flex-direction: column; gap: 0.3rem; flex: 1 1 10rem; min-width: 0; }
+.ledgerFieldWide { flex: 1 1 100%; }
+
+.ledgerLabel {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-muted);
+}
+
+.ledgerInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.45rem 0.65rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.ledgerInput:focus { border-color: var(--color-primary); }
+
+.ledgerFormActions { display: flex; gap: 0.5rem; flex: 0 0 auto; }
+
+.ledgerCancel, .ledgerSave {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.ledgerCancel { background: none; border: 1px solid var(--color-border); color: var(--color-muted); }
+.ledgerSave { background: var(--color-primary); border: none; color: #fff; }
+.ledgerSave:disabled, .ledgerCancel:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.ledgerHint {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+}
+
+/* ── The lines ─────────────────────────────────────────────────────────────── */
+.ledgerNum { text-align: right; white-space: nowrap; }
+/* A line that raises what the partner owes reads warm; one that works it off reads settled. */
+.ledgerOwes { color: var(--color-accent); font-weight: 700; }
+.ledgerSettles { color: var(--color-success); font-weight: 700; }
+
+.ledgerDeal { font-size: 0.75rem; color: var(--color-muted); }
+.ledgerNote { font-size: 0.75rem; color: var(--color-muted); margin-top: 0.15rem; line-height: 1.45; }
+
+.ledgerDelete {
+  background: none;
+  border: none;
+  color: var(--color-muted);
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0.2rem 0.4rem;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+.ledgerDelete:hover { color: var(--color-destructive); }
+.ledgerDelete:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.ledgerFoot {
+  margin: 0.75rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  line-height: 1.55;
+  max-width: 80ch;
+}

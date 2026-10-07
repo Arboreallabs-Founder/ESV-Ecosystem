@@ -5,9 +5,13 @@ import { alertError } from '@/lib/client-errors'
 import Link from 'next/link'
 import { setPartnerDealExcluded, setPartnerDealShare } from '@/app/actions/partners'
 import { PARTNER_TIER_LABELS } from '@/lib/types'
-import type { PartnerDealEarning, PartnerShareBase, PartnerReferralTreeNode, PartnerTier } from '@/lib/types'
+import type {
+  PartnerDealEarning, PartnerShareBase, PartnerReferralTreeNode, PartnerTier,
+  PartnerLedgerEntry, PartnerLedgerSummary,
+} from '@/lib/types'
 import PartnerReferralTree from './PartnerReferralTree'
 import PartnerEarningsView from '../../../earnings/_components/PartnerEarningsView'
+import PartnerLedger from '../../../earnings/_components/PartnerLedger'
 import styles from '../../admin.module.css'
 
 function formatINR(n: number) {
@@ -27,6 +31,9 @@ export default function PartnerEarnings({
   deals,
   tier,
   tree,
+  ledgerEntries,
+  ledgerSummary,
+  canEditLedger = false,
 }: {
   partnerId: string
   partnerName: string
@@ -34,6 +41,10 @@ export default function PartnerEarnings({
   deals: PartnerDealEarning[]
   tier: PartnerTier
   tree: PartnerReferralTreeNode[]
+  ledgerEntries: PartnerLedgerEntry[]
+  ledgerSummary: PartnerLedgerSummary
+  /** Founder/admin. Associates read the account without being able to decide it. */
+  canEditLedger?: boolean
 }) {
   const [rows, setRows] = useState<Row[]>(deals.map((d) => ({ ...d, splitInput: String(d.split_pct) })))
   const [, startTransition] = useTransition()
@@ -96,7 +107,6 @@ export default function PartnerEarnings({
   // the function, but org total and referred earning are not, and summing those would describe a
   // deal this partner is explicitly not part of.
   const counted = rows.filter((r) => !r.is_excluded)
-  const totalOrg = counted.reduce((s, r) => s + r.org_total_earning, 0)
   const totalReferred = counted.reduce((s, r) => s + r.referred_earning, 0)
   const totalShare = counted.reduce((s, r) => s + r.share_amount, 0)
 
@@ -145,7 +155,6 @@ export default function PartnerEarnings({
       {/* Summary */}
       <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
         {[
-          { label: 'Org Total Earning', value: totalOrg },
           { label: 'Earning via Their Investors', value: totalReferred },
           { label: 'Partner Share', value: totalShare, accent: true },
         ].map((s) => (
@@ -181,7 +190,6 @@ export default function PartnerEarnings({
               <tr>
                 <th>Deal</th>
                 <th>Tie</th>
-                <th>Org Total Earning</th>
                 <th>Referred Earning</th>
                 <th>Share From</th>
                 <th>Split %</th>
@@ -201,7 +209,6 @@ export default function PartnerEarnings({
                       {r.is_sourced ? 'Sourced' : 'Referral'}
                     </span>
                   </td>
-                  <td>{formatINR(r.org_total_earning)}</td>
                   <td>{formatINR(r.referred_earning)}</td>
                   <td>
                     <select
@@ -248,6 +255,16 @@ export default function PartnerEarnings({
           </table>
         </div>
       )}
+
+      <PartnerLedger
+        partnerId={partnerId}
+        partnerName={partnerName}
+        entries={ledgerEntries}
+        summary={ledgerSummary}
+        earned={totalShare}
+        canEdit={canEditLedger}
+        voice="third"
+      />
       </>
       )}
     </div>

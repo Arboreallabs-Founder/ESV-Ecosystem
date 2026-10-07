@@ -1085,3 +1085,19 @@ they are the valuation times three and ten, storing a multiplication is how two 
 disagree, and a projection beside a fact gets read as one. Carried to partners by both summary
 functions, same reasoning as the minimum ticket (20261021000000): it is in the deck, and a partner
 quoting a stale one is worse than them knowing it. Backfills FWDA Tranche 2 at ₹103 Cr pre.
+
+### 20261029000000_partner_ledger.sql
+**A partner's account: the buy-in, what they paid against it, and what we paid them.** An SGP buys
+in, and that buy-in is settled two ways — they pay it, or we hold back earnings and put those
+against it. Neither existed anywhere, so "what do we owe Robin" and "what does Robin still owe us"
+were spreadsheet questions. `partner_ledger_entries` is one table of lines with four kinds: `buy_in`
+(what they owe), `payment` (cash from them), `adjustment` (earnings withheld and applied to the
+buy-in — the one line that both reduces the buy-in **and** settles earnings, and the mechanism this
+exists for), and `payout` (cash from us; `reference` is the receipt number, and the action refuses a
+payout without one). `amount` is always positive and `entry_type` decides direction — a signed
+amount only works while every reader remembers the convention. **Balances are summed by
+`get_partner_ledger_summary`, never stored**, so the figures and the lines cannot disagree; the
+buy-in outstanding is not clamped at zero, because an overpayment is real and showing it as nil
+would hide money owed back. The buy-in is a line rather than a column on `franchise_partners`, so a
+renegotiated partner gets a second line and keeps the first. Partners read their own account and
+write nothing — writing would be deciding you had paid; associates read, founders/admins write.

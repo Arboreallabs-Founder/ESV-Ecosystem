@@ -719,6 +719,65 @@ export type PartnerReferralTreeNode = {
   deal_count: number
 }
 
+/**
+ * A partner's account with us.
+ *
+ * Four kinds of line, one table. `amount` is always positive and the kind decides the direction —
+ * see supabase/migrations/20261029000000 for why a signed amount was rejected.
+ */
+export const LEDGER_ENTRY_TYPES = ['buy_in', 'payment', 'adjustment', 'payout'] as const
+export type PartnerLedgerEntryType = typeof LEDGER_ENTRY_TYPES[number]
+
+export const LEDGER_ENTRY_LABELS: Record<PartnerLedgerEntryType, string> = {
+  buy_in: 'Buy-in charged',
+  payment: 'Payment received',
+  adjustment: 'Adjusted from earnings',
+  payout: 'Paid out',
+}
+
+/** One line, in the partner's own words. Shown under each row so nobody has to learn the four. */
+export const LEDGER_ENTRY_HINTS: Record<PartnerLedgerEntryType, string> = {
+  buy_in: 'What the partner owes us.',
+  payment: 'Cash from the partner, against their buy-in.',
+  adjustment: 'Earnings held back and put towards the buy-in instead of being paid out.',
+  payout: 'Cash from us to the partner, settling earnings.',
+}
+
+/** Whether a line adds to what the partner owes, or works it off. */
+export const LEDGER_ENTRY_DIRECTION: Record<PartnerLedgerEntryType, 'owes' | 'settles'> = {
+  buy_in: 'owes',
+  payment: 'settles',
+  adjustment: 'settles',
+  payout: 'settles',
+}
+
+export type PartnerLedgerEntry = {
+  id: string
+  partner_id: string
+  entry_type: PartnerLedgerEntryType
+  amount: number
+  entry_date: string
+  /** Receipt or UTR. The reason a payout line is reconcilable against a bank statement. */
+  reference: string | null
+  active_deal_id: string | null
+  note: string | null
+  created_by: string | null
+  created_at: string
+  deal?: { title: string | null } | null
+}
+
+/** Every balance summed from the lines, never stored. */
+export type PartnerLedgerSummary = {
+  buy_in_total: number
+  paid_total: number
+  adjusted_total: number
+  payout_total: number
+  /** Buy-in charged, less payments and adjustments. Negative means they have overpaid. */
+  buy_in_outstanding: number
+  /** Payouts plus adjustments: an adjustment settles earnings just as a payout does. */
+  earnings_settled: number
+}
+
 export type PartnerShareBase = 'total' | 'referred'
 
 // One row per deal a partner is tied to (returned by get_partner_earnings).
