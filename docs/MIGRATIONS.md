@@ -1122,3 +1122,9 @@ anyone who could see a project read its tasks — and every internal user sees e
 the task board shows every task RLS returns, so colleagues' project tasks filled everyone's board.
 The policy is dropped; the project page reads its list through `get_project_tasks(project)`
 (SECURITY DEFINER, checks `can_see_project`). Tasks are back to the normal rules.
+
+### 20261101000000_angel_contact_details.sql
+`investors.email` and `investors.whatsapp_phone`: an angel investor's own contact details, on the
+record next to the other angel-only fields (funds keep their people in `investor_contacts`). Shown
+and edited only when `service_type = 'angel_investor'`; email has a loose shape check. Both are
+in the investor edit log.

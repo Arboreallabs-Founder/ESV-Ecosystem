@@ -64,7 +64,7 @@ export const fetchInvestor = cache(async (id: string): Promise<Investor | null> 
       esv_poc_id, ticket_size_min, ticket_size_max, stage,
       referred_by_partner_id, referred_by_investor_id, created_by, created_at, username,
       onboarding_form_completed, onboarding_form_url, kyc_done,
-      birthday_md, birthday_year,
+      birthday_md, birthday_year, email, whatsapp_phone,
       excluded_sectors, connect_strength, stage_min, stage_max, stage_raw,
       ticket_currency, esv_poc_names, import_source,
       poc_search_task_id, poc_search_started_at, notes, logo_url,

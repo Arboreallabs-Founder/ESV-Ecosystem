@@ -181,6 +181,23 @@ export default function InvestorDetail({ investor, userRole, onClose, onDeleted 
               <div className={styles.detailSectionTitle}>Onboarding &amp; KYC</div>
               <div className={styles.detailGrid}>
                 <div className={styles.detailField}>
+                  <div className={styles.detailFieldLabel}>Email</div>
+                  <div className={styles.detailFieldValue}>
+                    {investor.email
+                      ? <a href={`mailto:${investor.email}`} className={styles.detailLink}>{investor.email}</a>
+                      : <span className={styles.statusNo}>Not added</span>}
+                  </div>
+                </div>
+                <div className={styles.detailField}>
+                  <div className={styles.detailFieldLabel}>WhatsApp</div>
+                  <div className={styles.detailFieldValue}>
+                    {investor.whatsapp_phone
+                      // wa.me wants digits only, country code included; the number is shown as typed.
+                      ? <a href={`https://wa.me/${investor.whatsapp_phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" className={styles.detailLink}>{investor.whatsapp_phone}</a>
+                      : <span className={styles.statusNo}>Not added</span>}
+                  </div>
+                </div>
+                <div className={styles.detailField}>
                   <div className={styles.detailFieldLabel}>Onboarding Form</div>
                   <div className={styles.detailFieldValue}>
                     <span className={investor.onboarding_form_completed ? styles.statusYes : styles.statusNo}>

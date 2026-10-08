@@ -591,6 +591,9 @@ export type Investor = {
   birthday_md: string | null
   /** Optional; the day/month is often all that is known. */
   birthday_year: number | null
+  /** Angel investors: their own email and WhatsApp number (funds use `contacts`). */
+  email: string | null
+  whatsapp_phone: string | null
   onboarding_form_completed: boolean
   onboarding_form_url: string | null
   kyc_done: boolean

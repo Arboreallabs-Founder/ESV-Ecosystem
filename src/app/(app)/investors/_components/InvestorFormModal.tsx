@@ -106,6 +106,8 @@ export default function InvestorFormModal({
   const [onboardingUrl, setOnboardingUrl] = useState(initial?.onboarding_form_url ?? '')
   const [kycDone, setKycDone] = useState(initial?.kyc_done ?? false)
   const [birthday, setBirthday] = useState(mdToDisplay(initial?.birthday_md, initial?.birthday_year))
+  const [angelEmail, setAngelEmail] = useState(initial?.email ?? '')
+  const [angelWhatsapp, setAngelWhatsapp] = useState(initial?.whatsapp_phone ?? '')
   const [contacts, setContacts] = useState<ContactDraft[]>(
     mode === 'create' ? [] : []  // contacts managed live in detail drawer on edit
   )
@@ -175,6 +177,8 @@ export default function InvestorFormModal({
           kyc_done: showOnboardingKyc ? kycDone : false,
           birthday_md: showOnboardingKyc ? birthdayParts.md : null,
           birthday_year: showOnboardingKyc ? birthdayParts.year : null,
+          email: showOnboardingKyc ? (angelEmail.trim() || null) : null,
+          whatsapp_phone: showOnboardingKyc ? (angelWhatsapp.trim() || null) : null,
           contacts: contactDrafts,
           isPartnerReferral: isPartner,
         })
@@ -200,6 +204,8 @@ export default function InvestorFormModal({
           kyc_done: showOnboardingKyc ? kycDone : false,
           birthday_md: showOnboardingKyc ? birthdayParts.md : null,
           birthday_year: showOnboardingKyc ? birthdayParts.year : null,
+          email: showOnboardingKyc ? (angelEmail.trim() || null) : null,
+          whatsapp_phone: showOnboardingKyc ? (angelWhatsapp.trim() || null) : null,
         })
       }
       router.refresh()
@@ -358,6 +364,32 @@ export default function InvestorFormModal({
           {/* Onboarding + KYC — angel investors only */}
           {showOnboardingKyc && (
             <Section icon={<ShieldIcon />} title="Onboarding &amp; KYC">
+              {/* An angel is the person, so how to reach them lives on the record, not in Contacts. */}
+              <div className={styles.formRow}>
+                <div className={styles.field}>
+                  <label className={styles.label}>Email</label>
+                  <input
+                    className={styles.input}
+                    type="email"
+                    value={angelEmail}
+                    onChange={(e) => setAngelEmail(e.target.value)}
+                    placeholder="name@example.com"
+                    autoComplete="off"
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>WhatsApp Number</label>
+                  <input
+                    className={styles.input}
+                    type="tel"
+                    inputMode="tel"
+                    value={angelWhatsapp}
+                    onChange={(e) => setAngelWhatsapp(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    autoComplete="off"
+                  />
+                </div>
+              </div>
               <div className={styles.formRow}>
                 <div className={styles.field}>
                   <label className={styles.label}>Onboarding Form Completed</label>

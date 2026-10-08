@@ -67,6 +67,9 @@ export async function createInvestor(params: {
   /** 'MM-DD' — angel investors only; year is usually unknown. */
   birthday_md?: string | null
   birthday_year?: number | null
+  /** Angel investors only. */
+  email?: string | null
+  whatsapp_phone?: string | null
   contacts: ContactDraft[]
   isPartnerReferral?: boolean
 }): Promise<{ id: string }> {
@@ -116,6 +119,8 @@ export async function createInvestor(params: {
       kyc_done: fields.kyc_done ?? false,
       birthday_md: fields.birthday_md || null,
       birthday_year: fields.birthday_md ? (fields.birthday_year ?? null) : null,
+      email: cleanEmail(fields.email),
+      whatsapp_phone: fields.whatsapp_phone?.trim() || null,
       created_by: userId,
       org_id: orgId,
     })
@@ -182,6 +187,14 @@ const LOGGED_FIELD_LABELS: Record<string, string> = {
   // the attribution had just been cleared. The claim's own signatures are the record now.
   onboarding_form_completed: 'Onboarding completed',
   onboarding_form_url: 'Onboarding form URL', kyc_done: 'KYC done',
+  email: 'Email', whatsapp_phone: 'WhatsApp',
+}
+
+/** Trimmed and lower-cased, or null; refused in words if it isn't an address (the DB checks too). */
+function cleanEmail(v: string | null | undefined): string | null {
+  const e = v?.trim().toLowerCase() || null
+  if (e && !/^[^@\s]+@[^@\s]+$/.test(e)) throw new UserFacingError(`"${v}" doesn't look like an email address.`)
+  return e
 }
 
 function displayValue(v: unknown): string {
@@ -223,6 +236,8 @@ export async function updateInvestor(
     kyc_done?: boolean
     birthday_md?: string | null
     birthday_year?: number | null
+    email?: string | null
+    whatsapp_phone?: string | null
   }
 ): Promise<void> {
   const { supabase, role, userId, orgId } = await requireRole(['founder', 'admin', 'associate', 'hr'])
@@ -247,6 +262,8 @@ export async function updateInvestor(
     birthday_md: params.birthday_md || null,
     // A year without a day/month is an orphan the DB CHECK rejects, so clear it together.
     birthday_year: params.birthday_md ? (params.birthday_year ?? null) : null,
+    email: cleanEmail(params.email),
+    whatsapp_phone: params.whatsapp_phone?.trim() || null,
   }
   // referred_by_partner_id is deliberately absent. It used to ride along with every edit, which
   // made the investor form a way to credit a partner without anyone approving it. The database now
@@ -485,7 +502,7 @@ export async function getInvestorFull(investorId: string): Promise<Investor | nu
       esv_poc_id, ticket_size_min, ticket_size_max, stage,
       referred_by_partner_id, created_by, created_at, username,
       onboarding_form_completed, onboarding_form_url, kyc_done,
-      birthday_md, birthday_year,
+      birthday_md, birthday_year, email, whatsapp_phone,
       excluded_sectors, connect_strength, stage_min, stage_max, stage_raw,
       ticket_currency, esv_poc_names, import_source,
       poc_search_task_id, poc_search_started_at, notes, logo_url,
