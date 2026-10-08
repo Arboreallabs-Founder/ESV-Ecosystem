@@ -67,8 +67,9 @@ export const fetchProject = cache(async (id: string): Promise<ProjectDetail | nu
       .eq('project_id', id).order('position').order('label'),
     supabase.from('project_events').select('id, kind, body, created_at, author:users!created_by(name, photo_url)')
       .eq('project_id', id).order('created_at', { ascending: false }).limit(100),
-    supabase.from('tasks').select('id, title, status, due_date, assignee:users!assignee_id(name, photo_url)')
-      .eq('project_id', id).eq('source', 'project').order('created_at', { ascending: false }),
+    // Through a function, not the tasks table: project tasks aren't readable by everyone who can see
+    // the project (that put colleagues' tasks on every board), so the page asks for just its list.
+    supabase.rpc('get_project_tasks', { p_project: id }),
   ])
   const err = error ?? itemsErr ?? eventsErr ?? tasksErr
   if (err) throw new Error(`Could not load the project: ${err.message}`)
@@ -95,8 +96,11 @@ export const fetchProject = cache(async (id: string): Promise<ProjectDetail | nu
     checklist: (items ?? []) as ProjectChecklistItem[],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     events: ((events ?? []) as any[]).map((e) => ({ ...e, author: one(e.author) })) as ProjectEvent[],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    tasks: ((tasks ?? []) as any[]).map((t) => ({ ...t, assignee: one(t.assignee) })) as ProjectTask[],
+    tasks: ((tasks ?? []) as Array<{ id: string; title: string; status: string; due_date: string | null; assignee_name: string | null; assignee_photo_url: string | null }>)
+      .map((t) => ({
+        id: t.id, title: t.title, status: t.status, due_date: t.due_date,
+        assignee: t.assignee_name || t.assignee_photo_url ? { name: t.assignee_name, photo_url: t.assignee_photo_url } : null,
+      })),
   }
 })
 

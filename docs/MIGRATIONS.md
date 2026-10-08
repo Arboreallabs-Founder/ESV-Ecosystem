@@ -1115,3 +1115,10 @@ stored rather than a rate: rates get rounded differently per invoice and split a
 need not sum to a clean percentage, so the form offers an 18% quick-fill but writes the figure. Note
 this does **not** explain the FWDA import's PJ gap — ₹2,68,000 of per-row cells against a ₹2,90,000
 header, 8.2%, which is not 18% of the base or of either fee component.
+
+### 20261031000000_project_tasks_not_on_everyones_board.sql
+**Fixes everyone seeing each other's tasks.** 20261014's "Project tasks visible with project" let
+anyone who could see a project read its tasks — and every internal user sees every project, while
+the task board shows every task RLS returns, so colleagues' project tasks filled everyone's board.
+The policy is dropped; the project page reads its list through `get_project_tasks(project)`
+(SECURITY DEFINER, checks `can_see_project`). Tasks are back to the normal rules.
