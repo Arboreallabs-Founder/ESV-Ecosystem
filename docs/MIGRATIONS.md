@@ -1141,3 +1141,11 @@ investor-only checks are now nested inside the table test. No code change needed
 introduced a company to ESV. Informational, not a fee attribution, so set directly by any internal
 user (`setCompanyFundSource`), no claim. Shown as "Sourced from <fund>" under the partner credit on
 the company profile, linking to the investor.
+
+### 20261104000000_views_respect_rls.sql
+Supabase advisor "Security Definer View" ×3. `investor_rejections`, `investor_angel_interactions`
+and `partner_visible_deal_fields` ran with their owner's rights, so RLS on the tables underneath was
+skipped, and Supabase's default grants made them readable through the REST API with the public anon
+key. They now have `security_invoker = true` (RLS evaluated as the caller) and `anon` is revoked.
+None is used by the app. (`rls_policy_audit` and `investor_referral_roots` were already revoked from
+`anon`/`authenticated` by design.)
