@@ -1128,3 +1128,10 @@ The policy is dropped; the project page reads its list through `get_project_task
 record next to the other angel-only fields (funds keep their people in `investor_contacts`). Shown
 and edited only when `service_type = 'angel_investor'`; email has a loose shape check. Both are
 in the investor edit log.
+
+### 20261102000000_fix_company_attribution_guard.sql
+**Fixes company creates and edits failing with 42703.** 20261018 put
+`TG_TABLE_NAME = 'investors' AND NEW.referred_by_investor_id …` in `guard_partner_attribution()`,
+which also runs on `companies`. PL/pgSQL resolves `NEW.referred_by_investor_id` even when the first
+half is false, and companies has no such column, so every company insert/update raised 42703. The
+investor-only checks are now nested inside the table test. No code change needed.
