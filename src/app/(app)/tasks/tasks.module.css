@@ -528,6 +528,7 @@
   z-index: 100;
   padding: 1rem;
   backdrop-filter: blur(8px);
+  animation: var(--anim-scrim-in);
 }
 
 .modal {
@@ -543,6 +544,7 @@
   /* The same reason as .card: the modal shows the same description, and a pasted URL has no word
      boundary. It sits outside .card so it inherits nothing from there. */
   overflow-wrap: anywhere;
+  animation: var(--anim-surface-in);
 }
 
 .modalTitle {

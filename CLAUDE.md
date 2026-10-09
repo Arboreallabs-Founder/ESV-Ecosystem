@@ -105,3 +105,12 @@ The app must feel premium, using rich aesthetics and smooth interactions.
   `/verify` card — and prose line-length on a *paragraph* (`max-width: 60ch` on a subtitle is fine;
   on the container holding it is not). This has been raised twice; check it before shipping a page.
 - `@xyflow/react` is used only in the form builder — do not introduce it elsewhere.
+- **Motion uses the shared tokens in `globals.css`**, never hand-typed curves: `--ease-out`
+  (entering/responding), `--ease-in-out` (moving across the screen), `--ease-drawer` (sheets),
+  `--dur-press/fast/base/slow` (110/160/240/300ms; UI motion stays ≤300ms). Modals use
+  `animation: var(--anim-surface-in)` and their scrim `var(--anim-scrim-in)`; dropdowns and
+  flyouts use `var(--anim-popover-in)` with `transform-origin` set to where they open from. Use
+  the `var(--anim-…)` form inside modules: CSS Modules renames a bare keyframe name. Never
+  `ease-in` on UI, never animate from `scale(0)`, never `transition: all`. Buttons get press
+  feedback globally; opt out with `data-no-press`. Reduced motion / transparency / contrast are
+  handled globally — keep new motion to `transform` and `opacity` so they keep working.

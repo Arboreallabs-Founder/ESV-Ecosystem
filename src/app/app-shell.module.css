@@ -26,7 +26,8 @@
   border-right: 1px solid var(--glass-border);
   overflow-y: auto;
   overflow-x: hidden;
-  transition: width 0.18s ease, min-width 0.18s ease;
+  /* Collapsing moves things across the screen, so the in-out curve. */
+  transition: width var(--dur-base) var(--ease-in-out), min-width var(--dur-base) var(--ease-in-out);
 }
 
 /* Collapsed icon-only rail — desktop only. The whole ruleset is scoped inside this media
@@ -261,6 +262,9 @@
   box-shadow: var(--shadow-elevated);
   z-index: 320;
   padding: 0.25rem;
+  /* Opens to the right of the item that summoned it, so it grows out of that corner. */
+  transform-origin: top left;
+  animation: var(--anim-popover-in);
 }
 
 .navFlyoutItem {
@@ -985,7 +989,8 @@
     min-width: 270px;
     max-width: 82vw;
     transform: translateX(-100%);
-    transition: transform 0.22s ease;
+    /* Apple's sheet curve; in and out along the same edge. */
+    transition: transform var(--dur-slow) var(--ease-drawer);
     box-shadow: var(--shadow-elevated);
     /* On desktop the sidebar is persistent chrome beside the page, where translucency reads as
        depth. As a mobile drawer it sits *over* the page, and at card alpha the content behind
@@ -1003,9 +1008,8 @@
     inset: 0;
     z-index: 250;
     background: rgba(0, 0, 0, 0.45);
-    animation: shellFade 0.18s ease;
+    animation: var(--anim-scrim-in);
   }
-  @keyframes shellFade { from { opacity: 0; } to { opacity: 1; } }
 
   .topbar {
     display: flex;

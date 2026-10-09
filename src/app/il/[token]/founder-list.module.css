@@ -45,6 +45,7 @@
   font-weight: 400;
   line-height: 1.2;
   color: var(--color-text);
+  letter-spacing: -0.012em;
 }
 .sub { margin: 0.3rem 0 0; font-size: 0.875rem; color: var(--color-muted); }
 

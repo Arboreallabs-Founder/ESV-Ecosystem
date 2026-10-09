@@ -47,6 +47,27 @@
 
   --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
   --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.10), 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  /* ─── Motion ────────────────────────────────────────────────────────
+     One set of curves and durations for the whole app (Apple's "Designing Fluid Interfaces",
+     via the apple-design / emil-design-eng skills). The built-in CSS easings are too weak to
+     feel intentional, so these are stronger custom curves. Never ease-in on UI: it starts slow,
+     exactly when the user is watching. */
+  --ease-out:    cubic-bezier(0.23, 1, 0.32, 1);     /* entering, responding */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);    /* moving across the screen */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);     /* sheets and drawers (iOS curve) */
+  --dur-press:   110ms;  /* press feedback: instant enough to feel physical */
+  --dur-fast:    160ms;  /* hovers, small popovers */
+  --dur-base:    240ms;  /* modals, dropdowns */
+  --dur-slow:    300ms;  /* modals, sheets, large surfaces: UI motion stays at or under 300ms */
+
+  /* A modal materialises (scale + blur + opacity together), it doesn't just fade. Exposed as
+     variables because CSS Modules would rename a bare keyframe name used inside a module file;
+     inside var() it's left alone and resolves to the global keyframes below. */
+  --anim-scrim-in:   esv-scrim-in var(--dur-base) var(--ease-out) backwards;
+  --anim-surface-in: esv-surface-in var(--dur-slow) var(--ease-out) backwards;
+  /* Popovers and flyouts grow from their trigger; set transform-origin on the surface. */
+  --anim-popover-in: esv-popover-in var(--dur-fast) var(--ease-out) backwards;
 }
 
 /* ─── ESV Brand Tokens — Dark Mode ──────────────────────────────────── */
@@ -123,6 +144,9 @@ html {
   height: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* No grey flash over every tapped element on phones: feedback comes from :active instead. */
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -178,6 +202,93 @@ button {
 
 input, textarea, select {
   font-family: inherit;
+}
+
+/* ─── Response: feedback on press, not on release ────────────────────────
+   Every button answers the moment it's pressed with a slight scale-down, so the interface feels
+   like it heard you. The whole selector sits inside :where(), so it has zero specificity: any
+   component that sets its own :active or transform (an icon button centred with translate, a
+   rotating chevron) keeps it, and simply doesn't get this. Opt out with data-no-press (drag handles, rotating chevrons). */
+:where(
+  button:not(:disabled):not([data-no-press]):active,
+  [role="button"]:not([aria-disabled="true"]):not([data-no-press]):active,
+  summary:active
+) {
+  transform: scale(0.97);
+  transition: transform var(--dur-press) var(--ease-out);
+}
+/* No 300ms tap delay waiting for a possible double-tap zoom. */
+:where(button, a, [role="button"], summary, label, input, select, textarea) {
+  touch-action: manipulation;
+}
+
+/* ─── Focus: one clear ring, keyboard only ───────────────────────────────── */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ─── Type ──────────────────────────────────────────────────────────────
+   Tracking is size-specific: large text tightens, body stays at 0. Headings balance their line
+   breaks instead of leaving one word on the last line; paragraphs avoid orphans. */
+:where(h1, h2) { letter-spacing: -0.015em; line-height: 1.15; text-wrap: balance; }
+:where(h3, h4) { letter-spacing: -0.01em; text-wrap: balance; }
+:where(p) { text-wrap: pretty; }
+/* Numbers in tables line up in columns. */
+:where(table, td, th) { font-variant-numeric: tabular-nums; }
+
+/* ─── Phones ─────────────────────────────────────────────────────────────
+   iOS zooms the whole page into any field under 16px and doesn't zoom back. On touch devices
+   every field gets at least 16px; the desktop sizes are untouched. */
+@media (pointer: coarse) {
+  input, select, textarea { font-size: max(16px, 1em) !important; }
+}
+
+/* ─── Materials arrive, they don't just appear ─────────────────────────── */
+@keyframes esv-scrim-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes esv-popover-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes esv-surface-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.965); filter: blur(6px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+/* ─── Reduced motion: gentler, not absent ────────────────────────────────
+   Slides, scales and springs become short cross-fades; nothing that aids comprehension (colour,
+   opacity) is removed. */
+@keyframes esv-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --anim-surface-in: esv-fade-in 160ms ease-out backwards;
+    --anim-scrim-in:   esv-fade-in 160ms ease-out backwards;
+    --anim-popover-in: esv-fade-in 120ms ease-out backwards;
+  }
+  :where(button:active, [role="button"]:active, summary:active) { transform: none; }
+  html:focus-within { scroll-behavior: auto; }
+}
+
+/* ─── Reduced transparency / more contrast ───────────────────────────────
+   Glass becomes solid for people who've asked for less transparency; borders get firmer for
+   people who've asked for more contrast. */
+@media (prefers-reduced-transparency: reduce) {
+  :root, [data-theme="dark"], [data-theme="oled"] {
+    --color-card: var(--color-card-solid);
+    --color-card-raised: var(--color-card-solid);
+    --glass-panel: var(--color-card-solid);
+  }
+  * { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+}
+@media (prefers-contrast: more) {
+  :root { --color-border: #8A7A66; --glass-border: #8A7A66; --color-muted: #6E655E; }
+  [data-theme="dark"], [data-theme="oled"] { --color-border: #8A8AAE; --glass-border: #8A8AAE; --color-muted: #C9C2BC; }
 }
 
 /* ESV branded scrollbars */

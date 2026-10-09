@@ -522,6 +522,7 @@
   z-index: 100;
   padding: 1rem;
   backdrop-filter: blur(8px);
+  animation: var(--anim-scrim-in);
 }
 
 .modal {
@@ -532,6 +533,7 @@
   max-width: 480px;
   box-shadow: var(--shadow-elevated);
   border: 1px solid var(--color-border);
+  animation: var(--anim-surface-in);
 }
 
 .modalTitle {

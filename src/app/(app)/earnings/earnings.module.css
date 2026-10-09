@@ -12,6 +12,7 @@
   font-weight: 400;
   color: var(--color-text);
   line-height: 1.2;
+  letter-spacing: -0.012em;
 }
 
 .pageSub {

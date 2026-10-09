@@ -19,6 +19,7 @@
   font-weight: 400;
   color: var(--color-text);
   line-height: 1.2;
+  letter-spacing: -0.012em;
 }
 
 .pageSubtitle {
@@ -343,6 +344,8 @@
   z-index: 50;
   max-height: 180px;
   overflow-y: auto;
+  transform-origin: top center;
+  animation: var(--anim-popover-in);
 }
 
 .pocDropdownItem {
@@ -644,6 +647,7 @@
   z-index: 400;
   padding: 1rem;
   backdrop-filter: blur(8px);
+  animation: var(--anim-scrim-in);
 }
 
 .modal {

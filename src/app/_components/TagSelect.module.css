@@ -63,6 +63,8 @@
   max-height: 220px;
   overflow-y: auto;
   padding: 0.25rem;
+  transform-origin: top center;
+  animation: var(--anim-popover-in);
 }
 
 .item {

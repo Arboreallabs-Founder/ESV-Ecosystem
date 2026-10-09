@@ -41,6 +41,8 @@
   box-shadow: var(--shadow-elevated);
   backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(1.4);
+  transform-origin: top center;
+  animation: var(--anim-popover-in);
 }
 .option {
   display: flex; align-items: center; gap: 0.6rem; width: 100%;

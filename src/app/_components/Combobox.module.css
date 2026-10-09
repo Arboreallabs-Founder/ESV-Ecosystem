@@ -43,6 +43,8 @@
   overflow-y: auto;
   z-index: 20;
   padding: 0.25rem;
+  transform-origin: top center;
+  animation: var(--anim-popover-in);
 }
 
 .item {

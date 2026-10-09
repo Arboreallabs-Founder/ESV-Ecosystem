@@ -18,6 +18,7 @@
   font-weight: 400;
   color: var(--color-text);
   line-height: 1.2;
+  letter-spacing: -0.012em;
 }
 
 .pageSub {
@@ -216,6 +217,7 @@
   z-index: 100;
   padding: 1rem;
   backdrop-filter: blur(8px);
+  animation: var(--anim-scrim-in);
 }
 
 .modal {

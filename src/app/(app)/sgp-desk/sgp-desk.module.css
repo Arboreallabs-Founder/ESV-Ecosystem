@@ -15,6 +15,7 @@
   font-weight: 400;
   line-height: 1.2;
   color: var(--color-text);
+  letter-spacing: -0.012em;
 }
 
 .pageSub {
@@ -226,6 +227,7 @@
   padding: 1rem;
   background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(8px);
+  animation: var(--anim-scrim-in);
 }
 
 .modal {
@@ -238,6 +240,7 @@
   background: var(--glass-panel);
   border: 1px solid var(--glass-border);
   box-shadow: var(--shadow-elevated);
+  animation: var(--anim-surface-in);
 }
 
 .modalTitle {

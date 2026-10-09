@@ -25,6 +25,7 @@
   line-height: 1.2;
   color: var(--color-text);
   margin: 0;
+  letter-spacing: -0.012em;
 }
 
 .pageSub {
