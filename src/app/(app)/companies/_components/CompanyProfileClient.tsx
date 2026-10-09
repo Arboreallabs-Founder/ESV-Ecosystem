@@ -12,6 +12,7 @@ import {
   saveFieldDef, setFieldValue,
   createDeskDealFromCompany, suggestMetaTags,
   type CompanyPatch,
+  setCompanyFundSource,
 } from '@/app/actions/companies'
 import {
   COMPANY_STATUS_LABELS, COMPANY_DOC_TYPES, COMPANY_DOC_TYPE_LABELS, COMPANY_FIELD_TYPES,
@@ -28,6 +29,7 @@ import DonutChart from './DonutChart'
 import { SpecField, OVERVIEW_SPECS, TRACTION_SPECS, RAISE_SPECS, PRODUCT_SPECS, CAP_TABLE_SPECS, initValue, coerce, type Spec } from './field-specs'
 import { formatInr, formatDate, initials, locationLabel } from './format'
 import Avatar from '@/app/_components/Avatar'
+import Combobox from '@/app/_components/Combobox'
 import ApplicationSection from './ApplicationSection'
 import type { CompanyApplication } from '@/lib/company-applications'
 import { proposeCompanyAttribution } from '@/app/actions/partner-investor-referrals'
@@ -115,6 +117,80 @@ function SectionHead({ title, onEdit, action }: { title: string; onEdit?: () => 
  * asked. It proposes now; the tag appears only after a coordinator and the founder have both
  * signed, and the database refuses any other route to it.
  */
+/**
+ * "Sourced from <fund>": which investor passed this company to us (20261103000000). Informational,
+ * not a fee, so it's set directly by anyone internal, no claim. Before the migration the column
+ * is absent and the row simply offers to add it.
+ */
+function FundSourceRow({ companyId, investorId, note, investors, onDone }: {
+  companyId: string
+  investorId: string | null
+  note: string | null
+  investors: Array<{ id: string; name: string; service_type: string | null }>
+  onDone: () => void
+}) {
+  const [editing, setEditing] = useState(false)
+  const [pick, setPick] = useState(investorId ?? '')
+  const [draft, setDraft] = useState(note ?? '')
+  const [pending, start] = useTransition()
+  const fund = investorId ? investors.find((i) => i.id === investorId) ?? null : null
+
+  function save(nextId: string | null) {
+    start(async () => {
+      try {
+        await setCompanyFundSource(companyId, nextId, nextId ? draft : null)
+        setEditing(false)
+        onDone()
+      } catch (err) { alertError(err) }
+    })
+  }
+
+  if (!editing) {
+    if (!fund) {
+      if (investors.length === 0) return null
+      return (
+        <div className={styles.creditRow}>
+          <button className={styles.creditPropose} onClick={() => { setPick(''); setDraft(''); setEditing(true) }}>
+            + Sourced from another fund
+          </button>
+        </div>
+      )
+    }
+    return (
+      <div className={styles.creditRow}>
+        <span className={styles.creditLabel}>Sourced from</span>
+        <Link href={`/investors/${fund.id}`} className={styles.creditValue}>{fund.name}</Link>
+        {note && <span className={styles.sourceNote}>· {note}</span>}
+        <button className={styles.creditCancel} onClick={() => { setPick(fund.id); setDraft(note ?? ''); setEditing(true) }}>Change</button>
+        <button className={styles.creditCancel} disabled={pending} onClick={() => save(null)}>Remove</button>
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.creditRow}>
+      <div className={styles.sourcePicker}>
+        <Combobox
+          options={investors.map((i) => ({ id: i.id, label: i.name, hint: i.service_type?.replace(/_/g, ' ') ?? undefined }))}
+          value={pick}
+          onChange={setPick}
+          placeholder="Which fund sent it to us?"
+        />
+      </div>
+      <input
+        className={styles.creditNote}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        placeholder="Context (optional): who sent it, when"
+      />
+      <button className={styles.creditPropose} disabled={!pick || pending} onClick={() => save(pick)}>
+        {pending ? 'Saving…' : 'Save'}
+      </button>
+      <button className={styles.creditCancel} onClick={() => setEditing(false)}>Cancel</button>
+    </div>
+  )
+}
+
 function AttributionRow({
   companyId, approvedName, claim, partners, canPropose, onDone,
 }: {
@@ -197,7 +273,7 @@ function AttributionRow({
 
 export default function CompanyProfileClient({
   company, fieldDefs, canManage, canAuthorCard, canCreateDeal, teamMembers, suggestions, dealCategories,
-  canCreditPartner = false, franchisePartners = [], attributionClaim = null, applications = [],
+  canCreditPartner = false, franchisePartners = [], attributionClaim = null, applications = [], investorOptions = [],
 }: {
   company: Company; fieldDefs: CompanyFieldDef[]; canManage: boolean; canAuthorCard: boolean; canCreateDeal: boolean; teamMembers: Team; suggestions: SuggestedInvestor[]
   dealCategories: DealCategory[]
@@ -207,6 +283,8 @@ export default function CompanyProfileClient({
   attributionClaim?: PartnerAttributionClaim | null
   /** The form submissions behind this company, newest first. */
   applications?: CompanyApplication[]
+  /** Every investor, for "Sourced from" (which fund introduced the company). */
+  investorOptions?: Array<{ id: string; name: string; service_type: string | null }>
 }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
@@ -273,6 +351,14 @@ export default function CompanyProfileClient({
             claim={attributionClaim}
             partners={franchisePartners}
             canPropose={canCreditPartner}
+            onDone={refresh}
+          />
+          {/* Where the deal came from, when another fund passed it to us. */}
+          <FundSourceRow
+            companyId={company.id}
+            investorId={(company as unknown as { sourced_by_investor_id?: string | null }).sourced_by_investor_id ?? null}
+            note={(company as unknown as { sourced_by_note?: string | null }).sourced_by_note ?? null}
+            investors={investorOptions}
             onDone={refresh}
           />
         </div>

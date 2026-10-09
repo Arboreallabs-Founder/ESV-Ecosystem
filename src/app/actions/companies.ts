@@ -194,6 +194,20 @@ export async function suggestMetaTags(companyId: string): Promise<void> {
   revalidatePath(`/companies/${companyId}`)
 }
 
+/**
+ * Which fund brought us this company (20261103000000). Not a fee attribution, so no claim or
+ * approval: any internal user can set or clear it.
+ */
+export async function setCompanyFundSource(companyId: string, investorId: string | null, note: string | null) {
+  const { supabase } = await requireInternal()
+  const { error } = await supabase.from('companies')
+    .update({ sourced_by_investor_id: investorId, sourced_by_note: investorId ? (note?.trim() || null) : null })
+    .eq('id', companyId)
+  if (error) throw dbFailure('save where the company came from', error)
+  revalidatePath(`/companies/${companyId}`)
+  revalidatePath('/companies')
+}
+
 export async function updateCompany(id: string, patch: CompanyPatch) {
   const { supabase } = await requireInternal()
   if (patch.name !== undefined && !patch.name.trim()) throw new UserFacingError('Company name is required.')

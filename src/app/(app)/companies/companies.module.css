@@ -415,3 +415,7 @@
   font-family: inherit; font-size: 0.8125rem; color: var(--color-muted); cursor: pointer;
 }
 .creditCancel:hover { color: var(--color-text); }
+
+/* "Sourced from <fund>" sits under the partner credit and reuses its row styles. */
+.sourceNote { font-size: 0.8125rem; color: var(--color-muted); }
+.sourcePicker { min-width: 15rem; flex: 1; max-width: 22rem; }

@@ -1135,3 +1135,9 @@ in the investor edit log.
 which also runs on `companies`. PL/pgSQL resolves `NEW.referred_by_investor_id` even when the first
 half is false, and companies has no such column, so every company insert/update raised 42703. The
 investor-only checks are now nested inside the table test. No code change needed.
+
+### 20261103000000_company_sourced_from_fund.sql
+`companies.sourced_by_investor_id` (→ `investors`) and `companies.sourced_by_note`: which fund
+introduced a company to ESV. Informational, not a fee attribution, so set directly by any internal
+user (`setCompanyFundSource`), no claim. Shown as "Sourced from <fund>" under the partner credit on
+the company profile, linking to the investor.

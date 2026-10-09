@@ -18,7 +18,7 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
 
   const supabase = await createClient()
   const isLead = ['founder', 'admin'].includes(user.role ?? '')
-  const [fieldDefs, team, suggestions, dealCategories, coordinator, { data: partners }, { data: claimRow }, applications] = await Promise.all([
+  const [fieldDefs, team, suggestions, dealCategories, coordinator, { data: partners }, { data: claimRow }, applications, { data: investorRows }] = await Promise.all([
     fetchCompanyFieldDefs(),
     getInternalUsers().catch(() => []),
     fetchInvestorSuggestions(company.sectors, company.meta_tags, company.stage),
@@ -35,6 +35,8 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
       .maybeSingle(),
     // The form submissions behind this company, shown as the Application section.
     fetchCompanyApplications(id),
+    // For "Sourced from": which fund introduced the company.
+    supabase.from('investors').select('id, name, service_type').order('name'),
   ])
 
   const canManage = isLead
@@ -46,5 +48,5 @@ export default async function CompanyPage({ params }: { params: Promise<{ id: st
     ? ({ ...(claimRow as any), partner: one((claimRow as any).partner) } as PartnerAttributionClaim)
     : null
 
-  return <CompanyProfileClient company={company} fieldDefs={fieldDefs} canManage={canManage} canAuthorCard={canAuthorCard} canCreateDeal={canCreateDeal} teamMembers={team} suggestions={suggestions} dealCategories={dealCategories} canCreditPartner={coordinator} franchisePartners={(partners ?? []) as Array<{ id: string; name: string }>} attributionClaim={attributionClaim} applications={applications} />
+  return <CompanyProfileClient company={company} fieldDefs={fieldDefs} canManage={canManage} canAuthorCard={canAuthorCard} canCreateDeal={canCreateDeal} teamMembers={team} suggestions={suggestions} dealCategories={dealCategories} canCreditPartner={coordinator} franchisePartners={(partners ?? []) as Array<{ id: string; name: string }>} attributionClaim={attributionClaim} applications={applications} investorOptions={(investorRows ?? []) as Array<{ id: string; name: string; service_type: string | null }>} />
 }
