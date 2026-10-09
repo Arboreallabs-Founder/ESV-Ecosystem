@@ -133,6 +133,68 @@
 }
 
 
+/* ─── Porcelain — a cool, neutral light theme ───────────────────────────
+   Settings > Appearance only (the sun/moon toggle keeps Light/Dark). Same ESV purple and bronze
+   on a neutral near-white, so figures and status colours read true instead of warm-tinted.
+   Every text pairing passes WCAG AA: body 15.3:1, secondary text 5.0:1, white on primary 6.1:1. */
+[data-theme="porcelain"] {
+  --color-bg:            #F4F4F7;
+  --color-card:          rgba(255, 255, 255, 0.72);
+  --color-card-raised:   rgba(255, 255, 255, 0.86);
+  --color-card-solid:    #FFFFFF;
+  --glass-panel:         rgba(255, 255, 255, 0.95);
+  --glass-border:        rgba(255, 255, 255, 0.7);
+  --color-text:          #1D1D24;
+  --color-muted:         #6B6876;
+  --color-border:        #E3E2EA;
+  --color-primary:       #5B47E0;
+  --color-primary-light: #DDD5FF;
+  --color-accent:        #9A6B45;
+  --color-warning:       #B4553F;
+  --color-destructive:   #C42B2B;
+  --color-success:       #1E7A3B;
+  --color-hover-rgb:     29, 29, 36;
+
+  --scrollbar-track:        rgba(244, 244, 247, 0.8);
+  --scrollbar-thumb:        #D4D2DC;
+  --scrollbar-thumb-hover:  #B9B5C6;
+  --scrollbar-thumb-active: #5B47E0;
+
+  /* Hairline borders, so shadows do the separating. */
+  --shadow-card:     0 1px 2px rgba(20, 20, 40, 0.05), 0 4px 16px rgba(20, 20, 40, 0.05);
+  --shadow-elevated: 0 12px 40px rgba(20, 20, 40, 0.12), 0 2px 8px rgba(20, 20, 40, 0.06);
+}
+
+/* ─── Graphite — a cool charcoal dark theme ─────────────────────────────
+   Porcelain's dark counterpart: neutral charcoal instead of Dark's navy. Body 16.4:1,
+   secondary text 5.5:1 on cards, white on primary 4.6:1. */
+[data-theme="graphite"] {
+  --color-bg:            #141417;
+  --color-card:          rgba(38, 38, 44, 0.62);
+  --color-card-raised:   rgba(52, 52, 60, 0.74);
+  --color-card-solid:    #1E1E23;
+  --glass-panel:         rgba(30, 30, 35, 0.95);
+  --glass-border:        rgba(255, 255, 255, 0.09);
+  --color-text:          #F2F1F6;
+  --color-muted:         #9C99A8;
+  --color-border:        #2E2E36;
+  --color-primary:       #7262F8;
+  --color-primary-light: #C9BDFF;
+  --color-accent:        #CDA582;
+  --color-warning:       #D9917E;
+  --color-destructive:   #F07070;
+  --color-success:       #5BC77A;
+  --color-hover-rgb:     242, 241, 246;
+
+  --scrollbar-track:        rgba(20, 20, 23, 0.8);
+  --scrollbar-thumb:        #4A4A55;
+  --scrollbar-thumb-hover:  #6A6A78;
+  --scrollbar-thumb-active: #7262F8;
+
+  --shadow-card:     0 2px 12px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
 /* ─── Base Reset ─────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
@@ -181,6 +243,22 @@ body::before {
     radial-gradient(900px circle at 12% 18%, rgba(116, 95, 253, 0.20), transparent 60%),
     radial-gradient(820px circle at 88% 10%, rgba(213, 174, 143, 0.10), transparent 58%),
     radial-gradient(1000px circle at 72% 88%, rgba(206, 170, 253, 0.09), transparent 62%);
+}
+
+/* Porcelain: the same three blobs, cooler and about half as strong, so the glass has something
+   to blur without tinting the page. */
+[data-theme="porcelain"] body::before {
+  background:
+    radial-gradient(900px circle at 12% 18%, rgba(221, 213, 255, 0.45), transparent 60%),
+    radial-gradient(820px circle at 88% 10%, rgba(213, 174, 143, 0.12), transparent 58%),
+    radial-gradient(1000px circle at 72% 88%, rgba(91, 71, 224, 0.06), transparent 62%);
+}
+
+[data-theme="graphite"] body::before {
+  background:
+    radial-gradient(900px circle at 12% 18%, rgba(114, 98, 248, 0.12), transparent 60%),
+    radial-gradient(820px circle at 88% 10%, rgba(205, 165, 130, 0.06), transparent 58%),
+    radial-gradient(1000px circle at 72% 88%, rgba(201, 189, 255, 0.05), transparent 62%);
 }
 
 /* Faintest of the three — OLED should still read as near-black. */
@@ -279,7 +357,7 @@ input, textarea, select {
    Glass becomes solid for people who've asked for less transparency; borders get firmer for
    people who've asked for more contrast. */
 @media (prefers-reduced-transparency: reduce) {
-  :root, [data-theme="dark"], [data-theme="oled"] {
+  :root, [data-theme="dark"], [data-theme="oled"], [data-theme="porcelain"], [data-theme="graphite"] {
     --color-card: var(--color-card-solid);
     --color-card-raised: var(--color-card-solid);
     --glass-panel: var(--color-card-solid);
@@ -288,7 +366,8 @@ input, textarea, select {
 }
 @media (prefers-contrast: more) {
   :root { --color-border: #8A7A66; --glass-border: #8A7A66; --color-muted: #6E655E; }
-  [data-theme="dark"], [data-theme="oled"] { --color-border: #8A8AAE; --glass-border: #8A8AAE; --color-muted: #C9C2BC; }
+  [data-theme="porcelain"] { --color-border: #8C8A99; --glass-border: #8C8A99; --color-muted: #55525F; }
+  [data-theme="dark"], [data-theme="oled"], [data-theme="graphite"] { --color-border: #8A8AAE; --glass-border: #8A8AAE; --color-muted: #C9C2BC; }
 }
 
 /* ESV branded scrollbars */

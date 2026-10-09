@@ -1055,9 +1055,11 @@
 
 .brandLogoDark { display: none; }
 [data-theme="dark"] .brandLogoLight,
-[data-theme="oled"] .brandLogoLight { display: none; }
+[data-theme="oled"] .brandLogoLight,
+[data-theme="graphite"] .brandLogoLight { display: none; }
 [data-theme="dark"] .brandLogoDark,
-[data-theme="oled"] .brandLogoDark { display: block; }
+[data-theme="oled"] .brandLogoDark,
+[data-theme="graphite"] .brandLogoDark { display: block; }
 
 /* Collapsed rail: symbol only. No text in it, so one file serves every theme. */
 .brandSymbol {

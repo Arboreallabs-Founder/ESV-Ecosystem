@@ -6,7 +6,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { WikiSidebarButton, WikiRoleProvider } from '@/app/_components/WikiPanel'
-import { useTheme } from '@/app/_components/ThemeProvider'
+import { useTheme, isDarkTheme } from '@/app/_components/ThemeProvider'
 import { switchDemoPersona, exitDemoMode } from '@/app/actions/demo'
 import HrClockWidget from '@/app/_components/HrClockWidget'
 import { getMyNotifications, markNotificationsRead, markAllNotificationsRead } from '@/app/actions/notifications'
@@ -888,10 +888,10 @@ export default function AppShell({
             <button
               className={styles.signOutBtn}
               onClick={toggleTheme}
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              title={isDarkTheme(theme) ? 'Switch to light mode' : 'Switch to dark mode'}
               style={{ width: 36, padding: 0, flexShrink: 0, fontSize: '1rem' }}
             >
-              {theme === 'dark' ? '☀' : '🌙'}
+              {isDarkTheme(theme) ? '☀' : '🌙'}
             </button>
             <button
               className={styles.signOutBtn}
@@ -979,9 +979,9 @@ export default function AppShell({
           <button
             className={styles.topbarTheme}
             onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={isDarkTheme(theme) ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            {theme === 'dark' ? '☀' : '🌙'}
+            {isDarkTheme(theme) ? '☀' : '🌙'}
           </button>
         </header>
         {/* Sits in the column's own flow rather than floating over the viewport, so scrolling

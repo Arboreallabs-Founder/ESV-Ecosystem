@@ -224,7 +224,13 @@ export default function SettingsClient({
             <div>
               <div className={styles.themeLabel}>Theme</div>
               <div className={styles.themeSub}>
-                {theme === 'oled' ? 'OLED — true black, for OLED screens' : theme === 'dark' ? 'Dark' : 'Light'}
+                {({
+                  light: 'Light',
+                  dark: 'Dark',
+                  oled: 'OLED: true black, for OLED screens',
+                  porcelain: 'Porcelain: cool and neutral, so figures read true',
+                  graphite: 'Graphite: cool charcoal, Porcelain’s dark partner',
+                } as const)[theme]}
               </div>
             </div>
             <div className={styles.themeOptions}>
@@ -248,6 +254,24 @@ export default function SettingsClient({
                 onClick={() => setTheme('oled')}
               >
                 ⬛ OLED
+              </button>
+              {/* The two newer themes show a swatch of themselves rather than an icon; the sun/moon
+                  quick toggle still means Light/Dark. */}
+              <button
+                type="button"
+                className={`${styles.themeOption} ${theme === 'porcelain' ? styles.themeOptionActive : ''}`}
+                onClick={() => setTheme('porcelain')}
+              >
+                <span className={styles.themeSwatch} style={{ background: 'linear-gradient(135deg, #F4F4F7 50%, #5B47E0 50%)' }} aria-hidden="true" />
+                Porcelain
+              </button>
+              <button
+                type="button"
+                className={`${styles.themeOption} ${theme === 'graphite' ? styles.themeOptionActive : ''}`}
+                onClick={() => setTheme('graphite')}
+              >
+                <span className={styles.themeSwatch} style={{ background: 'linear-gradient(135deg, #1E1E23 50%, #7262F8 50%)' }} aria-hidden="true" />
+                Graphite
               </button>
             </div>
           </div>

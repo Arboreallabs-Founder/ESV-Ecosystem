@@ -2,7 +2,11 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 
-type Theme = 'light' | 'dark' | 'oled'
+export type Theme = 'light' | 'dark' | 'oled' | 'porcelain' | 'graphite'
+
+/** Themes with a dark background — the logo flips to its light version and the toggle offers the sun. */
+export const DARK_THEMES: Theme[] = ['dark', 'oled', 'graphite']
+export const isDarkTheme = (t: Theme) => DARK_THEMES.includes(t)
 
 const ThemeContext = createContext<{ theme: Theme; toggle: () => void; setTheme: (theme: Theme) => void }>({
   theme: 'light',
@@ -25,10 +29,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.setAttribute('data-theme', next)
   }
 
-  // Quick-access toggle (sidebar footer, mobile topbar) stays a simple light/dark cycle —
-  // OLED is reachable only from Settings > Appearance, not this shortcut.
+  // Quick-access toggle (sidebar footer, mobile topbar) stays the Light/Dark sun and moon.
+  // OLED, Porcelain and Graphite are chosen in Settings > Appearance; once you're on Porcelain or
+  // Graphite the toggle flips between those two, so it doesn't drop you back into Light/Dark.
   function toggle() {
-    apply(theme === 'light' ? 'dark' : 'light')
+    const next: Record<Theme, Theme> = {
+      light: 'dark', dark: 'light', oled: 'light',
+      porcelain: 'graphite', graphite: 'porcelain',
+    }
+    apply(next[theme] ?? 'light')
   }
 
   return (
