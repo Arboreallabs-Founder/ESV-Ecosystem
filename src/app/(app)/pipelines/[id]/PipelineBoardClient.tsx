@@ -65,6 +65,7 @@ export default function PipelineBoardClient({
   forms: initialForms,
   currentUserId,
   companyOptions = [],
+  canSelfAssign = false,
 }: {
   pipeline: Pipeline
   entries: PipelineEntry[]
@@ -73,6 +74,8 @@ export default function PipelineBoardClient({
   forms: FormItem[]
   currentUserId?: string
   companyOptions?: Array<{ id: string; name: string }>
+  /** Associates: may put themselves on (or take themselves off) an entry. */
+  canSelfAssign?: boolean
 }) {
   const router = useRouter()
   const [pipeline, setPipeline] = useState(initial)
@@ -416,13 +419,17 @@ export default function PipelineBoardClient({
     if (!member) return
     setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, assignees: [...(e.assignees ?? []), { user_id: userId, name: member.name, photo_url: member.photo_url }] } : e))
     setSelectedEntry((prev) => prev ? { ...prev, assignees: [...(prev.assignees ?? []), { user_id: userId, name: member.name, photo_url: member.photo_url }] } : null)
-    startTransition(async () => { await addAssignee(entryId, userId) })
+    startTransition(async () => {
+      try { await addAssignee(entryId, userId) } catch (err) { alertError(err); router.refresh() }
+    })
   }
 
   function handleRemoveAssignee(entryId: string, userId: string) {
     setEntries((prev) => prev.map((e) => e.id === entryId ? { ...e, assignees: (e.assignees ?? []).filter((a) => a.user_id !== userId) } : e))
     setSelectedEntry((prev) => prev ? { ...prev, assignees: (prev.assignees ?? []).filter((a) => a.user_id !== userId) } : null)
-    startTransition(async () => { await removeAssignee(entryId, userId) })
+    startTransition(async () => {
+      try { await removeAssignee(entryId, userId) } catch (err) { alertError(err); router.refresh() }
+    })
   }
 
   function handleLinkCompany(entryId: string, companyId: string | null) {
@@ -1084,7 +1091,7 @@ export default function PipelineBoardClient({
                 </div>
               </div>
             )}
-            {!canManage && (selectedEntry.assignees ?? []).length > 0 && (
+            {!canManage && ((selectedEntry.assignees ?? []).length > 0 || (canSelfAssign && currentUserId)) && (
               <div className={styles.field}>
                 <label className={styles.label}>Assigned To</label>
                 <div className={styles.assigneeChips}>
@@ -1094,6 +1101,12 @@ export default function PipelineBoardClient({
                       {a.name}
                     </span>
                   ))}
+                  {/* Associates put themselves on an entry (and so can move it), or take themselves off. */}
+                  {canSelfAssign && currentUserId && (
+                    (selectedEntry.assignees ?? []).some((a) => a.user_id === currentUserId)
+                      ? <button type="button" className={styles.selfAssignBtn} onClick={() => handleRemoveAssignee(selectedEntry.id, currentUserId)}>Unassign me</button>
+                      : <button type="button" className={styles.selfAssignBtn} onClick={() => handleAddAssignee(selectedEntry.id, currentUserId)}>+ Assign me</button>
+                  )}
                 </div>
               </div>
             )}

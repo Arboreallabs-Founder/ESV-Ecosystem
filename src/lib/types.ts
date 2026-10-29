@@ -858,6 +858,8 @@ export type ApprovedUser = {
   is_sgp_coordinator: boolean
   /** Holds the second signature on partner attribution. Nimit, unless somebody else is given it. */
   is_sgp_approver: boolean
+  /** General Lead: sees and manages every general user's tasks (20261105000000). */
+  is_general_lead: boolean
   /** Onboarded with app access (typically `general`) but not an ESV employee — a contractor or
    *  seconded person. Orthogonal to `role`: keeps them off the attendance roster, leave/expense
    *  requests, and Engage/Kudos without touching what the role itself grants. */

@@ -1149,3 +1149,13 @@ skipped, and Supabase's default grants made them readable through the REST API w
 key. They now have `security_invoker = true` (RLS evaluated as the caller) and `anon` is revoked.
 None is used by the app. (`rls_policy_audit` and `investor_referral_roots` were already revoked from
 `anon`/`authenticated` by design.)
+
+### 20261105000000_general_lead_and_referral_progress.sql
+- `users.is_general_lead` + `is_general_lead()` / `user_role_of()`: General Leads see and update every
+  general user's tasks and read their task pushes (see docs/ROLES.md).
+- `can_discuss_task()` and a rebuilt "Task comments follow task visibility": comments follow edit
+  rights (assignee, creator, assigner, General Lead over general users, founder/admin). Fixes 42501
+  for whoever handed a task out.
+- `get_my_referral_progress()`: the caller's own referred entries on any pipeline, with that
+  pipeline's stage path, for the Refer to ESV step bars.
+The app tolerates this not having run (flag reads as false, referral list falls back).

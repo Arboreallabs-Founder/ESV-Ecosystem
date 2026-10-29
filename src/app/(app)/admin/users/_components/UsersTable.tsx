@@ -4,7 +4,7 @@ import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addApprovedUser, updateApprovedUser, revokeUser, setUserPhotoFromUrl } from '@/app/actions/admin'
-import { setSgpCoordinator } from '@/app/actions/partner-companies'
+import { setSgpCoordinator, setGeneralLead } from '@/app/actions/partner-companies'
 import { setSgpApprover } from '@/app/actions/partner-attribution'
 import type { ApprovedUser } from '@/lib/types'
 import { personInitials } from '@/app/_components/Avatar'
@@ -81,6 +81,7 @@ export default function UsersTable({
   const [editDesignation, setEditDesignation] = useState('')
   const [editCoordinator, setEditCoordinator] = useState(false)
   const [editApprover, setEditApprover] = useState(false)
+  const [editGeneralLead, setEditGeneralLead] = useState(false)
   const [editExternal, setEditExternal] = useState(false)
 
   // Revoke modal
@@ -122,6 +123,7 @@ export default function UsersTable({
     setEditDesignation(u.designation ?? '')
     setEditCoordinator(u.is_sgp_coordinator)
     setEditApprover(u.is_sgp_approver)
+    setEditGeneralLead(u.is_general_lead)
     setEditExternal(u.is_external)
   }
 
@@ -141,6 +143,7 @@ export default function UsersTable({
           photo_url: null,
           designation: null,
           is_sgp_coordinator: false,
+          is_general_lead: false,
           is_sgp_approver: false,
           is_external: addExternal,
           hasLoggedIn: false,
@@ -170,6 +173,11 @@ export default function UsersTable({
       if (editTarget.userId && editApprover !== editTarget.is_sgp_approver) {
         await setSgpApprover(editTarget.userId, editApprover)
       }
+      // Only a general user can lead the general users; switching role away clears it.
+      const nextLead = editRole === 'general' && editGeneralLead
+      if (editTarget.userId && nextLead !== editTarget.is_general_lead) {
+        await setGeneralLead(editTarget.userId, nextLead)
+      }
       setUsers((prev) => prev.map((u) =>
         u.email === editTarget.email
           ? {
@@ -180,6 +188,7 @@ export default function UsersTable({
               is_external: editExternal,
               is_sgp_coordinator: editTarget.userId ? editCoordinator : u.is_sgp_coordinator,
               is_sgp_approver: editTarget.userId ? editApprover : u.is_sgp_approver,
+              is_general_lead: editTarget.userId ? (editRole === 'general' && editGeneralLead) : u.is_general_lead,
             }
           : u
       ))
@@ -258,6 +267,7 @@ export default function UsersTable({
                     </div>
                     {u.designation && <div className={styles.designation}>{u.designation}</div>}
                     {u.is_sgp_coordinator && <div className={styles.coordinatorTag}>SGP Coordinator</div>}
+                    {u.is_general_lead && <div className={styles.coordinatorTag}>General Lead</div>}
                   </td>
                   <td>
                     <a className={styles.emailLink} href={`mailto:${u.email}`}>{u.email}</a>
@@ -433,6 +443,22 @@ export default function UsersTable({
                   attendance roster, leave/expense requests, and Engage/Kudos.
                 </span>
               </div>
+              {editTarget.userId && editRole === 'general' && (
+                <div className={styles.field}>
+                  <label className={styles.coordinatorRow}>
+                    <input
+                      type="checkbox"
+                      checked={editGeneralLead}
+                      onChange={(e) => setEditGeneralLead(e.target.checked)}
+                    />
+                    General Lead
+                  </label>
+                  <span className={styles.fieldHint}>
+                    Leads the general users: sees all of their tasks and can comment on, edit,
+                    re-date and reassign them. Everything else stays as for any general user.
+                  </span>
+                </div>
+              )}
               {editTarget.userId && ['associate', 'admin', 'founder'].includes(editRole) && (
                 <div className={styles.field}>
                   <label className={styles.coordinatorRow}>

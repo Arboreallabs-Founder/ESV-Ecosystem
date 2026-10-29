@@ -1,5 +1,6 @@
 'use server'
 
+import { isGeneralLead } from '@/lib/user'
 import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
@@ -77,10 +78,15 @@ export async function updateTask(taskId: string, formData: FormData): Promise<Ta
   if (!existing) throw new UserFacingError('Task not found.')
 
   // Editable by whoever has a stake in the task, not just its assignee (contrast pushTask).
-  const canEdit = ['founder', 'admin'].includes(role)
+  let canEdit = ['founder', 'admin'].includes(role)
     || existing.created_by === userId
     || existing.assigned_by_id === userId
     || existing.assignee_id === userId
+  // A General Lead manages every general user's tasks (20261105000000; RLS enforces it too).
+  if (!canEdit && role === 'general' && existing.assignee_id && await isGeneralLead(userId)) {
+    const { data: assigneeRow } = await supabase.from('users').select('role').eq('id', existing.assignee_id).maybeSingle()
+    canEdit = (assigneeRow as { role?: string } | null)?.role === 'general'
+  }
   if (!canEdit) throw new UserFacingError('You can only edit tasks you created, assigned, or are assigned to.')
 
   const assigneeId = formData.get('assignee_id') as string

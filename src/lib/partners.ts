@@ -59,6 +59,9 @@ export const fetchApprovedUsers = cache(async (): Promise<ApprovedUser[]> => {
   ])
 
   const activeByEmail = new Map((active ?? []).map((u) => [u.email, u]))
+  // Read separately so a missing column (migration not yet run) costs only the flag, not the list.
+  const { data: leads } = await supabase.from('users').select('email').eq('is_general_lead', true)
+  const leadEmails = new Set(((leads ?? []) as Array<{ email: string }>).map((l) => l.email))
 
   return (approved ?? []).map((a) => ({
     email: a.email,
@@ -71,6 +74,7 @@ export const fetchApprovedUsers = cache(async (): Promise<ApprovedUser[]> => {
     designation: activeByEmail.get(a.email)?.designation ?? null,
     is_sgp_coordinator: activeByEmail.get(a.email)?.is_sgp_coordinator ?? false,
     is_sgp_approver: activeByEmail.get(a.email)?.is_sgp_approver ?? false,
+    is_general_lead: leadEmails.has(a.email),
     is_external: a.is_external ?? false,
     hasLoggedIn: activeByEmail.has(a.email),
   }))

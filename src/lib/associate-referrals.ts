@@ -170,3 +170,31 @@ export const fetchAllReferralLinks = cache(async (): Promise<TeamReferralLink[]>
     sourcedCount: countByUser.get(u.id) ?? 0,
   }))
 })
+
+export type ReferralProgress = {
+  id: string
+  title: string | null
+  submitter_name: string | null
+  submitted_at: string
+  pipeline_name: string
+  stage_id: string | null
+  rejected: boolean
+  rejection_reason: string | null
+  /** The pipeline's path in board order (Lead, custom stages, Accepted); Rejected is off it. */
+  stages: Array<{ id: string; name: string }>
+}
+
+/**
+ * Every entry that came in through the signed-in user's link, on any pipeline, with the stages of
+ * its pipeline so it can be drawn as a step bar (get_my_referral_progress, 20261105000000).
+ * Empty on error, including before the migration has run.
+ */
+export const fetchMyReferralProgress = cache(async (): Promise<ReferralProgress[]> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase.rpc('get_my_referral_progress')
+  if (error) {
+    console.error('[associate-referrals] referral progress read failed:', error.message)
+    return []
+  }
+  return (data ?? []) as ReferralProgress[]
+})

@@ -126,14 +126,26 @@ export async function deleteEntry(entryId: string) {
   if (error) throw dbFailure('save that', error)
 }
 
+/** Founders/admins assign anyone; an associate may add or remove only themselves (2026-10-29),
+    which is also what lets them move the entry, since moves need you to be on it. */
+async function requireAssigneeChange(targetUserId: string) {
+  const ctx = await requireRole(['founder', 'admin', 'associate'])
+  if (ctx.role === 'associate' && targetUserId !== ctx.userId) {
+    throw new UserFacingError('Associates can assign or unassign only themselves.')
+  }
+  return ctx
+}
+
 export async function addAssignee(entryId: string, userId: string) {
-  const { supabase } = await requireAdmin()
-  await supabase.from('pipeline_entry_assignees').insert({ entry_id: entryId, user_id: userId })
+  const { supabase } = await requireAssigneeChange(userId)
+  const { error } = await supabase.from('pipeline_entry_assignees').insert({ entry_id: entryId, user_id: userId })
+  if (error && error.code !== '23505') throw dbFailure('assign that', error)
 }
 
 export async function removeAssignee(entryId: string, userId: string) {
-  const { supabase } = await requireAdmin()
-  await supabase.from('pipeline_entry_assignees').delete().eq('entry_id', entryId).eq('user_id', userId)
+  const { supabase } = await requireAssigneeChange(userId)
+  const { error } = await supabase.from('pipeline_entry_assignees').delete().eq('entry_id', entryId).eq('user_id', userId)
+  if (error) throw dbFailure('unassign that', error)
 }
 
 export async function rejectEntry(entryId: string, stageId: string, reason: string) {

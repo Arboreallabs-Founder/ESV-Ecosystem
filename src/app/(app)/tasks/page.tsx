@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { getUser } from '@/lib/user'
+import { getUser, isGeneralLead } from '@/lib/user'
 import { fetchAllTasks } from '@/lib/tasks'
 import { fetchAllUsers } from '@/lib/partners'
 import { fetchCompanyOptions } from '@/lib/companies'
@@ -25,6 +25,7 @@ export default async function TasksPage() {
       dealOptions={dealOptions}
       currentUserId={user.id}
       userRole={user.role}
+      isGeneralLead={await isGeneralLead(user.id)}
     />
   )
 }

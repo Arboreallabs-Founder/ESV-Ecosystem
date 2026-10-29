@@ -1188,3 +1188,11 @@
 .entryTaskTitle:hover { color: var(--color-primary); }
 .entryTaskDone .entryTaskTitle { color: var(--color-muted); text-decoration: line-through; }
 .entryTaskUnassigned { font-size: 0.6875rem; color: var(--color-muted); font-style: italic; }
+
+/* Associates putting themselves on an entry. */
+.selfAssignBtn {
+  border: 1.5px dashed var(--color-primary-light); background: transparent; color: var(--color-primary);
+  font-family: inherit; font-size: 0.8125rem; font-weight: 600; padding: 0.3rem 0.75rem;
+  border-radius: 999px; cursor: pointer;
+}
+.selfAssignBtn:hover { background: rgba(116, 95, 253, 0.08); }

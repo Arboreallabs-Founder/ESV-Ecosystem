@@ -30,12 +30,28 @@ const STALE_MARKERS = [
   'failed to fetch dynamically imported module',
 ]
 
+/**
+ * Error codes ("(code 42501)") are for founders and admins, who are the ones who act on them;
+ * everyone else gets the same sentence without the code (decided 2026-10-29). The viewer's role is
+ * put on <html data-viewer-role> by the app shell; with no role there (public pages, or before the
+ * shell has run) the code is hidden, which is the conservative default.
+ */
+function viewerSeesCodes(): boolean {
+  if (typeof document === 'undefined') return false
+  const role = document.documentElement.dataset.viewerRole
+  return role === 'founder' || role === 'admin' || role === 'super_admin'
+}
+
+function withoutCode(message: string): string {
+  return message.replace(/\s*\(code [0-9A-Z]{5}\)/g, '')
+}
+
 export function describeError(err: unknown): DescribedError {
   // A refusal we wrote, carried across the server boundary in the digest because React strips the
   // message. Checked first: it is the answer whenever it is present, and it is already written for
   // a person, so none of the cleanup below applies to it.
   const deliberate = userFacingMessage(err)
-  if (deliberate) return { stale: false, message: deliberate }
+  if (deliberate) return { stale: false, message: viewerSeesCodes() ? deliberate : withoutCode(deliberate) }
 
   const raw = err instanceof Error ? err.message : String(err)
   const hay = raw.toLowerCase()

@@ -46,6 +46,18 @@ export async function setSgpCoordinator(targetUserId: string, isCoordinator: boo
   revalidatePath('/sgp-desk')
 }
 
+/**
+ * General Lead (20261105000000): a general user who sees and manages every general user's tasks.
+ * Founder/admin only, like the coordinator flag. Only meaningful on a general user.
+ */
+export async function setGeneralLead(targetUserId: string, isLead: boolean): Promise<void> {
+  const { supabase } = await requireRole(['founder', 'admin'])
+  const { error } = await supabase.from('users').update({ is_general_lead: isLead }).eq('id', targetUserId)
+  if (error) throw dbFailure('save that', error)
+  revalidatePath('/admin/users')
+  revalidatePath('/tasks')
+}
+
 // ── The single partner intake route ──────────────────────────────────────────
 
 /**

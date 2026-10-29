@@ -439,6 +439,10 @@ export default function AppShell({
   const router = useRouter()
   const pathname = usePathname()
   const { theme, toggle: toggleTheme } = useTheme()
+  // Lets client-side error messages show their code to founders/admins only (src/lib/client-errors.ts).
+  useEffect(() => {
+    if (user?.role) document.documentElement.dataset.viewerRole = user.role
+  }, [user?.role])
   const [isPersonaSwitching, startPersonaTransition] = useTransition()
   const role = demoMode ? demoPersona : (user.role ?? 'associate')
   const displayName = user.name ?? user.email ?? 'User'

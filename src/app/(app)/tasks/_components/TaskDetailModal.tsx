@@ -22,6 +22,7 @@ export default function TaskDetailModal({
   dealOptions,
   currentUserId,
   userRole,
+  isGeneralLead = false,
 }: {
   task: Task
   onClose: () => void
@@ -31,6 +32,7 @@ export default function TaskDetailModal({
   dealOptions: Array<{ id: string; name: string }>
   currentUserId: string
   userRole: string
+  isGeneralLead?: boolean
 }) {
   const [comments, setComments] = useState<TaskComment[] | null>(null)
   const [text, setText] = useState('')
@@ -42,6 +44,8 @@ export default function TaskDetailModal({
     || task.created_by === currentUserId
     || task.assigned_by_id === currentUserId
     || task.assignee_id === currentUserId
+    // A General Lead manages every general user's tasks.
+    || (isGeneralLead && users.find((u) => u.id === task.assignee_id)?.role === 'general')
 
   const [editing, setEditing] = useState(false)
   const [assigneeId, setAssigneeId] = useState(task.assignee_id ?? '')

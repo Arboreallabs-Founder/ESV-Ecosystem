@@ -1,6 +1,7 @@
 # ESV Ecosystem — Roles & Permissions
 
-> Last updated: 2026-08-14 (added the `hr` role, Engage/Kudos, Leave & Expense approvals).
+> Last updated: 2026-10-29 (General Lead flag; task comments follow edit rights; associates self-assign on pipelines; error codes admin-only).
+> Previously 2026-08-14 (added the `hr` role, Engage/Kudos, Leave & Expense approvals).
 > This is the authoritative reference for what each role can and cannot do.
 > Enforcement happens at **two layers**: server-action guards (`requireRole` / `requireAdmin` /
 > `requireInternal`) and Postgres **RLS policies** (`get_user_role()`, `get_user_org_id()`,
@@ -47,7 +48,21 @@ functions and the entry policy. Set the tier in Admin → Partners; grant deals 
 next to the visibility toggle. Earnings are **not** gated by it — a venture partner who introduced an
 investor is owed for that whether or not anyone put them on the deal page.
 
-### `is_external` — orthogonal to role
+### `is_general_lead` — General Lead (flag, not a role)
+A boolean on `users` (added 2026-10-29, `20261105000000`), meaningful only on a `general` user and
+shown in the app as **General Lead**. A team lead over the general users: they see **every general
+user's tasks** (not just their own), can **comment on, edit, re-date and reassign** them, and get the
+By Person team view on the task board. Everything else is exactly an ordinary general user's.
+Reassigning still follows the ordinary rule (to associate, general or hr only).
+
+A flag rather than a new role value for the same reason as `is_sgp_coordinator` and `partner_tier`:
+`'general'` is checked by name across a long tail of RLS policies and guards, and a new role would
+have to be added to every one to keep parity. Enforced by RLS (`is_general_lead()`,
+`user_role_of()`; policies on `tasks`, `task_pushes`, `task_comments`) and by `updateTask`. Set by a
+founder/admin in Admin → Users (edit a general user → "General Lead"); users-only, so like the
+coordinator flag it can be set once the person has signed in.
+
+
 A boolean on `approved_emails`/`users` (added 2026-10-06), independent of `role`. It marks someone
 onboarded with a role's app access (in practice, always `general`) who is **not an ESV employee** —
 a contractor or seconded person, not on payroll. Role decides what they can *do* in the app;
@@ -513,3 +528,19 @@ personal to-dos are already database-scoped, but active deals are readable org-w
 the client-side narrowing a non-lead would still get a card per colleague containing nothing but
 their mandates. Read-only and copyable in both cases; the copy button emits the identical WhatsApp
 text either way.
+
+
+---
+
+## 2026-10-29 changes (`20261105000000`)
+- **Task comments follow edit rights.** Associate/general/hr can comment on any task they can edit:
+  assigned to them, created by them or handed out by them (previously only assigned to them, so the
+  person who handed a task out got 42501 commenting on it). General Leads over general users' tasks.
+- **Associates assign themselves on pipelines.** "+ Assign me" / "Unassign me" on an entry; the
+  server refuses an associate adding or removing anyone else. Being assigned is what lets them move it.
+- **Referrers see progress.** Anyone whose link brought an entry in, on any pipeline, sees it on
+  Refer to ESV with the pipeline's stages as a step bar (`get_my_referral_progress()`; stage names
+  only, no answers or notes).
+- **Error codes are for founders/admins.** Messages like "Could not save that (code 42501)" show
+  the code only to founder/admin/super_admin; everyone else gets the same sentence without it
+  (`describeError`, via `<html data-viewer-role>` set by the app shell).

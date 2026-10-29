@@ -25,3 +25,16 @@ export const getUser = cache(async (): Promise<UserRow | null> => {
     .single()
   return data ?? null
 })
+
+/**
+ * Is this user a General Lead (20261105000000)? Read on its own rather than in getUser(): the
+ * column arrives with a migration, and a select naming a missing column would fail every page.
+ * Any error reads as "not a lead", which is the safe direction.
+ */
+export const isGeneralLead = cache(async (userId: string): Promise<boolean> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase.from('users').select('role, is_general_lead').eq('id', userId).maybeSingle()
+  if (error || !data) return false
+  const row = data as { role: string; is_general_lead?: boolean }
+  return row.role === 'general' && !!row.is_general_lead
+})

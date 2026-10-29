@@ -48,6 +48,7 @@ export default function TaskBoard({
   dealOptions,
   currentUserId,
   userRole,
+  isGeneralLead = false,
 }: {
   tasks: Task[]
   users: UserRow[]
@@ -55,6 +56,8 @@ export default function TaskBoard({
   dealOptions: Array<{ id: string; name: string }>
   currentUserId: string
   userRole: string
+  /** A general user who leads the other general users (20261105000000): sees and manages their tasks. */
+  isGeneralLead?: boolean
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -93,7 +96,8 @@ export default function TaskBoard({
   const [isPending, startTransition] = useTransition()
 
   // View / filters / collapse
-  const canSeeTeamView = ['founder', 'admin'].includes(userRole)
+  // General Leads see their team too: RLS hands them every general user's tasks.
+  const canSeeTeamView = ['founder', 'admin'].includes(userRole) || isGeneralLead
   // Founders/admins land on the team-wide "By Person" view by default; associates get their own board.
   const [view, setView] = useState<'board' | 'list' | 'people'>(canSeeTeamView ? 'people' : 'board')
   const [search, setSearch] = useState('')
@@ -770,6 +774,7 @@ export default function TaskBoard({
           dealOptions={dealOptions}
           currentUserId={currentUserId}
           userRole={userRole}
+          isGeneralLead={isGeneralLead}
         />
       )}
     </div>
