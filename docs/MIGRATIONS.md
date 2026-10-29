@@ -1159,3 +1159,9 @@ None is used by the app. (`rls_policy_audit` and `investor_referral_roots` were 
 - `get_my_referral_progress()`: the caller's own referred entries on any pipeline, with that
   pipeline's stage path, for the Refer to ESV step bars.
 The app tolerates this not having run (flag reads as false, referral list falls back).
+
+### 20261106000000_app_error_log.sql
+`app_error_log` + `log_app_error()`: every database failure an action reports through `dbFailure` is
+recorded (who, role, page, step, SQLSTATE, message, details, hint), de-duplicated over 10 seconds.
+Admin/super_admin read only; written only through the function, which records the caller itself.
+Shown in Admin → Activity Log → Errors. Error codes on screen are now admin-only.

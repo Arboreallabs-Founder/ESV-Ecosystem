@@ -4,16 +4,20 @@ import { fetchInvestorEditLog } from '@/lib/investors'
 import { fetchHrPolicyEditLog } from '@/lib/hr-zone'
 import { fetchEventEditLog } from '@/lib/events'
 import type { ActivityLogEntry } from '@/lib/types'
+import { fetchAppErrors } from '@/lib/app-errors'
 import ActivityLogClient from './_components/ActivityLogClient'
 
 export default async function ActivityLogPage() {
   const user = await getUser()
   if (!user || !['founder', 'admin'].includes(user.role)) redirect('/dashboard')
 
-  const [investorEdits, hrPolicyEdits, eventEdits] = await Promise.all([
+  // The error log is for admins only (they're the ones who see error codes); founders don't get it.
+  const isAdmin = user.role === 'admin'
+  const [investorEdits, hrPolicyEdits, eventEdits, errors] = await Promise.all([
     fetchInvestorEditLog(),
     fetchHrPolicyEditLog(),
     fetchEventEditLog(),
+    isAdmin ? fetchAppErrors() : Promise.resolve([]),
   ])
 
   const entries: ActivityLogEntry[] = [
@@ -31,5 +35,5 @@ export default async function ActivityLogPage() {
     })),
   ].sort((a, b) => b.created_at.localeCompare(a.created_at))
 
-  return <ActivityLogClient entries={entries} />
+  return <ActivityLogClient entries={entries} errors={errors} showErrors={isAdmin} />
 }

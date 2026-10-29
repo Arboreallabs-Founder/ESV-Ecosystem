@@ -86,8 +86,20 @@ export function userFacingMessage(err: unknown): string | null {
 export function dbFailure(step: string, error: unknown): UserFacingError {
   const code = (error as { code?: unknown } | null)?.code
   const suffix = typeof code === 'string' && code ? ` (code ${code})` : ''
+  // The code is stripped for everyone but admins when shown (client-errors.ts), so the message also
+  // says the failure was recorded: the admin has the detail in Activity Log > Errors.
   const hint = code === '42501'
-    ? ' Your account does not have permission for this — tell an admin what you were doing.'
-    : ''
+    ? ' Your account does not have permission for this. It has been logged for an admin.'
+    : ' It has been logged for an admin.'
+  try { reporter?.(step, error) } catch { /* logging never changes the error */ }
   return new UserFacingError(`Could not ${step}${suffix}.${hint}`)
+}
+
+/**
+ * Where database failures are recorded. Set by src/lib/error-log.ts on the server only; this file is
+ * also bundled for the browser, so it can't import the server-side logger itself.
+ */
+let reporter: ((step: string, error: unknown) => void) | null = null
+export function setDbFailureReporter(fn: (step: string, error: unknown) => void) {
+  reporter = fn
 }

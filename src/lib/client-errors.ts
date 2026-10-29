@@ -31,15 +31,16 @@ const STALE_MARKERS = [
 ]
 
 /**
- * Error codes ("(code 42501)") are for founders and admins, who are the ones who act on them;
- * everyone else gets the same sentence without the code (decided 2026-10-29). The viewer's role is
+ * Error codes ("(code 42501)") are for admins only, who troubleshoot them from Activity Log >
+ * Errors; everyone else, founders included, gets the same sentence without the code (decided
+ * 2026-10-29). The viewer's role is
  * put on <html data-viewer-role> by the app shell; with no role there (public pages, or before the
  * shell has run) the code is hidden, which is the conservative default.
  */
 function viewerSeesCodes(): boolean {
   if (typeof document === 'undefined') return false
   const role = document.documentElement.dataset.viewerRole
-  return role === 'founder' || role === 'admin' || role === 'super_admin'
+  return role === 'admin' || role === 'super_admin'
 }
 
 function withoutCode(message: string): string {

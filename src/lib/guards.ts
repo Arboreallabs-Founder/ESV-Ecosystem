@@ -1,4 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
+// Registers the database-failure logger (app_error_log). Every action goes through a guard, so it is
+// in place before anything can fail.
+import '@/lib/error-log'
 
 export async function requireRole(roles: string[]) {
   const supabase = await createClient()

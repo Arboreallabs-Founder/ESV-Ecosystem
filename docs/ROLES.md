@@ -541,6 +541,10 @@ text either way.
 - **Referrers see progress.** Anyone whose link brought an entry in, on any pipeline, sees it on
   Refer to ESV with the pipeline's stages as a step bar (`get_my_referral_progress()`; stage names
   only, no answers or notes).
-- **Error codes are for founders/admins.** Messages like "Could not save that (code 42501)" show
-  the code only to founder/admin/super_admin; everyone else gets the same sentence without it
-  (`describeError`, via `<html data-viewer-role>` set by the app shell).
+- **Error codes are for admins only** (revised same day: founders too see no codes). "Could not save
+  that (code 42501)" shows the code to admin/super_admin only; everyone else gets the sentence
+  without it plus "It has been logged for an admin" (`describeError`, via `<html data-viewer-role>`).
+- **Every database failure is logged** (`20261106000000`, `app_error_log`): who, role, page, step,
+  SQLSTATE and the database's own message, written by `log_app_error()` from `dbFailure` via
+  `src/lib/error-log.ts` after the response. Admins read it in Admin → Activity Log → **Errors**;
+  founders don't see that tab.
