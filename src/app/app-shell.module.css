@@ -220,8 +220,8 @@
 
 /* Read rows stay in the list (the panel is the last 30 things that happened to you, not
    just the unread pile), so unread needs to be visible at a glance. */
-.alertsDropdownItemUnread { background: rgba(116, 95, 253, 0.07); }
-.alertsDropdownItemUnread:hover { background: rgba(116, 95, 253, 0.12); }
+.alertsDropdownItemUnread { background: rgba(var(--color-primary-rgb), 0.07); }
+.alertsDropdownItemUnread:hover { background: rgba(var(--color-primary-rgb), 0.12); }
 
 .alertsUnreadDot {
   display: inline-block;
@@ -1056,10 +1056,12 @@
 .brandLogoDark { display: none; }
 [data-theme="dark"] .brandLogoLight,
 [data-theme="oled"] .brandLogoLight,
-[data-theme="graphite"] .brandLogoLight { display: none; }
+[data-theme="graphite"] .brandLogoLight,
+[data-theme="green-dark"] .brandLogoLight { display: none; }
 [data-theme="dark"] .brandLogoDark,
 [data-theme="oled"] .brandLogoDark,
-[data-theme="graphite"] .brandLogoDark { display: block; }
+[data-theme="graphite"] .brandLogoDark,
+[data-theme="green-dark"] .brandLogoDark { display: block; }
 
 /* Collapsed rail: symbol only. No text in it, so one file serves every theme. */
 .brandSymbol {

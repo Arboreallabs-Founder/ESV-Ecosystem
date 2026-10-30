@@ -352,7 +352,9 @@
 .brandLogoDark { display: none; }
 [data-theme="dark"] .brandLogoLight,
 [data-theme="oled"] .brandLogoLight,
-[data-theme="graphite"] .brandLogoLight { display: none; }
+[data-theme="graphite"] .brandLogoLight,
+[data-theme="green-dark"] .brandLogoLight { display: none; }
 [data-theme="dark"] .brandLogoDark,
 [data-theme="oled"] .brandLogoDark,
-[data-theme="graphite"] .brandLogoDark { display: block; }
+[data-theme="graphite"] .brandLogoDark,
+[data-theme="green-dark"] .brandLogoDark { display: block; }

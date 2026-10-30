@@ -160,7 +160,7 @@
   margin-bottom: 1.25rem;
   border: 1.5px solid var(--color-primary-light);
   border-radius: var(--radius-md);
-  background: rgba(116, 95, 253, 0.05);
+  background: rgba(var(--color-primary-rgb), 0.05);
 }
 
 .ledgerField { display: flex; flex-direction: column; gap: 0.3rem; flex: 1 1 10rem; min-width: 0; }

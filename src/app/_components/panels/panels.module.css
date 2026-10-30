@@ -199,7 +199,7 @@
   font-weight: 700;
   white-space: nowrap;
 }
-.pillOpen { background: rgba(116, 95, 253, 0.14); color: var(--color-primary); }
+.pillOpen { background: rgba(var(--color-primary-rgb), 0.14); color: var(--color-primary); }
 .pillDiscuss { background: rgba(213, 174, 143, 0.22); color: #8B6245; }
 .pillMoreInfo { background: rgba(203, 140, 124, 0.2); color: #A2564A; }
 .pillRejected { background: rgba(163, 155, 149, 0.18); color: var(--color-muted); }

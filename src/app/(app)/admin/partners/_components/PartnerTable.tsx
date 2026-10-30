@@ -150,7 +150,7 @@ export default function PartnerTable({ partnerUsers }: { partnerUsers: PartnerUs
                               padding: '0.25rem 0.75rem',
                               border: '1.5px solid var(--color-primary)',
                               borderRadius: '6px',
-                              background: 'rgba(116,95,253,0.08)',
+                              background: 'rgba(var(--color-primary-rgb), 0.08)',
                               color: 'var(--color-primary)',
                               fontSize: '0.8125rem',
                               fontWeight: 600,

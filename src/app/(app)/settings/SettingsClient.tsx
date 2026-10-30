@@ -230,6 +230,8 @@ export default function SettingsClient({
                   oled: 'OLED: true black, for OLED screens',
                   porcelain: 'Porcelain: cool and neutral, so figures read true',
                   graphite: 'Graphite: cool charcoal, Porcelain’s dark partner',
+                  'green-light': 'Green Light: Seagreen on mint white',
+                  'green-dark': 'Green Dark: Jade on deep green-charcoal',
                 } as const)[theme]}
               </div>
             </div>
@@ -272,6 +274,22 @@ export default function SettingsClient({
               >
                 <span className={styles.themeSwatch} style={{ background: 'linear-gradient(135deg, #1E1E23 50%, #7262F8 50%)' }} aria-hidden="true" />
                 Graphite
+              </button>
+              <button
+                type="button"
+                className={`${styles.themeOption} ${theme === 'green-light' ? styles.themeOptionActive : ''}`}
+                onClick={() => setTheme('green-light')}
+              >
+                <span className={styles.themeSwatch} style={{ background: 'linear-gradient(135deg, #F3F7F4 50%, #2E8B57 50%)' }} aria-hidden="true" />
+                Green Light
+              </button>
+              <button
+                type="button"
+                className={`${styles.themeOption} ${theme === 'green-dark' ? styles.themeOptionActive : ''}`}
+                onClick={() => setTheme('green-dark')}
+              >
+                <span className={styles.themeSwatch} style={{ background: 'linear-gradient(135deg, #1A2420 50%, #00A36C 50%)' }} aria-hidden="true" />
+                Green Dark
               </button>
             </div>
           </div>

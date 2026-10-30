@@ -1586,7 +1586,7 @@
   text-transform: uppercase;
   padding: 0.1rem 0.35rem;
   border-radius: 999px;
-  background: rgba(116, 95, 253, 0.14);
+  background: rgba(var(--color-primary-rgb), 0.14);
   color: var(--color-primary);
   vertical-align: middle;
 }

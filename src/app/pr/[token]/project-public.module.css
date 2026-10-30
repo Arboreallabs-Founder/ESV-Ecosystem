@@ -51,7 +51,7 @@
 .stepLabel { font-size: 0.875rem; color: var(--color-muted); }
 .stepDone .stepDot { background: var(--color-primary); }
 .stepDone .stepLabel { color: var(--color-text); }
-.stepCurrent .stepDot { background: var(--color-primary); box-shadow: 0 0 0 4px rgba(116, 95, 253, 0.22); }
+.stepCurrent .stepDot { background: var(--color-primary); box-shadow: 0 0 0 4px rgba(var(--color-primary-rgb), 0.22); }
 .stepCurrent .stepLabel { color: var(--color-primary); font-weight: 700; }
 .stepPaused .stepDot { background: var(--color-muted); box-shadow: 0 0 0 4px rgba(163, 155, 149, 0.22); }
 .stepPaused .stepLabel { color: var(--color-text); font-weight: 700; }

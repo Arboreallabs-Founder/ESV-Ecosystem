@@ -2,10 +2,10 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 
-export type Theme = 'light' | 'dark' | 'oled' | 'porcelain' | 'graphite'
+export type Theme = 'light' | 'dark' | 'oled' | 'porcelain' | 'graphite' | 'green-light' | 'green-dark'
 
 /** Themes with a dark background — the logo flips to its light version and the toggle offers the sun. */
-export const DARK_THEMES: Theme[] = ['dark', 'oled', 'graphite']
+export const DARK_THEMES: Theme[] = ['dark', 'oled', 'graphite', 'green-dark']
 export const isDarkTheme = (t: Theme) => DARK_THEMES.includes(t)
 
 const ThemeContext = createContext<{ theme: Theme; toggle: () => void; setTheme: (theme: Theme) => void }>({
@@ -36,6 +36,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const next: Record<Theme, Theme> = {
       light: 'dark', dark: 'light', oled: 'light',
       porcelain: 'graphite', graphite: 'porcelain',
+      'green-light': 'green-dark', 'green-dark': 'green-light',
     }
     apply(next[theme] ?? 'light')
   }

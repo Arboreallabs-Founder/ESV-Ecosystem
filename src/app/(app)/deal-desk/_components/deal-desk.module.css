@@ -173,7 +173,7 @@
   padding: 2px;
   background: linear-gradient(110deg,
     rgba(var(--color-hover-rgb), 0.75) 0%,
-    rgba(206, 170, 253, 0.5) 32%,
+    rgba(var(--color-primary-light-rgb), 0.5) 32%,
     rgba(213, 174, 143, 0.55) 62%,
     rgba(255, 255, 255, 0.85) 100%);
   background-size: 200% 100%;

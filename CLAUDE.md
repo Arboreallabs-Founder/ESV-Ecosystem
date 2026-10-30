@@ -98,6 +98,10 @@ The app must feel premium, using rich aesthetics and smooth interactions.
   call `router.refresh()` where they need the current view updated immediately. (This file used to
   claim the opposite; 26 of 34 action files use `revalidatePath`, so the code was the truth.)
 - CSS variables are defined in `src/app/globals.css`. Always use them, never hardcode colours.
+  For a tint of the brand colour use `rgba(var(--color-primary-rgb), a)` (or
+  `--color-primary-light-rgb`), never `rgba(116, 95, 253, a)`: there are seven themes (Light, Dark,
+  OLED, Porcelain, Graphite, Green Light, Green Dark) and a hard-coded purple stays purple in all of
+  them. Only the public form and the printable ID card hard-code the brand purple, on purpose.
 - **Pages fill the screen.** Never put `max-width` on a page container or `.page > *`. Content
   adapts to the viewport; where a grid would otherwise stretch, add columns
   (`repeat(auto-fill, minmax(Npx, 1fr))`) rather than capping the container. The only things that

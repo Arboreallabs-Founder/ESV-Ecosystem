@@ -2,6 +2,10 @@
 
 /* ─── ESV Brand Tokens — Light Mode ─────────────────────────────────── */
 :root {
+  /* R,G,B of --color-primary / --color-primary-light, for tints: rgba(var(--color-primary-rgb), a).
+     Every theme sets them so selections and glows follow the theme. */
+  --color-primary-rgb:       116, 95, 253;
+  --color-primary-light-rgb: 206, 170, 253;
   --color-bg:            #F7ECE2;
   /* Frosted glass: --color-card / --color-card-raised are deliberately TRANSLUCENT so every
      existing `background: var(--color-card)` site (175 of them across 26 modules) inherits the
@@ -73,6 +77,8 @@
 /* ─── ESV Brand Tokens — Dark Mode ──────────────────────────────────── */
 /* Explicit toggle via data-theme="dark" on <html>                       */
 [data-theme="dark"] {
+  --color-primary-rgb:       116, 95, 253;
+  --color-primary-light-rgb: 206, 170, 253;
   --color-bg:            #1A1A2E;
   --color-card:          rgba(42, 42, 68, 0.55);
   --color-card-raised:   rgba(52, 52, 82, 0.68);
@@ -104,6 +110,8 @@
    only the backdrop changes. Reachable only from Settings > Appearance, not the quick-toggle
    buttons (see ThemeProvider.tsx). */
 [data-theme="oled"] {
+  --color-primary-rgb:       116, 95, 253;
+  --color-primary-light-rgb: 206, 170, 253;
   --color-bg:            #000000;
   /* Glass needs *some* lift off pure black or there is nothing to blur and the panels vanish.
      These are the faintest values that still read as frosted; the page background stays #000. */
@@ -138,6 +146,8 @@
    on a neutral near-white, so figures and status colours read true instead of warm-tinted.
    Every text pairing passes WCAG AA: body 15.3:1, secondary text 5.0:1, white on primary 6.1:1. */
 [data-theme="porcelain"] {
+  --color-primary-rgb:       91, 71, 224;
+  --color-primary-light-rgb: 221, 213, 255;
   --color-bg:            #F4F4F7;
   --color-card:          rgba(255, 255, 255, 0.72);
   --color-card-raised:   rgba(255, 255, 255, 0.86);
@@ -169,6 +179,8 @@
    Porcelain's dark counterpart: neutral charcoal instead of Dark's navy. Body 16.4:1,
    secondary text 5.5:1 on cards, white on primary 4.6:1. */
 [data-theme="graphite"] {
+  --color-primary-rgb:       114, 98, 248;
+  --color-primary-light-rgb: 201, 189, 255;
   --color-bg:            #141417;
   --color-card:          rgba(38, 38, 44, 0.62);
   --color-card-raised:   rgba(52, 52, 60, 0.74);
@@ -190,6 +202,73 @@
   --scrollbar-thumb:        #4A4A55;
   --scrollbar-thumb-hover:  #6A6A78;
   --scrollbar-thumb-active: #7262F8;
+
+  --shadow-card:     0 2px 12px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
+  --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+/* ─── Green Light — Seagreen on mint white ──────────────────────────────
+   Settings > Appearance only. Of the three greens offered (Jade #00A36C, Emerald #50C878,
+   Seagreen #2E8B57) Seagreen is the one that carries the white text every primary button uses
+   (4.3:1; Jade 3.3, Emerald 2.1) and reads as link text on a light page. Emerald becomes the soft
+   highlight tint and the background glow, where nothing has to be read on top of it at full
+   strength. Body text 15.0:1, secondary text 5.2:1. */
+[data-theme="green-light"] {
+  --color-bg:            #F3F7F4;
+  --color-card:          rgba(255, 255, 255, 0.72);
+  --color-card-raised:   rgba(255, 255, 255, 0.86);
+  --color-card-solid:    #FFFFFF;
+  --glass-panel:         rgba(255, 255, 255, 0.95);
+  --glass-border:        rgba(255, 255, 255, 0.7);
+  --color-text:          #16231C;
+  --color-muted:         #5E6B63;
+  --color-border:        #DCE6DF;
+  --color-primary:       #2E8B57;
+  --color-primary-light: #D3F2DF;
+  --color-primary-rgb:       46, 139, 87;
+  --color-primary-light-rgb: 211, 242, 223;
+  --color-accent:        #9A6B45;
+  --color-warning:       #B4553F;
+  --color-destructive:   #C42B2B;
+  --color-success:       #1E7A3B;
+  --color-hover-rgb:     22, 35, 28;
+
+  --scrollbar-track:        rgba(243, 247, 244, 0.8);
+  --scrollbar-thumb:        #C9D8CE;
+  --scrollbar-thumb-hover:  #50C878;
+  --scrollbar-thumb-active: #2E8B57;
+
+  --shadow-card:     0 1px 2px rgba(15, 40, 25, 0.05), 0 4px 16px rgba(15, 40, 25, 0.05);
+  --shadow-elevated: 0 12px 40px rgba(15, 40, 25, 0.12), 0 2px 8px rgba(15, 40, 25, 0.06);
+}
+
+/* ─── Green Dark — Jade on deep green-charcoal ──────────────────────────
+   Jade is the green that glows on a dark page and reads as link text (5.6:1); the highlight is a
+   pastel emerald, the same pattern as Dark's pastel purple. Body 16.2:1, secondary 5.6:1 on cards. */
+[data-theme="green-dark"] {
+  --color-bg:            #0F1714;
+  --color-card:          rgba(31, 42, 37, 0.62);
+  --color-card-raised:   rgba(42, 56, 49, 0.74);
+  --color-card-solid:    #1A2420;
+  --glass-panel:         rgba(24, 34, 30, 0.95);
+  --glass-border:        rgba(255, 255, 255, 0.08);
+  --color-text:          #ECF3EE;
+  --color-muted:         #94A39A;
+  --color-border:        #2A3832;
+  --color-primary:       #00A36C;
+  --color-primary-light: #A6E8BE;
+  --color-primary-rgb:       0, 163, 108;
+  --color-primary-light-rgb: 166, 232, 190;
+  --color-accent:        #CDA582;
+  --color-warning:       #D9917E;
+  --color-destructive:   #F07070;
+  --color-success:       #50C878;
+  --color-hover-rgb:     236, 243, 238;
+
+  --scrollbar-track:        rgba(15, 23, 20, 0.8);
+  --scrollbar-thumb:        #3E5047;
+  --scrollbar-thumb-hover:  #50C878;
+  --scrollbar-thumb-active: #00A36C;
 
   --shadow-card:     0 2px 12px rgba(0, 0, 0, 0.35), 0 1px 3px rgba(0, 0, 0, 0.25);
   --shadow-elevated: 0 12px 40px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.35);
@@ -259,6 +338,21 @@ body::before {
     radial-gradient(900px circle at 12% 18%, rgba(114, 98, 248, 0.12), transparent 60%),
     radial-gradient(820px circle at 88% 10%, rgba(205, 165, 130, 0.06), transparent 58%),
     radial-gradient(1000px circle at 72% 88%, rgba(201, 189, 255, 0.05), transparent 62%);
+}
+
+/* The greens: Emerald carries the glow (it's never read against), with a touch of bronze. */
+[data-theme="green-light"] body::before {
+  background:
+    radial-gradient(900px circle at 12% 18%, rgba(80, 200, 120, 0.16), transparent 60%),
+    radial-gradient(820px circle at 88% 10%, rgba(213, 174, 143, 0.12), transparent 58%),
+    radial-gradient(1000px circle at 72% 88%, rgba(46, 139, 87, 0.08), transparent 62%);
+}
+
+[data-theme="green-dark"] body::before {
+  background:
+    radial-gradient(900px circle at 12% 18%, rgba(0, 163, 108, 0.16), transparent 60%),
+    radial-gradient(820px circle at 88% 10%, rgba(80, 200, 120, 0.07), transparent 58%),
+    radial-gradient(1000px circle at 72% 88%, rgba(46, 139, 87, 0.08), transparent 62%);
 }
 
 /* Faintest of the three — OLED should still read as near-black. */
@@ -357,7 +451,8 @@ input, textarea, select {
    Glass becomes solid for people who've asked for less transparency; borders get firmer for
    people who've asked for more contrast. */
 @media (prefers-reduced-transparency: reduce) {
-  :root, [data-theme="dark"], [data-theme="oled"], [data-theme="porcelain"], [data-theme="graphite"] {
+  :root, [data-theme="dark"], [data-theme="oled"], [data-theme="porcelain"], [data-theme="graphite"],
+  [data-theme="green-light"], [data-theme="green-dark"] {
     --color-card: var(--color-card-solid);
     --color-card-raised: var(--color-card-solid);
     --glass-panel: var(--color-card-solid);
@@ -367,7 +462,8 @@ input, textarea, select {
 @media (prefers-contrast: more) {
   :root { --color-border: #8A7A66; --glass-border: #8A7A66; --color-muted: #6E655E; }
   [data-theme="porcelain"] { --color-border: #8C8A99; --glass-border: #8C8A99; --color-muted: #55525F; }
-  [data-theme="dark"], [data-theme="oled"], [data-theme="graphite"] { --color-border: #8A8AAE; --glass-border: #8A8AAE; --color-muted: #C9C2BC; }
+  [data-theme="green-light"] { --color-border: #7F9488; --glass-border: #7F9488; --color-muted: #4A5750; }
+  [data-theme="dark"], [data-theme="oled"], [data-theme="graphite"], [data-theme="green-dark"] { --color-border: #8A8AAE; --glass-border: #8A8AAE; --color-muted: #C9C2BC; }
 }
 
 /* ESV branded scrollbars */

@@ -13,7 +13,7 @@
   font-weight: 700;
 }
 .done .dot { background: var(--color-primary); }
-.current .dot { background: var(--color-primary); box-shadow: 0 0 0 3px rgba(116, 95, 253, 0.25); }
+.current .dot { background: var(--color-primary); box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.25); }
 .stopped .dot { background: var(--color-muted); box-shadow: 0 0 0 3px rgba(163, 155, 149, 0.25); }
 .label { font-weight: 600; color: var(--color-text); white-space: nowrap; }
 .current .label { color: var(--color-primary); }

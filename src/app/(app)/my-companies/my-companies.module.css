@@ -191,7 +191,7 @@
 /* Status carries meaning here rather than category, and the words say the same thing as the
    colour, so nothing depends on telling the three apart by hue. */
 .statusSubmitted { background: rgba(213, 174, 143, 0.2); color: #8B6245; }
-.statusAssigned { background: rgba(116, 95, 253, 0.14); color: var(--color-primary); }
+.statusAssigned { background: rgba(var(--color-primary-rgb), 0.14); color: var(--color-primary); }
 .statusClosed { background: rgba(163, 155, 149, 0.16); color: var(--color-muted); }
 
 .comments {

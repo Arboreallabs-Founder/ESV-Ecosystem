@@ -9,9 +9,9 @@
   font-weight: 600;
   padding: 0.2rem 0.6rem;
   border-radius: 999px;
-  background: rgba(116, 95, 253, 0.1);
+  background: rgba(var(--color-primary-rgb), 0.1);
   color: var(--color-primary);
-  border: 1px solid rgba(116, 95, 253, 0.25);
+  border: 1px solid rgba(var(--color-primary-rgb), 0.25);
 }
 
 /* Groups flow into as many columns as fit — the page fills the screen rather than capping. */
