@@ -66,6 +66,7 @@ export default function PipelineBoardClient({
   currentUserId,
   companyOptions = [],
   canSelfAssign = false,
+  readOnly = false,
 }: {
   pipeline: Pipeline
   entries: PipelineEntry[]
@@ -76,6 +77,8 @@ export default function PipelineBoardClient({
   companyOptions?: Array<{ id: string; name: string }>
   /** Associates: may put themselves on (or take themselves off) an entry. */
   canSelfAssign?: boolean
+  /** The `general` role: sees every entry's details but can change nothing (RLS is SELECT-only). */
+  readOnly?: boolean
 }) {
   const router = useRouter()
   const [pipeline, setPipeline] = useState(initial)
@@ -1143,6 +1146,7 @@ export default function PipelineBoardClient({
                 className={styles.select}
                 value={selectedEntry.company_id ?? ''}
                 onChange={(e) => handleLinkCompany(selectedEntry.id, e.target.value || null)}
+                disabled={readOnly}
               >
                 <option value="">Not linked</option>
                 {companyOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}

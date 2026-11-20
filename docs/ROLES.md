@@ -90,7 +90,7 @@ Legend: ✅ full · 🟡 limited/conditional · 👁 read-only · ❌ none
 | Capability | Founder | Admin | Associate | General | HR | Partner | Super admin |
 |---|---|---|---|---|---|---|---|
 | Dashboard | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| Pipelines board (view/move/assign) | ✅ | ✅ | 🟡 assigned | 👁 | ❌ | ❌ | ❌ |
+| Pipelines board (view/move/assign) | ✅ | ✅ | 🟡 assigned | 👁 incl. entry details | ❌ | ❌ | ❌ |
 | Build / edit forms | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | Generate submission links | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ❌ |
 | My Submissions (own sourced entries) | — | — | — | — | — | 👁 | ❌ |

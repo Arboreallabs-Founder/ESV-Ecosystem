@@ -1165,3 +1165,9 @@ The app tolerates this not having run (flag reads as false, referral list falls 
 recorded (who, role, page, step, SQLSTATE, message, details, hint), de-duplicated over 10 seconds.
 Admin/super_admin read only; written only through the function, which records the caller itself.
 Shown in Admin → Activity Log → Errors. Error codes on screen are now admin-only.
+
+### 20261120000000_general_reads_pipeline_entry_details.sql
+`general` gets SELECT on the tables the pipeline entry detail panel reads: `pipeline_entry_answers`,
+`form_nodes`, `pipeline_stage_questions`, `pipeline_entry_stage_answers`, `pipeline_entry_assignees`,
+`pipeline_entry_stage_history`. Additive, org-scoped through the parent pipeline; general stays
+read-only. Before this, general could see the board but opening an entry showed no details.
