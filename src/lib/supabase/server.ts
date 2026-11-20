@@ -5,7 +5,7 @@ import { mcpAuth } from '@/lib/mcp/context'
 export async function createClient() {
   // Inside an /api/mcp request: act as the person whose OAuth token this is. See lib/mcp/context.ts.
   const mcp = mcpAuth.getStore()
-  if (mcp) return createTokenClient(mcp.token)
+  if (mcp) return createTokenClient(mcp.token, mcp.client)
 
   const cookieStore = await cookies()
 
@@ -38,14 +38,22 @@ export async function createClient() {
  *  - Every PostgREST/storage request sends the token, so RLS sees that user.
  *  - auth.getClaims() / auth.getUser() — what the guards use — verify that token, because there is
  *    no cookie session for them to read. Verification is real: getClaims checks the JWT signature.
+ *  - x-ecosystem-source / x-ecosystem-client mark every write as made through the AI connector;
+ *    the activity_events trigger reads them (20261121000200).
  */
-function createTokenClient(token: string) {
+function createTokenClient(token: string, clientName: string) {
   const client = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: { getAll: () => [], setAll: () => {} },
-      global: { headers: { Authorization: `Bearer ${token}` } },
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'x-ecosystem-source': 'connector',
+          'x-ecosystem-client': clientName,
+        },
+      },
     }
   )
   const auth = client.auth

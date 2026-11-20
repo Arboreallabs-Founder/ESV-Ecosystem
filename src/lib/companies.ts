@@ -80,7 +80,9 @@ export const fetchCompanyFieldDefs = cache(async (): Promise<CompanyFieldDef[]> 
   const supabase = await createClient()
   const { data } = await supabase
     .from('company_field_defs')
-    .select('id, label, field_type, position')
+    // '*' rather than naming config: it arrives with 20261121000100, and naming a column that
+    // isn't there yet would fail every company page if the code deploys first.
+    .select('*')
     .order('position', { ascending: true })
   return (data as CompanyFieldDef[]) ?? []
 })

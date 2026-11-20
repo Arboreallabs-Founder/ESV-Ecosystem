@@ -373,3 +373,158 @@ export async function getEntryAnswers(entryId: string) {
     node: { question_text: string | null; answer_type: string | null } | null
   }>
 }
+
+// ── Server-checked create & move (used by the AI connector) ───────────────────
+//
+// The board enforces its move rules in the browser (PipelineBoardClient: assignee gate, rejection
+// reason, Accepted → acceptance flow, stage questions). moveEntry() itself checks none of them, so
+// anything that isn't the board — the AI connector first — goes through moveEntryChecked() instead,
+// which enforces the same rules here. Stage automations are a database trigger on stage_id, so they
+// fire exactly as they do for a drag.
+
+type StageRow = { id: string; name: string; pipeline_id: string; stage_type: string | null; position: number }
+
+export type CreateEntryInput = {
+  pipeline_id: string
+  title: string
+  stage_id?: string | null
+  company_id?: string | null
+  submitter_name?: string | null
+  submitter_email?: string | null
+  /** Who's on it. Defaults to the caller. Associates may only put themselves. */
+  assignee_ids?: string[]
+}
+
+/** Create a pipeline entry by hand (until now entries only came from form submissions). */
+export async function createEntry(input: CreateEntryInput): Promise<string> {
+  const { supabase, userId, role } = await requireRole(['founder', 'admin', 'associate'])
+  const title = input.title?.trim()
+  if (!title) throw new UserFacingError('A title is required.')
+  if (title.length > 200) throw new UserFacingError('The title must be at most 200 characters.')
+
+  const { data: pipeline } = await supabase.from('pipelines').select('id').eq('id', input.pipeline_id).maybeSingle()
+  if (!pipeline) throw new UserFacingError('pipeline_id is not a pipeline you can see.')
+
+  const { data: stageRows, error: stageErr } = await supabase
+    .from('pipeline_stages').select('id, name, pipeline_id, stage_type, position').eq('pipeline_id', input.pipeline_id)
+  if (stageErr) throw dbFailure('read the pipeline stages', stageErr)
+  const stages = (stageRows ?? []) as StageRow[]
+  let stage: StageRow | undefined
+  if (input.stage_id) {
+    stage = stages.find((s) => s.id === input.stage_id)
+    if (!stage) throw new UserFacingError('stage_id does not belong to this pipeline.')
+  } else {
+    stage = stages.find((s) => s.stage_type === 'lead') ?? [...stages].sort((a, b) => a.position - b.position)[0]
+    if (!stage) throw new UserFacingError('This pipeline has no stages.')
+  }
+  if (stage.stage_type === 'accepted') throw new UserFacingError('An entry cannot be created straight into Accepted. Create it in an earlier stage, then accept it on the board (or use create_deal for an off-pipeline deal).')
+  if (stage.stage_type === 'rejected') throw new UserFacingError('An entry cannot be created straight into Rejected.')
+
+  const assignees = Array.from(new Set(input.assignee_ids?.length ? input.assignee_ids : [userId]))
+  if (role === 'associate' && assignees.some((id) => id !== userId)) {
+    throw new UserFacingError('Associates can assign only themselves.')
+  }
+
+  if (input.company_id) {
+    const { data: company } = await supabase.from('companies').select('id').eq('id', input.company_id).maybeSingle()
+    if (!company) throw new UserFacingError('company_id is not a company you can see.')
+  }
+
+  // Created stage-less, assigned, then moved into its stage: the stage automation then hands
+  // "assignees" tasks straight to the people on it, exactly like a card that is assigned and dragged.
+  const { data: entry, error } = await supabase
+    .from('pipeline_entries')
+    .insert({
+      pipeline_id: input.pipeline_id,
+      stage_id: null,
+      title,
+      company_id: input.company_id ?? null,
+      submitter_name: input.submitter_name?.trim() || null,
+      submitter_email: input.submitter_email?.trim() || null,
+    })
+    .select('id')
+    .single()
+  if (error) throw dbFailure('create the entry', error)
+  const entryId = entry.id as string
+
+  if (assignees.length) {
+    const { error: aErr } = await supabase.from('pipeline_entry_assignees').insert(assignees.map((u) => ({ entry_id: entryId, user_id: u })))
+    if (aErr) throw dbFailure('assign the entry', aErr)
+  }
+  const { error: mErr } = await supabase.from('pipeline_entries').update({ stage_id: stage.id }).eq('id', entryId)
+  if (mErr) throw dbFailure('place the entry in its stage', mErr)
+  await supabase.from('pipeline_entry_stage_history').insert({ entry_id: entryId, from_stage_id: null, to_stage_id: stage.id, moved_by: userId })
+
+  revalidatePath(`/pipelines/${input.pipeline_id}`)
+  return entryId
+}
+
+/**
+ * Move an entry to a stage with the board's rules enforced server-side:
+ *  - the stage must be in the entry's pipeline
+ *  - associates may move only entries they're assigned to; nobody may move an unassigned entry
+ *  - Rejected needs a reason
+ *  - Accepted is refused (it creates an Active Deal and needs deal categories — the board does it),
+ *    except moving an already-accepted entry back, which the board also allows without the flow
+ *  - a stage with required questions needs answers
+ */
+export async function moveEntryChecked(
+  entryId: string,
+  stageId: string,
+  opts: { reason?: string | null; answers?: Array<{ questionId: string; value: string }> } = {},
+): Promise<void> {
+  const { supabase, userId, orgId } = await requireRole(['founder', 'admin', 'associate'])
+
+  const { data: entry } = await supabase
+    .from('pipeline_entries')
+    .select('id, pipeline_id, stage_id, assignees:pipeline_entry_assignees(user_id), active_deals(id)')
+    .eq('id', entryId)
+    .maybeSingle()
+  if (!entry) throw new UserFacingError('entry_id is not an entry you can see.')
+  const e = entry as unknown as { pipeline_id: string; stage_id: string | null; assignees: Array<{ user_id: string }>; active_deals: Array<{ id: string }> | { id: string } | null }
+
+  const { data: stage } = await supabase
+    .from('pipeline_stages')
+    .select('id, name, pipeline_id, stage_type, questions:pipeline_stage_questions(id, label, field_type, required)')
+    .eq('id', stageId)
+    .maybeSingle()
+  if (!stage || (stage as { pipeline_id: string }).pipeline_id !== e.pipeline_id) {
+    throw new UserFacingError('stage_id does not belong to this pipeline.')
+  }
+  const s = stage as unknown as StageRow & { questions: Array<{ id: string; label: string; field_type: string; required: boolean }> }
+  if (e.stage_id === s.id) throw new UserFacingError(`The entry is already in ${s.name}.`)
+
+  await assertAssignedIfAssociate(supabase, entryId, userId)
+  if ((e.assignees ?? []).length === 0) throw new UserFacingError('Assign someone to this entry before moving it.')
+
+  const hasDeal = Array.isArray(e.active_deals) ? e.active_deals.length > 0 : !!e.active_deals
+  if (s.stage_type === 'accepted' && !hasDeal) {
+    throw new UserFacingError('Accepting creates an Active Deal and needs its deal categories, so it is done on the pipeline board in Ecosystem.')
+  }
+
+  const patch: Record<string, unknown> = { stage_id: s.id }
+  if (s.stage_type === 'rejected') {
+    const reason = opts.reason?.trim()
+    if (!reason) throw new UserFacingError('Moving to Rejected needs a reason.')
+    if (reason.length > 1000) throw new UserFacingError('The reason must be at most 1000 characters.')
+    patch.rejection_reason = reason
+  }
+
+  const answers = opts.answers ?? []
+  const questions = s.questions ?? []
+  for (const a of answers) {
+    if (!questions.some((q) => q.id === a.questionId)) throw new UserFacingError(`Question ${a.questionId} is not on stage ${s.name}.`)
+  }
+  for (const q of questions.filter((x) => x.required && x.field_type !== 'boolean')) {
+    const v = answers.find((a) => a.questionId === q.id)?.value?.trim()
+    if (!v) throw new UserFacingError(`Stage ${s.name} needs an answer to "${q.label}" (question_id ${q.id}).`)
+  }
+
+  const { data: moved, error } = await supabase.from('pipeline_entries').update(patch).eq('id', entryId).select('id')
+  if (error) throw dbFailure('move the entry', error)
+  if (!moved || moved.length === 0) throw new UserFacingError('That entry could not be moved — you may not have permission.')
+  await supabase.from('pipeline_entry_stage_history').insert({ entry_id: entryId, from_stage_id: e.stage_id, to_stage_id: s.id, moved_by: userId })
+  if (answers.length) await upsertStageAnswers(supabase, entryId, orgId, answers)
+
+  revalidatePath(`/pipelines/${e.pipeline_id}`)
+}

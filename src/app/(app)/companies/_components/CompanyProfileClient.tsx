@@ -15,16 +15,17 @@ import {
   setCompanyFundSource,
 } from '@/app/actions/companies'
 import {
-  COMPANY_STATUS_LABELS, COMPANY_DOC_TYPES, COMPANY_DOC_TYPE_LABELS, COMPANY_FIELD_TYPES,
+  COMPANY_STATUS_LABELS, COMPANY_DOC_TYPES, COMPANY_DOC_TYPE_LABELS,
   SERVICE_TYPE_LABELS, DEAL_STATE_META, ATTRIBUTION_STATUS_LABELS,
 } from '@/lib/types'
 import type {
-  Company, CompanyFieldDef, CompanyDocType, CompanyFieldType, CompanyFounder, CompanyTeamMember,
+  Company, CompanyFieldDef, CompanyDocType, CompanyFounder, CompanyTeamMember,
   SuggestedInvestor, DealCategory, PartnerAttributionClaim,
 } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
 import CreateDealModal from './CreateDealModal'
 import CallUpdateModal from './CallUpdateModal'
+import CustomFieldInput, { FieldDefEditor } from './CustomFieldInput'
 import DonutChart from './DonutChart'
 import { SpecField, OVERVIEW_SPECS, TRACTION_SPECS, RAISE_SPECS, PRODUCT_SPECS, CAP_TABLE_SPECS, initValue, coerce, type Spec } from './field-specs'
 import { formatInr, formatDate, initials, locationLabel } from './format'
@@ -839,43 +840,49 @@ function CustomFieldsSection({ company, fieldDefs, canManage, onChanged }: {
 }) {
   const [pending, startTransition] = useTransition()
   const [addingDef, setAddingDef] = useState(false)
-  const [defLabel, setDefLabel] = useState('')
-  const [defType, setDefType] = useState<CompanyFieldType>('text')
+  const [editingDefId, setEditingDefId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const valueFor = (defId: string) => company.field_values.find((v) => v.field_def_id === defId)?.value ?? ''
 
-  function saveValue(defId: string, value: string) {
-    startTransition(async () => { await setFieldValue(company.id, defId, value); onChanged() })
+  function run(fn: () => Promise<unknown>, after?: () => void) {
+    setError(null)
+    startTransition(async () => {
+      try { await fn(); after?.(); onChanged() } catch (e) { setError(describeError(e).message) }
+    })
   }
-  function addDef() {
-    if (!defLabel.trim()) return
-    startTransition(async () => { await saveFieldDef({ label: defLabel, field_type: defType, position: fieldDefs.length }); setDefLabel(''); setAddingDef(false); onChanged() })
-  }
+  const saveValue = (defId: string, value: string) => run(() => setFieldValue(company.id, defId, value))
 
   if (fieldDefs.length === 0 && !canManage) return null
   return (
     <div className={styles.section}>
-      <SectionHead title="Custom fields" action={canManage ? <button className={styles.smallBtn} onClick={() => setAddingDef((v) => !v)}>{addingDef ? 'Cancel' : '+ Add field'}</button> : undefined} />
+      <SectionHead title="Custom fields" action={canManage ? <button className={styles.smallBtn} onClick={() => { setAddingDef((v) => !v); setEditingDefId(null) }}>{addingDef ? 'Cancel' : '+ Add field'}</button> : undefined} />
       {addingDef && (
-        <div className={styles.inlineForm}>
-          <input className={styles.input} placeholder="Field label" value={defLabel} onChange={(e) => setDefLabel(e.target.value)} />
-          <select className={styles.select} value={defType} onChange={(e) => setDefType(e.target.value as CompanyFieldType)}>
-            {COMPANY_FIELD_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <button className={styles.primaryBtn} onClick={addDef} disabled={pending}>Add field</button>
-        </div>
+        <FieldDefEditor
+          pending={pending}
+          onCancel={() => setAddingDef(false)}
+          onSave={(input) => run(() => saveFieldDef({ ...input, position: fieldDefs.length }), () => setAddingDef(false))}
+        />
       )}
+      {error && <div className={styles.fieldError}>{error}</div>}
       {fieldDefs.length === 0 ? <div className={styles.muted}>No custom fields defined.</div> : (
         <div className={styles.customGrid}>
-          {fieldDefs.map((def) => (
+          {fieldDefs.map((def) => editingDefId === def.id ? (
+            <FieldDefEditor
+              key={def.id}
+              initial={def}
+              pending={pending}
+              onCancel={() => setEditingDefId(null)}
+              onSave={(input) => run(() => saveFieldDef({ ...input, id: def.id, position: def.position }), () => setEditingDefId(null))}
+            />
+          ) : (
             <div key={def.id} className={styles.field}>
-              <label className={styles.fieldLabel}>{def.label}</label>
-              <input
-                className={styles.input}
-                type={def.field_type === 'date' ? 'date' : def.field_type === 'url' ? 'url' : 'text'}
-                inputMode={def.field_type === 'numeric' || def.field_type === 'percentage' ? 'numeric' : undefined}
-                defaultValue={valueFor(def.id)}
-                onBlur={(e) => { if (e.target.value !== valueFor(def.id)) saveValue(def.id, e.target.value) }}
-              />
+              <div className={styles.fieldHead}>
+                <label className={styles.fieldLabel}>{def.label}</label>
+                {canManage && (
+                  <button type="button" className={styles.fieldFormatBtn} title="Change format" aria-label={`Change format of ${def.label}`} onClick={() => { setEditingDefId(def.id); setAddingDef(false) }}>⚙</button>
+                )}
+              </div>
+              <CustomFieldInput def={def} value={valueFor(def.id)} disabled={pending} onCommit={(v) => saveValue(def.id, v)} />
             </div>
           ))}
         </div>

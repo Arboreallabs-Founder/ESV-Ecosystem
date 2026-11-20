@@ -5,6 +5,7 @@ import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { revalidatePath } from 'next/cache'
 import { requireRole } from '@/lib/guards'
 import { notify } from '@/lib/notifications'
+import { resolveTaskCompletion, TaskCompletionError } from '@/lib/task-completion'
 import type { Task, TaskComment } from '@/lib/types'
 
 const TASK_SELECT = '*, assignee:assignee_id(name, photo_url), created_by_user:created_by(name, photo_url), assigned_by_user:assigned_by_id(name, photo_url), company:company_id(id, name), desk_deal:desk_deal_id(id, company_name)'
@@ -35,6 +36,17 @@ export async function createTask(formData: FormData): Promise<Task> {
     }
   }
 
+  // Optional: log finished work in one step (status 'Done', optionally backdated). Both land in the
+  // same INSERT, so there is never a moment where the task exists as To Do. The board form sends
+  // neither, and gets 'To Do' as before.
+  let completion
+  try {
+    completion = resolveTaskCompletion(formData.get('status') as string | null, formData.get('completed_at') as string | null)
+  } catch (e) {
+    if (e instanceof TaskCompletionError) throw new UserFacingError(e.message)
+    throw e
+  }
+
   const { data, error } = await supabase.from('tasks').insert({
     title: formData.get('title') as string,
     description: (formData.get('description') as string) || null,
@@ -45,7 +57,8 @@ export async function createTask(formData: FormData): Promise<Task> {
     link_url: (formData.get('link_url') as string)?.trim() || null,
     due_date: (formData.get('due_date') as string) || null,
     priority: (formData.get('priority') as string) || 'Medium',
-    status: 'To Do',
+    status: completion.status,
+    completed_at: completion.completed_at,
     created_by: userId,
     org_id: orgId,
   }).select(TASK_SELECT).single()
@@ -53,6 +66,8 @@ export async function createTask(formData: FormData): Promise<Task> {
   if (error) throw dbFailure('save that', error)
 
   const created = data as unknown as Task
+  // Logging your own finished work isn't news to anyone; a task handed to someone else still is.
+  if (completion.status === 'Done' && assigneeId === userId) return created
   await notify(supabase, {
     orgId,
     userIds: [assigneeId],

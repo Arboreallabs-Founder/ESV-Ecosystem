@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react'
 import { updateCompany, setFieldValue, addUpdate, type CompanyPatch } from '@/app/actions/companies'
 import type { Company, CompanyFieldDef, CompanyFounder } from '@/lib/types'
 import Spinner from '@/app/_components/Spinner'
+import CustomFieldInput from './CustomFieldInput'
 import { SpecField, OVERVIEW_SPECS, TRACTION_SPECS, RAISE_SPECS, PRODUCT_SPECS, initValue, coerce, type Spec } from './field-specs'
 import styles from '../companies.module.css'
 
@@ -159,12 +160,10 @@ export default function CallUpdateModal({ company, fieldDefs, teamMembers, onClo
                 {fieldDefs.map((def) => (
                   <div key={def.id} className={styles.field}>
                     <label className={styles.fieldLabel}>{def.label}</label>
-                    <input
-                      className={styles.input}
-                      type={def.field_type === 'date' ? 'date' : def.field_type === 'url' ? 'url' : 'text'}
-                      inputMode={def.field_type === 'numeric' || def.field_type === 'percentage' ? 'numeric' : undefined}
+                    <CustomFieldInput
+                      def={def}
                       value={customValues[def.id] ?? ''}
-                      onChange={(e) => setCustomValues((v) => ({ ...v, [def.id]: e.target.value }))}
+                      onCommit={(v) => setCustomValues((cur) => ({ ...cur, [def.id]: v }))}
                     />
                   </div>
                 ))}

@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { mcpAuth } from '@/lib/mcp/context'
+import { mcpAuth, connectorClientName } from '@/lib/mcp/context'
 import { protectedResourceMetadataUrl, publicOrigin } from '@/lib/mcp/oauth'
 import { registerTools } from '@/lib/mcp/tools'
 
@@ -16,6 +16,17 @@ import { registerTools } from '@/lib/mcp/tools'
  * request then runs inside `mcpAuth`, so every createClient() — and so every guard, action and RLS
  * check — acts as that person. See lib/mcp/context.ts.
  */
+const SERVER_INSTRUCTIONS = [
+  "Tools for Earlyseed Ventures' Ecosystem app. You act as the signed-in employee with exactly their permissions; every change is logged as made through the AI connector.",
+  'Confirm with the person before any create, update or stage move: say what will change, then call the tool.',
+  'Tools:',
+  '- Me & tasks: whoami, list_my_tasks, get_task, create_task (status Done + completed_at logs finished work), update_task, update_task_status, add_task_comment.',
+  '- Companies: search_companies, get_company, create_company (returns possible duplicates unless force=true), update_company, add_founder, update_founder, list_company_fields, set_company_field, create_company_field.',
+  '- Pipelines (before a deal exists): list_pipelines, list_pipeline_entries, get_pipeline_entry, create_pipeline_entry, move_pipeline_entry (fires the stage automations, e.g. auto-tasks).',
+  '- Deals (Active Deals, after acceptance): list_deals, get_deal, create_deal, update_deal.',
+  'Look ids up first (search_companies, list_pipelines, list_deals); never guess them. Amounts are in rupees (INR), as plain numbers.',
+].join('\n')
+
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60
@@ -29,7 +40,7 @@ function unauthorized(req: Request, error?: 'invalid_token') {
   })
 }
 
-async function verify(token: string): Promise<string | null> {
+async function verify(token: string): Promise<{ sub: string; clientId: string | null } | null> {
   const supabase = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -42,7 +53,8 @@ async function verify(token: string): Promise<string | null> {
   try {
     const { data, error } = await supabase.auth.getClaims(token)
     if (error || !data?.claims?.sub) return null
-    return data.claims.sub
+    const clientId = (data.claims as { client_id?: unknown }).client_id
+    return { sub: data.claims.sub, clientId: typeof clientId === 'string' ? clientId : null }
   } catch {
     return null
   }
@@ -53,18 +65,14 @@ async function handle(req: Request): Promise<Response> {
   const token = /^Bearer\s+(.+)$/i.exec(header)?.[1]?.trim()
   if (!token) return unauthorized(req)
 
-  const userId = await verify(token)
-  if (!userId) return unauthorized(req, 'invalid_token')
+  const caller = await verify(token)
+  if (!caller) return unauthorized(req, 'invalid_token')
+  const client = connectorClientName(req.headers.get('user-agent'), caller.clientId)
 
-  return mcpAuth.run({ token }, async () => {
+  return mcpAuth.run({ token, client }, async () => {
     const server = new McpServer(
-      { name: 'esv-ecosystem', title: 'ESV Ecosystem', version: '0.1.0' },
-      {
-        instructions:
-          'Tools for Earlyseed Ventures\' Ecosystem app, acting as the signed-in employee with exactly ' +
-          'their permissions. Use list_my_tasks / get_task before changing a task, and search_companies ' +
-          'to find a company id. Confirm with the person before creating or changing anything.',
-      },
+      { name: 'esv-ecosystem', title: 'ESV Ecosystem', version: '0.2.0' },
+      { instructions: SERVER_INSTRUCTIONS },
     )
     registerTools(server)
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -72,7 +80,7 @@ async function handle(req: Request): Promise<Response> {
       enableJsonResponse: true,
     })
     await server.connect(transport)
-    console.info(`[mcp] request user=${userId}`)
+    console.info(`[mcp] request user=${caller.sub} client=${client}`)
     return transport.handleRequest(req)
   })
 }

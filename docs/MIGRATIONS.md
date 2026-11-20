@@ -1171,3 +1171,16 @@ Shown in Admin → Activity Log → Errors. Error codes on screen are now admin-
 `form_nodes`, `pipeline_stage_questions`, `pipeline_entry_stage_answers`, `pipeline_entry_assignees`,
 `pipeline_entry_stage_history`. Additive, org-scoped through the parent pipeline; general stays
 read-only. Before this, general could see the board but opening an entry showed no details.
+### 20261121000000_company_field_types.sql / 20261121000100_company_field_config.sql
+Excel-style company custom fields. New `company_field_type` values (currency, select, multi_select,
+checkbox, long_text, email, phone) in their own migration (a new enum value can't be used in the
+transaction that adds it), then `company_field_defs.config` JSONB for per-field format: decimals,
+thousands separator, ₹ unit (rupees/lakh/crore), dropdown options. Values stay TEXT; formatting is
+display-only (`src/lib/company-fields.ts`).
+
+### 20261121000200_activity_events.sql
+`activity_events` + `log_activity()` trigger on companies, company_field_defs/values,
+company_updates, tasks, task_comments, pipeline_entries, pipeline_entry_assignees and active_deals:
+every create/update/delete with actor, source (web / connector / system), connecting app, and
+before→after per field. Founder/admin read only; written only by the trigger; a logging failure
+only warns, never blocks the write. Shown in Admin → Activity Log.

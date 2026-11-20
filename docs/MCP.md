@@ -62,18 +62,83 @@ flow (dynamic registration) and the same consent screen.
 Only internal roles can approve (partners and super admin are refused on the consent screen), and
 every tool also runs the app's own role guard.
 
-## Tools (pilot)
+## Tools
 
-| Tool | Kind | Goes through |
-|---|---|---|
-| `whoami` | read | `getUser()` |
-| `list_my_tasks`, `get_task` | read | RLS-bound reads, `getTaskComments` |
-| `create_task` (self-assigned) | write | `createTask` |
-| `update_task_status` | write | `updateTaskStatus` (+ read-back, since it doesn't report RLS no-ops) |
-| `add_task_comment` | write | `addTaskComment` |
-| `search_companies`, `get_company` | read | RLS-bound reads |
+Code: `src/lib/mcp/tools/{tasks,companies,pipelines,deals}.ts`, rules in `tools/shared.ts`.
+"Who" is the role needed — the app's own guards and RLS decide; the tool adds nothing.
 
-Not exposed yet, on purpose: deletes, admin, HR/compensation, investors.
+| Tool | Kind | Who | Goes through |
+|---|---|---|---|
+| `whoami` | read | internal | `getUser()` |
+| `list_my_tasks`, `get_task` | read | internal | RLS reads, `getTaskComments` |
+| `create_task` | write | internal | `createTask` (status + completed_at in one insert) |
+| `update_task` | write | internal | `updateTask` (merged: only passed fields change) |
+| `update_task_status`, `add_task_comment` | write | internal | `updateTaskStatus`, `addTaskComment` |
+| `search_companies`, `get_company`, `list_company_fields` | read | internal | RLS reads |
+| `create_company` | write | founder/admin/associate | `findSimilarCompanies` → `createCompany` |
+| `update_company` | write | founder/admin/associate | `updateCompany` (never founders/team) |
+| `add_founder`, `update_founder` | write | founder/admin/associate | `updateCompany` with an unchanged-since-read guard |
+| `set_company_field` | write | founder/admin/associate | `setFieldValue` (type-validated) |
+| `create_company_field` | write | founder/admin | `saveFieldDef` |
+| `list_pipelines`, `list_pipeline_entries`, `get_pipeline_entry` | read | internal (general: read) | RLS reads + entry actions |
+| `create_pipeline_entry` | write | founder/admin/associate | `createEntry` (new) |
+| `move_pipeline_entry` | write | founder/admin/associate | `moveEntryChecked` (new: board rules server-side) |
+| `list_deals`, `get_deal` | read | internal (general: read) | RLS reads |
+| `create_deal` | write | founder/admin/associate | `createStandaloneDeal` + raise/valuation/state actions |
+| `update_deal` | write | founder/admin/associate | the same actions, merged |
+
+Not exposed, on purpose: deletes, admin, HR/compensation, investors, accepting an entry (it needs
+deal categories — done on the board).
+
+### Changelog
+
+**0.2.0 (2026-11-20)**
+- Companies: `create_company` (name + any profile field; returns `possible_duplicates` unless
+  `force=true`), `update_company` (partial; returns `changed: {field: {before, after}}`),
+  `add_founder` / `update_founder` (`founder_index` + `current_name` guard), custom fields:
+  `list_company_fields`, `set_company_field`, `create_company_field`.
+- Pipelines: `list_pipelines` (stages in order, type, stage questions), `list_pipeline_entries`
+  (pipeline / stage / assignee incl. `me` / company; `limit`, `offset`), `get_pipeline_entry`
+  (answers, stage answers, history, tasks, deal), `create_pipeline_entry` (`company_id` or
+  `company_name` + duplicate check; default first stage; assignees default me),
+  `move_pipeline_entry` (`reason` for Rejected, `answers` for question stages, `note` → company
+  updates; returns `tasks_raised`).
+- Deals (Active Deals): `list_deals` (pipeline / state / owner incl. `me` / company; paginated),
+  `get_deal` (+ stage history, tasks), `create_deal` (`total_raise`, `external_raised`,
+  `min_ticket`, `valuation` + `valuation_basis`, `state`, `notes`, owners; round and valuation
+  mirrored onto the company), `update_deal` (partial, same fields + `company_id`, submitter).
+- Tasks: `create_task` gains `status` and `completed_at` (date or ISO; no future dates; Done is
+  set in the same insert); new `update_task` (partial).
+- Every write tool returns the record after the change. Every write is in Admin → Activity Log,
+  marked "via AI connector: Claude/ChatGPT".
+
+**0.1.0 (2026-11-20)** — pilot: `whoami`, `list_my_tasks`, `get_task`, `create_task`,
+`update_task_status`, `add_task_comment`, `search_companies`, `get_company`.
+
+## Activity log
+
+`activity_events` (20261121000200) is written by triggers on companies, custom fields and values,
+company updates, tasks, task comments, pipeline entries and their assignees, and deals — every
+create/update/delete, whatever made it. `source` is `connector` when the request came through
+`/api/mcp` (the token-bound client sends `x-ecosystem-source`), `web` otherwise, `system` with no
+signed-in user. Readable by founders/admins; shown in Admin → Activity Log.
+
+## Staging
+
+Integration tests and manual MCP-inspector checks run against **Ecosystem Secondary**
+(`txjpduzasshgbeunjgyi`), never production. Details in `tests/integration/README.md`.
+
+The migrations folder can't build the database from scratch — the pipelines/forms tables,
+`approved_emails` and more were created outside it — so staging is a schema-only copy of
+production plus newer migrations:
+
+```powershell
+# 1. Production schema (read-only). Use the Session pooler string from the dashboard (Connect);
+#    the direct host is IPv6-only. Needs PostgreSQL 17 client tools (pg_dump).
+pg_dump "<prod session pooler url>" --schema-only --schema=public --no-owner -f $env:TEMP\ecosystem-prod-schema.sql
+# 2. Load it into staging, then the migrations production doesn't have yet.
+powershell -File scripts/staging/rebuild.ps1 -Dump $env:TEMP\ecosystem-prod-schema.sql -After 20261120000000
+```
 
 ### Adding a tool
 1. Prefer calling an existing server action — that keeps validation and notifications in one place.

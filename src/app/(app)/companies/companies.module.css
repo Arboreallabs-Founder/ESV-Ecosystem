@@ -419,3 +419,21 @@
 /* "Sourced from <fund>" sits under the partner credit and reuses its row styles. */
 .sourceNote { font-size: 0.8125rem; color: var(--color-muted); }
 .sourcePicker { min-width: 15rem; flex: 1; max-width: 22rem; }
+
+/* ── Custom fields: Excel-style editors (CustomFieldInput.tsx) ─────────── */
+.fieldHead { display: flex; align-items: center; justify-content: space-between; gap: 0.4rem; }
+.fieldHead .fieldLabel { margin-bottom: 0.3rem; }
+.fieldFormatBtn { border: none; background: none; color: var(--color-muted); cursor: pointer; font-size: 0.75rem; padding: 0 0.2rem; line-height: 1; }
+.fieldFormatBtn:hover { color: var(--color-primary); }
+.fieldError { margin-top: 0.3rem; font-size: 0.75rem; color: var(--color-destructive); }
+.checkboxRow { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.875rem; color: var(--color-text); cursor: pointer; padding: 0.35rem 0; }
+.chipToggles { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.chipToggle {
+  border: 1px solid var(--color-border); background: var(--color-card); color: var(--color-text);
+  border-radius: 999px; padding: 0.25rem 0.65rem; font-size: 0.75rem; font-weight: 500; cursor: pointer; font-family: inherit;
+  transition: background var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out);
+}
+.chipToggleOn { background: rgba(var(--color-primary-rgb), 0.14); border-color: var(--color-primary); color: var(--color-primary); }
+.fieldDefEditor { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.85rem; padding: 0.75rem; border: 1px solid var(--color-border); border-radius: var(--radius-md); background: var(--color-card); }
+.fieldDefEditor .inlineForm { margin-bottom: 0; }
+.fieldDefOpt { display: flex; flex-direction: column; gap: 0.25rem; font-size: 0.75rem; font-weight: 600; color: var(--color-muted); flex: 1 1 130px; }

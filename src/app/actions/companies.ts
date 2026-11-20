@@ -7,8 +7,11 @@ import { mirrorImage, isAlreadyCached } from '@/lib/image-cache'
 import { findOrCreateCompanyForDeskDeal, findOrCreateCompanyByName, findCompanyIdByName, enumOrNull } from '@/lib/company-sync'
 import { extractMetaTags } from '@/lib/company-tags'
 import { parseCompaniesCsv, type ParsedCompany } from '@/lib/companies-csv'
-import { DESK_STAGES, DESK_INSTRUMENTS, DESK_ROUND_STATUSES } from '@/lib/types'
+import { DESK_STAGES, DESK_INSTRUMENTS, DESK_ROUND_STATUSES, COMPANY_FIELD_TYPES } from '@/lib/types'
+import { normalizeFieldConfig, normalizeFieldValue, FieldValueError, type CompanyFieldConfig } from '@/lib/company-fields'
+import { findSimilar, type CompanyMatch } from '@/lib/company-match'
 import type {
+  CompanyFieldDef,
   CompanyStatus, CompanyDocType, CompanyFieldType,
   CompanyFounder, CompanyTeamMember,
 } from '@/lib/types'
@@ -86,6 +89,25 @@ export async function createCompany(patch: CompanyPatch): Promise<string> {
   if (error) throw dbFailure('save that', error)
   revalidatePath('/companies')
   return data.id as string
+}
+
+/**
+ * Companies in the caller's org whose name looks like `name` — run before creating one so a typo or
+ * a "Pvt Ltd" doesn't produce a second profile. See src/lib/company-match.ts for the rules.
+ */
+export async function findSimilarCompanies(name: string): Promise<CompanyMatch[]> {
+  const { supabase, orgId } = await requireRole(['founder', 'admin', 'associate', 'general', 'hr'])
+  if (!orgId || !name.trim()) return []
+  // Paged: PostgREST caps a response at 1000 rows by default, and a partial list would miss duplicates.
+  const all: Array<{ id: string; name: string; legal_name: string | null }> = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await supabase.from('companies').select('id, name, legal_name')
+      .eq('org_id', orgId).order('id').range(from, from + 999)
+    if (error) throw dbFailure('check for existing companies', error)
+    all.push(...((data ?? []) as typeof all))
+    if (!data || data.length < 1000) break
+  }
+  return findSimilar(name, all)
 }
 
 // ── Bulk CSV import ─────────────────────────────────────────────────────────
@@ -353,18 +375,31 @@ export async function deleteUpdate(id: string, companyId: string) {
 
 // ── Custom fields ───────────────────────────────────────────────────────────
 
-export async function saveFieldDef(input: { id?: string; label: string; field_type: CompanyFieldType; position?: number }) {
+export async function saveFieldDef(input: {
+  id?: string; label: string; field_type: CompanyFieldType; position?: number
+  /** Format settings for the type — see src/lib/company-fields.ts. Omitted keeps the stored one. */
+  config?: CompanyFieldConfig
+}): Promise<CompanyFieldDef> {
   const { supabase, orgId } = await requireAdmin()
   const label = input.label?.trim()
   if (!label) throw new UserFacingError('Field label is required.')
-  if (input.id) {
-    const { error } = await supabase.from('company_field_defs').update({ label, field_type: input.field_type, position: input.position ?? 0 }).eq('id', input.id)
-    if (error) throw dbFailure('save that', error)
-  } else {
-    const { error } = await supabase.from('company_field_defs').insert({ label, field_type: input.field_type, position: input.position ?? 0, org_id: orgId })
-    if (error) throw dbFailure('save that', error)
+  if (label.length > 100) throw new UserFacingError('Field label must be at most 100 characters.')
+  if (!COMPANY_FIELD_TYPES.includes(input.field_type)) throw new UserFacingError(`Unknown field type "${input.field_type}".`)
+  let config: CompanyFieldConfig | undefined
+  try {
+    if (input.config !== undefined || !input.id) config = normalizeFieldConfig(input.field_type, input.config ?? {})
+  } catch (e) {
+    if (e instanceof FieldValueError) throw new UserFacingError(e.message)
+    throw e
   }
+  const row: Record<string, unknown> = { label, field_type: input.field_type, position: input.position ?? 0 }
+  if (config !== undefined) row.config = config
+  const { data, error } = input.id
+    ? await supabase.from('company_field_defs').update(row).eq('id', input.id).select('*').single()
+    : await supabase.from('company_field_defs').insert({ ...row, org_id: orgId }).select('*').single()
+  if (error) throw dbFailure('save that', error)
   revalidatePath('/companies')
+  return data as CompanyFieldDef
 }
 
 export async function deleteFieldDef(id: string) {
@@ -374,9 +409,23 @@ export async function deleteFieldDef(id: string) {
   revalidatePath('/companies')
 }
 
-export async function setFieldValue(companyId: string, fieldDefId: string, value: string | null) {
+/**
+ * Set one custom field on a company. The value is checked and normalised for the field's type
+ * (numbers stored raw, dropdowns must be an option, emails/phones/URLs validated) — the same rules
+ * whether it came from the profile page, the call-update modal or the AI connector.
+ * Accepts native values (number, boolean, string[]) as well as strings.
+ */
+export async function setFieldValue(companyId: string, fieldDefId: string, value: unknown) {
   const { supabase, orgId } = await requireInternal()
-  const v = value?.trim() || null
+  const { data: def } = await supabase.from('company_field_defs').select('*').eq('id', fieldDefId).maybeSingle()
+  if (!def) throw new UserFacingError('That custom field does not exist.')
+  let v: string | null
+  try {
+    v = normalizeFieldValue(def.field_type as CompanyFieldType, (def as { config?: CompanyFieldConfig }).config, value)
+  } catch (e) {
+    if (e instanceof FieldValueError) throw new UserFacingError(`${def.label}: ${e.message}`)
+    throw e
+  }
   const { error } = await supabase
     .from('company_field_values')
     .upsert({ company_id: companyId, field_def_id: fieldDefId, org_id: orgId, value: v }, { onConflict: 'company_id,field_def_id' })

@@ -10,6 +10,21 @@ const ENTITY_LABELS: Record<ActivityLogEntry['entity_type'], string> = {
   investor: 'Investor',
   hr_policy: 'HR Policy',
   event: 'Event',
+  company: 'Company',
+  company_field: 'Company field',
+  company_field_def: 'Custom field',
+  company_update: 'Company update',
+  task: 'Task',
+  task_comment: 'Task comment',
+  pipeline_entry: 'Pipeline entry',
+  pipeline_entry_assignee: 'Entry assignee',
+  deal: 'Deal',
+}
+
+/** " via AI connector (Claude)" — so a change made by someone's assistant is visible as such. */
+function sourceTag(e: ActivityLogEntry): string {
+  if (e.source !== 'connector') return ''
+  return ` [via AI connector${e.client ? `: ${e.client}` : ''}]`
 }
 
 function formatTimestamp(iso: string): string {
@@ -21,7 +36,7 @@ function formatTimestamp(iso: string): string {
 function buildLine(e: ActivityLogEntry): string {
   const who = e.edited_by_name ?? 'Unknown'
   const label = ENTITY_LABELS[e.entity_type]
-  return `[${formatTimestamp(e.created_at)}] ${who} — ${label}: ${e.entity_name}: ${e.changes}`
+  return `[${formatTimestamp(e.created_at)}] ${who}${sourceTag(e)} — ${label}: ${e.entity_name}: ${e.changes}`
 }
 
 /** One error as a single copyable line: everything needed to start troubleshooting. */
@@ -77,7 +92,7 @@ export default function ActivityLogClient({ entries, errors = [], showErrors = f
           <div className={styles.pageSub}>
             {tab === 'errors'
               ? 'Database failures people hit, with the code and the database message. Codes are shown on screen to admins only.'
-              : 'Timestamped record of investor, HR policy, and event edits.'}
+              : 'Timestamped record of edits to companies, custom fields, tasks, pipelines, deals, investors, HR policies and events. Changes made through an AI connector (Claude, ChatGPT) are marked.'}
           </div>
           {showErrors && (
             <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.75rem' }}>

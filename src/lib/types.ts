@@ -658,10 +658,15 @@ export type EventEditLogEntry = {
 // Unified feed for the admin Activity Log page — merges investor/HR-policy/event edit logs.
 export type ActivityLogEntry = {
   id: string
-  entity_type: 'investor' | 'hr_policy' | 'event'
+  entity_type: 'investor' | 'hr_policy' | 'event' | 'company' | 'company_field' | 'company_field_def'
+    | 'company_update' | 'task' | 'task_comment' | 'pipeline_entry' | 'pipeline_entry_assignee' | 'deal'
   entity_name: string
   edited_by_name: string | null
-  action: 'created' | 'updated'
+  /** Where the edit came from (activity_events only; the older per-module logs are all web). */
+  source?: 'web' | 'connector' | 'system'
+  /** Which AI app, when source is 'connector'. */
+  client?: string | null
+  action: 'created' | 'updated' | 'deleted'
   changes: string
   created_at: string
 }
@@ -1498,7 +1503,8 @@ export const COMPANY_DOC_TYPE_LABELS: Record<CompanyDocType, string> = {
   deck: 'Pitch deck', financial_model: 'Financial model', cap_table: 'Cap table', incorporation: 'Incorporation', data_room: 'Data room', other: 'Other',
 }
 
-export const COMPANY_FIELD_TYPES = ['text', 'numeric', 'percentage', 'url', 'date'] as const
+// Order is the order offered in the 'add field' picker. See src/lib/company-fields.ts for formats.
+export const COMPANY_FIELD_TYPES = ['text', 'long_text', 'numeric', 'currency', 'percentage', 'date', 'url', 'email', 'phone', 'checkbox', 'select', 'multi_select'] as const
 export type CompanyFieldType = typeof COMPANY_FIELD_TYPES[number]
 
 export type CompanyFounder = {
@@ -1565,6 +1571,8 @@ export type CompanyFieldDef = {
   label: string
   field_type: CompanyFieldType
   position: number
+  /** Format settings for the type (decimals, ₹ unit, dropdown options) — 20261121000100. */
+  config?: import('@/lib/company-fields').CompanyFieldConfig | null
 }
 
 export type CompanyFieldValue = {

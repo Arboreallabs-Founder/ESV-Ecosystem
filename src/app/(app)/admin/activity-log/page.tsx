@@ -5,6 +5,7 @@ import { fetchHrPolicyEditLog } from '@/lib/hr-zone'
 import { fetchEventEditLog } from '@/lib/events'
 import type { ActivityLogEntry } from '@/lib/types'
 import { fetchAppErrors } from '@/lib/app-errors'
+import { fetchActivityEvents } from '@/lib/activity'
 import ActivityLogClient from './_components/ActivityLogClient'
 
 export default async function ActivityLogPage() {
@@ -13,14 +14,17 @@ export default async function ActivityLogPage() {
 
   // The error log is for admins only (they're the ones who see error codes); founders don't get it.
   const isAdmin = user.role === 'admin'
-  const [investorEdits, hrPolicyEdits, eventEdits, errors] = await Promise.all([
+  const [investorEdits, hrPolicyEdits, eventEdits, errors, activity] = await Promise.all([
     fetchInvestorEditLog(),
     fetchHrPolicyEditLog(),
     fetchEventEditLog(),
     isAdmin ? fetchAppErrors() : Promise.resolve([]),
+    fetchActivityEvents(),
   ])
 
   const entries: ActivityLogEntry[] = [
+    // Companies, custom fields, tasks, pipeline entries, deals — every write, web or AI connector.
+    ...activity,
     ...investorEdits.map((e): ActivityLogEntry => ({
       id: `investor-${e.id}`, entity_type: 'investor', entity_name: e.investor_name,
       edited_by_name: e.edited_by_name, action: 'updated', changes: e.changes, created_at: e.created_at,
