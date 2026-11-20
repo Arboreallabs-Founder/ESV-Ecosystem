@@ -9,6 +9,7 @@ import { WikiSidebarButton, WikiRoleProvider } from '@/app/_components/WikiPanel
 import { useTheme, isDarkTheme } from '@/app/_components/ThemeProvider'
 import { switchDemoPersona, exitDemoMode } from '@/app/actions/demo'
 import HrClockWidget from '@/app/_components/HrClockWidget'
+import ConnectClaude, { CONNECT_CLAUDE_ROLES } from '@/app/_components/ConnectClaude'
 import { getMyNotifications, markNotificationsRead, markAllNotificationsRead } from '@/app/actions/notifications'
 import type { AppNotification } from '@/lib/notifications'
 import type { HrClockSettings, HrBirthday } from '@/lib/types'
@@ -595,6 +596,7 @@ export default function AppShell({
 
   // Narrowed to founder/admin/hr only, unlike the bell, which every role has.
   const showClockWidget = CLOCK_WIDGET_ROLES.includes(role) && !!clockSettings
+  const showConnectClaude = CONNECT_CLAUDE_ROLES.includes(role)
 
   const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(role))
   // Section labels (Deal Flow / Team / Database / Admin) are a founder/admin/associate affordance —
@@ -655,6 +657,7 @@ export default function AppShell({
                 </>
               )}
             </Link>
+            {showConnectClaude && <ConnectClaude buttonClassName={styles.alertsBtn} />}
             {/* Every role has a bell: an escalation can be addressed to a partner. */}
             <div className={styles.alertsWrap}>
                 <button
@@ -964,6 +967,7 @@ export default function AppShell({
             <img className={styles.brandLogoLight} src="/brand/ecosystem-logo.png" alt="Ecosystem" width={152} height={40} />
             <img className={styles.brandLogoDark} src="/brand/ecosystem-logo-dark.png" alt="" aria-hidden="true" width={152} height={40} />
           </div>
+          {showConnectClaude && <ConnectClaude buttonClassName={styles.alertsBtnMobile} iconSize={19} />}
           <div className={styles.alertsWrap}>
             <button
               type="button"
