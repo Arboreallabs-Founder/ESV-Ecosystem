@@ -1,7 +1,7 @@
 'use client'
 
 import { describeError } from '@/lib/client-errors'
-import { useEffect, useMemo, useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { saveEmployeeProfile, saveCompensation } from '@/app/actions/employees'
 import {
@@ -67,14 +67,18 @@ export default function PeopleTab({
    *
    * Snapshotting per selection means later prop churn cannot blank a form being filled in. It
    * only re-reads when you pick a different person.
+   *
+   * The snapshot is tagged with whose profile it is and re-taken DURING render, not in an effect.
+   * An effect runs after the commit, so the form (keyed on the person) would mount once with the
+   * previous person's values as its defaults — uncontrolled inputs never re-read defaultValue —
+   * and saving would then write person A's data onto person B.
    */
-  const [snapshot, setSnapshot] = useState<EmployeeRow['profile']>(selected?.profile ?? null)
-  useEffect(() => {
-    setSnapshot(roster.find((r) => r.user.id === selectedId)?.profile ?? null)
-    // Deliberately keyed on the selected person only — re-running on `roster` would reintroduce
-    // exactly the blanking this exists to prevent.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId])
+  const [snapshot, setSnapshot] = useState<{ id: string | null; profile: EmployeeRow['profile'] }>(
+    { id: selectedId, profile: selected?.profile ?? null },
+  )
+  if (snapshot.id !== selectedId) {
+    setSnapshot({ id: selectedId, profile: selected?.profile ?? null })
+  }
 
   function handleProfileSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -151,7 +155,8 @@ export default function PeopleTab({
     })
   }
 
-  const p = snapshot
+  // Never hand the form a profile that belongs to someone else, even for one render.
+  const p = snapshot.id === selectedId ? snapshot.profile : (selected?.profile ?? null)
 
   return (
     <div className={styles.peopleLayout}>
