@@ -6,13 +6,13 @@ import { protectedResourceMetadataUrl, publicOrigin } from '@/lib/mcp/oauth'
 import { registerTools } from '@/lib/mcp/tools'
 
 /**
- * The Ecosystem MCP server — what an employee's Claude connects to.
+ * The Ecosystem MCP server — what an employee's Claude or ChatGPT connects to.
  *
  * Stateless Streamable HTTP: every request builds a fresh server, so nothing is held between calls
  * (Vercel functions don't keep memory anyway) and no session can leak from one person to another.
  *
  * Auth: a missing or invalid token gets a 401 pointing at the protected-resource metadata, which
- * is what starts Claude's sign-in flow. A valid token is a Supabase access token for one user; the
+ * is what starts the assistant's sign-in flow. A valid token is a Supabase access token for one user; the
  * request then runs inside `mcpAuth`, so every createClient() — and so every guard, action and RLS
  * check — acts as that person. See lib/mcp/context.ts.
  */

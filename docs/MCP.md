@@ -40,8 +40,20 @@ returns JSON instead of `feature_disabled`.
 
 ## Connecting (per employee)
 
+The **Connect your AI assistant** button (spark icon next to the bell, internal roles only;
+`src/app/_components/ConnectAssistant.tsx`) shows these steps with the URL to copy, on a Claude
+tab and a ChatGPT tab. The server is client-agnostic: both apps use the same URL, the same OAuth
+flow (dynamic registration) and the same consent screen.
+
+- **ChatGPT:** Settings → Apps & Connectors → Advanced settings → turn on **Developer mode**
+  (needed for write tools) → **Create** → URL `https://ecosystem.earlyseedventures.com/api/mcp`,
+  authentication **OAuth** → Connect → sign in → Allow. Enable it per chat from the **+** menu.
+  Needs a paid plan; on Business/Enterprise an admin may need to allow custom connectors.
+
 - **Claude (web/desktop):** Settings → Connectors → Add custom connector →
-  `https://ecosystem.earlyseedventures.com/api/mcp` → Connect → sign in → Allow.
+  `https://ecosystem.earlyseedventures.com/api/mcp` → Authentication **Sign in now**, OAuth client
+  **Register automatically** (DCR; Supabase doesn't advertise CIMD support, so "Use Claude's
+  published identity" fails) → Connect → sign in → Allow.
   On a Team/Enterprise plan an owner can add it once for the organization; each person still signs
   in as themselves.
 - **Claude Code:** `claude mcp add --transport http ecosystem https://ecosystem.earlyseedventures.com/api/mcp`,

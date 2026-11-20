@@ -7,7 +7,7 @@ import { userFacingMessage } from '@/lib/action-errors'
 import { createTask, updateTaskStatus, getTaskComments, addTaskComment } from '@/app/actions/tasks'
 
 /**
- * The pilot tool set for Claude.
+ * The pilot tool set for AI assistants (Claude, ChatGPT).
  *
  * Rules every tool follows:
  *  - Permissions come from the same guards and RLS as the web app. A tool never uses a service key
@@ -53,7 +53,7 @@ export function registerTools(server: McpServer) {
   // ─── Who am I ──────────────────────────────────────────────────────────────
   server.registerTool('whoami', {
     title: 'Who am I',
-    description: 'The Ecosystem account Claude is acting as: name, email, role and designation.',
+    description: 'The Ecosystem account the assistant is acting as: name, email, role and designation.',
     annotations: { readOnlyHint: true },
   }, run('whoami', async () => {
     const user = await getUser()
