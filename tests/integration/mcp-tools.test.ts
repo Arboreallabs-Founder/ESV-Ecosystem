@@ -3,6 +3,9 @@ import { IDS } from './env'
 import { tokenFor, callTool, rpc, dbAs } from './mcp-client'
 
 /**
+ * Test data accumulates on staging across runs, so creates that aren't testing the duplicate check pass
+ * force: true (otherwise last run's 'Brightwater … Analytics' is, correctly, flagged as a duplicate).
+ *
  * End to end against STAGING: real sign-in tokens, the real /api/mcp route, real RLS and triggers.
  * Each run uses a unique suffix so runs don't collide with each other's companies.
  */
@@ -22,8 +25,9 @@ describe('server', () => {
     expect(names).toEqual([
       'add_founder', 'add_task_comment', 'create_company', 'create_company_field', 'create_deal', 'create_pipeline_entry',
       'create_task', 'get_company', 'get_deal', 'get_pipeline_entry', 'get_task', 'list_company_fields', 'list_deals',
-      'list_my_tasks', 'list_pipeline_entries', 'list_pipelines', 'move_pipeline_entry', 'search_companies',
-      'set_company_field', 'update_company', 'update_deal', 'update_founder', 'update_task', 'update_task_status', 'whoami',
+      'list_my_tasks', 'list_people', 'list_pipeline_entries', 'list_pipelines', 'move_pipeline_entry', 'search_companies',
+      'set_company_field', 'team_activity', 'update_company', 'update_deal', 'update_founder', 'update_task',
+      'update_task_status', 'whoami',
     ].sort())
     expect(names.some((n) => n.startsWith('delete'))).toBe(false)
   })
@@ -54,7 +58,7 @@ describe('companies', () => {
   let companyId: string
 
   it('creates a company, then flags a near-duplicate instead of creating it', async () => {
-    const created = await callTool(associate, 'create_company', { name: `Brightwater ${RUN} Analytics`, stage: 'Seed', ask_inr: 50000000 })
+    const created = await callTool(associate, 'create_company', { name: `Brightwater ${RUN} Analytics`, stage: 'Seed', ask_inr: 50000000, force: true })
     expect(created.isError).toBe(false)
     expect(created.json.created).toBe(true)
     companyId = created.json.company.id
@@ -114,7 +118,7 @@ describe('pipelines: stage automations fire as on the board', () => {
   let entryId: string
 
   it('creates an entry in Lead, assigned to me', async () => {
-    const r = await callTool(associate, 'create_pipeline_entry', { pipeline_id: IDS.referrals, title: `Startup ${RUN}`, company_name: `Startup ${RUN} Labs` })
+    const r = await callTool(associate, 'create_pipeline_entry', { pipeline_id: IDS.referrals, title: `Startup ${RUN}`, company_name: `Startup ${RUN} Labs`, force: true })
     expect(r.isError).toBe(false)
     entryId = r.json.entry.id
     expect(r.json.entry.stage.name).toBe('Lead')
@@ -141,7 +145,7 @@ describe('pipelines: stage automations fire as on the board', () => {
   })
 
   it('creating an entry straight into Introductory call raises the task too', async () => {
-    const r = await callTool(associate, 'create_pipeline_entry', { pipeline_id: IDS.referrals, stage_id: IDS.stIntro, title: `Direct ${RUN}`, company_name: `Direct ${RUN} Robotics` })
+    const r = await callTool(associate, 'create_pipeline_entry', { pipeline_id: IDS.referrals, stage_id: IDS.stIntro, title: `Direct ${RUN}`, company_name: `Direct ${RUN} Robotics`, force: true })
     expect(r.isError).toBe(false)
     expect(r.json.entry.tasks.some((t: { title: string }) => /Schedule Call with Startup/.test(t.title))).toBe(true)
   })
@@ -158,7 +162,7 @@ describe('deals', () => {
 
   it('creates a deal, mirrors round and valuation onto the company', async () => {
     const r = await callTool(associate, 'create_deal', {
-      deal_name: `DealCo ${RUN}`, company_name: `DealCo ${RUN} Fintech`, total_raise: 100000000, min_ticket: 2500000,
+      deal_name: `DealCo ${RUN}`, company_name: `DealCo ${RUN} Fintech`, force: true, total_raise: 100000000, min_ticket: 2500000,
       valuation: 800000000, valuation_basis: 'pre', notes: 'Strong founders',
     })
     expect(r.isError).toBe(false)
@@ -204,5 +208,75 @@ describe('tasks: log finished work in one call', () => {
     const r = await callTool(associate, 'update_task', { task_id: t.json.created.id, priority: 'High' })
     expect(r.json.changed).toEqual({ priority: { before: 'Low', after: 'High' } })
     expect(r.json.task.description).toBe('keep this')
+  })
+})
+
+describe('founder: assign tasks and see what people have done and have open', () => {
+  let assignedId: string
+
+  it('finds people by name', async () => {
+    const r = await callTool(founder, 'list_people', { query: 'associate' })
+    expect(r.json.map((p: { id: string }) => p.id)).toContain(IDS.associate)
+  })
+
+  it('a founder assigns a task to an associate, who then sees it', async () => {
+    const r = await callTool(founder, 'create_task', { assignee_id: IDS.associate, title: `Prepare IC memo ${RUN}`, due_date: '2026-12-01', priority: 'High' })
+    expect(r.isError).toBe(false)
+    assignedId = r.json.created.id
+    const mine = await callTool(associate, 'list_my_tasks', { status: 'To Do' })
+    expect(mine.json.map((t: { id: string }) => t.id)).toContain(assignedId)
+  })
+
+  it('a founder reassigns it', async () => {
+    const r = await callTool(founder, 'update_task', { task_id: assignedId, assignee_id: IDS.general })
+    expect(r.isError).toBe(false)
+    expect(r.json.changed.assignee_id).toEqual({ before: IDS.associate, after: IDS.general })
+    // and back, for the activity checks below
+    await callTool(founder, 'update_task', { task_id: assignedId, assignee_id: IDS.associate })
+  })
+
+  it('an associate cannot assign to a founder', async () => {
+    const r = await callTool(associate, 'create_task', { assignee_id: IDS.founder, title: `Nope ${RUN}` })
+    expect(r.isError).toBe(true)
+    expect(r.text).toMatch(/assign/i)
+  })
+
+  it("a founder sees an associate's week: completed, open, and pipeline moves", async () => {
+    const r = await callTool(founder, 'team_activity', { person: 'Test Associate' })
+    expect(r.isError).toBe(false)
+    expect(r.json.activity_log_included).toBe(true)
+    const p = r.json.people[0]
+    expect(p.person.id).toBe(IDS.associate)
+    expect(p.completed.items.some((t: { title: string }) => t.title === `Sent deck ${RUN}`)).toBe(true)
+    // the backdated one (2 Nov) is outside this week
+    expect(p.completed.items.some((t: { title: string }) => t.title === `Call notes ${RUN}`)).toBe(false)
+    expect(p.open.items.some((t: { id: string }) => t.id === assignedId)).toBe(true)
+    expect(p.pipeline_moves.some((m: { entry: string; to: string }) => m.entry === `Startup ${RUN}` && m.to === 'Introductory call')).toBe(true)
+    expect(p.created.companies).toBeGreaterThan(0)
+  })
+
+  it('a custom range works, and the backdated task appears in it', async () => {
+    const r = await callTool(founder, 'team_activity', { person: IDS.associate, from: '2026-11-01', to: '2026-11-07' })
+    expect(r.json.people[0].completed.items.some((t: { title: string }) => t.title === `Call notes ${RUN}`)).toBe(true)
+  })
+
+  it("a founder can ask about the whole team", async () => {
+    const r = await callTool(founder, 'team_activity', { person: 'team' })
+    expect(r.json.people.map((p: { person: { id: string } }) => p.person.id)).toEqual(expect.arrayContaining([IDS.founder, IDS.associate, IDS.general]))
+  })
+
+  it('an associate sees only themselves, without the activity log', async () => {
+    const other = await callTool(associate, 'team_activity', { person: IDS.founder })
+    expect(other.isError).toBe(true)
+    expect(other.text).toMatch(/only yourself/)
+    const team = await callTool(associate, 'team_activity', { person: 'team' })
+    expect(team.json.people.map((p: { person: { id: string } }) => p.person.id)).toEqual([IDS.associate])
+    expect(team.json.activity_log_included).toBe(false)
+    expect(team.json.people[0].pipeline_moves).toEqual([])
+  })
+
+  it('a general user cannot look at an associate', async () => {
+    const r = await callTool(general, 'team_activity', { person: IDS.associate })
+    expect(r.isError).toBe(true)
   })
 })

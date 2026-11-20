@@ -6,7 +6,7 @@ import { createTask, updateTask, updateTaskStatus, getTaskComments, addTaskComme
 import { INTERNAL, ok, refuse, run, uuid, isoDate, diff } from './shared'
 
 const TASK_FIELDS = 'id, title, description, status, priority, due_date, pushed_date, push_count, link_url, created_at, completed_at, assignee_id, desk_deal_id, company:company_id(id, name), assignee:assignee_id(name), assigned_by:assigned_by_id(name)'
-const EDITABLE = ['title', 'description', 'due_date', 'priority', 'link_url', 'company_id'] as const
+const EDITABLE = ['title', 'description', 'due_date', 'priority', 'link_url', 'company_id', 'assignee_id'] as const
 
 type TaskRow = Record<string, unknown> & { id: string; assignee_id: string | null; desk_deal_id: string | null; company?: { id: string } | null }
 
@@ -59,9 +59,10 @@ export function registerTaskTools(server: McpServer) {
   }))
 
   server.registerTool('create_task', {
-    title: 'Create a task for myself',
-    description: "Adds a task to my own task board. To log work already done, set status 'Done'; add completed_at to backdate it (no future dates).",
+    title: 'Create or assign a task',
+    description: "Adds a task to my board, or assigns it to someone (assignee_id from list_people; they are notified). Who you can assign to follows your role. To log work already done, set status 'Done'; add completed_at to backdate it (no future dates).",
     inputSchema: {
+      assignee_id: uuid.optional().describe('Who it is for. Default: me'),
       title: z.string().trim().min(1).max(300),
       description: z.string().max(5000).optional(),
       due_date: isoDate.optional().describe('YYYY-MM-DD'),
@@ -73,13 +74,16 @@ export function registerTaskTools(server: McpServer) {
     },
     annotations: { readOnlyHint: false, destructiveHint: false },
   }, run('create_task', async (args: {
+    assignee_id?: string
     title: string; description?: string; due_date?: string; priority: string; company_id?: string; link_url?: string
     status: 'To Do' | 'Done'; completed_at?: string
   }) => {
     const { supabase, userId } = await requireRole(INTERNAL)
     const fd = new FormData()
     fd.set('title', args.title)
-    fd.set('assignee_id', userId)
+    // createTask applies the assignment rules (no partners; associates/general/hr only to their
+    // peers) and notifies the assignee.
+    fd.set('assignee_id', args.assignee_id ?? userId)
     fd.set('priority', args.priority)
     // completed_at alone means Done; resolveTaskCompletion (in createTask) enforces the rest.
     fd.set('status', args.completed_at ? 'Done' : args.status)
@@ -95,7 +99,7 @@ export function registerTaskTools(server: McpServer) {
 
   server.registerTool('update_task', {
     title: 'Update a task',
-    description: 'Changes only the fields passed: title, description, due_date, priority, link_url, company_id (null clears). Returns before and after.',
+    description: 'Changes only the fields passed: title, description, due_date, priority, link_url, company_id (null clears), or assignee_id to reassign (they are notified). Returns before and after.',
     inputSchema: {
       task_id: uuid,
       title: z.string().trim().min(1).max(300).optional(),
@@ -104,6 +108,7 @@ export function registerTaskTools(server: McpServer) {
       priority: z.enum(['Low', 'Medium', 'High']).optional(),
       link_url: z.string().url().max(2000).nullable().optional(),
       company_id: uuid.nullable().optional(),
+      assignee_id: uuid.optional().describe('Reassign to this person (from list_people)'),
     },
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
   }, run('update_task', async (args: { task_id: string } & Partial<Record<typeof EDITABLE[number], string | null>>) => {
@@ -124,7 +129,7 @@ export function registerTaskTools(server: McpServer) {
     fd.set('priority', next.priority ?? 'Medium')
     fd.set('link_url', next.link_url ?? '')
     fd.set('company_id', next.company_id ?? '')
-    fd.set('assignee_id', b.assignee_id ?? '')
+    fd.set('assignee_id', next.assignee_id ?? b.assignee_id ?? '')
     fd.set('desk_deal_id', b.desk_deal_id ?? '')
     await updateTask(args.task_id, fd)
 

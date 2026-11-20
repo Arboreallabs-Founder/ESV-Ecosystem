@@ -20,11 +20,12 @@ const SERVER_INSTRUCTIONS = [
   "Tools for Earlyseed Ventures' Ecosystem app. You act as the signed-in employee with exactly their permissions; every change is logged as made through the AI connector.",
   'Confirm with the person before any create, update or stage move: say what will change, then call the tool.',
   'Tools:',
-  '- Me & tasks: whoami, list_my_tasks, get_task, create_task (status Done + completed_at logs finished work), update_task, update_task_status, add_task_comment.',
+  '- Me & tasks: whoami, list_my_tasks, get_task, create_task (assignee_id to assign to someone; status Done + completed_at logs finished work), update_task (assignee_id reassigns), update_task_status, add_task_comment.',
+  "- Team: list_people (find someone's id), team_activity (what a person or the team completed in a period — default this week — what they have open or overdue, and their pipeline moves and edits). What you can see about others follows the person's role.",
   '- Companies: search_companies, get_company, create_company (returns possible duplicates unless force=true), update_company, add_founder, update_founder, list_company_fields, set_company_field, create_company_field.',
   '- Pipelines (before a deal exists): list_pipelines, list_pipeline_entries, get_pipeline_entry, create_pipeline_entry, move_pipeline_entry (fires the stage automations, e.g. auto-tasks).',
   '- Deals (Active Deals, after acceptance): list_deals, get_deal, create_deal, update_deal.',
-  'Look ids up first (search_companies, list_pipelines, list_deals); never guess them. Amounts are in rupees (INR), as plain numbers.',
+  'Look ids up first (list_people, search_companies, list_pipelines, list_deals); never guess them. If a name matches several people, ask which one. Amounts are in rupees (INR), as plain numbers.',
 ].join('\n')
 
 export const runtime = 'nodejs'

@@ -71,8 +71,10 @@ Code: `src/lib/mcp/tools/{tasks,companies,pipelines,deals}.ts`, rules in `tools/
 |---|---|---|---|
 | `whoami` | read | internal | `getUser()` |
 | `list_my_tasks`, `get_task` | read | internal | RLS reads, `getTaskComments` |
-| `create_task` | write | internal | `createTask` (status + completed_at in one insert) |
-| `update_task` | write | internal | `updateTask` (merged: only passed fields change) |
+| `create_task` | write | internal | `createTask` (status + completed_at in one insert; `assignee_id` assigns, per the app's rules) |
+| `update_task` | write | internal | `updateTask` (merged: only passed fields change; `assignee_id` reassigns) |
+| `list_people` | read | internal | RLS read of `users` |
+| `team_activity` | read | founder/admin: anyone · General Lead: general users · others: self | tasks + `activity_events` (founder/admin) |
 | `update_task_status`, `add_task_comment` | write | internal | `updateTaskStatus`, `addTaskComment` |
 | `search_companies`, `get_company`, `list_company_fields` | read | internal | RLS reads |
 | `create_company` | write | founder/admin/associate | `findSimilarCompanies` → `createCompany` |
@@ -91,6 +93,19 @@ Not exposed, on purpose: deletes, admin, HR/compensation, investors, accepting a
 deal categories — done on the board).
 
 ### Changelog
+
+**0.3.0 (2026-11-20)**
+- `team_activity` — `person` ('me' | 'team' | user id | name), `from` / `to` (YYYY-MM-DD,
+  default this week so far, India time). Per person: tasks completed in the range, open tasks with
+  overdue flags, tasks they assigned to others, and — founders/admins only, from the activity
+  log — pipeline stage moves and what they created or edited. Visibility as in the table above;
+  a name matching several people is refused with the candidates.
+- `list_people` — find someone's id by name or email.
+- `create_task` gains `assignee_id` (assign to someone; they're notified); `update_task` gains
+  `assignee_id` (reassign). The app's assignment rules apply (no partners; associates, general and
+  hr only to each other).
+- `list_deals` / `list_pipeline_entries` return `has_more` instead of an exact `total` — the exact
+  count, plus embedded custom-field values, timed out (8s) on Active Deals' RLS.
 
 **0.2.0 (2026-11-20)**
 - Companies: `create_company` (name + any profile field; returns `possible_duplicates` unless

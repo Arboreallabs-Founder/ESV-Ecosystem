@@ -3,6 +3,7 @@ import { registerTaskTools } from './tasks'
 import { registerCompanyTools } from './companies'
 import { registerPipelineTools } from './pipelines'
 import { registerDealTools } from './deals'
+import { registerTeamTools } from './team'
 
 /**
  * Every tool the Ecosystem connector exposes. See shared.ts for the rules they all follow and
@@ -13,4 +14,5 @@ export function registerTools(server: McpServer) {
   registerCompanyTools(server)
   registerPipelineTools(server)
   registerDealTools(server)
+  registerTeamTools(server)
 }

@@ -111,7 +111,7 @@ export function registerPipelineTools(server: McpServer) {
     annotations: { readOnlyHint: true },
   }, run('list_pipeline_entries', async (args: { pipeline_id?: string; stage_id?: string; assignee_id?: string; company_id?: string; limit: number; offset: number }) => {
     const { supabase, userId } = await requireRole(INTERNAL)
-    let q = supabase.from('pipeline_entries').select(ENTRY_SELECT, { count: 'exact' }).order('submitted_at', { ascending: false })
+    let q = supabase.from('pipeline_entries').select(ENTRY_SELECT).order('submitted_at', { ascending: false })
     if (args.pipeline_id) q = q.eq('pipeline_id', args.pipeline_id)
     if (args.stage_id) q = q.eq('stage_id', args.stage_id)
     if (args.company_id) q = q.eq('company_id', args.company_id)
@@ -119,12 +119,14 @@ export function registerPipelineTools(server: McpServer) {
       const who = args.assignee_id === 'me' ? userId : args.assignee_id
       const { data: rows } = await supabase.from('pipeline_entry_assignees').select('entry_id').eq('user_id', who)
       const ids = (rows ?? []).map((r: { entry_id: string }) => r.entry_id)
-      if (ids.length === 0) return ok({ total: 0, entries: [] })
+      if (ids.length === 0) return ok({ offset: args.offset, has_more: false, entries: [] })
       q = q.in('id', ids.slice(0, 1000))
     }
-    const { data, error, count } = await q.range(args.offset, args.offset + args.limit - 1)
+    // One extra row says whether there's a next page, without the cost of an exact count.
+    const { data, error } = await q.range(args.offset, args.offset + args.limit)
     if (error) throw error
-    return ok({ total: count ?? null, offset: args.offset, entries: ((data ?? []) as unknown as EntryRow[]).map(shapeEntry) })
+    const rows = (data ?? []) as unknown as EntryRow[]
+    return ok({ offset: args.offset, has_more: rows.length > args.limit, entries: rows.slice(0, args.limit).map(shapeEntry) })
   }))
 
   server.registerTool('get_pipeline_entry', {

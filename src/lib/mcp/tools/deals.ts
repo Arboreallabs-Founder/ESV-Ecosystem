@@ -14,10 +14,11 @@ import { readEntryFull, resolveCompany } from './pipelines'
 
 type Supa = Awaited<ReturnType<typeof requireRole>>['supabase']
 
+// Kept lean: every embed is another RLS-checked table, and active_deals' policies are heavy. With an
+// exact count and the (unused) category field values this hit the 8s statement timeout on staging.
 const DEAL_SELECT = `id, pipeline_entry_id, created_at, deal_state, total_raise, external_raised, min_ticket, valuation, valuation_basis, logo_url, visible_to_partners,
   entry:pipeline_entries!inner(id, title, pipeline_id, company_id, submitter_name, submitter_email, pipeline:pipelines(name), stage:pipeline_stages(name), company:companies(id, name), assignees:pipeline_entry_assignees(user_id, user:users(name))),
-  categories:active_deal_categories(category:deal_categories(id, name)),
-  field_values:active_deal_field_values(field_id, value)`
+  categories:active_deal_categories(category:deal_categories(id, name))`
 
 const DEAL_NUMBERS = ['total_raise', 'external_raised', 'min_ticket', 'valuation', 'valuation_basis', 'deal_state'] as const
 
@@ -81,7 +82,7 @@ export function registerDealTools(server: McpServer) {
     annotations: { readOnlyHint: true },
   }, run('list_deals', async (args: { pipeline_id?: string; state?: DealState; owner_id?: string; company_id?: string; limit: number; offset: number }) => {
     const { supabase, userId } = await requireRole(INTERNAL)
-    let q = supabase.from('active_deals').select(DEAL_SELECT, { count: 'exact' }).order('created_at', { ascending: false })
+    let q = supabase.from('active_deals').select(DEAL_SELECT).order('created_at', { ascending: false })
     if (args.state) q = q.eq('deal_state', args.state)
     if (args.pipeline_id) q = q.eq('entry.pipeline_id', args.pipeline_id)
     if (args.company_id) q = q.eq('entry.company_id', args.company_id)
@@ -89,12 +90,14 @@ export function registerDealTools(server: McpServer) {
       const who = args.owner_id === 'me' ? userId : args.owner_id
       const { data: rows } = await supabase.from('pipeline_entry_assignees').select('entry_id').eq('user_id', who)
       const ids = (rows ?? []).map((r: { entry_id: string }) => r.entry_id)
-      if (ids.length === 0) return ok({ total: 0, deals: [] })
+      if (ids.length === 0) return ok({ offset: args.offset, has_more: false, deals: [] })
       q = q.in('pipeline_entry_id', ids.slice(0, 1000))
     }
-    const { data, error, count } = await q.range(args.offset, args.offset + args.limit - 1)
+    // One extra row says whether there's a next page, without the cost of an exact count.
+    const { data, error } = await q.range(args.offset, args.offset + args.limit)
     if (error) throw error
-    return ok({ total: count ?? null, offset: args.offset, deals: ((data ?? []) as unknown as DealRow[]).map(shapeDeal) })
+    const rows = (data ?? []) as unknown as DealRow[]
+    return ok({ offset: args.offset, has_more: rows.length > args.limit, deals: rows.slice(0, args.limit).map(shapeDeal) })
   }))
 
   server.registerTool('get_deal', {
