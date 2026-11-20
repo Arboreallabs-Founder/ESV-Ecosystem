@@ -1,0 +1,44 @@
+.list {
+  margin: 0 0 1.5rem;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  color: var(--color-text);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* The login submit button carries a top margin for its form; here both buttons sit in one row. */
+.actions > button {
+  flex: 1;
+  margin-top: 0;
+}
+
+.denyBtn {
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out);
+}
+
+.denyBtn:hover {
+  border-color: var(--color-text);
+}
+
+.fine {
+  margin: 1rem 0 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+}

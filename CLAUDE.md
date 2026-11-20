@@ -14,6 +14,7 @@ quick orientation, read:
 - **[docs/DOCUMENTS.md](docs/DOCUMENTS.md)** — HR document generation: issuance matrix, signature
   modes, letterhead and verification model (approved, not yet built)
 - **[docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)** — local env setup
+- **[docs/MCP.md](docs/MCP.md)** — the Claude connector (`/api/mcp`): auth flow, tools, how to add one
 - **[docs/](docs/)** — everything else (brand guidelines, original PRD)
 
 ## Current Status (June 2026)

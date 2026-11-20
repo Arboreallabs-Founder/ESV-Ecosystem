@@ -14,7 +14,11 @@ import { createServerClient } from '@supabase/ssr'
 //
 // '/apply/' is the readable alias for the founder form's /f/ links (20261011000000) — same page, so
 // it must be just as reachable by a founder with no account.
-const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth', '/f/', '/apply/', '/fr/', '/pr/', '/il/', '/verify/']
+//
+// '/api/mcp' and '/.well-known/' are the Claude connector (MCP). They authenticate with a bearer
+// token, not a cookie, so redirecting them to /login would break the protocol: an unauthenticated
+// call must get the route's own 401, which is what tells Claude to start signing the person in.
+const PUBLIC_ROUTES = ['/login', '/privacy', '/terms', '/auth', '/f/', '/apply/', '/fr/', '/pr/', '/il/', '/verify/', '/api/mcp', '/.well-known/']
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
@@ -43,7 +47,12 @@ export async function proxy(request: NextRequest) {
   const isPublicRoute = pathname === '/apply' || PUBLIC_ROUTES.some((r) => pathname.startsWith(r))
 
   if (!session && !isPublicRoute) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    const login = new URL('/login', request.url)
+    // Keep where they were going, so a deep link (or Claude's consent screen, whose pending
+    // authorization would otherwise be lost) works after signing in. Not for '/', which login
+    // already routes by role.
+    if (pathname !== '/') login.searchParams.set('next', pathname + request.nextUrl.search)
+    return NextResponse.redirect(login)
   }
 
   // For root and login redirects, do a lightweight role lookup only when necessary.

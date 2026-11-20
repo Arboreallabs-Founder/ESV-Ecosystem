@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse, type NextRequest } from 'next/server'
+import { safeNext, NEXT_COOKIE } from '@/lib/safe-next'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -44,5 +45,10 @@ export async function GET(request: NextRequest) {
     : role === 'hr'                ? '/tasks'
     : '/dashboard'
 
-  return NextResponse.redirect(new URL(destination, origin))
+  // Set by the login page when sign-in was interrupting something (e.g. Claude's consent screen).
+  const raw = request.cookies.get(NEXT_COOKIE)?.value
+  const next = safeNext(raw ? decodeURIComponent(raw) : null)
+  const response = NextResponse.redirect(new URL(next ?? destination, origin))
+  if (raw) response.cookies.delete(NEXT_COOKIE)
+  return response
 }

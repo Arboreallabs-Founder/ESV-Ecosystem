@@ -4,6 +4,7 @@ import { Suspense, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { verifyPinAndLogin } from '@/app/actions/demo'
+import { safeNext, NEXT_COOKIE } from '@/lib/safe-next'
 import styles from './page.module.css'
 
 function GoogleIcon() {
@@ -22,6 +23,7 @@ function LoginContent() {
   const searchParams = useSearchParams()
   const errorCode = searchParams.get('error')
   const errorMsg = searchParams.get('msg')
+  const next = safeNext(searchParams.get('next'))
 
   const authError =
     errorCode === 'not_approved'
@@ -59,6 +61,9 @@ function LoginContent() {
   }
 
   async function handleGoogleSignIn() {
+    // The OAuth redirect URL is allow-listed in Supabase exactly, so `next` can't ride on it as a
+    // query string — it goes in a short-lived cookie that /auth/callback reads and clears.
+    if (next) document.cookie = `${NEXT_COOKIE}=${encodeURIComponent(next)}; path=/; max-age=600; samesite=lax; secure`
     const supabase = createClient()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -99,7 +104,7 @@ function LoginContent() {
       return
     }
 
-    router.push(publicUser.role === 'franchise_partner' ? '/portal' : '/dashboard')
+    router.push(next ?? (publicUser.role === 'franchise_partner' ? '/portal' : '/dashboard'))
   }
 
   return (
