@@ -10,7 +10,7 @@ import { uploadDealBookPdf, viewDealBookPdf } from '@/app/(app)/deal-book/_compo
 import styles from '../active-deals.module.css'
 
 /**
- * This deal in the Active Deal Book (20261124000000): whether it shows in the book, the IM, the
+ * This deal in the Deal Book (20261124000000): whether it shows in the book, the IM, the
  * no-name IM made from the blank template, and the codename the no-name book uses. Founders and
  * admins change these; everyone else sees what's there.
  */
@@ -87,8 +87,8 @@ export default function DealBookImPanel({ dealId, orgId, im, inBook, isActive, c
   return (
     <div className={styles.card} style={{ padding: '1rem 1.1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem', flexWrap: 'wrap' }}>
-        <div style={{ fontWeight: 700, fontSize: '0.9375rem' }}>Active Deal Book</div>
-        <Link href="/deal-book" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600 }}>Open the Active Deal Book →</Link>
+        <div style={{ fontWeight: 700, fontSize: '0.9375rem' }}>Deal Book</div>
+        <Link href="/deal-book" style={{ fontSize: '0.75rem', color: 'var(--color-primary)', fontWeight: 600 }}>Open the Deal Book →</Link>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.55rem 0 0.35rem', flexWrap: 'wrap' }}>
         {canManage ? (
@@ -96,7 +96,7 @@ export default function DealBookImPanel({ dealId, orgId, im, inBook, isActive, c
             type="button"
             role="switch"
             aria-checked={shown}
-            aria-label="Show this deal in the Active Deal Book"
+            aria-label="Show this deal in the Deal Book"
             disabled={busy === 'toggle'}
             onClick={toggleShown}
             data-no-press

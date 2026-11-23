@@ -297,7 +297,7 @@ const NAV_ITEMS: NavEntry[] = [
     // All our deal IMs as one downloadable PDF (20261124000000). Founders/admins build it; every
     // internal user downloads.
     href: '/deal-book',
-    label: 'Active Deal Book',
+    label: 'Deal Book',
     roles: ['founder', 'admin', 'associate', 'general', 'hr'],
     section: 'Deal Flow',
     icon: <Icon d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />,

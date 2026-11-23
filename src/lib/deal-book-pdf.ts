@@ -8,8 +8,8 @@ import fontkit from '@pdf-lib/fontkit'
  *
  * The four fixed pages come from the ESV IM Book template (src/lib/deal-book-assets/pages.pdf,
  * one page each, with the sample date and "Topic" lines removed), unless a replacement design has
- * been uploaded on /deal-book. The cover gets today's date stamped where the template's sample
- * date was; the contents page gets the deal list stamped on the template's centred lines (as many
+ * been uploaded on /deal-book. The cover gets its title ("Active Deal Book") and today's date
+ * stamped where the template's own title and sample date were; the contents page gets the deal list stamped on the template's centred lines (as many
  * contents pages as the list needs); every page but the cover and back page gets its page number.
  *
  * Positions in STAMP were measured from the template, in points from the bottom-left of an A4 page
@@ -17,6 +17,8 @@ import fontkit from '@pdf-lib/fontkit'
  */
 
 export const STAMP = {
+  /** Title on the cover, in Inter SemiBold: centred, where the template's own title sat. */
+  coverTitle: { text: 'Active Deal Book', yFromBottom: 133.9, size: 20 },
   /** Date on the cover, in Arapey: centred, baseline this far up from the bottom edge. */
   coverDate: { yFromBottom: 83.3, size: 20 },
   /** Contents entries, in Inter: centred; first baseline this far down from the top, then one every `lineGap`. */
@@ -41,7 +43,7 @@ export type BookDesigns = {
   back: Uint8Array | null
 }
 /** The bundled template and its fonts; see deal-book-assets.ts. */
-export type BookAssets = { pages: Uint8Array; inter: Uint8Array; arapey: Uint8Array }
+export type BookAssets = { pages: Uint8Array; inter: Uint8Array; interSemiBold: Uint8Array; arapey: Uint8Array }
 
 /** "24 November 2026", in IST. Used in the file name. */
 export function bookDate(d = new Date()): string {
@@ -109,11 +111,12 @@ export async function buildDealBook(opts: {
 }): Promise<Uint8Array> {
   const out = await PDFDocument.create()
   out.registerFontkit(fontkit)
-  out.setTitle(`ESV Active Deal Book (${opts.versionLabel}${opts.confidential ? ', Confidential' : ''})`)
+  out.setTitle(`ESV ${STAMP.coverTitle.text} (${opts.versionLabel}${opts.confidential ? ', Confidential' : ''})`)
   out.setAuthor('Earlyseed Ventures')
   out.setCreator('ESV Ecosystem')
   // Inter is a CFF font; pdf-lib's subsetter mangles those, so it goes in whole.
   const inter = await out.embedFont(opts.assets.inter, { subset: false })
+  const interSemiBold = await out.embedFont(opts.assets.interSemiBold, { subset: false })
   const arapey = await out.embedFont(opts.assets.arapey, { subset: true })
   const template = await PDFDocument.load(opts.assets.pages)
 
@@ -128,8 +131,10 @@ export async function buildDealBook(opts: {
     return append(out, src, firstOnly ? [0] : src.getPageIndices())
   }
 
-  // ── 1. Cover, with today's date ───────────────────────────────────────────
+  // ── 1. Cover, with its title and today's date ─────────────────────────────
   const [cover] = await fixed('cover', 'The cover design', true)
+  const t = STAMP.coverTitle
+  centred(cover, t.text, t.yFromBottom, interSemiBold, t.size)
   centred(cover, coverDate(opts.date), STAMP.coverDate.yFromBottom, arapey, STAMP.coverDate.size)
   const conf = STAMP.confidential
   if (opts.confidential) centredSpaced(cover, 'CONFIDENTIAL', conf.coverYFromBottom, inter, conf.coverSize, conf.coverTracking)

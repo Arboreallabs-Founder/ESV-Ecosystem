@@ -5,7 +5,7 @@ import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { requireRole } from '@/lib/guards'
 import { DESIGN_SLOTS, type DesignSlot } from '@/lib/deal-book'
 
-/* Active Deal Book writes (20261124000000). Founders and admins only. Files are uploaded straight from
+/* Deal Book writes (20261124000000). Founders and admins only. Files are uploaded straight from
    the browser to the private `deal-book` bucket (an IM can be larger than a server request allows),
    then these actions record where they went. Paths must sit under the caller's org folder. */
 

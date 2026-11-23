@@ -6,7 +6,7 @@ import { DEAL_BOOK_BUCKET, fetchDealBook } from '@/lib/deal-book'
 import { loadDealBookAssets } from '@/lib/deal-book-assets'
 
 /*
- * GET /api/deal-book?version=named|noname → the Active Deal Book PDF, assembled now. The named
+ * GET /api/deal-book?version=named|noname → the Deal Book PDF, assembled now. The named
  * version is marked Confidential.
  * Add &preview=1 to open it in the browser instead of downloading; a preview is built even when no
  * deal has an IM yet, so the fixed pages can be checked on their own.
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   const download = async (path: string | null): Promise<Uint8Array | null> => {
     if (!path) return null
     const { data, error } = await supabase.storage.from(DEAL_BOOK_BUCKET).download(path)
-    if (error || !data) throw new Error(`A file in the Active Deal Book couldn't be read (${path.split('/').pop()}).`)
+    if (error || !data) throw new Error(`A file in the Deal Book couldn't be read (${path.split('/').pop()}).`)
     return new Uint8Array(await data.arrayBuffer())
   }
 
@@ -70,6 +70,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (e) {
     console.error('[deal-book] build failed:', e)
-    return NextResponse.json({ error: e instanceof Error ? e.message : 'The Active Deal Book could not be built.' }, { status: 500 })
+    return NextResponse.json({ error: e instanceof Error ? e.message : 'The Deal Book could not be built.' }, { status: 500 })
   }
 }

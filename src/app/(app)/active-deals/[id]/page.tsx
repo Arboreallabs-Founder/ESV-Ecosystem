@@ -47,7 +47,7 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
     // logo. Every source row behind them is hidden from partners by RLS, correctly.
     isPartner ? fetchPartnerDealSummary(id) : Promise.resolve(null),
     fetchDealDocuments(id),
-    // The Active Deal Book IM files and visibility (20261124000000). Internal only.
+    // The Deal Book IM files and visibility (20261124000000). Internal only.
     isPartner ? Promise.resolve(null) : fetchDealIm(id),
     isPartner ? Promise.resolve(false) : fetchInDealBook(id),
   ])
