@@ -81,7 +81,8 @@ export default function ActiveDealsList({
   scope?: DealScope
 }) {
   const router = useRouter()
-  const [stateFilter, setStateFilter] = useState<StateFilter>('open')
+  // Opens on Active: dormant and archived deals are a tab away, not mixed into the default view.
+  const [stateFilter, setStateFilter] = useState<StateFilter>('active')
   const [categoryFilter, setCategoryFilter] = useState<string>('all')
   const [showNew, setShowNew] = useState(false)
   const [showImport, setShowImport] = useState(false)
@@ -189,7 +190,7 @@ export default function ActiveDealsList({
           <div className={styles.pageSub}>
             {completed
               ? `${deals.length} closed deal${deals.length === 1 ? '' : 's'}`
-              : `${stateCount('open')} live · ${deals.length} total`}
+              : `${stateCount('active')} active · ${deals.length} total`}
           </div>
         </div>
         {canManage && !completed && (
@@ -205,9 +206,9 @@ export default function ActiveDealsList({
       {!completed && (
         <FilterTabs
           tabs={[
-            { value: 'open', label: 'All', count: stateCount('open') },
             ...DEAL_STATES.filter((s) => s !== 'closed')
               .map((s) => ({ value: s, label: DEAL_STATE_META[s].label, dot: DEAL_STATE_META[s].color, count: stateCount(s) })),
+            { value: 'open', label: 'All', count: stateCount('open') },
           ]}
           value={stateFilter}
           onChange={(v) => setStateFilter(v as StateFilter)}

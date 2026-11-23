@@ -27,13 +27,17 @@ export type DealBookSettings = Record<`${DesignSlot}_path`, string | null> & { u
 
 const one = <T,>(v: T | T[] | null | undefined): T | null => (Array.isArray(v) ? v[0] ?? null : v ?? null)
 
-/** Every live deal with its IM files and whether (and where) it's in the book. */
+/**
+ * Every deal marked Active, with its IM files and whether (and where) it's in the book. Dormant,
+ * closed and archived deals are left out, so one that goes dormant drops out of the book and its
+ * downloads without anyone having to remove it.
+ */
 export const fetchDealBook = cache(async (): Promise<{ rows: DealBookRow[]; settings: DealBookSettings }> => {
   const supabase = await createClient()
   const [deals, ims, items, settings] = await Promise.all([
     supabase.from('active_deals')
       .select('id, deal_state, entry:pipeline_entries!pipeline_entry_id(title, company:companies!company_id(name))')
-      .neq('deal_state', 'archived'),
+      .eq('deal_state', 'active'),
     supabase.from('deal_book_ims').select('active_deal_id, named_path, noname_path, codename, updated_at'),
     supabase.from('deal_book_items').select('active_deal_id, position'),
     supabase.from('deal_book_settings').select('cover_path, about_path, contents_path, back_path, updated_at').maybeSingle(),
