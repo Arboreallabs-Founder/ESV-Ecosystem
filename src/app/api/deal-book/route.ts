@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getUser } from '@/lib/user'
 import { buildDealBook, bookDate, type BookDesigns } from '@/lib/deal-book-pdf'
 import { DEAL_BOOK_BUCKET, fetchDealBook } from '@/lib/deal-book'
+import { loadDealBookAssets } from '@/lib/deal-book-assets'
 
 /*
  * GET /api/deal-book?version=named|noname → the Deal Book PDF, assembled now.
@@ -54,8 +55,8 @@ export async function GET(req: NextRequest) {
       pdf: (await download(noname ? r.im!.noname_path : r.im!.named_path))!,
     })))
 
-    const pdf = await buildDealBook({ designs, deals, versionLabel: noname ? 'No-name' : 'Named' })
-    const name = `ESV Deal Book${noname ? ' (No-name)' : ''} - ${bookDate()}.pdf`
+    const pdf = await buildDealBook({ designs, deals, assets: await loadDealBookAssets(), versionLabel: noname ? 'No-name' : 'Named' })
+    const name = `ESV Investment Memorandum Book${noname ? ' (No-name)' : ''} - ${bookDate()}.pdf`
     return new NextResponse(Buffer.from(pdf), {
       headers: {
         'Content-Type': 'application/pdf',

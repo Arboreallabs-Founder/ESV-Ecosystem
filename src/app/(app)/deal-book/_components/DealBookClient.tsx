@@ -107,7 +107,7 @@ export default function DealBookClient({ rows, settings, canManage, orgId }: {
         <section className={styles.panel}>
           <div className={styles.panelHead}>
             <div className={styles.panelTitle}>Page designs</div>
-            <div className={styles.panelHint}>Upload each as a one-page PDF (About Us may be several). Until then a plain ESV page is used.</div>
+            <div className={styles.panelHint}>The ESV IM Book template is used for each page. Upload a PDF only to replace one; keep the same layout so the date and deal list land in the right place.</div>
           </div>
           <div className={styles.designGrid}>
             {SLOTS.map(({ slot, label, hint }) => {
@@ -116,7 +116,7 @@ export default function DealBookClient({ rows, settings, canManage, orgId }: {
                 <div key={slot} className={styles.designCard}>
                   <div className={styles.designLabel}>{label}</div>
                   <div className={styles.designHint}>{hint}</div>
-                  <div className={path ? styles.designSet : styles.designUnset}>{path ? 'Design uploaded' : 'Using the placeholder'}</div>
+                  <div className={path ? styles.designSet : styles.designUnset}>{path ? 'Custom design' : 'ESV template'}</div>
                   <div className={styles.designActions}>
                     <label className={styles.ghostBtnSm}>
                       {busySlot === slot ? 'Uploading…' : path ? 'Replace' : 'Upload PDF'}
