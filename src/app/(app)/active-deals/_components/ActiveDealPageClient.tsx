@@ -15,6 +15,8 @@ import ValuationCard from './ValuationCard'
 import VenturePartnerAccess from './VenturePartnerAccess'
 import DealUpdates from './DealUpdates'
 import DealDocuments from './DealDocuments'
+import DealBookImPanel from './DealBookImPanel'
+import type { DealBookIm } from '@/lib/deal-book'
 import Avatar from '@/app/_components/Avatar'
 import PersonCard, { type PersonDetail } from '@/app/_components/PersonCard'
 import styles from '../active-deals.module.css'
@@ -79,6 +81,8 @@ function serviceLabel(type: string | undefined): string {
 export default function ActiveDealPageClient({
   deal,
   userRole,
+  dealBookIm = null,
+  orgId = '',
   categories,
   companyOptions,
   investors,
@@ -94,6 +98,9 @@ export default function ActiveDealPageClient({
 }: {
   deal: ActiveDeal
   userRole: string
+  /** This deal's Deal Book files (20261124000000). */
+  dealBookIm?: DealBookIm | null
+  orgId?: string
   categories: DealCategory[]
   companyOptions: Array<{ id: string; name: string }>
   investors: ActiveDealInvestor[]
@@ -628,6 +635,11 @@ export default function ActiveDealPageClient({
           canEditIntro={['founder', 'admin', 'associate'].includes(userRole)}
           canShare={userRole !== 'general'}
         />
+
+        {/* The IM files that go into the Deal Book. Internal only. */}
+        {!isPartner && (
+          <DealBookImPanel dealId={deal.id} orgId={orgId} im={dealBookIm} canManage={['founder', 'admin'].includes(userRole)} />
+        )}
 
         {/* Category fields */}
         {deal.categories.length > 0 && (

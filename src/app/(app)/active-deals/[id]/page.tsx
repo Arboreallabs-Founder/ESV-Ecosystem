@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getEntryAnswers, getEntryStageHistory, getEntryStageAnswers } from '@/app/actions/pipelines'
 import { getDealUpdates } from '@/app/actions/active-deal-updates'
 import type { PipelineEntryStageHistory } from '@/lib/types'
+import { fetchDealIm } from '@/lib/deal-book'
 import ActiveDealPageClient from '../_components/ActiveDealPageClient'
 
 export default async function ActiveDealPage({ params }: { params: Promise<{ id: string }> }) {
@@ -35,7 +36,7 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
   // entirely for that role — the dashboard hides the investor section for them anyway.
   const canViewInvestors = user.role !== 'general'
   const isPartner = user.role === 'franchise_partner'
-  const [answers, history, stageAnswers, investorData, updates, partnerSummary, documents] = await Promise.all([
+  const [answers, history, stageAnswers, investorData, updates, partnerSummary, documents, dealBookIm] = await Promise.all([
     getEntryAnswers(deal.pipeline_entry_id),
     getEntryStageHistory(deal.pipeline_entry_id),
     getEntryStageAnswers(deal.pipeline_entry_id),
@@ -46,6 +47,8 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
     // logo. Every source row behind them is hidden from partners by RLS, correctly.
     isPartner ? fetchPartnerDealSummary(id) : Promise.resolve(null),
     fetchDealDocuments(id),
+    // The Deal Book IM files (20261124000000). Internal only.
+    isPartner ? Promise.resolve(null) : fetchDealIm(id),
   ])
 
   const teamMembers = (teamRows ?? []) as Array<{
@@ -57,6 +60,8 @@ export default async function ActiveDealPage({ params }: { params: Promise<{ id:
     <ActiveDealPageClient
       deal={deal}
       userRole={user.role ?? 'associate'}
+      dealBookIm={dealBookIm}
+      orgId={user.org_id ?? ''}
       categories={categories}
       companyOptions={companyOptions}
       investors={investorData.investors}

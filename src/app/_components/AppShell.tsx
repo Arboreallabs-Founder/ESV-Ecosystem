@@ -294,6 +294,15 @@ const NAV_ITEMS: NavEntry[] = [
     icon: <Icon d="M2.25 13.5h3.86a2.25 2.25 0 0 1 2.012 1.244l.256.512a2.25 2.25 0 0 0 2.013 1.244h3.218a2.25 2.25 0 0 0 2.013-1.244l.256-.512a2.25 2.25 0 0 1 2.013-1.244h3.859M12 3v8.25m0 0-3-3m3 3 3-3m-9.75 12h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z" />,
   },
   {
+    // All our deal IMs as one downloadable PDF (20261124000000). Founders/admins build it; every
+    // internal user downloads.
+    href: '/deal-book',
+    label: 'Deal Book',
+    roles: ['founder', 'admin', 'associate', 'general', 'hr'],
+    section: 'Deal Flow',
+    icon: <Icon d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />,
+  },
+  {
     href: '/deal-desk',
     label: 'Deal Desk',
     roles: ['founder', 'admin', 'associate'],

@@ -1184,3 +1184,12 @@ company_updates, tasks, task_comments, pipeline_entries, pipeline_entry_assignee
 every create/update/delete with actor, source (web / connector / system), connecting app, and
 before→after per field. Founder/admin read only; written only by the trigger; a logging failure
 only warns, never blocks the write. Shown in Admin → Activity Log.
+### 20261124000000_deal_book.sql
+**Deal Book**: one downloadable PDF of our deal IMs (Cover → About Us → Contents → IMs → Back page).
+Private `deal-book` storage bucket (`{org_id}/...`; internal read, founder/admin write);
+`deal_book_ims` (per Active Deal: named IM, no-name IM, codename), `deal_book_items` (which deals
+are in the book and in what order), `deal_book_settings` (the four designed pages). Assembled on
+request by `/api/deal-book?version=named|noname` (`src/lib/deal-book-pdf.ts`, pdf-lib): today's
+date stamped on the cover, the deal list with start pages stamped on the contents design, page
+numbers on every page but the cover and back page. Stamp positions are `STAMP` in that file. The
+blank no-name IM template is `public/templates/no-name-im-template.html`.

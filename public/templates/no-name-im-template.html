@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>No-name IM template | Earlyseed Ventures</title>
+<style>
+  /* How to use: open this file in Chrome, click into any grey box and type, then Print
+     (Ctrl/Cmd + P) and choose "Save as PDF" with Margins: None and Background graphics: on.
+     Upload the PDF to the deal in Ecosystem as its No-name IM. Never put the company's name,
+     founders' names, logo, website or anything identifying in it. */
+  @page { size: A4; margin: 0; }
+  :root { --ink: #2C2C3A; --muted: #7E756E; --sand: #D3C1A9; --purple: #745FFD; --crema: #F7ECE2; --fill: #F4F1EE; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #E9E4DF; font-family: Georgia, 'Times New Roman', serif; color: var(--ink); }
+  .help {
+    max-width: 210mm; margin: 16px auto; padding: 12px 16px; background: #fff; border-left: 4px solid var(--purple);
+    font: 14px/1.5 -apple-system, 'Segoe UI', Arial, sans-serif;
+  }
+  .sheet {
+    width: 210mm; min-height: 297mm; margin: 16px auto; padding: 18mm 18mm 20mm; background: #fff;
+    box-shadow: 0 2px 16px rgba(0,0,0,.08); position: relative; page-break-after: always;
+  }
+  .brand { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1.5px solid var(--purple); padding-bottom: 8px; margin-bottom: 18px; }
+  .brand b { font-size: 15px; letter-spacing: .14em; text-transform: uppercase; }
+  .brand span { font: 11px Arial, sans-serif; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+  .tag { font: 700 11px Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--purple); }
+  h1 { font-size: 30px; font-weight: 400; margin: 6px 0 4px; letter-spacing: -.01em; }
+  h2 { font: 700 12px Arial, sans-serif; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 20px 0 8px; border-bottom: 1px solid var(--sand); padding-bottom: 4px; }
+  .facts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 14px; }
+  .fact { background: var(--crema); padding: 8px 10px; border-radius: 6px; }
+  .fact label { display: block; font: 700 9px Arial, sans-serif; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  [contenteditable] { background: var(--fill); border-radius: 4px; padding: 3px 5px; min-height: 1.4em; outline: none; font-size: 13px; line-height: 1.55; }
+  [contenteditable]:focus { box-shadow: 0 0 0 2px rgba(116,95,253,.35); }
+  [contenteditable]:empty::before { content: attr(data-hint); color: #B4ACA6; font-style: italic; }
+  .fact [contenteditable] { background: transparent; padding: 2px 0 0; font-size: 14px; font-weight: 600; }
+  ul { margin: 0; padding-left: 18px; } li { margin-bottom: 4px; }
+  table { width: 100%; border-collapse: collapse; font: 12px Arial, sans-serif; }
+  th, td { border-bottom: 1px solid var(--sand); padding: 6px 6px; text-align: left; }
+  th { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  td[contenteditable] { border-radius: 0; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .foot { position: absolute; left: 18mm; right: 18mm; bottom: 10mm; font: 9px Arial, sans-serif; color: var(--muted); display: flex; justify-content: space-between; border-top: 1px solid var(--sand); padding-top: 6px; }
+  @media print {
+    body { background: #fff; }
+    .help { display: none; }
+    .sheet { margin: 0; box-shadow: none; }
+    [contenteditable] { background: transparent; padding: 0; }
+    [contenteditable]:empty::before { content: ''; }
+  }
+</style>
+</head>
+<body>
+
+<div class="help">
+  <b>No-name IM template.</b> Click into any grey box to type. When done: Print (Ctrl/Cmd + P) → Save as PDF,
+  Margins <i>None</i>, <i>Background graphics</i> on. Upload the PDF to the deal in Ecosystem as its <b>No-name IM</b>.
+  Leave out anything that identifies the company: its name, founders' names, logo, website, exact city or customer names.
+</div>
+
+<!-- ── Page 1 ──────────────────────────────────────────────────────────── -->
+<section class="sheet">
+  <div class="brand"><b>Earlyseed Ventures</b><span>Confidential · Investment Opportunity</span></div>
+
+  <div class="tag" contenteditable="true" data-hint="Sector, e.g. Consumer · D2C"></div>
+  <h1 contenteditable="true" data-hint="Codename, e.g. Project Falcon"></h1>
+  <div contenteditable="true" data-hint="One line on what the company does, without naming it."></div>
+
+  <div class="facts">
+    <div class="fact"><label>Stage</label><div contenteditable="true" data-hint="e.g. Seed"></div></div>
+    <div class="fact"><label>Region</label><div contenteditable="true" data-hint="e.g. West India"></div></div>
+    <div class="fact"><label>Raising</label><div contenteditable="true" data-hint="e.g. ₹5 Cr"></div></div>
+    <div class="fact"><label>Instrument</label><div contenteditable="true" data-hint="e.g. CCPS"></div></div>
+  </div>
+
+  <h2>The business</h2>
+  <div contenteditable="true" data-hint="What they sell, to whom, and how they make money. 4 to 6 lines."></div>
+
+  <h2>Investment highlights</h2>
+  <ul>
+    <li><div contenteditable="true" data-hint="Highlight 1, e.g. 3x revenue growth year on year"></div></li>
+    <li><div contenteditable="true" data-hint="Highlight 2"></div></li>
+    <li><div contenteditable="true" data-hint="Highlight 3"></div></li>
+    <li><div contenteditable="true" data-hint="Highlight 4"></div></li>
+  </ul>
+
+  <h2>Market</h2>
+  <div contenteditable="true" data-hint="Market size and why now. Cite sources."></div>
+
+  <div class="foot"><span>Earlyseed Ventures Private Limited · www.earlyseedventures.com</span><span>Strictly private and confidential</span></div>
+</section>
+
+<!-- ── Page 2 ──────────────────────────────────────────────────────────── -->
+<section class="sheet">
+  <div class="brand"><b>Earlyseed Ventures</b><span>Confidential · Investment Opportunity</span></div>
+
+  <h2>Key metrics</h2>
+  <table>
+    <thead><tr><th>Metric</th><th>FY24</th><th>FY25</th><th>FY26 (proj.)</th></tr></thead>
+    <tbody>
+      <tr><td contenteditable="true">Revenue (₹ Cr)</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+      <tr><td contenteditable="true">Gross margin (%)</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+      <tr><td contenteditable="true">EBITDA (₹ Cr)</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+      <tr><td contenteditable="true">Customers / units</td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+    </tbody>
+  </table>
+
+  <div class="two">
+    <div>
+      <h2>The raise</h2>
+      <div contenteditable="true" data-hint="Amount, instrument, pre-money valuation, minimum ticket, committed so far."></div>
+    </div>
+    <div>
+      <h2>Use of funds</h2>
+      <div contenteditable="true" data-hint="Where the money goes, with rough percentages."></div>
+    </div>
+  </div>
+
+  <h2>Team</h2>
+  <div contenteditable="true" data-hint="Founders' backgrounds without names, e.g. 'CEO: 12 years in FMCG sales at a top-5 player; IIM alumnus.'"></div>
+
+  <h2>Competitive edge</h2>
+  <div contenteditable="true" data-hint="Why they win against alternatives."></div>
+
+  <h2>Contact</h2>
+  <div contenteditable="true" data-hint="ESV contact: name, email, phone."></div>
+
+  <div class="foot"><span>This document is for discussion only and does not constitute an offer.</span><span>Strictly private and confidential</span></div>
+</section>
+
+</body>
+</html>
