@@ -88,10 +88,10 @@ export default function DealBookClient({ rows, settings, canManage, orgId }: {
       const res = await fetch(`/api/deal-book?version=${version}`)
       if (!res.ok) {
         const body = await res.json().catch(() => null) as { error?: string } | null
-        throw new Error(body?.error ?? 'The Deal Book could not be built.')
+        throw new Error(body?.error ?? 'The Active Deal Book could not be built.')
       }
       const blob = await res.blob()
-      const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? 'ESV Deal Book.pdf'
+      const name = /filename="([^"]+)"/.exec(res.headers.get('Content-Disposition') ?? '')?.[1] ?? 'ESV Active Deal Book.pdf'
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -113,7 +113,7 @@ export default function DealBookClient({ rows, settings, canManage, orgId }: {
     <div className={styles.page}>
       <div className={styles.header}>
         <div>
-          <div className={styles.pageTitle}>Deal Book</div>
+          <div className={styles.pageTitle}>Active Deal Book</div>
           <div className={styles.pageSub}>
             All our deal IMs in one PDF: cover, About Us, contents, each IM, back page, with page numbers
             stamped on. Built fresh on every download.

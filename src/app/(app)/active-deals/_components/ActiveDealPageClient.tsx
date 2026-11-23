@@ -82,6 +82,7 @@ export default function ActiveDealPageClient({
   deal,
   userRole,
   dealBookIm = null,
+  inDealBook = false,
   orgId = '',
   categories,
   companyOptions,
@@ -100,6 +101,8 @@ export default function ActiveDealPageClient({
   userRole: string
   /** This deal's Deal Book files (20261124000000). */
   dealBookIm?: DealBookIm | null
+  /** Whether it's switched on to show in the Active Deal Book. */
+  inDealBook?: boolean
   orgId?: string
   categories: DealCategory[]
   companyOptions: Array<{ id: string; name: string }>
@@ -636,9 +639,9 @@ export default function ActiveDealPageClient({
           canShare={userRole !== 'general'}
         />
 
-        {/* The IM files that go into the Deal Book. Internal only. */}
+        {/* Active Deal Book: visibility and the IM files that go into it. Internal only. */}
         {!isPartner && (
-          <DealBookImPanel dealId={deal.id} orgId={orgId} im={dealBookIm} canManage={['founder', 'admin'].includes(userRole)} />
+          <DealBookImPanel dealId={deal.id} orgId={orgId} im={dealBookIm} inBook={inDealBook} isActive={dealState === 'active'} canManage={['founder', 'admin'].includes(userRole)} />
         )}
 
         {/* Category fields */}

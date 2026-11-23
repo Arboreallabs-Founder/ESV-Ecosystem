@@ -1,7 +1,7 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 
-/* Reads for the Deal Book (20261124000000). */
+/* Reads for the Active Deal Book (20261124000000). */
 
 export const DEAL_BOOK_BUCKET = 'deal-book'
 export const DESIGN_SLOTS = ['cover', 'about', 'contents', 'back'] as const
@@ -43,7 +43,7 @@ export const fetchDealBook = cache(async (): Promise<{ rows: DealBookRow[]; sett
     supabase.from('deal_book_settings').select('cover_path, about_path, contents_path, back_path, updated_at').maybeSingle(),
   ])
   const err = deals.error ?? ims.error ?? items.error ?? settings.error
-  if (err) throw new Error(`Could not load the Deal Book: ${err.message}`)
+  if (err) throw new Error(`Could not load the Active Deal Book: ${err.message}`)
 
   const imByDeal = new Map((ims.data ?? []).map((i) => [i.active_deal_id as string, i as DealBookIm]))
   const posByDeal = new Map((items.data ?? []).map((i) => [i.active_deal_id as string, i.position as number]))
@@ -85,4 +85,16 @@ export const fetchDealIm = cache(async (activeDealId: string): Promise<DealBookI
     return null
   }
   return (data as DealBookIm | null) ?? null
+})
+
+/** Whether a deal is switched on to show in the book (it still needs to be Active to appear). */
+export const fetchInDealBook = cache(async (activeDealId: string): Promise<boolean> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase.from('deal_book_items')
+    .select('active_deal_id').eq('active_deal_id', activeDealId).maybeSingle()
+  if (error) {
+    console.error('[deal-book] membership read failed:', error.message)
+    return false
+  }
+  return !!data
 })

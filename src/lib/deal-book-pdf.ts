@@ -23,6 +23,8 @@ export const STAMP = {
   contents: { firstBaselineFromTop: 169.1, lineGap: 35.76, size: 12, perPage: 17, maxWidth: 394 },
   /** Page number, in Inter: centred, this far up from the bottom edge. */
   pageNumber: { yFromBottom: 24, size: 9 },
+  /** Named version only: "CONFIDENTIAL" on the cover (centred, letter-spaced) and in each numbered page's footer. */
+  confidential: { coverYFromBottom: 46, coverSize: 9, coverTracking: 2.2, footerX: 100.6, footerSize: 8 },
 }
 
 const INK = rgb(0, 0, 0)
@@ -79,6 +81,17 @@ function drawable(text: string, font: PDFFont): string {
   return Array.from(text).filter((ch) => ok.has(ch.codePointAt(0)!)).join('').replace(/\s+/g, ' ').trim() || '?'
 }
 
+/** Letter-spaced text centred on the page; pdf-lib has no tracking option, so it goes a glyph at a time. */
+function centredSpaced(page: PDFPage, text: string, y: number, font: PDFFont, size: number, tracking: number, color = INK) {
+  const chars = Array.from(text)
+  const total = chars.reduce((w, ch) => w + font.widthOfTextAtSize(ch, size), 0) + tracking * (chars.length - 1)
+  let x = (page.getSize().width - total) / 2
+  for (const ch of chars) {
+    page.drawText(ch, { x, y, size, font, color })
+    x += font.widthOfTextAtSize(ch, size) + tracking
+  }
+}
+
 function centred(page: PDFPage, text: string, y: number, font: PDFFont, size: number, color = INK) {
   const { width } = page.getSize()
   page.drawText(text, { x: (width - font.widthOfTextAtSize(text, size)) / 2, y, size, font, color })
@@ -90,11 +103,13 @@ export async function buildDealBook(opts: {
   assets: BookAssets
   /** "Named" or "No-name"; goes in the PDF's metadata title. */
   versionLabel: string
+  /** Mark the book Confidential: on the cover and in every numbered page's footer. */
+  confidential?: boolean
   date?: Date
 }): Promise<Uint8Array> {
   const out = await PDFDocument.create()
   out.registerFontkit(fontkit)
-  out.setTitle(`ESV Investment Memorandum Book (${opts.versionLabel})`)
+  out.setTitle(`ESV Active Deal Book (${opts.versionLabel}${opts.confidential ? ', Confidential' : ''})`)
   out.setAuthor('Earlyseed Ventures')
   out.setCreator('ESV Ecosystem')
   // Inter is a CFF font; pdf-lib's subsetter mangles those, so it goes in whole.
@@ -116,6 +131,8 @@ export async function buildDealBook(opts: {
   // ── 1. Cover, with today's date ───────────────────────────────────────────
   const [cover] = await fixed('cover', 'The cover design', true)
   centred(cover, coverDate(opts.date), STAMP.coverDate.yFromBottom, arapey, STAMP.coverDate.size)
+  const conf = STAMP.confidential
+  if (opts.confidential) centredSpaced(cover, 'CONFIDENTIAL', conf.coverYFromBottom, inter, conf.coverSize, conf.coverTracking)
 
   // ── 2. About Us ───────────────────────────────────────────────────────────
   await fixed('about', 'The About Us design', false)
@@ -158,6 +175,9 @@ export async function buildDealBook(opts: {
   out.getPages().forEach((page, i) => {
     if (i === 0 || i >= backFrom) return
     centred(page, String(i + 1), STAMP.pageNumber.yFromBottom, inter, STAMP.pageNumber.size, MUTED)
+    if (opts.confidential) {
+      page.drawText('Confidential', { x: conf.footerX, y: STAMP.pageNumber.yFromBottom, size: conf.footerSize, font: inter, color: MUTED })
+    }
   })
 
   return out.save()

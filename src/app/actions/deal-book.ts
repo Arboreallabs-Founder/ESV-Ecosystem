@@ -5,7 +5,7 @@ import { UserFacingError, dbFailure } from '@/lib/action-errors'
 import { requireRole } from '@/lib/guards'
 import { DESIGN_SLOTS, type DesignSlot } from '@/lib/deal-book'
 
-/* Deal Book writes (20261124000000). Founders and admins only. Files are uploaded straight from
+/* Active Deal Book writes (20261124000000). Founders and admins only. Files are uploaded straight from
    the browser to the private `deal-book` bucket (an IM can be larger than a server request allows),
    then these actions record where they went. Paths must sit under the caller's org folder. */
 
@@ -62,4 +62,23 @@ export async function setDealBookDesign(slot: DesignSlot, path: string | null) {
   )
   if (error) throw dbFailure('save that page', error)
   refresh()
+}
+
+/** Show or hide one deal in the book, from its deal page. Shown deals go to the end of the order. */
+export async function setDealInBook(activeDealId: string, show: boolean) {
+  const { supabase, orgId } = await lead()
+  if (show) {
+    const { data: last, error: readErr } = await supabase.from('deal_book_items')
+      .select('position').eq('org_id', orgId).order('position', { ascending: false }).limit(1).maybeSingle()
+    if (readErr) throw dbFailure('add the deal to the book', readErr)
+    const { error } = await supabase.from('deal_book_items').upsert(
+      { active_deal_id: activeDealId, org_id: orgId, position: ((last?.position as number | undefined) ?? -1) + 1 },
+      { onConflict: 'active_deal_id', ignoreDuplicates: true },
+    )
+    if (error) throw dbFailure('add the deal to the book', error)
+  } else {
+    const { error } = await supabase.from('deal_book_items').delete().eq('active_deal_id', activeDealId)
+    if (error) throw dbFailure('take the deal out of the book', error)
+  }
+  refresh(activeDealId)
 }
