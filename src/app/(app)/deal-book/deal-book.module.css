@@ -86,3 +86,8 @@
   color: var(--color-text); font-family: inherit; font-size: 0.75rem; font-weight: 700; cursor: pointer;
 }
 .posSelect:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; }
+
+.inlineLinkBtn {
+  border: none; background: none; padding: 0; font: inherit; font-weight: 600;
+  color: var(--color-primary); cursor: pointer; text-decoration: underline; text-underline-offset: 2px;
+}

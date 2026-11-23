@@ -101,6 +101,11 @@ export default function DealBookClient({ rows, settings, canManage, orgId }: {
     } catch (e) { setError(describeError(e).message) } finally { setDownloading(null) }
   }
 
+  /** Opens the book as it would download now, in a new tab. */
+  function preview(version: 'named' | 'noname') {
+    window.open(`/api/deal-book?version=${version}&preview=1`, '_blank', 'noopener')
+  }
+
   const namedReady = inBook.filter((r) => r.im?.named_path).length
   const nonameReady = inBook.filter((r) => r.im?.noname_path).length
 
@@ -115,6 +120,7 @@ export default function DealBookClient({ rows, settings, canManage, orgId }: {
           </div>
         </div>
         <div className={styles.downloads}>
+          <button className={styles.ghostBtn} onClick={() => preview('named')}>Preview</button>
           <button className={styles.primaryBtn} disabled={!!downloading || namedReady === 0} onClick={() => download('named')}>
             {downloading === 'named' ? 'Building…' : `Download (${namedReady} deal${namedReady === 1 ? '' : 's'})`}
           </button>
@@ -130,7 +136,11 @@ export default function DealBookClient({ rows, settings, canManage, orgId }: {
         <section className={styles.panel}>
           <div className={styles.panelHead}>
             <div className={styles.panelTitle}>Page designs</div>
-            <div className={styles.panelHint}>The ESV IM Book template is used for each page. Upload a PDF only to replace one; keep the same layout so the date and deal list land in the right place.</div>
+            <div className={styles.panelHint}>
+              The ESV IM Book template is used for each page. Upload a PDF only to replace one; keep the same layout so the date and deal list land in the right place.{' '}
+              <button className={styles.inlineLinkBtn} onClick={() => preview('named')}>Preview the whole book</button>
+              {nonameReady > 0 && <>{' · '}<button className={styles.inlineLinkBtn} onClick={() => preview('noname')}>no-name version</button></>}
+            </div>
           </div>
           <div className={styles.designGrid}>
             {SLOTS.map(({ slot, label, hint }) => {
@@ -146,7 +156,12 @@ export default function DealBookClient({ rows, settings, canManage, orgId }: {
                       <input type="file" accept="application/pdf" hidden disabled={!!busySlot}
                              onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadDesign(slot, f) }} />
                     </label>
-                    {path && <button className={styles.linkBtn} onClick={() => viewDealBookPdf(path)}>View</button>}
+                    <button
+                      className={styles.linkBtn}
+                      onClick={() => (path ? viewDealBookPdf(path) : window.open(`/api/deal-book/template?slot=${slot}`, '_blank', 'noopener'))}
+                    >
+                      View
+                    </button>
                     {path && <button className={styles.linkBtn} disabled={pending} onClick={() => run(() => setDealBookDesign(slot, null))}>Remove</button>}
                   </div>
                 </div>

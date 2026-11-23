@@ -7,6 +7,8 @@ import { loadDealBookAssets } from '@/lib/deal-book-assets'
 
 /*
  * GET /api/deal-book?version=named|noname → the Deal Book PDF, assembled now.
+ * Add &preview=1 to open it in the browser instead of downloading; a preview is built even when no
+ * deal has an IM yet, so the fixed pages can be checked on their own.
  *
  * Every internal user may download (decided 2026-11-23). Built on request rather than stored, so
  * it always has today's date and the latest IMs. Files are read through the caller's own session,
@@ -23,6 +25,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Not allowed.' }, { status: 403 })
   }
   const noname = req.nextUrl.searchParams.get('version') === 'noname'
+  const preview = req.nextUrl.searchParams.get('preview') === '1'
   const supabase = await createClient()
 
   const download = async (path: string | null): Promise<Uint8Array | null> => {
@@ -37,7 +40,7 @@ export async function GET(req: NextRequest) {
     const inBook = rows.filter((r) => r.position !== null)
     // Each version uses only deals that have the right IM; the rest are skipped, not failed.
     const usable = inBook.filter((r) => (noname ? r.im?.noname_path : r.im?.named_path))
-    if (usable.length === 0) {
+    if (usable.length === 0 && !preview) {
       return NextResponse.json(
         { error: noname ? 'No deal in the book has a no-name IM yet.' : 'No deal in the book has an IM yet.' },
         { status: 400 },
@@ -60,7 +63,7 @@ export async function GET(req: NextRequest) {
     return new NextResponse(Buffer.from(pdf), {
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${name}"`,
+        'Content-Disposition': `${preview ? 'inline' : 'attachment'}; filename="${name}"`,
         'Cache-Control': 'no-store',
       },
     })
