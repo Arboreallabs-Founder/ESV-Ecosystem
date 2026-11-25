@@ -1202,7 +1202,7 @@ notification kind `form_submitted`. `submit_form_entry` hands website forms to `
 which follows the form's own path: checks every answer, sets flags, notifies founders and admins, and
 creates **no Company** (the applicant is a person). Neither pipeline has an `accepted` stage, because
 accepting creates an Active Deal. Their general links carry the slugs and credit nobody. Created
-unpublished: publish once `/privacy` is approved (`APPROVED` in `src/app/privacy/page.tsx`). The app
+unpublished until `/privacy` was approved (25 November 2026). The app
 tolerates this not having run.
 
 ### 20261126000100_investor_relations.sql

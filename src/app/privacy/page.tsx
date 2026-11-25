@@ -1,27 +1,17 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { notFound } from 'next/navigation'
-import { getUser } from '@/lib/user'
 import { ORG } from '@/lib/documents/org'
 import styles from './privacy.module.css'
 
 /*
- * The privacy policy: linked from the login page and the website forms' consent question.
- *
- * DRAFT until a founder approves it. While APPROVED is false only signed-in team members can open
- * it (a public draft would read as the real policy), and the website forms stay unpublished
- * (20261126000000). Going live: settle every <Confirm>, set EFFECTIVE and APPROVED, deploy, then
- * publish the forms.
+ * The privacy policy: linked from the login page and the website forms' consent question, so people
+ * have agreed to what it says. Change the wording only with approval, and change EFFECTIVE with it.
+ * Approved 25 November 2026.
  */
-const APPROVED = false
-const EFFECTIVE = ''
+const EFFECTIVE = '25 November 2026'
+const GRIEVANCE_OFFICER = { name: 'Dhwani Joshi', email: 'dhwani@earlyseedventures.com' }
 
-export const metadata: Metadata = { title: 'Privacy policy | Earlyseed Ventures', robots: APPROVED ? undefined : { index: false } }
-
-/** Something ESV has to decide or check before this goes live. */
-function Confirm({ children }: { children: ReactNode }) {
-  return <mark className={styles.confirm}>{children}</mark>
-}
+export const metadata: Metadata = { title: 'Privacy policy | Earlyseed Ventures' }
 
 const SECTIONS: Array<{ id: string; title: string; body: ReactNode }> = [
   { id: 'who', title: 'Who we are', body: (
@@ -69,7 +59,7 @@ const SECTIONS: Array<{ id: string; title: string; body: ReactNode }> = [
         <li><b>AI assistants our team uses.</b> Team members can connect Claude (Anthropic) or ChatGPT (OpenAI) to Ecosystem. If they ask one about an application, it processes that information to answer.</li>
         <li><b>Authorities,</b> where the law requires it.</li>
       </ul>
-      <p><Confirm>Confirm: we ask you before sharing your application with a start-up, investor or partner.</Confirm></p>
+      <p>We ask you before sharing your application with a start-up, investor or partner.</p>
     </>
   ) },
   { id: 'where', title: 'Where it is kept, and how', body: (
@@ -80,7 +70,8 @@ const SECTIONS: Array<{ id: string; title: string; body: ReactNode }> = [
   ) },
   { id: 'long', title: 'How long we keep it', body: (
     <p>
-      <Confirm>Confirm the period. Suggested: applications that do not go ahead are deleted 24 months after our last contact with you; records of members, partners and clients are kept for as long as we work together, and then as long as the law requires.</Confirm>
+      Applications that do not go ahead are deleted 24 months after our last contact with you. Records of members, partners
+      and clients are kept for as long as we work together, and then for as long as the law requires.
     </p>
   ) },
   { id: 'rights', title: 'Your choices', body: (
@@ -94,7 +85,7 @@ const SECTIONS: Array<{ id: string; title: string; body: ReactNode }> = [
         <li>record someone to act for you if you die or cannot act yourself</li>
       </ul>
       <p>
-        Email <a href={`mailto:${ORG.email}`}>{ORG.email}</a>. We may check that it is you first. Withdrawing consent does not
+        Email <a href={`mailto:${GRIEVANCE_OFFICER.email}`}>{GRIEVANCE_OFFICER.email}</a>. We reply within 30 days, and may check that it is you first. Withdrawing consent does not
         affect what was done before, and may mean we cannot continue with your application.
       </p>
     </>
@@ -111,34 +102,23 @@ const SECTIONS: Array<{ id: string; title: string; body: ReactNode }> = [
   { id: 'contact', title: 'Questions and complaints', body: (
     <>
       <p>
-        Contact our Grievance Officer, <Confirm>name to be confirmed</Confirm>, at <a href={`mailto:${ORG.email}`}>{ORG.email}</a>,{' '}
-        {ORG.phone}, or the address above. We reply within <Confirm>30 days (confirm)</Confirm>. If you are not satisfied, you can
-        complain to the Data Protection Board of India.
+        Contact our Grievance Officer, {GRIEVANCE_OFFICER.name}, at{' '}
+        <a href={`mailto:${GRIEVANCE_OFFICER.email}`}>{GRIEVANCE_OFFICER.email}</a>, {ORG.phone}, or the address above. We reply
+        within 30 days. If you are not satisfied, you can complain to the Data Protection Board of India.
       </p>
       <p>If we change this policy we will update the date on this page, and ask for your consent again where the law requires it.</p>
     </>
   ) },
 ]
 
-export default async function PrivacyPage() {
-  if (!APPROVED) {
-    const user = await getUser()
-    if (!user || user.role === 'franchise_partner') notFound()
-  }
-
+export default function PrivacyPage() {
   return (
     <main className={styles.page}>
       <header className={styles.head}>
         {/* eslint-disable-next-line @next/next/no-img-element -- static, already-small asset */}
         <img src="/brand/esv-logo.png" alt="Earlyseed Ventures" className={styles.logo} />
         <h1 className={styles.title}>Privacy policy</h1>
-        <p className={styles.date}>{EFFECTIVE ? `Effective ${EFFECTIVE}` : 'Draft, not in effect'}</p>
-        {!APPROVED && (
-          <p className={styles.draft}>
-            <b>Draft for approval.</b> Only the team can see this page. Highlighted points need a decision, and a lawyer should
-            review the wording before it goes live.
-          </p>
-        )}
+        <p className={styles.date}>Effective {EFFECTIVE}</p>
       </header>
       <div className={styles.sections}>
         {SECTIONS.map((s) => (
