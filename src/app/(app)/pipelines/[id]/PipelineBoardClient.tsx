@@ -12,6 +12,7 @@ import type { Pipeline, PipelineStage, PipelineEntry, DealCategory, PipelineStag
 import Avatar from '@/app/_components/Avatar'
 import PhaseBar from '@/app/_components/PhaseBar'
 import type { ProjectStage } from '@/lib/project-model'
+import { linkify } from '@/lib/linkify'
 import styles from './board.module.css'
 
 const STAGE_COLORS = ['#745FFD', '#16a34a', '#d97706', '#dc2626', '#0ea5e9', '#8b5cf6', '#ec4899', '#14b8a6']
@@ -1207,7 +1208,13 @@ export default function PipelineBoardClient({
                   {selectedAnswers.map((a, i) => (
                     <div key={a.id} className={styles.answerItem}>
                       <div className={styles.answerQ}>{i + 1}. {a.node?.question_text ?? 'Question'}</div>
-                      <div className={styles.answerA}>{a.answer_text || <em style={{ opacity: 0.5 }}>No answer</em>}</div>
+                      <div className={styles.answerA}>
+                        {a.answer_text
+                          ? linkify(a.answer_text).map((p, j) => p.href
+                            ? <a key={j} href={p.href} target="_blank" rel="noopener noreferrer" className={styles.answerLink}>{p.text}</a>
+                            : p.text)
+                          : <em style={{ opacity: 0.5 }}>No answer</em>}
+                      </div>
                     </div>
                   ))}
                 </div>

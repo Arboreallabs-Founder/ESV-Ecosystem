@@ -1222,3 +1222,9 @@ so the tie went to another organisation: `/apply` fed its pipeline, and 20261126
 forms there. The first moves the website forms, pipelines and tasks to ESV (the organisation whose
 founder form carries the team's named links) and leaves one bare general link, with a unique index. The
 second moves founder applications that arrived through the wrong link to ESV Referrals at Lead.
+
+### 20261129000000_internship_form.sql
+`/apply/intern` → "Interns", for the website's careers page (spec: `docs/ecosystem-forms` in the website
+repo). Data only: a third website form, as 20261126000000, in the organisation behind `/apply`. Answering
+"No" to "Are you 18 or older?" flags the entry. Founders and admins are notified; there is no automatic
+task. Created unpublished until the privacy policy covers internships and applicants under 18.

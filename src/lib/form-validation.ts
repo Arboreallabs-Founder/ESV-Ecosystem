@@ -1,4 +1,4 @@
-/* Checks for the public website forms (/apply/syndicate, /apply/partner; 20261126000000). The server
+/* Checks for the public website forms (/apply/syndicate, /apply/partner, /apply/intern; 20261126000000). The server
    repeats the ones that matter in submit_website_form. Returns the sentence to show, or null. */
 
 export function websiteAnswerProblem(answer: string, node: { answer_type: string | null; contact_field: string | null }): string | null {
