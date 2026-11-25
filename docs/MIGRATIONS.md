@@ -1215,3 +1215,10 @@ not having run (the flag reads as false).
 Investor Relations are also assigned to website applications on arrival (or when flagged, for waiting
 ones), so they can be moved straight away. Website pipelines only (`is_website_pipeline()`), and only
 when nobody is assigned. Needs 20261126000100.
+
+### 20261128000000_website_links_to_esv.sql / 20261128000100_recover_general_applications.sql
+`/apply` resolved to "the oldest" general link, but every organisation's was created in one statement,
+so the tie went to another organisation: `/apply` fed its pipeline, and 20261126000000 built the website
+forms there. The first moves the website forms, pipelines and tasks to ESV (the organisation whose
+founder form carries the team's named links) and leaves one bare general link, with a unique index. The
+second moves founder applications that arrived through the wrong link to ESV Referrals at Lead.
