@@ -1193,3 +1193,14 @@ request by `/api/deal-book?version=named|noname` (`src/lib/deal-book-pdf.ts`, pd
 date stamped on the cover, the deal list with start pages stamped on the contents design, page
 numbers on every page but the cover and back page. Stamp positions are `STAMP` in that file. The
 blank no-name IM template is `public/templates/no-name-im-template.html`.
+
+### 20261126000000_website_forms.sql
+**Website forms** for the ESV website's invest page: `/apply/syndicate` → "Syndicate investors" and
+`/apply/partner` → "Growth partners" (specs: `docs/ecosystem-forms` in the website repo). New
+`forms.is_website_form`, `forms.success_message`, `form_node_options.flag`, `pipeline_entries.flags`,
+notification kind `form_submitted`. `submit_form_entry` hands website forms to `submit_website_form`,
+which follows the form's own path: checks every answer, sets flags, notifies founders and admins, and
+creates **no Company** (the applicant is a person). Neither pipeline has an `accepted` stage, because
+accepting creates an Active Deal. Their general links carry the slugs and credit nobody. Created
+unpublished: publish once `/privacy` is approved (`APPROVED` in `src/app/privacy/page.tsx`). The app
+tolerates this not having run.

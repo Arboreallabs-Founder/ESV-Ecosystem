@@ -658,6 +658,7 @@ export default function PipelineBoardClient({
                         <div className={styles.listRowTitle}>{entry.title || 'Untitled submission'}</div>
                         <div className={styles.listRowMeta}>
                           {entry.submitter_name && <span>{entry.submitter_name}</span>}
+                          {(entry.flags ?? []).map((f) => <span key={f} className={styles.entryFlag}>{f}</span>)}
                           <span>{new Date(entry.submitted_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
                           {(entry.assignees ?? []).map((a) => (
                             <span key={a.user_id} className={styles.entryAssigneeChip}>
@@ -990,6 +991,10 @@ export default function PipelineBoardClient({
               {selectedEntry.submitter_name && <span className={styles.metaChip}>{selectedEntry.submitter_name}</span>}
               {selectedEntry.submitter_email && <span className={styles.metaChip}>{selectedEntry.submitter_email}</span>}
               <span className={styles.metaChip}>{new Date(selectedEntry.submitted_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+              {!selectedEntry.link_creator?.name && selectedEntry.form_link_label && (
+                <span className={styles.metaChipAccent}>via {selectedEntry.form_link_label}</span>
+              )}
+              {(selectedEntry.flags ?? []).map((f) => <span key={f} className={styles.entryFlag}>{f}</span>)}
               {selectedEntry.link_creator?.name && (
                 <span className={styles.metaChipAccent}>
                   via {selectedEntry.link_creator.name}&apos;s link
@@ -1295,6 +1300,7 @@ function EntryCard({ entry, isDragging, canDrag, onDragStart, onDragEnd, onClick
       <div className={styles.entryTitle}>{entry.title || 'Untitled submission'}</div>
       {entry.submitter_name && <div className={styles.entryMeta}>{entry.submitter_name}</div>}
       {entry.form_link_label && <div className={styles.entryLinkLabel}>{entry.form_link_label}</div>}
+      {(entry.flags ?? []).map((f) => <div key={f} className={styles.entryFlag}>{f}</div>)}
       {showAssigneeError && <div className={styles.assigneeGateMsg}>Assign someone first</div>}
       {(entry.assignees ?? []).length > 0 && (
         <div className={styles.entryAssignees}>

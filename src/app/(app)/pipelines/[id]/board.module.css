@@ -1196,3 +1196,10 @@
   border-radius: 999px; cursor: pointer;
 }
 .selfAssignBtn:hover { background: rgba(var(--color-primary-rgb), 0.08); }
+
+/* Notices from a website form, e.g. "Has questions first". */
+.entryFlag {
+  display: inline-block; align-self: flex-start; width: fit-content; margin-top: 0.25rem;
+  font-size: 0.6875rem; font-weight: 600; padding: 0.0625rem 0.4rem; border-radius: 4px;
+  color: var(--color-text); background: color-mix(in srgb, var(--color-warning) 22%, transparent);
+}

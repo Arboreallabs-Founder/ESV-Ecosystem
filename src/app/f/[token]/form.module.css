@@ -319,3 +319,8 @@
   z-index: 1;
   position: relative;
 }
+
+/* ── Website application forms ─────────────────────────────────────── */
+.inlineLink { color: #745FFD; text-decoration: underline; text-underline-offset: 2px; }
+/* Focused by script when a choice question appears, as a starting point for Tab. Not a control. */
+.questionFocus:focus { outline: none; }

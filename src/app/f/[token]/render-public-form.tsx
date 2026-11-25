@@ -8,6 +8,9 @@ interface FormData {
   /** What the admin wants shown to the person filling it in. Null falls back to the title. */
   form_display_name: string | null
   form_description: string | null
+  /** An application form on the ESV website (20261126000000). */
+  website_form?: boolean
+  success_message?: string | null
   pipeline_id: string | null
   first_stage_id: string | null
   nodes: Array<{
@@ -18,6 +21,7 @@ interface FormData {
     answer_type: string | null
     /** Set when this question is the one asking who they are. See 20260928. */
     contact_field: 'name' | 'email' | 'phone' | null
+    field_key?: string | null
     options: Array<{ id: string; label: string; position: number }>
   }>
   edges: Array<{

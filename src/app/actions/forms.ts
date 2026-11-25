@@ -314,5 +314,9 @@ export async function submitForm(
     p_submitter_name: submitterName || '',
     p_submitter_email: submitterEmail || '',
   })
+  // submit_website_form refused an answer: most likely the form was edited while it was open.
+  if (error?.code === '22023') {
+    throw new UserFacingError('Some answers are missing or not valid. Please reload the page and fill in the form again.')
+  }
   if (error) throw dbFailure('save that', error)
 }

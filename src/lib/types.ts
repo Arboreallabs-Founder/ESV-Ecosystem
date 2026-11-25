@@ -1033,6 +1033,8 @@ export type PipelineEntry = {
   submitter_email: string | null
   submitted_at: string
   company_id?: string | null
+  /** Notices for the team, set by website form submissions (20261126000000). */
+  flags?: string[]
   form?: { title: string } | null
   link_creator?: { name: string } | null
   form_link_label?: string | null

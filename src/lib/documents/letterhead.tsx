@@ -1,6 +1,7 @@
 import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer'
 import type { SignatureMode } from '@/lib/types'
 import { ESV_WORDMARK_DATA_URI } from './wordmark'
+import { ORG } from './org'
 import { LETTER_SERIF_REGULAR, LETTER_SERIF_BOLD, LETTER_SERIF_ITALIC } from './letter-font'
 
 /* The ESV letterhead, as a react-pdf component.
@@ -25,14 +26,7 @@ Font.register({
   ],
 })
 
-export const ORG = {
-  legalName: 'Earlyseed Ventures Private Limited',
-  address: '3 Enterprise Centre, Near Orchid Hotel, Off. Nehru Road, Navpada, Vile Parle East, Mumbai 400 099, India.',
-  email: 'info@earlyseedventures.com',
-  website: 'www.earlyseedventures.com',
-  phone: '+91 22 45133786',
-  cin: 'U74999MH2023PTC397996',
-} as const
+export { ORG }
 
 // Brand tokens, from ESV Color Palette.jpeg. Printed documents stay near-monochrome — colour is
 // used for the rule under the wordmark and nothing else.

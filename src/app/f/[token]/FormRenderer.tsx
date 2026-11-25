@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { submitForm } from '@/app/actions/forms'
 import { describeError } from '@/lib/client-errors'
+import { websiteAnswerProblem } from '@/lib/form-validation'
 import { renderFormattedText } from '@/app/(app)/forms/[id]/builder/utils'
 import styles from './form.module.css'
 
@@ -14,6 +15,8 @@ type FormNode = {
   answer_type: string | null
   /** This question collects the submitter's name/email/phone, so we do not ask again at the end. */
   contact_field: 'name' | 'email' | 'phone' | null
+  /** What the question is, e.g. 'consent'. */
+  field_key?: string | null
   options: Array<{ id: string; label: string; position: number }>
 }
 
@@ -31,14 +34,33 @@ interface FormData {
   form_title: string
   form_display_name: string | null
   form_description: string | null
+  /** An application form on the ESV website (20261126000000): checks answers as they are given. */
+  website_form?: boolean
+  success_message?: string | null
   pipeline_id: string | null
   first_stage_id: string | null
   nodes: FormNode[]
   edges: FormEdge[]
 }
 
+/** The consent wording with its "privacy policy" linked. */
+function withPrivacyLink(text: string): ReactNode {
+  const at = text.indexOf('privacy policy')
+  if (at < 0) return renderFormattedText(text)
+  return (
+    <>
+      {renderFormattedText(text.slice(0, at))}
+      <a href="/privacy" target="_blank" rel="noopener" className={styles.inlineLink}>privacy policy</a>
+      {renderFormattedText(text.slice(at + 'privacy policy'.length))}
+    </>
+  )
+}
+
+const AUTOCOMPLETE = { name: 'name', email: 'email', phone: 'tel' } as const
+
 export default function FormRenderer({ formData }: { formData: FormData }) {
   const { nodes, edges } = formData
+  const isWebsite = !!formData.website_form
   const nodeMap = Object.fromEntries(nodes.map((n) => [n.id, n]))
 
   const startNode = nodes.find((n) => n.type === 'start')
@@ -53,6 +75,8 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [answerError, setAnswerError] = useState('')
+  const questionRef = useRef<HTMLDivElement>(null)
 
   // Submitter info step
   const [showSubmitterStep, setShowSubmitterStep] = useState(false)
@@ -62,6 +86,13 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
   const currentNode = currentNodeId ? nodeMap[currentNodeId] : null
   const isEnd = currentNode?.type === 'end' || (!currentNode && answeredOrder.length > 0)
   const isRejected = currentNode?.type === 'end' && currentNode.subtype === 'rejected'
+
+  // Choices have no field to focus, so on a website form the next question takes focus itself: with
+  // the keyboard, Tab then lands on its first option. Not on the first screen.
+  useEffect(() => {
+    if (isWebsite && answeredOrder.length > 0 && currentNode?.answer_type === 'mcq') questionRef.current?.focus()
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only when the question changes
+  }, [currentNodeId])
 
   // Total question count for progress
   const questionNodes = nodes.filter((n) => n.type === 'question')
@@ -83,6 +114,11 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
   function handleNext() {
     if (!currentNodeId || !currentNode) return
     const answer = currentAnswer.trim()
+    if (isWebsite && currentNode.type === 'question') {
+      const problem = websiteAnswerProblem(answer, currentNode)
+      setAnswerError(problem ?? '')
+      if (problem) return
+    }
     if (!answer && currentNode.type === 'question') return
 
     setAnswers((prev) => ({ ...prev, [currentNodeId]: answer }))
@@ -94,6 +130,7 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
 
   function handleMcqSelect(optionId: string) {
     setCurrentAnswer(optionId)
+    setAnswerError('')
   }
 
   /* What the answers already told us about who this is.
@@ -161,8 +198,19 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
           {/* eslint-disable-next-line @next/next/no-img-element -- static, already-small asset; see Avatar.tsx */}
           <img src="/brand/esv-logo.png" alt="Earlyseed Ventures" className={`${styles.logo} ${styles.logoCentered}`} />
           <div className={styles.successIcon}>✓</div>
-          <h1 className={styles.title}>Thank you!</h1>
-          <p className={styles.sub}>Your response has been submitted successfully.</p>
+          {formData.success_message ? (
+            <>
+              <h1 className={styles.title}>Thank you.</h1>
+              {formData.success_message.split(/\n{2,}/).map((para) => (
+                <p key={para} className={styles.sub} style={{ marginBottom: '0.75rem' }}>{para}</p>
+              ))}
+            </>
+          ) : (
+            <>
+              <h1 className={styles.title}>Thank you!</h1>
+              <p className={styles.sub}>Your response has been submitted successfully.</p>
+            </>
+          )}
         </div>
         <div className={styles.footerBrand}>T&amp;C apply</div>
       </div>
@@ -242,17 +290,25 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
         ) : currentNode?.type === 'question' ? (
           /* Question step */
           <div>
-            <div className={styles.questionText}>
-              {renderFormattedText(currentNode.question_text ?? '')}
+            <div
+              ref={questionRef}
+              id="form-question"
+              className={`${styles.questionText} ${isWebsite ? styles.questionFocus : ''}`}
+              tabIndex={isWebsite ? -1 : undefined}
+            >
+              {isWebsite && currentNode.field_key === 'consent'
+                ? withPrivacyLink(currentNode.question_text ?? '')
+                : renderFormattedText(currentNode.question_text ?? '')}
             </div>
 
             {currentNode.answer_type === 'mcq' ? (
-              <div className={styles.mcqOptions}>
+              <div className={styles.mcqOptions} {...(isWebsite ? { role: 'group', 'aria-labelledby': 'form-question' } : {})}>
                 {currentNode.options.sort((a, b) => a.position - b.position).map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
                     className={`${styles.mcqOption} ${currentAnswer === opt.id ? styles.mcqOptionSelected : ''}`}
+                    aria-pressed={isWebsite ? currentAnswer === opt.id : undefined}
                     onClick={() => handleMcqSelect(opt.id)}
                   >
                     {opt.label}
@@ -263,27 +319,37 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
               <textarea
                 className={styles.textarea}
                 value={currentAnswer}
-                onChange={(e) => setCurrentAnswer(e.target.value)}
+                onChange={(e) => { setCurrentAnswer(e.target.value); if (answerError) setAnswerError('') }}
                 placeholder="Your answer…"
                 rows={5}
                 autoFocus
+                aria-labelledby={isWebsite ? 'form-question' : undefined}
               />
             ) : (
               <input
+                // A fresh field per question on a website form, so its keyboard and autofill match it.
+                key={isWebsite ? currentNode.id : 'answer'}
                 className={styles.input}
                 value={currentAnswer}
-                onChange={(e) => setCurrentAnswer(e.target.value)}
+                onChange={(e) => { setCurrentAnswer(e.target.value); if (answerError) setAnswerError('') }}
                 placeholder="Your answer…"
                 autoFocus
+                {...(isWebsite ? {
+                  'aria-labelledby': 'form-question',
+                  'aria-invalid': !!answerError,
+                  inputMode: currentNode.contact_field === 'email' ? 'email' as const : currentNode.contact_field === 'phone' ? 'tel' as const : undefined,
+                  autoComplete: currentNode.contact_field ? AUTOCOMPLETE[currentNode.contact_field] : 'off',
+                } : {})}
                 onKeyDown={(e) => e.key === 'Enter' && handleNext()}
               />
             )}
 
+            {answerError && <p className={styles.errorMsg} role="alert" style={{ marginTop: '1rem', marginBottom: 0 }}>{answerError}</p>}
             <div className={styles.actions}>
               <button
                 className={styles.nextBtn}
                 onClick={handleNext}
-                disabled={!currentAnswer.trim()}
+                disabled={!isWebsite && !currentAnswer.trim()}
               >
                 Next →
               </button>
