@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useCallback, useTransition } from 'react'
+import { useState, useCallback, useEffect, useRef, useTransition } from 'react'
 import { alertError } from '@/lib/client-errors'
 import { useRouter } from 'next/navigation'
 import {
-  ReactFlow, Background, Controls, MiniMap,
+  ReactFlow, Background, Controls, MiniMap, useNodesInitialized, useReactFlow,
   addEdge, useNodesState, useEdgesState,
   type Node, type Edge, type Connection,
   MarkerType,
@@ -17,6 +17,7 @@ import QuestionNode from './_components/QuestionNode'
 import PropertiesPanel from './_components/PropertiesPanel'
 import { saveFormGraph, publishForm, generateFormLink, updateFormMeta } from '@/app/actions/forms'
 import { generateId } from './utils'
+import { OUTPUT, condenseEdges, isMcq, liveEdges, optionsOf, overlapCount, tidyPositions, validateGraph } from './graph'
 import type { Form, FormNode, FormEdge, Pipeline } from '@/lib/types'
 import styles from './builder.module.css'
 
@@ -35,18 +36,46 @@ function dbNodesToFlow(dbNodes: FormNode[]): Node[] {
   }))
 }
 
+// No labels: a line starts from its option's own row on the card.
+const EDGE_LOOK = {
+  type: 'smoothstep',
+  markerEnd: { type: MarkerType.ArrowClosed },
+  style: { stroke: 'var(--color-primary)', strokeWidth: 1.5 },
+}
+
+/** Runs once the cards have been drawn and measured: a form opening with cards on top of each other is tidied. */
+function WhenMeasured({ onReady }: { onReady: () => void }) {
+  const ready = useNodesInitialized()
+  const done = useRef(false)
+  useEffect(() => {
+    if (!ready || done.current) return
+    done.current = true
+    onReady()
+  }, [ready, onReady])
+  return null
+}
+
+/** Shows the top of the form, at a size that can be read: all of a long one at once is a thin strip. */
+function FitOn({ tick }: { tick: number }) {
+  const { fitView, getNodes } = useReactFlow()
+  useEffect(() => {
+    if (tick === 0) return
+    requestAnimationFrame(() => {
+      const top = [...getNodes()].sort((a, b) => a.position.y - b.position.y).slice(0, 6).map((n) => ({ id: n.id }))
+      fitView({ nodes: top, padding: 0.1, duration: 300, maxZoom: 1 })
+    })
+  }, [tick, fitView, getNodes])
+  return null
+}
+
 function dbEdgesToFlow(dbEdges: FormEdge[]): Edge[] {
   return dbEdges.map((e) => ({
     id: e.id,
     source: e.source_node_id,
     target: e.target_node_id,
-    sourceHandle: e.condition_value ?? 'output',
+    sourceHandle: e.condition_value ?? OUTPUT,
     targetHandle: 'input',
-    label: e.condition_label ?? undefined,
-    markerEnd: { type: MarkerType.ArrowClosed },
-    style: { stroke: 'var(--color-primary)', strokeWidth: 1.5 },
-    labelStyle: { fontSize: '11px', fill: 'var(--color-muted)' },
-    labelBgStyle: { fill: 'var(--color-card)' },
+    ...EDGE_LOOK,
   }))
 }
 
@@ -55,8 +84,8 @@ function flowNodesToDb(nodes: Node[], formId: string) {
     id: n.id,
     type: n.type === 'startNode' ? 'start' : n.type === 'endNode' ? 'end' : 'question',
     subtype: n.type === 'endNode' ? ((n.data as any).subtype ?? 'success') : null,
-    position_x: n.position.x,
-    position_y: n.position.y,
+    position_x: Math.round(n.position.x),
+    position_y: Math.round(n.position.y),
     question_text: (n.data as any).questionText ?? null,
     answer_type: (n.data as any).answerType ?? null,
     // Carried through deliberately: saveFormGraph deletes and reinserts every node, so a field
@@ -66,59 +95,20 @@ function flowNodesToDb(nodes: Node[], formId: string) {
   })) as Parameters<typeof saveFormGraph>[1]
 }
 
-function validateGraph(nodes: Node[], edges: Edge[]): string | null {
-  const startNodes = nodes.filter((n) => n.type === 'startNode')
-  if (startNodes.length !== 1) return 'Form must have exactly one Start node.'
-
-  const endNodes = nodes.filter((n) => n.type === 'endNode')
-  const hasSuccess = endNodes.some((n) => (n.data as any).subtype === 'success')
-  const hasRejected = endNodes.some((n) => (n.data as any).subtype === 'rejected')
-  if (!hasSuccess) return 'Add a "Submitted" end node — every form needs a success outcome.'
-  if (!hasRejected) return 'Add a "Not Eligible" end node — every form needs a rejection outcome.'
-
-  // Each output handle must connect to exactly one target
-  const handleCount = new Map<string, number>()
-  for (const e of edges) {
-    const key = `${e.source}::${e.sourceHandle}`
-    handleCount.set(key, (handleCount.get(key) ?? 0) + 1)
-  }
-  for (const [, count] of handleCount) {
-    if (count > 1) return 'A question has multiple outgoing connections from the same output — each path must lead to exactly one place.'
-  }
-
-  const connected = new Set(edges.map((e) => `${e.source}::${e.sourceHandle}`))
-
-  for (const node of nodes) {
-    if (node.type === 'endNode') continue
-    if (node.type === 'startNode') {
-      if (!connected.has(`${node.id}::output`))
-        return 'Start node is not connected to any question.'
-    } else if (node.type === 'questionNode') {
-      const data = node.data as any
-      if (data.answerType === 'mcq') {
-        const validOpts = (data.options ?? []).filter((o: any) => o.label.trim())
-        if (validOpts.length === 0) return 'An MCQ question has no options — add at least one option.'
-        for (const opt of validOpts) {
-          if (!connected.has(`${node.id}::${opt.id}`))
-            return `MCQ option "${opt.label}" has no outgoing connection — all options must lead somewhere.`
-        }
-      } else {
-        if (!connected.has(`${node.id}::output`))
-          return 'A question has no outgoing connection — all questions must lead somewhere.'
-      }
+function flowEdgesToDb(nodes: Node[], edges: Edge[]) {
+  const byId = new Map(nodes.map((n) => [n.id, n]))
+  return liveEdges(nodes, edges).map((e) => {
+    const option = e.sourceHandle && e.sourceHandle !== OUTPUT
+      ? optionsOf(byId.get(e.source)!).find((o) => o.id === e.sourceHandle)
+      : undefined
+    return {
+      id: e.id,
+      source_node_id: e.source,
+      target_node_id: e.target,
+      condition_value: option?.id ?? null,
+      condition_label: option?.label ?? null,
     }
-  }
-  return null
-}
-
-function flowEdgesToDb(edges: Edge[]) {
-  return edges.map((e) => ({
-    id: e.id,
-    source_node_id: e.source,
-    target_node_id: e.target,
-    condition_value: (e.sourceHandle && e.sourceHandle !== 'output') ? e.sourceHandle : null,
-    condition_label: typeof e.label === 'string' ? e.label : null,
-  }))
+  })
 }
 
 interface Props {
@@ -146,49 +136,73 @@ export default function FormBuilderClient({ form, dbNodes, dbEdges, pipelines }:
   const [settingsPipelineId, setSettingsPipelineId] = useState(form.pipeline_id ?? '')
   const [settingsSaving, setSettingsSaving] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [fitTick, setFitTick] = useState(0)
+  /** What the form looked like before a tidy, so it can be put back. */
+  const [beforeTidy, setBeforeTidy] = useState<{ nodes: Node[]; edges: Edge[]; auto: boolean } | null>(null)
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId) ?? null
 
-  const onConnect = useCallback(
-    (connection: Connection) => {
-      const sourceNode = nodes.find((n) => n.id === connection.source)
-      const sourceHandle = connection.sourceHandle
-      let label: string | undefined
-      if (sourceNode?.type === 'questionNode') {
-        const opts: any[] = (sourceNode.data as any).options ?? []
-        const matchedOpt = opts.find((o) => o.id === sourceHandle)
-        if (matchedOpt) label = matchedOpt.label
-      }
-      setEdges((eds) => {
-        // Each handle can only connect to one target — remove any existing edge first
-        const deduped = eds.filter(
-          (e) => !(e.source === connection.source && e.sourceHandle === connection.sourceHandle)
-        )
-        return addEdge({
-          ...connection,
-          id: generateId(),
-          markerEnd: { type: MarkerType.ArrowClosed },
-          style: { stroke: 'var(--color-primary)', strokeWidth: 1.5 },
-          label,
-          labelStyle: { fontSize: '11px', fill: 'var(--color-muted)' },
-          labelBgStyle: { fill: 'var(--color-card)' },
-        }, deduped)
-      })
-    },
-    [nodes, setEdges],
-  )
+  /** Send one output somewhere, or nowhere. Each output leads to exactly one place. */
+  const setTarget = useCallback((source: string, handle: string, target: string | null) => {
+    setEdges((eds) => {
+      const rest = eds.filter((e) => !(e.source === source && (e.sourceHandle ?? OUTPUT) === handle))
+      if (!target) return rest
+      return addEdge({ id: generateId(), source, sourceHandle: handle, target, targetHandle: 'input', ...EDGE_LOOK }, rest)
+    })
+  }, [setEdges])
+
+  const onConnect = useCallback((c: Connection) => {
+    setTarget(c.source, c.sourceHandle ?? OUTPUT, c.target)
+  }, [setTarget])
+
+  /** Every option goes the same way: drop the lines individual options had. */
+  function clearOptionLines(nodeId: string) {
+    setEdges((eds) => eds.filter((e) => e.source !== nodeId || (e.sourceHandle ?? OUTPUT) === OUTPUT))
+  }
+
+  const tidy = useCallback((auto: boolean) => {
+    setBeforeTidy({ nodes, edges, auto })
+    const nextEdges = condenseEdges(nodes, edges, generateId)
+    const at = tidyPositions(nodes, nextEdges)
+    setEdges(nextEdges)
+    setNodes((nds) => nds.map((n) => ({ ...n, position: at.get(n.id) ?? n.position })))
+    setFitTick((t) => t + 1)
+  }, [nodes, edges, setNodes, setEdges])
+
+  function undoTidy() {
+    if (!beforeTidy) return
+    const at = new Map(beforeTidy.nodes.map((n) => [n.id, n.position]))
+    setNodes((nds) => nds.map((n) => ({ ...n, position: at.get(n.id) ?? n.position })))
+    setEdges(beforeTidy.edges)
+    setBeforeTidy(null)
+    setFitTick((t) => t + 1)
+  }
+
+  const onMeasured = useCallback(() => { if (overlapCount(nodes) >= 2) tidy(true); else setFitTick((t) => t + 1) }, [nodes, tidy])
 
   function addQuestion() {
     const id = generateId()
+    // Below the selected card, or the lowest one, and joined to it if it doesn't lead anywhere yet.
+    const questions = nodes.filter((n) => n.type !== 'endNode')
+    const after = (selectedNode && selectedNode.type !== 'endNode' ? selectedNode : null)
+      ?? questions.reduce<Node | null>((low, n) => (!low || n.position.y > low.position.y ? n : low), null)
+    const position = after
+      ? { x: after.type === 'startNode' ? after.position.x - 82 : after.position.x, y: after.position.y + (after.measured?.height ?? 120) + 70 }
+      : { x: 0, y: 0 }
+    // Room for it: anything it would land on, and everything under that, moves down.
+    const room = 200
+    const blocked = nodes.some((n) => n.id !== after?.id && Math.abs(n.position.x - position.x) < 260
+      && n.position.y < position.y + room - 20 && n.position.y + (n.measured?.height ?? 120) > position.y)
     setNodes((nds) => [
-      ...nds,
-      {
-        id,
-        type: 'questionNode',
-        position: { x: 200 + Math.random() * 100, y: 200 + nds.filter(n => n.type === 'questionNode').length * 160 },
-        data: { questionText: '', answerType: 'short_text', options: [] },
-      },
+      ...nds.map((n) => (blocked && n.id !== after?.id && n.position.y >= position.y - 20
+        ? { ...n, position: { ...n.position, y: n.position.y + room } } : n)),
+      { id, type: 'questionNode', position, data: { questionText: '', answerType: 'short_text', options: [] } },
     ])
+    if (after) {
+      const leads = liveEdges(nodes, edges).some((e) => e.source === after.id
+        && ((e.sourceHandle ?? OUTPUT) === OUTPUT || isMcq(after)))
+      if (!leads) setTarget(after.id, OUTPUT, id)
+    }
     setSelectedNodeId(id)
   }
 
@@ -206,7 +220,10 @@ export default function FormBuilderClient({ form, dbNodes, dbEdges, pipelines }:
       {
         id,
         type: 'endNode',
-        position: { x: 150 + endNodes.length * 220, y: 520 },
+        position: {
+          x: endNodes.length * 220,
+          y: Math.max(0, ...nds.map((n) => n.position.y + (n.measured?.height ?? 120))) + 70,
+        },
         data: { subtype },
       },
     ])
@@ -218,8 +235,9 @@ export default function FormBuilderClient({ form, dbNodes, dbEdges, pipelines }:
     setValidationError(null)
     setSaveStatus('saving')
     try {
-      await saveFormGraph(form.id, flowNodesToDb(nodes, form.id), flowEdgesToDb(edges))
+      await saveFormGraph(form.id, flowNodesToDb(nodes, form.id), flowEdgesToDb(nodes, edges))
       setSaveStatus('saved')
+      setBeforeTidy(null)
       setTimeout(() => setSaveStatus('idle'), 2000)
     } catch {
       setSaveStatus('error')
@@ -268,6 +286,14 @@ export default function FormBuilderClient({ form, dbNodes, dbEdges, pipelines }:
         </div>
       )}
 
+      {beforeTidy && (
+        <div className={styles.tidyBanner}>
+          <span>{beforeTidy.auto ? 'Some cards were on top of each other, so they have been spaced out.' : 'Tidied.'} Save to keep it.</span>
+          <button type="button" className={styles.tidyUndo} onClick={undoTidy}>Undo</button>
+          <button type="button" className={styles.tidyDismiss} onClick={() => setBeforeTidy(null)} aria-label="Dismiss">✕</button>
+        </div>
+      )}
+
       {/* Top bar */}
       <div className={styles.topBar}>
         <div className={styles.topLeft}>
@@ -280,6 +306,7 @@ export default function FormBuilderClient({ form, dbNodes, dbEdges, pipelines }:
           <button className={styles.settingsBtn} onClick={() => setShowSettingsModal(true)} title="Form settings">⚙</button>
         </div>
         <div className={styles.topActions}>
+          <button className={styles.linkBtn} onClick={() => tidy(false)} title="Space the cards out, in order">Tidy up</button>
           <button className={styles.addNodeBtn} onClick={addQuestion}>+ Question</button>
           <button className={styles.addEndSuccessBtn} onClick={() => addEndNode('success')}>+ Submitted</button>
           <button className={styles.addEndRejectedBtn} onClick={() => addEndNode('rejected')}>+ Not Eligible</button>
@@ -317,15 +344,25 @@ export default function FormBuilderClient({ form, dbNodes, dbEdges, pipelines }:
           onNodeClick={(_, node) => setSelectedNodeId(node.id)}
           onPaneClick={() => setSelectedNodeId(null)}
           fitView
-          fitViewOptions={{ padding: 0.3 }}
+          fitViewOptions={{ padding: 0.15, maxZoom: 1 }}
+          minZoom={0.1}
           deleteKeyCode="Delete"
         >
+          <WhenMeasured onReady={onMeasured} />
+          <FitOn tick={fitTick} />
           <Background color="var(--color-border)" gap={20} />
           <Controls />
           <MiniMap nodeColor={(n) => n.type === 'startNode' ? '#16a34a' : n.type === 'endNode' ? '#dc2626' : 'var(--color-primary)'} />
         </ReactFlow>
 
-        <PropertiesPanel node={selectedNode} onUpdate={updateNodeData} />
+        <PropertiesPanel
+          node={selectedNode}
+          nodes={nodes}
+          edges={edges}
+          onUpdate={updateNodeData}
+          onSetTarget={setTarget}
+          onClearOptionLines={clearOptionLines}
+        />
       </div>
 
       {/* Settings modal */}

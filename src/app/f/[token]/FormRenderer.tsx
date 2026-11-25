@@ -106,7 +106,9 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
     const outEdges = edges.filter((e) => e.source_node_id === nodeId)
     if (node.answer_type === 'mcq') {
       const matched = outEdges.find((e) => e.condition_value === answerValue)
-      return matched?.target_node_id ?? outEdges[0]?.target_node_id ?? null
+      // The option's own line, else the one for all other options.
+      const rest = outEdges.find((e) => !e.condition_value) ?? outEdges[0]
+      return (matched ?? rest)?.target_node_id ?? null
     }
     return outEdges[0]?.target_node_id ?? null
   }

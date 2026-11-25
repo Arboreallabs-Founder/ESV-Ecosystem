@@ -2,15 +2,45 @@
 
 import { useRef } from 'react'
 import { wrapSelection, generateId } from '../utils'
-import type { Node } from '@xyflow/react'
+import { OUTPUT, optionsOf } from '../graph'
+import type { Edge, Node } from '@xyflow/react'
 import styles from '../builder.module.css'
 
 interface Props {
   node: Node | null
+  nodes: Node[]
+  edges: Edge[]
   onUpdate: (nodeId: string, data: Record<string, unknown>) => void
+  onSetTarget: (source: string, handle: string, target: string | null) => void
+  onClearOptionLines: (nodeId: string) => void
 }
 
-export default function PropertiesPanel({ node, onUpdate }: Props) {
+/** "Goes to" for one output: every card it could lead to, in the order they appear on the canvas. */
+function GoesTo({ label, value, nodes, selfId, empty, onChange }: {
+  label: string
+  value: string | null
+  nodes: Node[]
+  selfId: string
+  empty: string
+  onChange: (target: string | null) => void
+}) {
+  const choices = nodes
+    .filter((n) => n.id !== selfId && n.type !== 'startNode')
+    .sort((a, b) => a.position.y - b.position.y)
+  const name = (n: Node) => {
+    if (n.type === 'endNode') return (n.data as { subtype?: string }).subtype === 'rejected' ? '✕ Not Eligible' : '✓ Submitted'
+    const text = String((n.data as { questionText?: string }).questionText ?? '').replace(/\*+/g, '').trim()
+    return text.length > 60 ? `${text.slice(0, 60)}…` : text || 'Untitled question'
+  }
+  return (
+    <select className={styles.panelSelect} aria-label={label} value={value ?? ''} onChange={(e) => onChange(e.target.value || null)}>
+      <option value="">{empty}</option>
+      {choices.map((n) => <option key={n.id} value={n.id}>{name(n)}</option>)}
+    </select>
+  )
+}
+
+export default function PropertiesPanel({ node, nodes, edges, onUpdate, onSetTarget, onClearOptionLines }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   if (!node) {
@@ -40,6 +70,16 @@ export default function PropertiesPanel({ node, onUpdate }: Props) {
                 : 'Flow ends here — the applicant\'s answers are submitted to the pipeline.'}
           </p>
         </div>
+        {node.type === 'startNode' && (
+          <div className={styles.panelSection}>
+            <div className={styles.panelLabel}>Goes to</div>
+            <GoesTo
+              label="Start goes to" nodes={nodes} selfId={node.id} empty="Not connected"
+              value={edges.find((e) => e.source === node.id)?.target ?? null}
+              onChange={(t) => onSetTarget(node.id, OUTPUT, t)}
+            />
+          </div>
+        )}
       </div>
     )
   }
@@ -50,6 +90,10 @@ export default function PropertiesPanel({ node, onUpdate }: Props) {
     contactField: 'name' | 'email' | 'phone' | null
     options: Array<{ id: string; label: string; position: number }>
   }
+
+  const targetOf = (handle: string) => edges.find((e) => e.source === node.id && (e.sourceHandle ?? OUTPUT) === handle)?.target ?? null
+  const choices = data.answerType === 'mcq' ? optionsOf(node) : []
+  const hasOwnLines = choices.some((o) => targetOf(o.id))
 
   function applyFormat(marker: '**' | '*') {
     const el = textareaRef.current
@@ -164,11 +208,37 @@ export default function PropertiesPanel({ node, onUpdate }: Props) {
             ))}
           </div>
           <button type="button" className={styles.addOptionBtn} onClick={addOption}>+ Add Option</button>
-          {(data.options ?? []).length > 0 && (
-            <p className={styles.panelHint}>Each option creates a separate output handle — connect them to different next questions.</p>
-          )}
         </div>
       )}
+
+      <div className={styles.panelSection}>
+        <div className={styles.panelLabel}>{choices.length === 0 ? 'Goes to' : hasOwnLines ? 'All other options go to' : 'All options go to'}</div>
+        <GoesTo
+          label="Goes to" nodes={nodes} selfId={node.id} empty="Not connected"
+          value={targetOf(OUTPUT)}
+          onChange={(t) => onSetTarget(node.id, OUTPUT, t)}
+        />
+        {choices.length > 1 && (
+          <>
+            <details className={styles.optionTargets} open={hasOwnLines || undefined}>
+              <summary>Send an option somewhere else</summary>
+              {choices.map((o) => (
+                <label key={o.id} className={styles.optionTarget}>
+                  <span>{o.label}</span>
+                  <GoesTo
+                    label={`"${o.label}" goes to`} nodes={nodes} selfId={node.id} empty="Same as above"
+                    value={targetOf(o.id)}
+                    onChange={(t) => onSetTarget(node.id, o.id, t)}
+                  />
+                </label>
+              ))}
+            </details>
+            {hasOwnLines && targetOf(OUTPUT) && (
+              <button type="button" className={styles.addOptionBtn} onClick={() => onClearOptionLines(node.id)}>Send every option the same way</button>
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }

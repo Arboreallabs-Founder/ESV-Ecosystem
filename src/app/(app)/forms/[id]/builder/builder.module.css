@@ -647,3 +647,28 @@
 /* Floating panels sit over the dark scrim — near-opaque so the scrim cannot wash
    the content out to grey. Still frosted (see the backdrop-filter above). */
 .modal { background: var(--glass-panel); }
+
+/* ── One line for every option, or one per option ─────────────────── */
+.qOptionRow { position: relative; }
+/* The row stops short of the card's edge by its padding; the dot sits on the edge. */
+.qOptionRow .optionHandle { right: calc(-1rem - 4px); }
+.optionHandleFree { opacity: 0.35; }
+.questionNode:hover .optionHandleFree { opacity: 1; }
+.qFold {
+  margin-top: 0.25rem; padding: 0.125rem 0; border: none; background: none; cursor: pointer;
+  font: inherit; font-size: 0.6875rem; font-weight: 600; color: var(--color-primary); text-align: left;
+}
+.qAll { margin-top: 0.5rem; text-align: center; font-size: 0.625rem; font-weight: 600; color: var(--color-muted); }
+
+.tidyBanner {
+  display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1.25rem; flex-shrink: 0;
+  background: rgba(var(--color-primary-rgb), 0.08); border-bottom: 1px solid rgba(var(--color-primary-rgb), 0.25);
+  font-size: 0.8125rem; color: var(--color-text);
+}
+.tidyUndo { border: none; background: none; cursor: pointer; font: inherit; font-weight: 600; color: var(--color-primary); text-decoration: underline; }
+.tidyDismiss { margin-left: auto; border: none; background: none; cursor: pointer; color: var(--color-muted); }
+
+.optionTargets { margin-top: 0.75rem; font-size: 0.8125rem; }
+.optionTargets summary { cursor: pointer; color: var(--color-primary); font-weight: 600; font-size: 0.75rem; }
+.optionTarget { display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.625rem; }
+.optionTarget span { font-size: 0.75rem; color: var(--color-muted); }
