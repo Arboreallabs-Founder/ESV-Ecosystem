@@ -70,6 +70,18 @@ export async function setInvestorRelations(targetUserId: string, on: boolean): P
   revalidatePath('/tasks')
 }
 
+/**
+ * Recruitment (20261130000000): who gets a task for each new internship application, and can work the
+ * recruitment pipelines whatever their role. Founder/admin only, like the other flags.
+ */
+export async function setRecruitment(targetUserId: string, on: boolean): Promise<void> {
+  const { supabase } = await requireRole(['founder', 'admin'])
+  const { error } = await supabase.from('users').update({ is_recruitment: on }).eq('id', targetUserId)
+  if (error) throw dbFailure('save that', error)
+  revalidatePath('/admin/users')
+  revalidatePath('/tasks')
+}
+
 // ── The single partner intake route ──────────────────────────────────────────
 
 /**

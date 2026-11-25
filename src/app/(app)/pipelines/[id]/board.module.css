@@ -794,8 +794,6 @@
   word-break: break-word;
 }
 
-.answerLink { color: var(--color-primary); text-decoration: underline; text-underline-offset: 2px; }
-
 /* ── Stage questions editor (stage modal) ─────────────────────────── */
 .questionDraftList {
   display: flex;

@@ -70,6 +70,14 @@ those applications when nobody is yet (`20261127000000`; website pipelines only)
 it, and each gets their own task; with nobody flagged the task waits unassigned until somebody is. Set
 by a founder/admin in Admin → Users, once the person has signed in.
 
+### `is_recruitment` — Recruitment (HR) (flag, not a role)
+A boolean on `users` (added 2026-11-25, `20261130000000`), on any internal role. Works like Investor
+Relations, for internship applications (`/apply/intern`): a task for each, and assigned to it. It also
+**grants access**, because the `hr` role sees no pipelines: read pipelines marked
+`pipelines.is_recruitment` (Interns), and move entries they are assigned to. Nothing on any other
+pipeline, and no deleting, assigning or editing stages. Enforced by RLS (`recruits_on()`). An HR user
+with it gets Pipelines in the menu. Set by a founder/admin in Admin → Users.
+
 
 A boolean on `approved_emails`/`users` (added 2026-10-06), independent of `role`. It marks someone
 onboarded with a role's app access (in practice, always `general`) who is **not an ESV employee** —

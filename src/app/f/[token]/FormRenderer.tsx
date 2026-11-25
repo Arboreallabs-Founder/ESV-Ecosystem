@@ -37,6 +37,8 @@ interface FormData {
   /** An application form on the ESV website (20261126000000): checks answers as they are given. */
   website_form?: boolean
   success_message?: string | null
+  /** At a Not Eligible ending, instead of the standard sentence (20261130000000). */
+  rejected_message?: string | null
   pipeline_id: string | null
   first_stage_id: string | null
   nodes: FormNode[]
@@ -268,13 +270,17 @@ export default function FormRenderer({ formData }: { formData: FormData }) {
         ) : isRejected ? (
           /* Not eligible end */
           <div>
-            <div className={styles.rejectedIcon}>✕</div>
+            {!formData.rejected_message && <div className={styles.rejectedIcon}>✕</div>}
             <div className={styles.questionText} style={{ textAlign: 'center', fontWeight: 600 }}>
               Thank you for your interest
             </div>
-            <p className={styles.rejectedMsg}>
-              Based on your answers, you don't meet the criteria for this application at this time.
-            </p>
+            {formData.rejected_message ? formData.rejected_message.split(/\n{2,}/).map((para) => (
+              <p key={para} className={styles.rejectedMsg} style={{ marginBottom: '0.75rem' }}>{para}</p>
+            )) : (
+              <p className={styles.rejectedMsg}>
+                Based on your answers, you don't meet the criteria for this application at this time.
+              </p>
+            )}
           </div>
         ) : isEnd || currentNode?.type === 'end' ? (
           /* Success end reached */

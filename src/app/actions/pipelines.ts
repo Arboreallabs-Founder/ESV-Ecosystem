@@ -82,14 +82,15 @@ export async function deleteStage(stageId: string) {
 
 async function assertAssignedIfAssociate(supabase: Awaited<ReturnType<typeof requireAuth>>['supabase'], entryId: string, userId: string) {
   const { data: userRow } = await supabase.from('users').select('role').eq('id', userId).single()
-  if (userRow?.role !== 'associate') return
+  // hr and general reach a pipeline's entries only where recruitment lets them (20261130000000).
+  if (!['associate', 'hr', 'general'].includes(userRow?.role ?? '')) return
   const { data } = await supabase
     .from('pipeline_entry_assignees')
     .select('user_id')
     .eq('entry_id', entryId)
     .eq('user_id', userId)
     .maybeSingle()
-  if (!data) throw new UserFacingError('Associates can only move entries assigned to them.')
+  if (!data) throw new UserFacingError('You can only move entries assigned to you.')
 }
 
 export async function moveEntry(entryId: string, stageId: string | null) {
@@ -234,7 +235,7 @@ async function upsertStageAnswers(
 type StageTaskItem = {
   id?: string
   title: string
-  assign_to: 'assignees' | 'mover' | 'user' | 'investor_relations'
+  assign_to: 'assignees' | 'mover' | 'user' | 'investor_relations' | 'recruitment'
   user_id: string | null
   due_days: number
   priority: 'Low' | 'Medium' | 'High'

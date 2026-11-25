@@ -1226,5 +1226,12 @@ second moves founder applications that arrived through the wrong link to ESV Ref
 ### 20261129000000_internship_form.sql
 `/apply/intern` → "Interns", for the website's careers page (spec: `docs/ecosystem-forms` in the website
 repo). Data only: a third website form, as 20261126000000, in the organisation behind `/apply`. Answering
-"No" to "Are you 18 or older?" flags the entry. Founders and admins are notified; there is no automatic
-task. Created unpublished until the privacy policy covers internships and applicants under 18.
+"No" to "Are you 18 or older?" flags the entry (replaced by 20261130000000). Founders and admins are
+notified. Created unpublished.
+
+### 20261130000000_recruitment_and_under_18.sql
+`users.is_recruitment` (Admin → Users) and automatic-task target `recruitment`, with one task on Interns'
+"New application"; `pipelines.is_recruitment` and `recruits_on()` policies, which let those people read
+and work recruitment pipelines whatever their role. `forms.rejected_message`, and `submit_website_form`
+refuses a Not Eligible ending. "No" to 18 on the internship form now ends it, storing nothing. Needs
+20261129000000. The app tolerates this not having run.

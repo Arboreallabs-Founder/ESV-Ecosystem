@@ -38,3 +38,10 @@ export const isGeneralLead = cache(async (userId: string): Promise<boolean> => {
   const row = data as { role: string; is_general_lead?: boolean }
   return row.role === 'general' && !!row.is_general_lead
 })
+
+/** Is this user flagged for Recruitment (20261130000000)? Read on its own, for the same reason. */
+export const isRecruitment = cache(async (userId: string): Promise<boolean> => {
+  const supabase = await createClient()
+  const { data, error } = await supabase.from('users').select('is_recruitment').eq('id', userId).maybeSingle()
+  return !error && !!(data as { is_recruitment?: boolean } | null)?.is_recruitment
+})

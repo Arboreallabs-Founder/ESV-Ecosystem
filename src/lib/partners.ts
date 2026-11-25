@@ -64,6 +64,8 @@ export const fetchApprovedUsers = cache(async (): Promise<ApprovedUser[]> => {
   const leadEmails = new Set(((leads ?? []) as Array<{ email: string }>).map((l) => l.email))
   const { data: ir } = await supabase.from('users').select('email').eq('is_investor_relations', true)
   const irEmails = new Set(((ir ?? []) as Array<{ email: string }>).map((l) => l.email))
+  const { data: rec } = await supabase.from('users').select('email').eq('is_recruitment', true)
+  const recEmails = new Set(((rec ?? []) as Array<{ email: string }>).map((l) => l.email))
 
   return (approved ?? []).map((a) => ({
     email: a.email,
@@ -78,6 +80,7 @@ export const fetchApprovedUsers = cache(async (): Promise<ApprovedUser[]> => {
     is_sgp_approver: activeByEmail.get(a.email)?.is_sgp_approver ?? false,
     is_general_lead: leadEmails.has(a.email),
     is_investor_relations: irEmails.has(a.email),
+    is_recruitment: recEmails.has(a.email),
     is_external: a.is_external ?? false,
     hasLoggedIn: activeByEmail.has(a.email),
   }))

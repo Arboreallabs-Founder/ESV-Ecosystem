@@ -867,6 +867,8 @@ export type ApprovedUser = {
   is_general_lead: boolean
   /** Gets the automatic pipeline tasks addressed to investor relations (20261126000100). */
   is_investor_relations: boolean
+  /** Recruitment (HR): gets the tasks addressed to recruitment and can work its pipelines (20261130000000). */
+  is_recruitment: boolean
   /** Onboarded with app access (typically `general`) but not an ESV employee — a contractor or
    *  seconded person. Orthogonal to `role`: keeps them off the attendance roster, leave/expense
    *  requests, and Engage/Kudos without touching what the role itself grants. */
@@ -930,7 +932,7 @@ export type PipelineStageTask = {
   stage_id: string
   /** "{name}" becomes the entry's title; without it the title is prefixed with it. */
   title: string
-  assign_to: 'assignees' | 'mover' | 'user' | 'investor_relations'
+  assign_to: 'assignees' | 'mover' | 'user' | 'investor_relations' | 'recruitment'
   user_id: string | null
   due_days: number
   priority: 'Low' | 'Medium' | 'High'

@@ -436,6 +436,7 @@ export default function AppShell({
   unreadCount = 0,
   clockSettings = null,
   birthdaysToday = [],
+  seesPipelines = false,
 }: {
   user: UserRow
   children: React.ReactNode
@@ -445,6 +446,8 @@ export default function AppShell({
   unreadCount?: number
   clockSettings?: HrClockSettings | null
   birthdaysToday?: HrBirthday[]
+  /** An HR user flagged for Recruitment: Pipelines shows them the recruitment ones. */
+  seesPipelines?: boolean
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -607,7 +610,7 @@ export default function AppShell({
   const showClockWidget = CLOCK_WIDGET_ROLES.includes(role) && !!clockSettings
   const showConnectAssistant = CONNECT_ASSISTANT_ROLES.includes(role)
 
-  const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(role))
+  const visibleNav = NAV_ITEMS.filter((item) => item.roles.includes(role) || (seesPipelines && 'href' in item && item.href === '/pipelines'))
   // Section labels (Deal Flow / Team / Database / Admin) are a founder/admin/associate affordance —
   // the partner nav is short enough that grouping it would just add clutter.
   const showSections = role !== 'franchise_partner'

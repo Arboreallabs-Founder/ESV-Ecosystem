@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { getUser } from '@/lib/user'
+import { getUser, isRecruitment } from '@/lib/user'
 import { fetchUnreadNotificationCount } from '@/lib/notifications'
 import { fetchClockSettings, fetchTodaysBirthdays } from '@/lib/hr-clock'
 import AppShell from '@/app/_components/AppShell'
@@ -23,10 +23,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   //
   // The bell asks for a count and nothing else: every role has notifications (an escalation can be
   // addressed to a partner), and the list itself is only fetched once somebody opens the panel.
-  const [unreadCount, clockSettings, birthdaysToday] = await Promise.all([
+  const [unreadCount, clockSettings, birthdaysToday, seesPipelines] = await Promise.all([
     fetchUnreadNotificationCount(),
     canSeeHrClock ? fetchClockSettings() : Promise.resolve(null),
     canSeeHrClock ? fetchTodaysBirthdays() : Promise.resolve([]),
+    // Every other internal role has Pipelines already; HR has it for the recruitment ones.
+    user.role === 'hr' ? isRecruitment(user.id) : Promise.resolve(false),
   ])
 
   return (
@@ -37,6 +39,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       unreadCount={unreadCount}
       clockSettings={clockSettings}
       birthdaysToday={birthdaysToday}
+      seesPipelines={seesPipelines}
     >
       {children}
     </AppShell>

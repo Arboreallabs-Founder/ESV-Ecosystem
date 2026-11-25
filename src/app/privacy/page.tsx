@@ -6,7 +6,7 @@ import styles from './privacy.module.css'
 /*
  * The privacy policy: linked from the login page and the website forms' consent question, so people
  * have agreed to what it says. Change the wording only with approval, and change EFFECTIVE with it.
- * Approved 25 November 2026.
+ * Approved 25 November 2026, including internship applications (added the same day).
  */
 const EFFECTIVE = '25 November 2026'
 const GRIEVANCE_OFFICER = { name: 'Dhwani Joshi', email: 'dhwani@earlyseedventures.com' }
@@ -26,12 +26,13 @@ const SECTIONS: Array<{ id: string; title: string; body: ReactNode }> = [
       <ul>
         <li><b>Syndicate applications:</b> your name, email, phone number, city and country, LinkedIn profile, occupation, how you would invest, past investments you choose to share, and your preferences.</li>
         <li><b>Strategic Growth Partner applications:</b> your name, email, phone number, city and country, LinkedIn profile, role, background, network, experience and other roles you hold.</li>
+        <li><b>Internship applications:</b> your name, email, phone number, city, whether you are 18 or older, studies, the team you prefer, your work, CV, LinkedIn and portfolio links, availability, and how you heard about us.</li>
         <li><b>Start-up applications:</b> your name and contact details, and the information you share about your company.</li>
         <li><b>Accounts:</b> if we give you access to Ecosystem, your name, email address and profile photo, from your Google account if you sign in with Google, and a record of your activity.</li>
         <li><b>The person who referred you,</b> if you name them. Please only name someone who would not mind.</li>
       </ul>
       <p>
-        Our application forms do not ask for PAN, Aadhaar, passport, bank or demat details, or for documents. If we need identity
+        Our application forms do not ask for PAN, Aadhaar, passport, bank or demat details, or for document uploads. If we need identity
         checks later, we ask for them separately.
       </p>
     </>

@@ -27,7 +27,7 @@ type EntryTask = { id: string; title: string; status: string; due_date: string |
 
 const ASSIGN_LABELS: Record<PipelineStageTask['assign_to'], string> = {
   assignees: 'Entry’s assignees', mover: 'Whoever moves it here', user: 'A specific person',
-  investor_relations: 'Investor relations',
+  investor_relations: 'Investor relations', recruitment: 'Recruitment (HR)',
 }
 
 function inputTypeFor(t: StageQuestionFieldType) {

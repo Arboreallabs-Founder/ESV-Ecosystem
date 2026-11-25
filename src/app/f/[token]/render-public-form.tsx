@@ -11,6 +11,7 @@ interface FormData {
   /** An application form on the ESV website (20261126000000). */
   website_form?: boolean
   success_message?: string | null
+  rejected_message?: string | null
   pipeline_id: string | null
   first_stage_id: string | null
   nodes: Array<{

@@ -4,7 +4,7 @@ import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addApprovedUser, updateApprovedUser, revokeUser, setUserPhotoFromUrl } from '@/app/actions/admin'
-import { setSgpCoordinator, setGeneralLead, setInvestorRelations } from '@/app/actions/partner-companies'
+import { setSgpCoordinator, setGeneralLead, setInvestorRelations, setRecruitment } from '@/app/actions/partner-companies'
 import { setSgpApprover } from '@/app/actions/partner-attribution'
 import type { ApprovedUser } from '@/lib/types'
 import { personInitials } from '@/app/_components/Avatar'
@@ -83,6 +83,7 @@ export default function UsersTable({
   const [editApprover, setEditApprover] = useState(false)
   const [editGeneralLead, setEditGeneralLead] = useState(false)
   const [editInvestorRelations, setEditInvestorRelations] = useState(false)
+  const [editRecruitment, setEditRecruitment] = useState(false)
   const [editExternal, setEditExternal] = useState(false)
 
   // Revoke modal
@@ -126,6 +127,7 @@ export default function UsersTable({
     setEditApprover(u.is_sgp_approver)
     setEditGeneralLead(u.is_general_lead)
     setEditInvestorRelations(u.is_investor_relations)
+    setEditRecruitment(u.is_recruitment)
     setEditExternal(u.is_external)
   }
 
@@ -147,6 +149,7 @@ export default function UsersTable({
           is_sgp_coordinator: false,
           is_general_lead: false,
           is_investor_relations: false,
+          is_recruitment: false,
           is_sgp_approver: false,
           is_external: addExternal,
           hasLoggedIn: false,
@@ -185,6 +188,10 @@ export default function UsersTable({
       if (editTarget.userId && nextIr !== editTarget.is_investor_relations) {
         await setInvestorRelations(editTarget.userId, nextIr)
       }
+      const nextRec = editRole !== 'franchise_partner' && editRecruitment
+      if (editTarget.userId && nextRec !== editTarget.is_recruitment) {
+        await setRecruitment(editTarget.userId, nextRec)
+      }
       setUsers((prev) => prev.map((u) =>
         u.email === editTarget.email
           ? {
@@ -197,6 +204,7 @@ export default function UsersTable({
               is_sgp_approver: editTarget.userId ? editApprover : u.is_sgp_approver,
               is_general_lead: editTarget.userId ? (editRole === 'general' && editGeneralLead) : u.is_general_lead,
               is_investor_relations: editTarget.userId ? nextIr : u.is_investor_relations,
+              is_recruitment: editTarget.userId ? nextRec : u.is_recruitment,
             }
           : u
       ))
@@ -277,6 +285,7 @@ export default function UsersTable({
                     {u.is_sgp_coordinator && <div className={styles.coordinatorTag}>SGP Coordinator</div>}
                     {u.is_general_lead && <div className={styles.coordinatorTag}>General Lead</div>}
                     {u.is_investor_relations && <div className={styles.coordinatorTag}>Investor Relations</div>}
+                    {u.is_recruitment && <div className={styles.coordinatorTag}>Recruitment (HR)</div>}
                   </td>
                   <td>
                     <a className={styles.emailLink} href={`mailto:${u.email}`}>{u.email}</a>
@@ -482,6 +491,23 @@ export default function UsersTable({
                     Assigned to every new syndicate and growth partner application from the website,
                     with a task to contact the applicant. If more than one person has this, each is
                     assigned and gets their own task.
+                  </span>
+                </div>
+              )}
+              {editTarget.userId && editRole !== 'franchise_partner' && (
+                <div className={styles.field}>
+                  <label className={styles.coordinatorRow}>
+                    <input
+                      type="checkbox"
+                      checked={editRecruitment}
+                      onChange={(e) => setEditRecruitment(e.target.checked)}
+                    />
+                    Recruitment (HR)
+                  </label>
+                  <span className={styles.fieldHint}>
+                    Assigned to every new internship application from the website, with a task to
+                    review it. Opens the Interns pipeline, and no other, to HR users.
+                    If more than one person has this, each is assigned and gets their own task.
                   </span>
                 </div>
               )}
