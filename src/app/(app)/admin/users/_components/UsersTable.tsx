@@ -4,7 +4,7 @@ import { describeError } from '@/lib/client-errors'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { addApprovedUser, updateApprovedUser, revokeUser, setUserPhotoFromUrl } from '@/app/actions/admin'
-import { setSgpCoordinator, setGeneralLead } from '@/app/actions/partner-companies'
+import { setSgpCoordinator, setGeneralLead, setInvestorRelations } from '@/app/actions/partner-companies'
 import { setSgpApprover } from '@/app/actions/partner-attribution'
 import type { ApprovedUser } from '@/lib/types'
 import { personInitials } from '@/app/_components/Avatar'
@@ -82,6 +82,7 @@ export default function UsersTable({
   const [editCoordinator, setEditCoordinator] = useState(false)
   const [editApprover, setEditApprover] = useState(false)
   const [editGeneralLead, setEditGeneralLead] = useState(false)
+  const [editInvestorRelations, setEditInvestorRelations] = useState(false)
   const [editExternal, setEditExternal] = useState(false)
 
   // Revoke modal
@@ -124,6 +125,7 @@ export default function UsersTable({
     setEditCoordinator(u.is_sgp_coordinator)
     setEditApprover(u.is_sgp_approver)
     setEditGeneralLead(u.is_general_lead)
+    setEditInvestorRelations(u.is_investor_relations)
     setEditExternal(u.is_external)
   }
 
@@ -144,6 +146,7 @@ export default function UsersTable({
           designation: null,
           is_sgp_coordinator: false,
           is_general_lead: false,
+          is_investor_relations: false,
           is_sgp_approver: false,
           is_external: addExternal,
           hasLoggedIn: false,
@@ -178,6 +181,10 @@ export default function UsersTable({
       if (editTarget.userId && nextLead !== editTarget.is_general_lead) {
         await setGeneralLead(editTarget.userId, nextLead)
       }
+      const nextIr = editRole !== 'franchise_partner' && editInvestorRelations
+      if (editTarget.userId && nextIr !== editTarget.is_investor_relations) {
+        await setInvestorRelations(editTarget.userId, nextIr)
+      }
       setUsers((prev) => prev.map((u) =>
         u.email === editTarget.email
           ? {
@@ -189,6 +196,7 @@ export default function UsersTable({
               is_sgp_coordinator: editTarget.userId ? editCoordinator : u.is_sgp_coordinator,
               is_sgp_approver: editTarget.userId ? editApprover : u.is_sgp_approver,
               is_general_lead: editTarget.userId ? (editRole === 'general' && editGeneralLead) : u.is_general_lead,
+              is_investor_relations: editTarget.userId ? nextIr : u.is_investor_relations,
             }
           : u
       ))
@@ -268,6 +276,7 @@ export default function UsersTable({
                     {u.designation && <div className={styles.designation}>{u.designation}</div>}
                     {u.is_sgp_coordinator && <div className={styles.coordinatorTag}>SGP Coordinator</div>}
                     {u.is_general_lead && <div className={styles.coordinatorTag}>General Lead</div>}
+                    {u.is_investor_relations && <div className={styles.coordinatorTag}>Investor Relations</div>}
                   </td>
                   <td>
                     <a className={styles.emailLink} href={`mailto:${u.email}`}>{u.email}</a>
@@ -456,6 +465,22 @@ export default function UsersTable({
                   <span className={styles.fieldHint}>
                     Leads the general users: sees all of their tasks and can comment on, edit,
                     re-date and reassign them. Everything else stays as for any general user.
+                  </span>
+                </div>
+              )}
+              {editTarget.userId && editRole !== 'franchise_partner' && (
+                <div className={styles.field}>
+                  <label className={styles.coordinatorRow}>
+                    <input
+                      type="checkbox"
+                      checked={editInvestorRelations}
+                      onChange={(e) => setEditInvestorRelations(e.target.checked)}
+                    />
+                    Investor Relations
+                  </label>
+                  <span className={styles.fieldHint}>
+                    Gets a task for every new syndicate and growth partner application from the
+                    website. If more than one person has this, each gets their own task.
                   </span>
                 </div>
               )}

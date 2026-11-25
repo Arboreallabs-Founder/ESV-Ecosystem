@@ -234,7 +234,7 @@ async function upsertStageAnswers(
 type StageTaskItem = {
   id?: string
   title: string
-  assign_to: 'assignees' | 'mover' | 'user'
+  assign_to: 'assignees' | 'mover' | 'user' | 'investor_relations'
   user_id: string | null
   due_days: number
   priority: 'Low' | 'Medium' | 'High'

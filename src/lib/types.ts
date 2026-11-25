@@ -865,6 +865,8 @@ export type ApprovedUser = {
   is_sgp_approver: boolean
   /** General Lead: sees and manages every general user's tasks (20261105000000). */
   is_general_lead: boolean
+  /** Gets the automatic pipeline tasks addressed to investor relations (20261126000100). */
+  is_investor_relations: boolean
   /** Onboarded with app access (typically `general`) but not an ESV employee — a contractor or
    *  seconded person. Orthogonal to `role`: keeps them off the attendance roster, leave/expense
    *  requests, and Engage/Kudos without touching what the role itself grants. */
@@ -928,7 +930,7 @@ export type PipelineStageTask = {
   stage_id: string
   /** "{name}" becomes the entry's title; without it the title is prefixed with it. */
   title: string
-  assign_to: 'assignees' | 'mover' | 'user'
+  assign_to: 'assignees' | 'mover' | 'user' | 'investor_relations'
   user_id: string | null
   due_days: number
   priority: 'Low' | 'Medium' | 'High'

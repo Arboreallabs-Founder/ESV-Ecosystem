@@ -1204,3 +1204,9 @@ creates **no Company** (the applicant is a person). Neither pipeline has an `acc
 accepting creates an Active Deal. Their general links carry the slugs and credit nobody. Created
 unpublished: publish once `/privacy` is approved (`APPROVED` in `src/app/privacy/page.tsx`). The app
 tolerates this not having run.
+
+### 20261126000100_investor_relations.sql
+`users.is_investor_relations` (Admin → Users) and a fourth automatic-task target,
+`investor_relations`, usable on any pipeline stage. Seeds one task on "New application" of both website
+pipelines, due in 2 days, and notifies whoever gets it. Needs 20261126000000. The app tolerates this
+not having run (the flag reads as false).

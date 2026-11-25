@@ -58,6 +58,18 @@ export async function setGeneralLead(targetUserId: string, isLead: boolean): Pro
   revalidatePath('/tasks')
 }
 
+/**
+ * Investor Relations (20261126000100): who gets the automatic pipeline tasks addressed to investor
+ * relations, such as each new website application. Founder/admin only, like the other flags.
+ */
+export async function setInvestorRelations(targetUserId: string, on: boolean): Promise<void> {
+  const { supabase } = await requireRole(['founder', 'admin'])
+  const { error } = await supabase.from('users').update({ is_investor_relations: on }).eq('id', targetUserId)
+  if (error) throw dbFailure('save that', error)
+  revalidatePath('/admin/users')
+  revalidatePath('/tasks')
+}
+
 // ── The single partner intake route ──────────────────────────────────────────
 
 /**
