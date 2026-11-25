@@ -25,9 +25,11 @@ introducing new colour values.
 
 **Typeface caveat:** the letterhead is set in Book Antiqua, a licensed Monotype face embedded in
 the `.docx`. Embedding it in PDFs we distribute to third parties is a licensing question nobody
-has answered, so generated documents use react-pdf's built-in **Times-Roman** — a standard PDF
-base font that needs no embedding at all, which sidesteps the question rather than answering it.
-Revisit if someone confirms the Book Antiqua licence covers redistribution.
+has answered, so generated documents embed **Tinos** (SIL Open Font License), which has the same
+widths as Times. They used the PDF base font Times-Roman until 25 November 2026, but that font has
+no ₹, so every rupee amount printed with a stray mark over its first digit. Letters issued before
+then keep the fault: withdraw and reissue any that matter. Don't go back to a PDF base font. Revisit
+if someone confirms the Book Antiqua licence covers redistribution.
 
 ## Issuance matrix
 

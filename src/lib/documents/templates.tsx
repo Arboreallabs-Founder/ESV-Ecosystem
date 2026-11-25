@@ -32,7 +32,7 @@ const t = StyleSheet.create({
   },
   cellLabel: { flex: 1, fontSize: 10 },
   cellValue: { width: 130, fontSize: 10, textAlign: 'right' },
-  bold: { fontFamily: 'Times-Bold' },
+  bold: { fontWeight: 'bold' },
   words: { fontSize: 9, fontStyle: 'italic', marginTop: 4, color: '#A39B95' },
   salutation: { marginBottom: 10 },
 })

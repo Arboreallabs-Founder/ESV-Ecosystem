@@ -154,7 +154,7 @@ that third parties already hold — and a reissued PDF fails verification agains
 the copy in someone's file. Phases 1, 2 and 4 are ordinary schema and templating work that can be
 revised freely.
 
-**Typeface.** Documents render in react-pdf's built-in Times-Roman, not the letterhead's Book
+**Typeface.** Documents render in Tinos (a Times equivalent, see DOCUMENTS.md), not the letterhead's Book
 Antiqua, until someone
 confirms the Monotype licence permits embedding in redistributed PDFs. Visually close; legally
 uncomplicated.

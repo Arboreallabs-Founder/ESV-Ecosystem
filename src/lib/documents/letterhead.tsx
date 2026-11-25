@@ -1,6 +1,7 @@
-import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer'
+import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer'
 import type { SignatureMode } from '@/lib/types'
 import { ESV_WORDMARK_DATA_URI } from './wordmark'
+import { LETTER_SERIF_REGULAR, LETTER_SERIF_BOLD, LETTER_SERIF_ITALIC } from './letter-font'
 
 /* The ESV letterhead, as a react-pdf component.
 
@@ -10,8 +11,19 @@ import { ESV_WORDMARK_DATA_URI } from './wordmark'
 
    Typeface: the .docx is set in Book Antiqua, a licensed Monotype face. Embedding it into PDFs
    distributed to banks and consulates is a licensing question nobody has answered, so this uses
-   react-pdf's built-in Times-Roman — visually close, legally uncomplicated. See
-   docs/DOCUMENTS_BUILD_PLAN.md. */
+   an openly licensed Times equivalent, embedded — see letter-font.ts. Not the PDF base Times-Roman,
+   which has no ₹ and prints every amount wrongly. */
+
+export const LETTER_FONT = 'ESV Letter Serif'
+
+Font.register({
+  family: LETTER_FONT,
+  fonts: [
+    { src: LETTER_SERIF_REGULAR },
+    { src: LETTER_SERIF_BOLD, fontWeight: 'bold' },
+    { src: LETTER_SERIF_ITALIC, fontStyle: 'italic' },
+  ],
+})
 
 export const ORG = {
   legalName: 'Earlyseed Ventures Private Limited',
@@ -36,7 +48,7 @@ const styles = StyleSheet.create({
     paddingTop: 42,
     paddingBottom: 92, // room for the fixed footer
     paddingHorizontal: 56,
-    fontFamily: 'Times-Roman',
+    fontFamily: LETTER_FONT,
     fontSize: 10.5,
     lineHeight: 1.55,
     color: COLOR.ink,
@@ -48,7 +60,7 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 9, color: COLOR.muted },
 
   title: {
-    fontFamily: 'Times-Bold',
+    fontWeight: 'bold',
     fontSize: 13,
     textAlign: 'center',
     marginBottom: 18,
@@ -62,7 +74,7 @@ const styles = StyleSheet.create({
   signBlock: { marginTop: 34 },
   signImage: { width: 132, height: 44, marginBottom: 4, objectFit: 'contain' },
   signLine: { width: 180, borderBottomWidth: 0.75, borderBottomColor: COLOR.ink, marginBottom: 4, marginTop: 34 },
-  signName: { fontFamily: 'Times-Bold', fontSize: 10.5 },
+  signName: { fontWeight: 'bold', fontSize: 10.5 },
   signRole: { fontSize: 9, color: COLOR.muted },
   signNote: { fontSize: 8, color: COLOR.muted, marginTop: 8, fontStyle: 'italic' },
 
