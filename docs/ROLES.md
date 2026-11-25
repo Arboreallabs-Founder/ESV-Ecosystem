@@ -65,7 +65,8 @@ coordinator flag it can be set once the person has signed in.
 ### `is_investor_relations` — Investor Relations (flag, not a role)
 A boolean on `users` (added 2026-11-25, `20261126000100`), on any internal role. Grants **no access**:
 it only says who gets the automatic pipeline tasks addressed to "Investor relations", starting with
-one for every new website application (`/apply/syndicate`, `/apply/partner`). Several people can hold
+one for every new website application (`/apply/syndicate`, `/apply/partner`), and who is assigned to
+those applications when nobody is yet (`20261127000000`; website pipelines only). Several people can hold
 it, and each gets their own task; with nobody flagged the task waits unassigned until somebody is. Set
 by a founder/admin in Admin → Users, once the person has signed in.
 

@@ -479,8 +479,9 @@ export default function UsersTable({
                     Investor Relations
                   </label>
                   <span className={styles.fieldHint}>
-                    Gets a task for every new syndicate and growth partner application from the
-                    website. If more than one person has this, each gets their own task.
+                    Assigned to every new syndicate and growth partner application from the website,
+                    with a task to contact the applicant. If more than one person has this, each is
+                    assigned and gets their own task.
                   </span>
                 </div>
               )}

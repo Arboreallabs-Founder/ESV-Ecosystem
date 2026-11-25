@@ -1210,3 +1210,8 @@ tolerates this not having run.
 `investor_relations`, usable on any pipeline stage. Seeds one task on "New application" of both website
 pipelines, due in 2 days, and notifies whoever gets it. Needs 20261126000000. The app tolerates this
 not having run (the flag reads as false).
+
+### 20261127000000_investor_relations_assigned.sql
+Investor Relations are also assigned to website applications on arrival (or when flagged, for waiting
+ones), so they can be moved straight away. Website pipelines only (`is_website_pipeline()`), and only
+when nobody is assigned. Needs 20261126000100.
