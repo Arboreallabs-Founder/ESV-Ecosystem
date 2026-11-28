@@ -479,6 +479,7 @@ export default function MyTodosClient({ todos, myTasks, dayPlans, mentions, ment
           <div className={styles.pageSub}>
             {open.length} open item{open.length !== 1 ? 's' : ''}
             {plannedToday.length > 0 && <> · {plannedToday.length} planned for today</>}
+            {' · '}Founders and admins can see your list.
           </div>
         </div>
         <div className={styles.headerActions}>

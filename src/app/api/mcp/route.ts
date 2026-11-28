@@ -72,7 +72,7 @@ async function handle(req: Request): Promise<Response> {
 
   return mcpAuth.run({ token, client }, async () => {
     const server = new McpServer(
-      { name: 'esv-ecosystem', title: 'ESV Ecosystem', version: '0.2.0' },
+      { name: 'esv-ecosystem', title: 'ESV Ecosystem', version: '0.4.0' },
       { instructions: SERVER_INSTRUCTIONS },
     )
     registerTools(server)

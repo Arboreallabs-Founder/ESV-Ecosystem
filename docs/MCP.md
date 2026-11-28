@@ -64,7 +64,7 @@ every tool also runs the app's own role guard.
 
 ## Tools
 
-Code: `src/lib/mcp/tools/{tasks,companies,pipelines,deals}.ts`, rules in `tools/shared.ts`.
+Code: `src/lib/mcp/tools/{tasks,companies,pipelines,deals,team,todos}.ts`, rules in `tools/shared.ts`.
 "Who" is the role needed — the app's own guards and RLS decide; the tool adds nothing.
 
 | Tool | Kind | Who | Goes through |
@@ -75,6 +75,7 @@ Code: `src/lib/mcp/tools/{tasks,companies,pipelines,deals}.ts`, rules in `tools/
 | `update_task` | write | internal | `updateTask` (merged: only passed fields change; `assignee_id` reassigns) |
 | `list_people` | read | internal | RLS read of `users` |
 | `team_activity` | read | founder/admin: anyone · General Lead: general users · others: self | tasks + `activity_events` (founder/admin) |
+| `team_todos` | read | founder/admin: anyone · others: self | RLS read of `personal_todos` |
 | `update_task_status`, `add_task_comment` | write | internal | `updateTaskStatus`, `addTaskComment` |
 | `search_companies`, `get_company`, `list_company_fields` | read | internal | RLS reads |
 | `create_company` | write | founder/admin/associate | `findSimilarCompanies` → `createCompany` |
@@ -93,6 +94,13 @@ Not exposed, on purpose: deletes, admin, HR/compensation, investors, accepting a
 deal categories — done on the board).
 
 ### Changelog
+
+**0.4.0 (2026-11-28)**
+- `team_todos` — someone's Personal To-Do List: `person` ('me' | 'team' | user id | name), open
+  items with sub-items nested, `done_since` (YYYY-MM-DD) to add items ticked off since. `shared`
+  marks items filed into a work week or day plan. Founders/admins read anyone's (RLS,
+  20261201000000); others only their own. Read-only.
+- Server version reported as 0.4.0 (it still said 0.2.0).
 
 **0.3.0 (2026-11-20)**
 - `team_activity` — `person` ('me' | 'team' | user id | name), `from` / `to` (YYYY-MM-DD,

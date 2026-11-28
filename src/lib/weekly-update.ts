@@ -23,11 +23,10 @@ export const fetchLatestDealUpdates = cache(async (): Promise<Record<string, str
 })
 
 /**
- * Personal to-dos filed into a work week.
+ * Personal to-dos filed into a work week, and their sub-tasks.
  *
- * Only week-assigned items are readable by leadership (see the RLS policy added in
- * 20260818000000) — an item with no work week stays private to its owner, which is what makes
- * putting it in a week a deliberate act of sharing rather than a leak.
+ * Filing an item into a week is what puts it in the update. Founders and admins can read every
+ * item (20261201000000), but the update still shows only what its owner filed.
  */
 export const fetchWeekTodos = cache(async (): Promise<PersonalTodo[]> => {
   const supabase = await createClient()
@@ -40,7 +39,11 @@ export const fetchWeekTodos = cache(async (): Promise<PersonalTodo[]> => {
     .select('*')
     .or('work_week_start.not.is.null,parent_id.not.is.null')
     .order('created_at', { ascending: true })
-  return (data ?? []) as unknown as PersonalTodo[]
+  const rows = (data ?? []) as unknown as PersonalTodo[]
+  // Founders and admins can read every to-do (20261201000000), so a sub-task of an item nobody filed
+  // into a week comes back too. Only sub-tasks of what is here belong in the update.
+  const here = new Set(rows.map((r) => r.id))
+  return rows.filter((r) => !r.parent_id || here.has(r.parent_id))
 })
 
 export type LatestTaskComment = { body: string; author: string | null; created_at: string }

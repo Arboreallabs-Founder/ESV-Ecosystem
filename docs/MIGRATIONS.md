@@ -1235,3 +1235,8 @@ notified. Created unpublished.
 and work recruitment pipelines whatever their role. `forms.rejected_message`, and `submit_website_form`
 refuses a Not Eligible ending. "No" to 18 on the internship form now ends it, storing nothing. Needs
 20261129000000. The app tolerates this not having run.
+
+### 20261201000000_leads_read_all_personal_todos.sql
+Founders and admins can read every personal to-do in the org, not only week- or day-plan-filed ones
+(for the connector's `team_todos`). Read only; the owner alone changes an item. The Weekly Update
+filters out sub-tasks of unfiled items, and `/my-todos` says who can see the list.

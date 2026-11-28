@@ -126,13 +126,13 @@ export const WIKI: Record<string, WikiSection> = {
 
   myTodos: {
     title: 'Personal To-Do List',
-    summary: 'A personal checklist — private by default, so only you see your own list. Quick items and tasks assigned to you live side by side, with completion synced back to the Tasks board.',
+    summary: 'A personal checklist. You and the founders and admins can see it; nobody else can. Quick items and tasks assigned to you live side by side, with completion synced back to the Tasks board.',
     items: [
       { heading: 'Adding a quick item', body: 'Type into the box at the top and press Enter or click Add. Quick items are personal only — they never appear on the shared Tasks board.' },
       { heading: 'Porting in a task', body: 'Click "Port in a task" to pick from tasks assigned to you and add one to your list, linked back to the original. Already-ported tasks are excluded from the picker.' },
       { heading: 'Two-way sync', body: 'Checking off a ported item marks the linked Task as Done on the shared board too — and vice versa: marking a Task Done on the board flips any personal to-do linked to it. Unchecking either side reopens both.' },
       { heading: 'Notes & due dates', body: 'Click the "⋯" on any item to add notes or a due date, or to unlink it from its task (keeping it as a standalone personal item).' },
-      { heading: 'Work weeks', body: 'Assign an item to a work week — when adding it, or later via the "⋯" menu — and it appears in that week\'s Weekly Update with its tick-box state. This is also the only thing that makes a personal item visible to founders and admins: anything with no work week stays private to you.' },
+      { heading: 'Work weeks', body: 'Assign an item to a work week — when adding it, or later via the "⋯" menu — and it appears in that week\'s Weekly Update with its tick-box state. Founders and admins can see your whole list, in the app and through their AI assistant; filing an item into a week is what puts it in the update.' },
       { heading: 'Completed section', body: 'Finished items collapse into a "Completed" group at the bottom so your active list stays short.' },
     ],
   },

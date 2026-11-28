@@ -114,9 +114,8 @@ export default function DayPlanModal({ kind, plans, todayIso, weekOptions, myTas
         </div>
 
         <div className={styles.modalBody}>
-          {/* Said plainly, at the point of writing. This surface is read by founders and admins,
-              unlike the rest of the personal list, and a page that looks private but is not
-              would be worse than one that is simply honest about it. */}
+          {/* Said plainly, at the point of writing: a page that looks private but is not would be
+              worse than one that is simply honest about it. */}
           <div className={styles.visibilityNote}>
             Daily plans are visible to founders and admins. Items you add here become to-dos on your
             own list.

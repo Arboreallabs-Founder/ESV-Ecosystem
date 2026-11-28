@@ -530,10 +530,11 @@ UI's `canPost` check only mirrors it. Readable by every internal role; partners 
 newest entry is what the Weekly Update prints as `[Deal name]: [Latest Update]`.
 
 ### Personal To-Do List (`/my-todos`)
-Renamed from "My To-Dos" (route unchanged). Items are **private by default** — the base policy is
-`user_id = auth.uid()`. Assigning an item to a **work week** is the explicit opt-in that publishes
-it to that week's Weekly Update, and is the only thing that makes it readable by founder/admin.
-Anything with no work week stays invisible to everyone but its owner.
+Renamed from "My To-Dos" (route unchanged). Only the owner can change an item (`user_id = auth.uid()`).
+**Founders and admins can read every item** in the org (since 2026-11-28, `20261201000000`, so a
+founder's AI connector can pull each person's list with `team_todos`); the page says so under its
+title. Nobody else can read another person's list. Assigning an item to a **work week** is what
+puts it in that week's Weekly Update.
 
 ### Weekly Update (`/tasks/update`)
 Open to every internal role. Founder/admin get the full team carousel and the "assigned by" filter;
